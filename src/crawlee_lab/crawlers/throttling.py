@@ -25,7 +25,7 @@ async def build_request_manager(spec: RunSpec) -> RequestManager | None:
     if not spec.respect_robots:
         return None
 
-    domains = target_domains(spec.start_urls)
+    domains = target_domains([*spec.start_urls, *spec.sitemap_urls])
     if not domains:
         return None
 

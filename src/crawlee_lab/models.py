@@ -112,6 +112,8 @@ class RunSpec(BaseModel):
 
     name: str
     start_urls: list[str] = Field(default_factory=list)
+    sitemap_urls: list[str] = Field(default_factory=list)
+    fetch_suffix: str | None = None
 
     crawler: CrawlerKind = CrawlerKind.ADAPTIVE
     extract: ExtractionMode = ExtractionMode.AUTO
@@ -136,12 +138,19 @@ class RunSpec(BaseModel):
 
     formats: list[OutputFormat] = Field(default_factory=lambda: [OutputFormat.JSON])
 
+    snapshot: bool = False
+    min_success_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+
     @model_validator(mode='after')
     def _require_a_source(self) -> RunSpec:
-        if not self.start_urls:
-            raise ValueError('a run needs at least one start URL')
+        if not self.start_urls and not self.sitemap_urls:
+            raise ValueError('a run needs at least one start URL or one sitemap URL')
         return self
 
     @property
     def follows_links(self) -> bool:
         return self.max_depth > 0
+
+    @property
+    def seeded_by_sitemap(self) -> bool:
+        return bool(self.sitemap_urls)

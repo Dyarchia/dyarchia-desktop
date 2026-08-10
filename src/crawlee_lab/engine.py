@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from crawlee import RequestOptions, RequestTransformAction
+from crawlee.request_loaders import RequestManager, SitemapRequestLoader
 from crawlee.statistics import FinalStatistics
 
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.crawlers.context import safe_page
 from crawlee_lab.crawlers.factory import AnyCrawler, build_crawler
+from crawlee_lab.crawlers.settings import build_http_client
 from crawlee_lab.crawlers.throttling import build_request_manager
 from crawlee_lab.errors import BrowserNotInstalledError
 from crawlee_lab.extraction.dom import SoupAdapter, adapt
@@ -18,6 +22,8 @@ from crawlee_lab.extraction.strategies import RawPage, build_item
 from crawlee_lab.models import FailureRecord, RunSpec, ScrapedItem
 from crawlee_lab.patterns import to_matchers
 from crawlee_lab.storage.exporters import export_items
+from crawlee_lab.storage.snapshots import SnapshotResult, take_snapshot
+from crawlee_lab.urls import apply_suffix
 
 _DATASET_PAGE_SIZE = 500
 _MISSING_BROWSER_MARKERS = ("executable doesn't exist", 'please run the following command to download')
@@ -32,6 +38,7 @@ class RunResult:
     failures: list[FailureRecord] = field(default_factory=list)
     outputs: list[Path] = field(default_factory=list)
     statistics: FinalStatistics | None = None
+    snapshot: SnapshotResult | None = None
 
     @property
     def attempted(self) -> int:
@@ -68,6 +75,10 @@ async def to_raw_page(context: Any) -> RawPage:
     The live page is checked first and it matters that it is. On a browser run the adaptive context
     still parses `parsed_content` from the raw navigation body, so trusting it would hand back the
     pre-JavaScript shell of exactly the pages that needed a browser in the first place.
+
+    `HttpCrawler` also exposes `parsed_content`, but its parser is a no-op that hands back raw
+    bytes, so anything that is not a parsed document falls through to the response body path where
+    the content type decides whether there is a DOM to build at all.
     """
     request = context.request
     depth = int(getattr(request, 'crawl_depth', 0) or 0)
@@ -86,6 +97,9 @@ async def to_raw_page(context: Any) -> RawPage:
         )
 
     parsed = getattr(context, 'parsed_content', None)
+    if isinstance(parsed, bytes | str):
+        parsed = None
+
     if parsed is not None:
         return RawPage(
             url=request.url,
@@ -134,6 +148,41 @@ async def collect_items(crawler: AnyCrawler) -> list[ScrapedItem]:
     return items
 
 
+def _suffix_transform(suffix: str) -> Callable[[RequestOptions], RequestOptions | RequestTransformAction]:
+    """Rewrite each discovered URL to its suffixed variant, skipping the ones that cannot carry it."""
+
+    def transform(options: RequestOptions) -> RequestOptions | RequestTransformAction:
+        rewritten = apply_suffix(options['url'], suffix)
+        if rewritten is None:
+            return 'skip'
+        options['url'] = rewritten
+        return options
+
+    return transform
+
+
+async def build_request_source(spec: RunSpec, settings: Settings) -> RequestManager | None:
+    """Assemble the request manager: per-domain throttling, plus sitemap seeding when configured."""
+    throttler = await build_request_manager(spec)
+    if not spec.seeded_by_sitemap:
+        return throttler
+
+    loader = SitemapRequestLoader(
+        sitemap_urls=spec.sitemap_urls,
+        http_client=build_http_client(spec, settings),
+        include=to_matchers(spec.include) or None,
+        exclude=to_matchers(spec.exclude) or None,
+        transform_request_function=_suffix_transform(spec.fetch_suffix) if spec.fetch_suffix else None,
+    )
+    return await loader.to_tandem(throttler)
+
+
+def seed_urls(spec: RunSpec) -> list[str]:
+    """The start URLs as they will actually be fetched."""
+    rewritten = (apply_suffix(url, spec.fetch_suffix) for url in spec.start_urls)
+    return [url for url in rewritten if url is not None]
+
+
 def _translate_browser_error(error: Exception) -> Exception:
     message = str(error).lower()
     if any(marker in message for marker in _MISSING_BROWSER_MARKERS):
@@ -162,21 +211,26 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
             )
         )
 
-    request_manager = await build_request_manager(spec)
+    request_manager = await build_request_source(spec, settings)
     crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
 
     try:
-        statistics = await crawler.run(spec.start_urls)
+        statistics = await crawler.run(seed_urls(spec) or None)
     except Exception as error:
         raise _translate_browser_error(error) from error
 
     items = await collect_items(crawler)
     outputs = export_items(items, spec, settings.resolve(settings.output_dir))
 
-    return RunResult(
+    result = RunResult(
         spec=spec,
         items=items,
         failures=failures,
         outputs=outputs,
         statistics=statistics,
     )
+
+    if spec.snapshot:
+        result.snapshot = take_snapshot(items, failures, spec, settings, result.success_rate)
+
+    return result

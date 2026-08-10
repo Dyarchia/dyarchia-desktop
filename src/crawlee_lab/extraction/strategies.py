@@ -50,6 +50,15 @@ def _content_for(mode: ExtractionMode, page: RawPage) -> str | None:
     return main_content(page.dom.html(), page.url) or page.dom.text()
 
 
+def markdown_title(text: str) -> str | None:
+    """First level-one heading of a markdown document, used when there is no DOM to ask."""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('# '):
+            return stripped[2:].strip() or None
+    return None
+
+
 def build_item(page: RawPage, spec: RunSpec) -> ScrapedItem:
     """Combine the configured extraction mode and selectors into a single record."""
     fields: dict[str, Any] = {}
@@ -67,6 +76,10 @@ def build_item(page: RawPage, spec: RunSpec) -> ScrapedItem:
 
     fields.update(page.extra)
 
+    content = _content_for(spec.extract, page)
+    if title is None and content:
+        title = markdown_title(content)
+
     return ScrapedItem(
         url=page.url,
         label=page.label,
@@ -74,7 +87,7 @@ def build_item(page: RawPage, spec: RunSpec) -> ScrapedItem:
         status_code=page.status_code,
         fetched_at=utcnow(),
         title=title,
-        content=_content_for(spec.extract, page),
+        content=content,
         fields=fields,
         links=links,
     )

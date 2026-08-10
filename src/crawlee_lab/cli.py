@@ -21,6 +21,10 @@ from crawlee_lab.profiles.loader import save_profile_file
 from crawlee_lab.profiles.schema import ProfileSpec
 from crawlee_lab.recon import Recon, inspect_url
 from crawlee_lab.storage.exporters import slugify_url
+from crawlee_lab.storage.snapshots import SnapshotResult
+from crawlee_lab.versioning.diffing import ChangeKind, load_report
+from crawlee_lab.versioning.report import summary_line
+from crawlee_lab.versioning.vcs import commit_snapshot
 
 app = typer.Typer(
     name='crawlee-lab',
@@ -169,6 +173,12 @@ def crawl(
     block: Annotated[
         list[str] | None, typer.Option('--block', help='Resource types to block in browser mode.')
     ] = None,
+    snapshot: Annotated[
+        bool, typer.Option('--snapshot', help='Store page content under data/ and report what changed.')
+    ] = False,
+    commit: Annotated[
+        bool, typer.Option('--commit', help='Commit the snapshot to git when it changed.')
+    ] = False,
     verbose: Annotated[bool, typer.Option('--verbose', '-v', help='Verbose logging.')] = False,
 ) -> None:
     """Scrape URLs directly, or run a saved profile."""
@@ -195,6 +205,7 @@ def crawl(
         'retries': ('max_request_retries', retries),
         'headful': ('headless', not headful),
         'block': ('block_resources', block if block is not None else DEFAULT_BLOCKED_RESOURCES),
+        'snapshot': ('snapshot', snapshot),
     }
 
     try:
@@ -223,8 +234,31 @@ def crawl(
         raise typer.Exit(code=1) from error
 
     render_summary(result)
+
+    if result.snapshot is not None:
+        console.print(f'snapshot: {summary_line(result.snapshot.report)}')
+        console.print(f'  stored in {result.snapshot.directory}')
+        if commit:
+            _commit_snapshot(result.snapshot, settings)
+    elif commit:
+        error_console.print('[yellow]--commit does nothing without --snapshot[/yellow]')
+
     if not result.items:
         raise typer.Exit(code=1)
+
+
+def _commit_snapshot(snapshot: SnapshotResult, settings: Settings) -> None:
+    message = f'snapshot({snapshot.manifest.name}): {summary_line(snapshot.report)}'
+    try:
+        revision = commit_snapshot(snapshot.directory, message, settings.project_root)
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        return
+
+    if revision is None:
+        console.print('  nothing to commit, the target has not changed')
+    else:
+        console.print(f'  committed {revision[:12]}')
 
 
 def _build_spec(
@@ -267,6 +301,51 @@ def inspect_command(
         raise typer.Exit(code=1) from error
 
     render_recon(recon)
+
+
+@app.command(name='diff')
+def diff_command(
+    name: Annotated[str, typer.Argument(help='Profile or run name that was snapshotted.')],
+    unified: Annotated[
+        bool, typer.Option('--unified', '-u', help='Show the unified diff for modified pages.')
+    ] = False,
+    limit: Annotated[int, typer.Option('--limit', min=1, help='Maximum entries per section.')] = 20,
+) -> None:
+    """Show what changed on a target the last time it was snapshotted."""
+    settings = get_settings()
+    directory = settings.resolve(settings.data_dir) / name
+
+    report = load_report(directory)
+    if report is None:
+        error_console.print(
+            f'[bold red]no change report for {name!r} in {directory}. '
+            f'Run "crawlee-lab crawl --profile {name} --snapshot" first.[/bold red]'
+        )
+        raise typer.Exit(code=1)
+
+    console.print(f'[bold]{report.name}[/bold] at {report.generated_at.isoformat()}')
+    console.print(summary_line(report))
+
+    for kind in (ChangeKind.ADDED, ChangeKind.REMOVED, ChangeKind.MODIFIED):
+        entries = report.of_kind(kind)
+        if not entries:
+            continue
+
+        console.print(f'\n[bold]{kind.value}[/bold] ({len(entries)})')
+        for change in entries[:limit]:
+            console.print(f'  {change.title or change.url}')
+            console.print(f'    {change.url}', style='dim')
+            if unified and change.diff:
+                console.print(change.diff, style='dim')
+        if len(entries) > limit:
+            console.print(f'  ... and {len(entries) - limit} more')
+
+    if report.failed:
+        console.print(f'\n[bold yellow]failed[/bold yellow] ({len(report.failed)})')
+        for url in report.failed[:limit]:
+            console.print(f'  {url}')
+
+    console.print(f'\nfull history: git log -- {directory}')
 
 
 @app.command(name='profiles')

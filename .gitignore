@@ -4,6 +4,12 @@ storage/
 # Ad-hoc run output
 output/
 
+# Snapshot payloads. Only the metadata beside them is tracked: manifest.json
+# records every URL with its status and hash, and changes.json and CHANGES.md
+# record what moved between runs, diffs included. The scraped corpus itself
+# does not belong in the toolkit's repository.
+data/*/pages/
+
 # Python
 __pycache__/
 *.py[cod]

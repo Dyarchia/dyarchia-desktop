@@ -11,18 +11,27 @@ from pathlib import Path
 
 from crawlee_lab.errors import CrawleeLabError
 
-_GIT_TIMEOUT = 60
+_GIT_TIMEOUT = 600
 
 
 def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ['git', *args],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        timeout=_GIT_TIMEOUT,
-        check=False,
-    )
+    """Run one git command, turning anything that goes wrong into a CrawleeLabError.
+
+    The timeout is generous because commit hooks run inside `git commit`, and a hook suite that
+    installs its own environments on first use takes minutes, not seconds. A crawl must not report
+    a traceback because the repository was being linted.
+    """
+    try:
+        return subprocess.run(
+            ['git', *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=_GIT_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise CrawleeLabError(f'git {args[0]} could not be run: {error}') from error
 
 
 def is_repository(root: Path) -> bool:
@@ -48,7 +57,8 @@ def commit_snapshot(directory: Path, message: str, root: Path) -> str | None:
 
     committed = _git(['commit', '-m', message, '--', str(directory)], root)
     if committed.returncode != 0:
-        raise CrawleeLabError(f'git commit failed: {committed.stderr.strip()}')
+        detail = committed.stderr.strip() or committed.stdout.strip()
+        raise CrawleeLabError(f'git commit failed: {detail}')
 
     revision = _git(['rev-parse', 'HEAD'], root)
     return revision.stdout.strip() or None

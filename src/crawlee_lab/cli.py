@@ -179,6 +179,10 @@ def crawl(
     block: Annotated[
         list[str] | None, typer.Option('--block', help='Resource types to block in browser mode.')
     ] = None,
+    keep_boilerplate: Annotated[
+        bool,
+        typer.Option('--keep-boilerplate', help='Do not strip the header and footer every page shares.'),
+    ] = False,
     snapshot: Annotated[
         bool, typer.Option('--snapshot', help='Store page content under data/ and report what changed.')
     ] = False,
@@ -212,6 +216,7 @@ def crawl(
         'headful': ('headless', not headful),
         'block': ('block_resources', block if block is not None else DEFAULT_BLOCKED_RESOURCES),
         'snapshot': ('snapshot', snapshot),
+        'keep_boilerplate': ('trim_boilerplate', not keep_boilerplate),
     }
 
     try:

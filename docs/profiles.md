@@ -120,6 +120,7 @@ Output.
     formats             list     json       json, jsonl, csv, md
     snapshot            bool     false      Store content under data/ and report changes
     min_success_rate    float    none       Below this, the snapshot is refused
+    trim_boilerplate    bool     true       Drop the header and footer every page shares
 
 ## 5. Selector syntax
 
@@ -228,6 +229,10 @@ sitemap covers the target exactly instead of wandering through link discovery. `
 a 400 KB HTML page carrying its own hydration payload into roughly 5 KB of prose, which is the
 difference between a diff you can read and one you cannot. The one sitemap entry with no markdown
 variant is excluded, because a permanent known failure trains you to ignore failures.
+
+What the profile does not need is a rule about the four-line documentation-index banner the site
+puts at the top of every markdown page. `trim_boilerplate` finds it from the corpus, because a block
+opening two hundred pages out of two hundred is chrome whatever it says.
 
 Run `crawlee-lab inspect` against a new documentation site before writing a profile for it. It
 reports whether a markdown variant exists and which sitemaps are published.

@@ -17,6 +17,7 @@ from crawlee_lab.crawlers.factory import AnyCrawler, build_crawler
 from crawlee_lab.crawlers.settings import build_http_client
 from crawlee_lab.crawlers.throttling import build_request_manager
 from crawlee_lab.errors import BrowserNotInstalledError
+from crawlee_lab.extraction.boilerplate import trim_shared_boilerplate
 from crawlee_lab.extraction.dom import SoupAdapter, adapt
 from crawlee_lab.extraction.strategies import RawPage, build_item
 from crawlee_lab.models import FailureRecord, RunSpec, ScrapedItem
@@ -184,6 +185,21 @@ def seed_urls(spec: RunSpec) -> list[str]:
     return [url for url in rewritten if url is not None]
 
 
+def trim_run_boilerplate(items: list[ScrapedItem]) -> None:
+    """Strip the header and footer this run's pages all share, in place.
+
+    This runs once the whole run is collected, because the corpus is what identifies the boilerplate
+    in the first place. A single page cannot tell its banner apart from its content.
+    """
+    indexed = [(index, item.content) for index, item in enumerate(items) if item.content]
+    if not indexed:
+        return
+
+    trimmed = trim_shared_boilerplate([content for _, content in indexed])
+    for (index, _), content in zip(indexed, trimmed, strict=True):
+        items[index].content = content
+
+
 def _translate_browser_error(error: Exception) -> Exception:
     message = str(error).lower()
     if any(marker in message for marker in _MISSING_BROWSER_MARKERS):
@@ -222,6 +238,8 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
         raise _translate_browser_error(error) from error
 
     items = await collect_items(crawler)
+    if spec.trim_boilerplate:
+        trim_run_boilerplate(items)
     outputs = export_items(items, spec, settings.resolve(settings.output_dir))
 
     result = RunResult(

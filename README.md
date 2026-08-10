@@ -5,8 +5,8 @@ a run that worked into a reusable profile. Snapshot any target to track how its 
 
 ## Requirements
 
-Python 3.12 or 3.13, and uv. Browser-backed crawlers additionally need Playwright's Chromium, which
-is a one-off download of roughly 400 MB.
+Python 3.12 or newer, and uv. The project runs on 3.14 and CI covers 3.12 and 3.14. Browser-backed
+crawlers additionally need Playwright's Chromium, which is a one-off download of roughly 400 MB.
 
 ```bash
 uv sync --dev
@@ -95,11 +95,20 @@ that path comes back empty.
 Selectors are given as `--select NAME=SELECTOR` and can be combined with any mode. The selector
 syntax is documented in `docs/profiles.md`.
 
+Whatever the mode, the header and footer that nearly every page of a run shares are removed once the
+run is collected. A single page cannot tell its banner from its content; the corpus can. Turn it off
+with `--keep-boilerplate`.
+
 ## Snapshots and change tracking
 
 `--snapshot` writes each page's content to `data/<name>/pages/<host>/<path>.md`, mirroring the URL
-structure, and records hashes and per-URL status in a manifest beside it. Git is the history: what
-changed and when is `git log` and `git diff`, with no bespoke storage format.
+structure, and records hashes and per-URL status in a manifest beside it.
+
+Git tracks the metadata, not the corpus. `data/*/pages/` is ignored, while `manifest.json`,
+`changes.json` and `CHANGES.md` are committed, so the history answers what changed and when, diffs
+included, without the repository carrying every page ever scraped. The pages themselves stay on disk
+and are what the next run diffs against. A fresh clone therefore knows the hashes but not the old
+text, so its first run reports modifications without a before-and-after.
 
 A run that failed too often writes nothing, because half a snapshot would read as a mass deletion on
 the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves the
@@ -140,6 +149,7 @@ Tests that reach the network are marked `network`, and those that need a browser
 
 ## Documentation
 
+- `docs/cheatsheet.md` — every command and every option, on one page
 - `docs/architecture.md` — how the pieces fit together and why
 - `docs/profiles.md` — the profile file format, selector and pattern syntax
 - `docs/superpowers/specs/` — the approved design

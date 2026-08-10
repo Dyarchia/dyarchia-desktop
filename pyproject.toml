@@ -3,7 +3,7 @@ name = "crawlee-lab"
 version = "0.1.0"
 description = "On-demand web scraping toolkit built on Crawlee for Python"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 dependencies = [
     "crawlee[all]>=1.0",

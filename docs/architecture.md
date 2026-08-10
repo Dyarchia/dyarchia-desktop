@@ -45,6 +45,8 @@ rewriting; both landed in the engine and both are now available to every target.
     crawlers.context        Safe access to optional context members         nothing
     extraction.dom          One DOM interface, field selector language      nothing
     extraction.strategies   Extraction modes                                dom, models
+    extraction.boilerplate  Removal of the header and footer every page     nothing
+                            of a run shares
     profiles.schema         On-disk profile shape                           models
     profiles.loader         Reading and writing profile files               schema, errors
     storage.exporters       Output as json, jsonl, csv, markdown            models
@@ -97,6 +99,14 @@ Adapters exist for BeautifulSoup and Parsel. A browser page is read through `pag
 adapted as HTML. Anything not recognised falls through to the response body, where the content type
 decides whether there is a DOM to build at all.
 
+Extraction that starts from HTML can lean on structure to separate content from chrome. Text that
+arrives already clean, such as a publisher's own markdown, has no structure left to lean on, so a
+banner injected into every page survives into the snapshot. `extraction.boilerplate` closes that gap
+from the other direction: a block of lines opening or closing at least ninety per cent of a run's
+pages is chrome by definition, whatever it says. Detection therefore happens once the whole run is
+collected, because the corpus is the evidence. Removing it is also free for change tracking, since
+content identical on every page is constant and constant content never appears in a diff.
+
 ## 5. Crawlee behaviours that had to be handled
 
 Four behaviours of the library are easy to get wrong and are handled explicitly. Each one was
@@ -140,9 +150,16 @@ crawl still runs at full speed.
 ## 6. Snapshots and the change history
 
 Content lands under `data/<name>/pages/`, mirroring the URL structure, so a diff reads like a tour
-of the site. Git is the history. A manifest beside the pages records per-URL status and hash, which
-is what allows a report without invoking git, and what allows a page that disappeared to be told
-apart from a page that failed to download.
+of the site. A manifest beside the pages records per-URL status and hash, which is what allows a
+report without invoking git, and what allows a page that disappeared to be told apart from a page
+that failed to download.
+
+Git tracks that metadata rather than the corpus. `data/*/pages/` is ignored; `manifest.json`,
+`changes.json` and `CHANGES.md` are committed. The history therefore answers what changed and when,
+with the diffs the report already carries, without the toolkit's repository accumulating every page
+it has ever fetched. The pages remain on disk, which is what the next run compares against. The
+trade-off is real and worth stating: a fresh clone has the hashes but not the previous text, so its
+first run reports modifications without a before-and-after.
 
 Manifest timestamps move on every run, so comparing manifests directly would produce a commit per
 run and turn the history into a record of how often the scraper ran. Snapshots are therefore

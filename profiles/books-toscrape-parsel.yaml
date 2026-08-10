@@ -1,8 +1,8 @@
-name: books-toscrape
-description: Book catalogue sandbox, parsed with BeautifulSoup
+name: books-toscrape-parsel
+description: The same catalogue as books-toscrape, parsed with Parsel instead
 start_urls:
   - https://books.toscrape.com/
-crawler: beautifulsoup
+crawler: parsel
 extract: none
 selectors:
   title: h1
@@ -18,4 +18,3 @@ exclude:
   - /category/
 formats:
   - json
-  - csv

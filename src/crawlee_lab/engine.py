@@ -21,6 +21,7 @@ from crawlee_lab.extraction.dom import SoupAdapter, adapt
 from crawlee_lab.extraction.strategies import RawPage, build_item
 from crawlee_lab.models import FailureRecord, RunSpec, ScrapedItem
 from crawlee_lab.patterns import to_matchers
+from crawlee_lab.runtime import reset_storage_state
 from crawlee_lab.storage.exporters import export_items
 from crawlee_lab.storage.snapshots import SnapshotResult, take_snapshot
 from crawlee_lab.urls import apply_suffix
@@ -193,6 +194,7 @@ def _translate_browser_error(error: Exception) -> Exception:
 async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     """Run one crawl end to end and write its output."""
     settings = settings or get_settings()
+    reset_storage_state()
     failures: list[FailureRecord] = []
 
     async def handle_page(context: Any) -> None:

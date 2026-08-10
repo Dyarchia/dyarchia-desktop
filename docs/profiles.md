@@ -1,0 +1,233 @@
+# Profiles
+
+A profile is a named, reusable target definition. It carries exactly the fields a command line
+carries, so nothing can be expressed in one and not the other.
+
+## Index
+
+- [1. Where profiles live](#1-where-profiles-live)
+- [2. Creating a profile](#2-creating-a-profile)
+- [3. Running a profile](#3-running-a-profile)
+- [4. Field reference](#4-field-reference)
+- [5. Selector syntax](#5-selector-syntax)
+- [6. URL pattern syntax](#6-url-pattern-syntax)
+- [7. Worked examples](#7-worked-examples)
+
+## 1. Where profiles live
+
+Two sources share one namespace:
+
+- YAML files in `profiles/`, one per target, named after the file.
+- Python modules under `src/crawlee_lab/sites/` exposing a module-level `PROFILE` of type
+  `ProfileSpec`.
+
+A YAML file wins over a Python module of the same name, so a bundled definition can be overridden
+locally without editing the package. List what is available with:
+
+```bash
+uv run crawlee-lab profiles
+```
+
+Python is worth reaching for when the definition benefits from explanation, from constants, or from
+being version controlled with the code that depends on it. It is not an escape hatch: a Python
+profile is still a declaration, and it cannot call into Crawlee.
+
+## 2. Creating a profile
+
+The intended route is to get a run working ad-hoc and then freeze it:
+
+```bash
+uv run crawlee-lab crawl https://books.toscrape.com/ \
+    --crawler parsel \
+    --select title=h1 \
+    --select price=.price_color \
+    --depth 2 \
+    --follow /catalogue/ \
+    --save-profile books
+```
+
+That writes `profiles/books.yaml` containing only the fields that differ from the defaults. Add a
+`description` by hand afterwards; it shows up in `crawlee-lab profiles`.
+
+Writing one from scratch works too. Unknown keys are rejected rather than ignored, so a typo is a
+loud error and not a setting that quietly never applied.
+
+## 3. Running a profile
+
+```bash
+uv run crawlee-lab crawl --profile books
+```
+
+The profile supplies the baseline. Any flag typed on the same command line overrides it:
+
+```bash
+uv run crawlee-lab crawl --profile books --max-pages 5 --format csv
+```
+
+Only flags actually typed override. A flag left alone never overrides the profile, even when its
+default happens to differ from what the profile set.
+
+## 4. Field reference
+
+Sources. At least one of `start_urls` or `sitemap_urls` is required.
+
+    Field           Type            Default    Meaning
+    ------------    -----------    -------    ------------------------------------------------
+    name            string          filename   Profile name, also used for output filenames
+    description     string          none       Shown when listing profiles
+    start_urls      list            empty      URLs the crawl begins from
+    sitemap_urls    list            empty      Sitemaps to seed requests from
+    fetch_suffix    string          none       Appended to each URL path before fetching
+
+Crawling.
+
+    Field                 Type       Default          Meaning
+    ------------------    -------    -------------    ----------------------------------------
+    crawler               enum       adaptive         http, beautifulsoup, parsel, playwright,
+                                                      adaptive
+    extract               enum       auto             auto, text, html, links, jsonld, none
+    selectors             mapping    empty            Field name to selector expression
+    max_depth             int        0                Link hops to follow, 0 means no following
+    max_pages             int        none             Stop after this many pages
+    link_selector         string     a                CSS selector for links to follow
+    strategy              enum       same-hostname    all, same-domain, same-hostname,
+                                                      same-origin
+    include               list       empty            Patterns a URL must match to be followed
+    exclude               list       empty            Patterns a URL must not match
+
+Politeness and transport.
+
+    Field                     Type      Default    Meaning
+    ----------------------    ------    -------    -------------------------------------------
+    respect_robots            bool      true       Honour robots.txt, including Crawl-delay
+    user_agent                string    none       Overrides the configured User-Agent
+    stealth                   bool      false      Impersonate a browser instead of identifying
+    max_concurrency           int       none       Cap on parallel requests
+    max_requests_per_minute   float     none       Cap on request rate
+    max_request_retries       int       none       Retries per request
+
+Browser.
+
+    Field              Type    Default                 Meaning
+    ---------------    ----    --------------------    -----------------------------------
+    headless           bool    true                    Run the browser without a window
+    block_resources    list    image, media, font      Resource types to abort
+
+Output.
+
+    Field               Type     Default    Meaning
+    ----------------    -----    -------    ----------------------------------------------
+    formats             list     json       json, jsonl, csv, md
+    snapshot            bool     false      Store content under data/ and report changes
+    min_success_rate    float    none       Below this, the snapshot is refused
+
+## 5. Selector syntax
+
+A small extension of CSS, so a whole extraction fits on a command line.
+
+    Expression             Result
+    -------------------    --------------------------------------------------
+    h1                     Text of the first match
+    .price@data-value      An attribute of the first match
+    all:.tag               A list with the text of every match
+    all:a@href             A list with an attribute of every match
+
+Attributes that carry URLs, such as `href`, `src`, `data-src`, `srcset`, `poster` and `action`, are
+resolved against the page they were found on, so a relative value comes back absolute.
+
+A selector that matches nothing yields `null`, or an empty list when prefixed with `all:`. The field
+is always present in the output, which keeps CSV columns stable across pages.
+
+## 6. URL pattern syntax
+
+Used by `include` and `exclude`, and by the `--follow` and `--exclude` flags.
+
+    Pattern                       Meaning
+    --------------------------    ---------------------------------------------------
+    /docs/                        The URL contains this text
+    /docs/*.html                  Contains this glob, where * stops at a separator
+    /docs/**                      Contains this glob, where ** crosses separators
+    https://site.com/docs/**      Starts with this glob, matched against the whole URL
+    re:^https://site\.com/\d+     An explicit regular expression, anchored at the start
+
+The first three forms exist because Crawlee's own globs are anchored and matched against the whole
+URL. A pattern like `**/docs/**` would match nothing at all, since `**` does not cross the empty
+segment inside `https://`, and it would fail silently.
+
+## 7. Worked examples
+
+A catalogue with a list page and detail pages:
+
+```yaml
+name: books-toscrape
+description: Book catalogue sandbox, parsed with BeautifulSoup
+start_urls:
+  - https://books.toscrape.com/
+crawler: beautifulsoup
+extract: none
+selectors:
+  title: h1
+  price: .price_color
+  cover: '#product_gallery img@src'
+  breadcrumbs: 'all:.breadcrumb li'
+max_depth: 2
+max_pages: 40
+include:
+  - /catalogue/
+exclude:
+  - /category/
+formats:
+  - json
+  - csv
+```
+
+A page whose content only exists after JavaScript runs:
+
+```yaml
+name: quotes-js
+description: Quotes rendered client side, which only a browser can read
+start_urls:
+  - https://quotes.toscrape.com/js/
+crawler: playwright
+extract: none
+selectors:
+  quotes: 'all:.quote .text'
+  authors: 'all:.quote .author'
+max_depth: 1
+max_pages: 10
+include:
+  - /js/page/
+block_resources:
+  - image
+  - media
+  - font
+```
+
+A documentation site tracked for change, seeded from its sitemap and fetched as markdown. This one
+lives in Python as `src/crawlee_lab/sites/claude_docs.py`:
+
+```python
+PROFILE = ProfileSpec(
+    name='claude-docs',
+    description='Claude documentation, snapshotted from its markdown variants to track changes',
+    sitemap_urls=['https://claude.com/docs/sitemap.xml'],
+    fetch_suffix='.md',
+    exclude=[r're:^https://claude\.com/docs/?$'],
+    crawler=CrawlerKind.HTTP,
+    extract=ExtractionMode.TEXT,
+    formats=[OutputFormat.JSONL],
+    max_concurrency=4,
+    max_requests_per_minute=120,
+    snapshot=True,
+    min_success_rate=0.95,
+)
+```
+
+Three decisions in that profile are worth copying for any documentation site. Seeding from the
+sitemap covers the target exactly instead of wandering through link discovery. `fetch_suffix` turns
+a 400 KB HTML page carrying its own hydration payload into roughly 5 KB of prose, which is the
+difference between a diff you can read and one you cannot. The one sitemap entry with no markdown
+variant is excluded, because a permanent known failure trains you to ignore failures.
+
+Run `crawlee-lab inspect` against a new documentation site before writing a profile for it. It
+reports whether a markdown variant exists and which sitemaps are published.

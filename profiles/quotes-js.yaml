@@ -1,0 +1,20 @@
+name: quotes-js
+description: Quotes rendered client side, which only a browser can read
+start_urls:
+  - https://quotes.toscrape.com/js/
+crawler: playwright
+extract: none
+selectors:
+  quotes: 'all:.quote .text'
+  authors: 'all:.quote .author'
+  tags: 'all:.quote .tag'
+max_depth: 1
+max_pages: 10
+include:
+  - /js/page/
+block_resources:
+  - image
+  - media
+  - font
+formats:
+  - json

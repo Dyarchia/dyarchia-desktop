@@ -5,18 +5,21 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.parse import urlparse
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from crawlee_lab import __version__
-from crawlee_lab.config import get_settings
+from crawlee_lab import __version__, registry
+from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
-from crawlee_lab.errors import CrawleeLabError
+from crawlee_lab.errors import ConfigurationError, CrawleeLabError
 from crawlee_lab.models import CrawlerKind, ExtractionMode, LinkStrategy, OutputFormat, RunSpec
+from crawlee_lab.profiles.loader import save_profile_file
+from crawlee_lab.profiles.schema import ProfileSpec
+from crawlee_lab.recon import Recon, inspect_url
 from crawlee_lab.storage.exporters import slugify_url
 
 app = typer.Typer(
@@ -27,6 +30,8 @@ app = typer.Typer(
 )
 console = Console()
 error_console = Console(stderr=True)
+
+DEFAULT_BLOCKED_RESOURCES = ['image', 'media', 'font']
 
 
 def derive_name(urls: list[str]) -> str:
@@ -44,6 +49,19 @@ def parse_selectors(pairs: list[str] | None) -> dict[str, str]:
             raise typer.BadParameter(f'expected NAME=SELECTOR, got {pair!r}', param_hint='--select')
         selectors[name.strip()] = expression.strip()
     return selectors
+
+
+def explicit_parameters(ctx: typer.Context) -> set[str]:
+    """Names of the options the user actually typed, as opposed to the ones that defaulted.
+
+    This is what lets `--profile` supply the baseline while a flag on the same command line still
+    wins, without a flag that happens to equal its default silently overriding the profile.
+
+    The source is compared by name rather than by identity because Typer vendors its own copy of
+    Click, so the enum member it returns is not the one `import click` would give us.
+    """
+    sources = {name: ctx.get_parameter_source(name) for name in ctx.params}
+    return {name for name, source in sources.items() if source is not None and source.name == 'COMMANDLINE'}
 
 
 def render_summary(result: RunResult) -> None:
@@ -67,9 +85,43 @@ def render_summary(result: RunResult) -> None:
         error_console.print(f'[yellow]... and {len(result.failures) - 10} more failures[/yellow]')
 
 
+def render_recon(recon: Recon) -> None:
+    table = Table(title=f'inspect: {recon.url}', title_style='bold', show_header=False, box=None)
+    table.add_row('status', str(recon.status_code))
+    table.add_row('content type', recon.content_type or 'unknown')
+    table.add_row('title', recon.title or '-')
+    table.add_row('html size', f'{recon.html_bytes:,} bytes')
+    table.add_row('links found', str(recon.link_count))
+    table.add_row('robots allows', 'yes' if recon.robots_allows else 'no')
+    if recon.crawl_delay is not None:
+        table.add_row('crawl delay', f'{recon.crawl_delay}s')
+    table.add_row('sitemaps', '\n'.join(recon.sitemaps) if recon.sitemaps else '-')
+    table.add_row('markdown variant', recon.markdown_url or '-')
+    table.add_row('static content', f'{recon.static_content_chars:,} chars')
+    if recon.rendered_content_chars is not None:
+        table.add_row('rendered content', f'{recon.rendered_content_chars:,} chars')
+    if recon.spa_markers:
+        table.add_row('spa markers', ', '.join(recon.spa_markers))
+    table.add_row('recommendation', recon.recommendation)
+    console.print(table)
+
+    for note in recon.notes:
+        error_console.print(f'[yellow]note[/yellow] {note}')
+
+    if recon.robots_allows is False:
+        error_console.print('[bold red]robots.txt disallows this URL for our user agent[/bold red]')
+
+
 @app.command()
 def crawl(
-    urls: Annotated[list[str], typer.Argument(help='One or more start URLs.')],
+    ctx: typer.Context,
+    urls: Annotated[list[str] | None, typer.Argument(help='One or more start URLs.')] = None,
+    profile: Annotated[
+        str | None, typer.Option('--profile', help='Run a saved profile instead of ad-hoc URLs.')
+    ] = None,
+    save_profile: Annotated[
+        str | None, typer.Option('--save-profile', help='Save this run as a reusable profile.')
+    ] = None,
     name: Annotated[str | None, typer.Option('--name', help='Run name, used for output filenames.')] = None,
     crawler: Annotated[
         CrawlerKind, typer.Option('--crawler', help='Which Crawlee crawler to drive.')
@@ -86,10 +138,10 @@ def crawl(
         int | None, typer.Option('--max-pages', min=1, help='Stop after this many pages.')
     ] = None,
     include: Annotated[
-        list[str] | None, typer.Option('--follow', help='Glob a URL must match to be followed.')
+        list[str] | None, typer.Option('--follow', help='Pattern a URL must match to be followed.')
     ] = None,
     exclude: Annotated[
-        list[str] | None, typer.Option('--exclude', help='Glob a URL must not match to be followed.')
+        list[str] | None, typer.Option('--exclude', help='Pattern a URL must not match to be followed.')
     ] = None,
     strategy: Annotated[
         LinkStrategy, typer.Option('--strategy', help='How far link following may wander.')
@@ -119,35 +171,47 @@ def crawl(
     ] = None,
     verbose: Annotated[bool, typer.Option('--verbose', '-v', help='Verbose logging.')] = False,
 ) -> None:
-    """Scrape one or more URLs."""
+    """Scrape URLs directly, or run a saved profile."""
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
-
     settings = get_settings()
-    spec = RunSpec(
-        name=name or derive_name(urls),
-        start_urls=urls,
-        crawler=crawler,
-        extract=extract,
-        selectors=parse_selectors(select),
-        max_depth=depth,
-        max_pages=max_pages,
-        include=include or [],
-        exclude=exclude or [],
-        strategy=strategy,
-        link_selector=link_selector,
-        formats=formats or [OutputFormat.JSON],
-        user_agent=user_agent,
-        stealth=stealth,
-        respect_robots=not ignore_robots,
-        max_concurrency=concurrency,
-        max_requests_per_minute=rate,
-        max_request_retries=retries,
-        headless=not headful,
-        block_resources=block if block is not None else ['image', 'media', 'font'],
-    )
+
+    fields_by_option = {
+        'name': ('name', name),
+        'crawler': ('crawler', crawler),
+        'extract': ('extract', extract),
+        'select': ('selectors', parse_selectors(select)),
+        'depth': ('max_depth', depth),
+        'max_pages': ('max_pages', max_pages),
+        'include': ('include', include or []),
+        'exclude': ('exclude', exclude or []),
+        'strategy': ('strategy', strategy),
+        'link_selector': ('link_selector', link_selector),
+        'formats': ('formats', formats or [OutputFormat.JSON]),
+        'user_agent': ('user_agent', user_agent),
+        'stealth': ('stealth', stealth),
+        'ignore_robots': ('respect_robots', not ignore_robots),
+        'concurrency': ('max_concurrency', concurrency),
+        'rate': ('max_requests_per_minute', rate),
+        'retries': ('max_request_retries', retries),
+        'headful': ('headless', not headful),
+        'block': ('block_resources', block if block is not None else DEFAULT_BLOCKED_RESOURCES),
+    }
+
+    try:
+        spec = _build_spec(ctx, profile, urls, fields_by_option, settings)
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
 
     if ignore_robots:
         error_console.print('[bold yellow]robots.txt is being ignored for this run[/bold yellow]')
+
+    if save_profile is not None:
+        saved = save_profile_file(
+            ProfileSpec.model_validate({**spec.model_dump(), 'name': save_profile}),
+            settings.resolve(settings.profiles_dir),
+        )
+        console.print(f'saved profile [bold]{save_profile}[/bold] to {saved}')
 
     if output_dir is not None:
         settings = settings.model_copy(update={'output_dir': output_dir})
@@ -161,6 +225,74 @@ def crawl(
     render_summary(result)
     if not result.items:
         raise typer.Exit(code=1)
+
+
+def _build_spec(
+    ctx: typer.Context,
+    profile: str | None,
+    urls: list[str] | None,
+    fields_by_option: dict[str, tuple[str, Any]],
+    settings: Settings,
+) -> RunSpec:
+    """Resolve the run: a profile plus explicit overrides, or a purely ad-hoc set of flags."""
+    values: dict[str, Any] = dict(fields_by_option.values())
+
+    if profile is not None:
+        typed = explicit_parameters(ctx)
+        overrides = {field: value for option, (field, value) in fields_by_option.items() if option in typed}
+        if urls:
+            overrides['start_urls'] = urls
+        return registry.load(profile, settings).to_run_spec(**overrides)
+
+    if not urls:
+        raise ConfigurationError('give at least one URL, or select a saved profile with --profile')
+
+    values['start_urls'] = urls
+    values['name'] = values['name'] or derive_name(urls)
+    return RunSpec.model_validate(values)
+
+
+@app.command(name='inspect')
+def inspect_command(
+    url: Annotated[str, typer.Argument(help='URL to probe.')],
+    render: Annotated[
+        bool, typer.Option('--render', help='Also render in a browser to confirm the diagnosis.')
+    ] = False,
+) -> None:
+    """Report what a crawl against this target would have to deal with."""
+    try:
+        recon = asyncio.run(inspect_url(url, render=render))
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
+
+    render_recon(recon)
+
+
+@app.command(name='profiles')
+def profiles_command() -> None:
+    """List the saved profiles this project knows about."""
+    try:
+        found = registry.discover()
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
+
+    if not found:
+        console.print('no profiles found')
+        return
+
+    table = Table(title='profiles', title_style='bold')
+    table.add_column('name', style='bold')
+    table.add_column('crawler')
+    table.add_column('target')
+    table.add_column('description')
+
+    for profile in found.values():
+        target = profile.start_urls[0] if profile.start_urls else '-'
+        table.add_row(profile.name, profile.crawler.value, target, profile.description or '-')
+
+    console.print(table)
 
 
 @app.command()

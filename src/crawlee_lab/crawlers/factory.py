@@ -14,6 +14,7 @@ from crawlee.crawlers import (
     ParselCrawler,
     PlaywrightCrawler,
 )
+from crawlee.request_loaders import RequestManager
 
 from crawlee_lab.config import Settings
 from crawlee_lab.crawlers.adaptive import make_result_checker
@@ -28,8 +29,11 @@ FailureHandler = Callable[[Any, Exception], Awaitable[None]]
 AnyCrawler = BasicCrawler[Any, Any]
 
 
-def _common_options(spec: RunSpec, settings: Settings) -> dict[str, Any]:
+def _common_options(
+    spec: RunSpec, settings: Settings, request_manager: RequestManager | None
+) -> dict[str, Any]:
     return {
+        'request_manager': request_manager,
         'http_client': build_http_client(spec, settings),
         'concurrency_settings': build_concurrency(spec, settings),
         'max_request_retries': (
@@ -50,8 +54,8 @@ def _browser_options(spec: RunSpec, settings: Settings) -> dict[str, Any]:
     return options
 
 
-def _instantiate(spec: RunSpec, settings: Settings) -> AnyCrawler:
-    common = _common_options(spec, settings)
+def _instantiate(spec: RunSpec, settings: Settings, request_manager: RequestManager | None) -> AnyCrawler:
+    common = _common_options(spec, settings, request_manager)
 
     match spec.crawler:
         case CrawlerKind.HTTP:
@@ -77,6 +81,7 @@ def build_crawler(
     settings: Settings,
     handler: PageHandler,
     failure_handler: FailureHandler | None = None,
+    request_manager: RequestManager | None = None,
 ) -> AnyCrawler:
     """Create the crawler for this run with its default handler already registered."""
     if spec.crawler is CrawlerKind.HTTP and spec.follows_links:
@@ -85,7 +90,7 @@ def build_crawler(
             'Use --crawler beautifulsoup, parsel, playwright or adaptive to follow links.'
         )
 
-    crawler = _instantiate(spec, settings)
+    crawler = _instantiate(spec, settings, request_manager)
     crawler.router.default_handler(handler)
 
     if failure_handler is not None:

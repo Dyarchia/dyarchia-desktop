@@ -1,0 +1,12 @@
+name: books-toscrape
+start_urls:
+- https://books.toscrape.com/
+crawler: parsel
+extract: none
+selectors:
+  title: h1
+  price: .price_color
+max_depth: 1
+max_pages: 3
+include:
+- /catalogue/

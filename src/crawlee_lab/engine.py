@@ -11,6 +11,7 @@ from crawlee.statistics import FinalStatistics
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.crawlers.context import safe_page
 from crawlee_lab.crawlers.factory import AnyCrawler, build_crawler
+from crawlee_lab.crawlers.throttling import build_request_manager
 from crawlee_lab.errors import BrowserNotInstalledError
 from crawlee_lab.extraction.dom import SoupAdapter, adapt
 from crawlee_lab.extraction.strategies import RawPage, build_item
@@ -161,7 +162,8 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
             )
         )
 
-    crawler = build_crawler(spec, settings, handle_page, handle_failure)
+    request_manager = await build_request_manager(spec)
+    crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
 
     try:
         statistics = await crawler.run(spec.start_urls)

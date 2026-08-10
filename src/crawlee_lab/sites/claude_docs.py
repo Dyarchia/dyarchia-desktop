@@ -5,7 +5,9 @@ instead of the HTML turns a 400 KB page carrying its own React hydration payload
 of prose, which is the difference between a diff you can read and a diff you cannot.
 
 Seeding comes from the published sitemap rather than from link discovery, so the run covers the
-documentation exactly and never wanders into the rest of the site.
+documentation exactly and never wanders into the rest of the site. The documentation index itself is
+excluded: it is the one entry in the sitemap with no markdown variant, and leaving it in would make
+every run report a failure that will never be fixed.
 """
 
 from crawlee_lab.models import CrawlerKind, ExtractionMode, OutputFormat
@@ -16,6 +18,7 @@ PROFILE = ProfileSpec(
     description='Claude documentation, snapshotted from its markdown variants to track changes',
     sitemap_urls=['https://claude.com/docs/sitemap.xml'],
     fetch_suffix='.md',
+    exclude=[r're:^https://claude\.com/docs/?$'],
     crawler=CrawlerKind.HTTP,
     extract=ExtractionMode.TEXT,
     formats=[OutputFormat.JSONL],

@@ -68,13 +68,19 @@ def explicit_parameters(ctx: typer.Context) -> set[str]:
     return {name for name, source in sources.items() if source is not None and source.name == 'COMMANDLINE'}
 
 
+def _percentage(rate: float) -> str:
+    """Never round a rate with failures in it up to a clean 100%."""
+    exact = f'{rate:.0%}'
+    return exact if rate in (0.0, 1.0) or exact not in ('0%', '100%') else f'{rate:.2%}'
+
+
 def render_summary(result: RunResult) -> None:
     table = Table(title=f'run: {result.spec.name}', title_style='bold', show_header=False, box=None)
     table.add_row('crawler', result.spec.crawler.value)
     table.add_row('extraction', result.spec.extract.value)
     table.add_row('items', str(len(result.items)))
     table.add_row('failures', str(len(result.failures)))
-    table.add_row('success rate', f'{result.success_rate:.0%}')
+    table.add_row('success rate', _percentage(result.success_rate))
     if result.statistics is not None:
         table.add_row('runtime', str(result.statistics.crawler_runtime))
     for path in result.outputs[:5]:
@@ -238,8 +244,10 @@ def crawl(
     if result.snapshot is not None:
         console.print(f'snapshot: {summary_line(result.snapshot.report)}')
         console.print(f'  stored in {result.snapshot.directory}')
-        if commit:
+        if commit and result.snapshot.persisted:
             _commit_snapshot(result.snapshot, settings)
+        elif commit:
+            console.print('  nothing to commit, the target has not changed')
     elif commit:
         error_console.print('[yellow]--commit does nothing without --snapshot[/yellow]')
 

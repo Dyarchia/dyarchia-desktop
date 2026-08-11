@@ -68,6 +68,10 @@ What to fetch and parse.
     --keep-boilerplate      flag, keeps the header and footer every page      off
                             of the run shares
 
+Every mode except `html` also reduces a response that arrives as layout markup, as MDX sites serve
+for their landing pages, to the prose and links inside it. Headings living in component attributes
+are kept and fenced code blocks are left untouched. Use `--extract html` for the document as fetched.
+
 How far to go.
 
     Option                  Value                                             Default

@@ -47,6 +47,8 @@ rewriting; both landed in the engine and both are now available to every target.
     extraction.strategies   Extraction modes                                dom, models
     extraction.boilerplate  Removal of the header and footer every page     nothing
                             of a run shares
+    extraction.markup       Cleaning of markup embedded in documents        nothing
+                            that arrive as markdown
     profiles.schema         On-disk profile shape                           models
     profiles.loader         Reading and writing profile files               schema, errors
     storage.exporters       Output as json, jsonl, csv, markdown            models
@@ -106,6 +108,15 @@ from the other direction: a block of lines opening or closing at least ninety pe
 pages is chrome by definition, whatever it says. Detection therefore happens once the whole run is
 collected, because the corpus is the evidence. Removing it is also free for change tracking, since
 content identical on every page is constant and constant content never appears in a diff.
+
+A second gap opens on the same kind of target. Sites built on MDX serve their prose pages as prose
+and their landing pages as the layout that produced them: class names, wrapper elements, inline SVG
+path coordinates. Nothing is missing from such a page, but nudging an icon by a pixel would read as
+a content change. `extraction.markup` reduces a markup-heavy document to the prose and links inside
+it, and the ratio test keeps it away from ordinary pages. Two details in it are what make it lossless
+rather than merely tidy: component syntax puts real headings in attributes, so `title`, `label` and
+`href` are rescued instead of stripped with the tag, and fenced code blocks are left untouched,
+because an HTML example inside a fence is the content rather than the chrome.
 
 ## 5. Crawlee behaviours that had to be handled
 

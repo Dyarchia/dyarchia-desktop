@@ -8,6 +8,7 @@ from typing import Any
 import trafilatura
 
 from crawlee_lab.extraction.dom import DomAdapter, read_fields
+from crawlee_lab.extraction.markup import clean_if_markup
 from crawlee_lab.models import ExtractionMode, RunSpec, ScrapedItem, utcnow
 
 
@@ -41,7 +42,9 @@ def _content_for(mode: ExtractionMode, page: RawPage) -> str | None:
         return None
 
     if page.dom is None:
-        return page.body_text
+        if page.body_text is None or mode is ExtractionMode.HTML:
+            return page.body_text
+        return clean_if_markup(page.body_text)
 
     if mode is ExtractionMode.HTML:
         return page.dom.html()

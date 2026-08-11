@@ -99,6 +99,11 @@ Whatever the mode, the header and footer that nearly every page of a run shares 
 run is collected. A single page cannot tell its banner from its content; the corpus can. Turn it off
 with `--keep-boilerplate`.
 
+A response that claims to be markdown but arrives as layout markup, which is what MDX sites serve
+for their landing pages, is reduced to the prose and links inside it. Headings living in component
+attributes are kept, and fenced code blocks are never touched. `--extract html` opts out by asking
+for the document exactly as fetched.
+
 ## Snapshots and change tracking
 
 `--snapshot` writes each page's content to `data/<name>/pages/<host>/<path>.md`, mirroring the URL

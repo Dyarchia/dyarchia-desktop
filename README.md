@@ -118,6 +118,10 @@ report of the last run, not a dated trail of every change.
 Track that trail by removing `data/` from `.gitignore` and passing `--commit`, which stages a
 snapshot when, and only when, its content fingerprint moved. It is never implicit.
 
+Nothing in the toolkit depends on that directory existing or on where it is. `CRAWLEE_LAB_DATA_DIR`
+accepts an absolute path, so the corpus can live anywhere, and deleting it costs the comparison
+baseline rather than the ability to run. See `.env.example`.
+
 A run that failed too often writes nothing, because half a snapshot would read as a mass deletion on
 the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves its
 files untouched.

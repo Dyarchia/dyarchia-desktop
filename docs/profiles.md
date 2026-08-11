@@ -119,8 +119,14 @@ Output.
     ----------------    -----    -------    ----------------------------------------------
     formats             list     json       json, jsonl, csv, md
     snapshot            bool     false      Store content under data/ and report changes
-    min_success_rate    float    none       Below this, the snapshot is refused
+    min_success_rate    float    none       Below this share of successes, no snapshot
+    min_coverage        float    none       Below this share of the previous corpus, no snapshot
     trim_boilerplate    bool     true       Drop the header and footer every page shares
+
+The two thresholds answer different questions. `min_success_rate` asks how many of the pages this run
+attempted came back; `min_coverage` asks how much of the previous snapshot this run reached at all. A
+run capped by `--max-pages` scores a perfect success rate and would delete everything it never
+visited, which is what coverage is there to stop.
 
 ## 5. Selector syntax
 

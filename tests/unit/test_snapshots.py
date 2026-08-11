@@ -86,6 +86,46 @@ def test_the_fetch_suffix_is_stripped_from_stored_urls(settings: Settings) -> No
     assert (result.directory / 'pages' / 'site.example' / 'docs' / 'a.md').is_file()
 
 
+def test_a_run_that_reached_far_fewer_pages_writes_nothing(settings: Settings) -> None:
+    """A capped or mis-filtered run downloads everything it asked for and would delete the rest."""
+    full = [item(str(index), f'Body {index}') for index in range(10)]
+    take_snapshot(full, [], snapshot_spec(), settings, 1.0)
+
+    with pytest.raises(RunAbortedError, match='coverage'):
+        take_snapshot(full[:2], [], snapshot_spec(max_pages=2), settings, 1.0)
+
+    assert len(list((settings.resolve(settings.data_dir) / 'demo' / 'pages').rglob('*.md'))) == 10
+
+
+def test_the_coverage_message_names_the_page_limit(settings: Settings) -> None:
+    full = [item(str(index), f'Body {index}') for index in range(10)]
+    take_snapshot(full, [], snapshot_spec(), settings, 1.0)
+
+    with pytest.raises(RunAbortedError, match='capped at 2 pages'):
+        take_snapshot(full[:2], [], snapshot_spec(max_pages=2), settings, 1.0)
+
+
+def test_a_modest_shrink_is_allowed_through(settings: Settings) -> None:
+    full = [item(str(index), f'Body {index}') for index in range(10)]
+    take_snapshot(full, [], snapshot_spec(), settings, 1.0)
+    result = take_snapshot(full[:8], [], snapshot_spec(), settings, 1.0)
+
+    assert len(result.report.removed) == 2
+
+
+def test_a_deliberate_shrink_can_be_permitted(settings: Settings) -> None:
+    full = [item(str(index), f'Body {index}') for index in range(10)]
+    take_snapshot(full, [], snapshot_spec(), settings, 1.0)
+    result = take_snapshot(full[:1], [], snapshot_spec(min_coverage=0.0), settings, 1.0)
+
+    assert len(result.report.removed) == 9
+
+
+def test_the_first_snapshot_has_no_coverage_to_compare(settings: Settings) -> None:
+    result = take_snapshot([item('a', 'Alpha')], [], snapshot_spec(max_pages=1), settings, 1.0)
+    assert result.report.is_first_run
+
+
 def test_items_without_content_are_not_stored(settings: Settings) -> None:
     empty = ScrapedItem(url=f'{BASE}a', content=None)
     result = take_snapshot([empty], [], snapshot_spec(), settings, 1.0)

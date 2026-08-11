@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     request_timeout_seconds: int = Field(default=60, gt=0)
     respect_robots: bool = True
     min_success_rate: float = Field(default=0.9, ge=0.0, le=1.0)
+    min_coverage: float = Field(default=0.5, ge=0.0, le=1.0)
     headless: bool = True
 
     data_dir: Path = Path('data')

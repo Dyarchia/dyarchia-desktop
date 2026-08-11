@@ -201,6 +201,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     CRAWLEE_LAB_REQUEST_TIMEOUT_SECONDS     60
     CRAWLEE_LAB_RESPECT_ROBOTS              true
     CRAWLEE_LAB_MIN_SUCCESS_RATE            0.9
+    CRAWLEE_LAB_MIN_COVERAGE                0.5
     CRAWLEE_LAB_HEADLESS                    true
     CRAWLEE_LAB_DATA_DIR                    data
     CRAWLEE_LAB_OUTPUT_DIR                  output

@@ -188,6 +188,11 @@ Retries with backoff belong to Crawlee. On top of that:
 - Every URL gets a final status in the manifest, so a partial failure neither deletes valid
   snapshots nor pollutes the diff with false removals.
 - A run whose success rate falls below its threshold writes no snapshot at all.
+- A run that reaches far fewer pages than the snapshot it would replace writes nothing either. The
+  success rate cannot see this: a run capped at three pages downloads three of three, scores a
+  hundred per cent, and deletes everything it never visited. Coverage asks whether the run saw the
+  target or only a corner of it, which is the failure mode of a page limit, a mistyped include
+  pattern, or a sitemap that came back truncated.
 - Extraction errors are isolated per page; one broken page does not abort the run.
 - Snapshot paths are sanitised and resolved, so a target cannot steer writes outside its own
   directory through traversal in its URLs.

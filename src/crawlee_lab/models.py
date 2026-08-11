@@ -140,6 +140,7 @@ class RunSpec(BaseModel):
 
     snapshot: bool = False
     min_success_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    min_coverage: float | None = Field(default=None, ge=0.0, le=1.0)
     trim_boilerplate: bool = True
 
     @model_validator(mode='after')

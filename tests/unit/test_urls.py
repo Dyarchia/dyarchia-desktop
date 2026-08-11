@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from crawlee_lab.urls import apply_suffix, snapshot_relative_path, strip_suffix
+from crawlee_lab.urls import apply_suffix, snapshot_relative_path, strip_suffix, suffix_candidates
 
 PAGE = 'https://site.example/docs/intro'
 
@@ -19,9 +19,32 @@ def test_apply_suffix_is_idempotent() -> None:
     assert apply_suffix(once, '.md') == once
 
 
-def test_apply_suffix_refuses_directory_urls() -> None:
-    assert apply_suffix('https://site.example/docs/', '.md') is None
-    assert apply_suffix('https://site.example', '.md') is None
+def test_a_directory_url_looks_for_an_index() -> None:
+    """A trailing slash cannot carry `.md`, but the directory's index can."""
+    assert apply_suffix('https://site.example/docs/', '.md') == 'https://site.example/docs/index.md'
+    assert apply_suffix('https://site.example', '.md') == 'https://site.example/index.md'
+
+
+def test_an_extensionless_url_offers_both_forms() -> None:
+    """The case that cost us the docs landing page: docs.md is a 404, docs/index.md is the page."""
+    assert suffix_candidates(PAGE, '.md') == [
+        'https://site.example/docs/intro.md',
+        'https://site.example/docs/intro/index.md',
+    ]
+
+
+def test_a_directory_url_offers_only_the_index_form() -> None:
+    assert suffix_candidates('https://site.example/docs/', '.md') == ['https://site.example/docs/index.md']
+
+
+def test_an_already_suffixed_url_offers_nothing_else() -> None:
+    assert suffix_candidates('https://site.example/docs/intro.md', '.md') == [
+        'https://site.example/docs/intro.md'
+    ]
+
+
+def test_no_suffix_means_the_url_itself() -> None:
+    assert suffix_candidates(PAGE, None) == [PAGE]
 
 
 def test_apply_suffix_without_a_suffix_is_a_no_op() -> None:

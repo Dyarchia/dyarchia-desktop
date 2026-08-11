@@ -9,19 +9,37 @@ from urllib.parse import urlparse, urlunparse
 _UNSAFE_SEGMENT = re.compile(r'[^A-Za-z0-9._-]+')
 _RESERVED_STEMS = frozenset({'', '.', '..'})
 INDEX_STEM = 'index'
+CANONICAL_URL_KEY = 'canonical_url'
+
+
+def suffix_candidates(url: str, suffix: str | None) -> list[str]:
+    """Every place the suffixed variant of a page might live, best guess first.
+
+    A documentation site that serves `page.md` alongside `page` puts the variant of a section root
+    at `section/index.md`, not at `section.md`. Which of the two a URL is cannot be known from the
+    URL alone, so both are offered and the fetch decides.
+    """
+    if not suffix:
+        return [url]
+
+    parsed = urlparse(url)
+    path = parsed.path
+
+    if path.endswith(suffix):
+        return [url]
+
+    def at(new_path: str) -> str:
+        return urlunparse(parsed._replace(path=new_path))
+
+    if not path or path.endswith('/'):
+        return [at(f'{path}{INDEX_STEM}{suffix}')]
+    return [at(f'{path}{suffix}'), at(f'{path}/{INDEX_STEM}{suffix}')]
 
 
 def apply_suffix(url: str, suffix: str | None) -> str | None:
-    """Append a path suffix such as `.md`, or return None when the URL cannot carry one."""
-    if not suffix:
-        return url
-
-    parsed = urlparse(url)
-    if parsed.path.endswith(suffix):
-        return url
-    if not parsed.path or parsed.path.endswith('/'):
-        return None
-    return urlunparse(parsed._replace(path=parsed.path + suffix))
+    """The first place to look for the suffixed variant of a page."""
+    candidates = suffix_candidates(url, suffix)
+    return candidates[0] if candidates else None
 
 
 def strip_suffix(url: str, suffix: str | None) -> str:

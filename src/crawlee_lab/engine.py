@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from crawlee import RequestOptions, RequestTransformAction
+from crawlee import Request, RequestOptions, RequestTransformAction
 from crawlee.request_loaders import RequestManager, SitemapRequestLoader
 from crawlee.statistics import FinalStatistics
 
@@ -25,9 +25,10 @@ from crawlee_lab.patterns import to_matchers
 from crawlee_lab.runtime import reset_storage_state
 from crawlee_lab.storage.exporters import export_items
 from crawlee_lab.storage.snapshots import SnapshotResult, take_snapshot
-from crawlee_lab.urls import apply_suffix
+from crawlee_lab.urls import CANONICAL_URL_KEY, suffix_candidates
 
 _DATASET_PAGE_SIZE = 500
+_REMAINING_KEY = 'suffix_candidates_left'
 _MISSING_BROWSER_MARKERS = ("executable doesn't exist", 'please run the following command to download')
 
 
@@ -62,6 +63,13 @@ def _status_code(context: Any) -> int | None:
     return int(status) if status is not None else None
 
 
+def _canonical_url(request: Any) -> str:
+    """The page this request stands for, which is not the URL when a suffix was applied."""
+    user_data = getattr(request, 'user_data', None) or {}
+    canonical = user_data.get(CANONICAL_URL_KEY)
+    return str(canonical) if isinstance(canonical, str) else str(request.url)
+
+
 def _looks_like_html(context: Any, body: str) -> bool:
     http_response = getattr(context, 'http_response', None)
     headers = getattr(http_response, 'headers', None) or {}
@@ -86,12 +94,13 @@ async def to_raw_page(context: Any) -> RawPage:
     depth = int(getattr(request, 'crawl_depth', 0) or 0)
     label = getattr(request, 'label', None)
     status_code = _status_code(context)
+    url = _canonical_url(request)
 
     page = safe_page(context)
     if page is not None:
         html = await page.content()
         return RawPage(
-            url=request.url,
+            url=url,
             status_code=status_code,
             dom=SoupAdapter.from_html(html),
             depth=depth,
@@ -104,7 +113,7 @@ async def to_raw_page(context: Any) -> RawPage:
 
     if parsed is not None:
         return RawPage(
-            url=request.url,
+            url=url,
             status_code=status_code,
             dom=adapt(parsed),
             depth=depth,
@@ -114,7 +123,7 @@ async def to_raw_page(context: Any) -> RawPage:
     body = (await context.http_response.read()).decode('utf-8', errors='replace')
     dom = SoupAdapter.from_html(body) if _looks_like_html(context, body) else None
     return RawPage(
-        url=request.url,
+        url=url,
         status_code=status_code,
         dom=dom,
         body_text=None if dom is not None else body,
@@ -150,17 +159,41 @@ async def collect_items(crawler: AnyCrawler) -> list[ScrapedItem]:
     return items
 
 
+def _suffix_request(url: str, suffix: str) -> tuple[str, dict[str, Any]]:
+    """The URL to fetch first, plus the state needed to fall back and to stay keyed by the page."""
+    candidates = suffix_candidates(url, suffix)
+    return candidates[0], {CANONICAL_URL_KEY: url, _REMAINING_KEY: candidates[1:]}
+
+
 def _suffix_transform(suffix: str) -> Callable[[RequestOptions], RequestOptions | RequestTransformAction]:
-    """Rewrite each discovered URL to its suffixed variant, skipping the ones that cannot carry it."""
+    """Rewrite each discovered URL to its suffixed variant, remembering the page it came from."""
 
     def transform(options: RequestOptions) -> RequestOptions | RequestTransformAction:
-        rewritten = apply_suffix(options['url'], suffix)
-        if rewritten is None:
-            return 'skip'
+        rewritten, state = _suffix_request(options['url'], suffix)
         options['url'] = rewritten
+        options['user_data'] = {**options.get('user_data', {}), **state}
         return options
 
     return transform
+
+
+async def retry_next_candidate(context: Any, spec: RunSpec) -> bool:
+    """Try the next place a suffixed variant might live. Returns whether one was queued.
+
+    This is why a section root is not lost: `section.md` is the right guess for almost every page
+    and the wrong one for exactly the pages that are directories, and only the fetch can tell.
+    """
+    if not spec.fetch_suffix:
+        return False
+
+    user_data = dict(getattr(context.request, 'user_data', None) or {})
+    remaining = list(user_data.get(_REMAINING_KEY) or [])
+    if not remaining:
+        return False
+
+    following, rest = remaining[0], remaining[1:]
+    await context.add_requests([Request.from_url(following, user_data={**user_data, _REMAINING_KEY: rest})])
+    return True
 
 
 async def build_request_source(spec: RunSpec, settings: Settings) -> RequestManager | None:
@@ -179,10 +212,16 @@ async def build_request_source(spec: RunSpec, settings: Settings) -> RequestMana
     return await loader.to_tandem(throttler)
 
 
-def seed_urls(spec: RunSpec) -> list[str]:
+def seed_requests(spec: RunSpec) -> list[str | Request]:
     """The start URLs as they will actually be fetched."""
-    rewritten = (apply_suffix(url, spec.fetch_suffix) for url in spec.start_urls)
-    return [url for url in rewritten if url is not None]
+    if not spec.fetch_suffix:
+        return list(spec.start_urls)
+
+    seeds: list[str | Request] = []
+    for url in spec.start_urls:
+        fetched, state = _suffix_request(url, spec.fetch_suffix)
+        seeds.append(Request.from_url(fetched, user_data=state))
+    return seeds
 
 
 def trim_run_boilerplate(items: list[ScrapedItem]) -> None:
@@ -221,9 +260,11 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
             await enqueue_next(context, spec)
 
     async def handle_failure(context: Any, error: Exception) -> None:
+        if await retry_next_candidate(context, spec):
+            return
         failures.append(
             FailureRecord(
-                url=context.request.url,
+                url=_canonical_url(context.request),
                 error=f'{type(error).__name__}: {error}',
                 status_code=_status_code(context),
             )
@@ -233,7 +274,7 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
 
     try:
-        statistics = await crawler.run(seed_urls(spec) or None)
+        statistics = await crawler.run(seed_requests(spec) or None)
     except Exception as error:
         raise _translate_browser_error(error) from error
 

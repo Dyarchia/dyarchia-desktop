@@ -24,10 +24,22 @@ from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
 ```bash
 uv sync --dev
 uv run playwright install chromium
-uv run pre-commit install
 ```
 
 Everything below assumes the `uv run` prefix. Drop it inside an activated virtual environment.
+
+`.pre-commit-config.yaml` is present but deliberately not installed. Installing it writes a hook into
+`.git/hooks/` that runs ruff, mypy and a few file fixers on every commit, and a commit fails the
+first time a fixer changes a file. That is a decision about your git, not about the scraper, so it
+stays opt-in:
+
+```bash
+uv run pre-commit install
+uv run pre-commit uninstall
+```
+
+The same checks are available on demand without any hook, in
+[section 13](#13-development-commands).
 
 ## 2. Commands at a glance
 

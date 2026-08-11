@@ -38,6 +38,11 @@ def is_repository(root: Path) -> bool:
     return _git(['rev-parse', '--git-dir'], root).returncode == 0
 
 
+def is_ignored(directory: Path, root: Path) -> bool:
+    """Whether git has been told to ignore this snapshot directory."""
+    return _git(['check-ignore', '-q', '--', str(directory)], root).returncode == 0
+
+
 def commit_snapshot(directory: Path, message: str, root: Path) -> str | None:
     """Stage and commit one snapshot directory, returning the new commit hash.
 
@@ -46,6 +51,13 @@ def commit_snapshot(directory: Path, message: str, root: Path) -> str | None:
     """
     if not is_repository(root):
         raise CrawleeLabError(f'{root} is not a git repository, so --commit has nothing to write to')
+
+    if is_ignored(directory, root):
+        raise CrawleeLabError(
+            f'{directory} is ignored by .gitignore, so --commit cannot record anything. '
+            f'Change detection does not need git and keeps working; only the long-term history '
+            f'is lost. Remove the entry from .gitignore if you want the history back.'
+        )
 
     staged = _git(['add', '--', str(directory)], root)
     if staged.returncode != 0:

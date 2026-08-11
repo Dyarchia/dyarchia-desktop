@@ -28,18 +28,8 @@ uv run playwright install chromium
 
 Everything below assumes the `uv run` prefix. Drop it inside an activated virtual environment.
 
-`.pre-commit-config.yaml` is present but deliberately not installed. Installing it writes a hook into
-`.git/hooks/` that runs ruff, mypy and a few file fixers on every commit, and a commit fails the
-first time a fixer changes a file. That is a decision about your git, not about the scraper, so it
-stays opt-in:
-
-```bash
-uv run pre-commit install
-uv run pre-commit uninstall
-```
-
-The same checks are available on demand without any hook, in
-[section 13](#13-development-commands).
+There are no commit hooks. The checks run when you ask for them, in
+[section 13](#13-development-commands), and on every push in CI.
 
 ## 2. Commands at a glance
 
@@ -224,10 +214,13 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     output/<name>/*.md              no                One file per page, markdown format
     profiles/<name>.yaml            yes               Saved profiles
     data/<name>/pages/**            no                Snapshot payloads
-    data/<name>/manifest.json       yes               Every URL with its status and hash
-    data/<name>/changes.json        yes               Last change report, machine readable
-    data/<name>/CHANGES.md          yes               Last change report, with diffs
+    data/<name>/manifest.json       no                Every URL with its status and hash
+    data/<name>/changes.json        no                Last change report, machine readable
+    data/<name>/CHANGES.md          no                Last change report, with diffs
     storage/                        no                Crawlee's own working directory
+
+`data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has
+nothing to record. Remove the entry from `.gitignore` to keep a dated history instead.
 
 ## 12. Recipes
 

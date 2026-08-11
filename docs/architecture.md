@@ -165,12 +165,16 @@ of the site. A manifest beside the pages records per-URL status and hash, which 
 report without invoking git, and what allows a page that disappeared to be told apart from a page
 that failed to download.
 
-Git tracks that metadata rather than the corpus. `data/*/pages/` is ignored; `manifest.json`,
-`changes.json` and `CHANGES.md` are committed. The history therefore answers what changed and when,
-with the diffs the report already carries, without the toolkit's repository accumulating every page
-it has ever fetched. The pages remain on disk, which is what the next run compares against. The
-trade-off is real and worth stating: a fresh clone has the hashes but not the previous text, so its
-first run reports modifications without a before-and-after.
+Git is optional, and in this repository it is declined: `data/` is ignored in full. That is worth
+being precise about, because it sounds like it should break change tracking and does not. Detection
+compares the incoming run against the manifest and pages already on disk, so it works identically
+whether or not anything is committed. What git adds is duration. Without it, a target keeps its
+current state and the report of the most recent run; with it, every change acquires a date and an
+author trail.
+
+Removing `data/` from `.gitignore` restores that. `--commit` then stages a snapshot only when its
+content fingerprint moved, and `versioning.vcs` refuses with an explanation rather than a git error
+when the directory it was asked to commit is ignored.
 
 Manifest timestamps move on every run, so comparing manifests directly would produce a commit per
 run and turn the history into a record of how often the scraper ran. Snapshots are therefore

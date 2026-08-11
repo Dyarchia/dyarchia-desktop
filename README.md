@@ -109,15 +109,18 @@ for the document exactly as fetched.
 `--snapshot` writes each page's content to `data/<name>/pages/<host>/<path>.md`, mirroring the URL
 structure, and records hashes and per-URL status in a manifest beside it.
 
-Git tracks the metadata, not the corpus. `data/*/pages/` is ignored, while `manifest.json`,
-`changes.json` and `CHANGES.md` are committed, so the history answers what changed and when, diffs
-included, without the repository carrying every page ever scraped. The pages themselves stay on disk
-and are what the next run diffs against. A fresh clone therefore knows the hashes but not the old
-text, so its first run reports modifications without a before-and-after.
+Detection does not depend on git. The manifest holds the previous hash of every page and the stored
+pages hold the previous text, so every run reports what was added, removed and modified against what
+is on disk. In this repository `data/` is ignored entirely, which keeps the scraped corpus out of
+the history and costs only the long-term record: what survives is the state of the target and the
+report of the last run, not a dated trail of every change.
+
+Track that trail by removing `data/` from `.gitignore` and passing `--commit`, which stages a
+snapshot when, and only when, its content fingerprint moved. It is never implicit.
 
 A run that failed too often writes nothing, because half a snapshot would read as a mass deletion on
-the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves the
-working tree clean and `--commit` has nothing to do.
+the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves its
+files untouched.
 
 ## Bundled profiles
 

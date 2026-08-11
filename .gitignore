@@ -4,11 +4,15 @@ storage/
 # Ad-hoc run output
 output/
 
-# Snapshot payloads. Only the metadata beside them is tracked: manifest.json
-# records every URL with its status and hash, and changes.json and CHANGES.md
-# record what moved between runs, diffs included. The scraped corpus itself
-# does not belong in the toolkit's repository.
-data/*/pages/
+# Scraped sites, in full: payloads, manifests and change reports alike.
+# Change detection does not depend on git. The manifest on disk holds the
+# previous hash of every page and the stored pages hold the previous text,
+# which is what a run compares against. Keeping data/ out of the repository
+# costs the long-term history, not the detection.
+data/
+
+# Spanish-language tutorial, kept locally
+docs/tutorial.md
 
 # Python
 __pycache__/

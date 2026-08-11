@@ -25,7 +25,6 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.25",
     "pytest-cov>=6.0",
-    "pre-commit>=4.0",
     "types-pyyaml>=6.0",
 ]
 

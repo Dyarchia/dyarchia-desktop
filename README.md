@@ -154,6 +154,7 @@ Tests that reach the network are marked `network`, and those that need a browser
 
 ## Documentation
 
+- `docs/tutorial.md` — step by step from zero, in Spanish. Start here
 - `docs/cheatsheet.md` — every command and every option, on one page
 - `docs/architecture.md` — how the pieces fit together and why
 - `docs/profiles.md` — the profile file format, selector and pattern syntax

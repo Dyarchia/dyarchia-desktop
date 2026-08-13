@@ -30,6 +30,11 @@ Reglas del manifest:
 - id en minusculas, patron ^[a-z][a-z0-9-]*$. Es el namespace de los canales IPC.
 - renderer es obligatorio; main solo si el plugin necesita Node (fs, procesos, nativos).
 - Si dos plugins declaran el mismo id, gana el primero descubierto y el resto se ignora.
+- schemes (opcional): lista de schemes de protocolo custom que el plugin quiere servir
+  (p. ej. streaming de media). El shell los declara como privilegiados en el boot
+  (standard, secure, fetch, cors, stream) y el modulo main del plugin registra el handler
+  con protocol.handle en su activate. Nombres en minusculas; los reservados (http, file,
+  decimatio-plugin, etc.) se rechazan.
 
 
 ## 2. El bundle renderer

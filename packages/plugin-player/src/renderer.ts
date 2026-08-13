@@ -115,28 +115,17 @@ export function activate(ctx: PluginContext): void {
             root.append(tree, stage)
             container.appendChild(root)
 
-            let currentUrl: string | null = null
             let activeButton: HTMLButtonElement | null = null
 
-            async function play(entry: DirEntry, button: HTMLButtonElement): Promise<void> {
+            function play(entry: DirEntry, button: HTMLButtonElement): void {
                 const ext = extensionOf(entry.name)
-                const mime = AUDIO_EXTENSIONS[ext] ?? VIDEO_EXTENSIONS[ext]
-                const result = (await ctx.invoke('read-media', entry.path)) as {
-                    data?: Uint8Array
-                    error?: string
-                }
-                if (result.error || !result.data) {
-                    stage.innerHTML = `<div class="player-empty">${result.error ?? 'Read error'}</div>`
-                    return
-                }
-                if (currentUrl) URL.revokeObjectURL(currentUrl)
-                currentUrl = URL.createObjectURL(
-                    new Blob([result.data as BlobPart], { type: mime })
-                )
                 const media = document.createElement(ext in VIDEO_EXTENSIONS ? 'video' : 'audio')
                 media.controls = true
                 media.autoplay = true
-                media.src = currentUrl
+                media.src = `decimatio-media://local/${encodeURIComponent(entry.path)}`
+                media.onerror = () => {
+                    stage.innerHTML = '<div class="player-empty">Cannot play this file</div>'
+                }
                 const title = document.createElement('div')
                 title.className = 'player-title'
                 title.textContent = entry.name
@@ -170,7 +159,7 @@ export function activate(ctx: PluginContext): void {
                     btn.textContent = entry.isDir ? `${entry.name}/` : entry.name
                     btn.onclick = () => {
                         if (entry.isDir) void loadDir(entry.path)
-                        else void play(entry, btn)
+                        else play(entry, btn)
                     }
                     tree.appendChild(btn)
                 }
@@ -179,7 +168,6 @@ export function activate(ctx: PluginContext): void {
             void ctx.invoke('home').then((home) => loadDir(home as string))
 
             return () => {
-                if (currentUrl) URL.revokeObjectURL(currentUrl)
                 container.replaceChildren()
             }
         }

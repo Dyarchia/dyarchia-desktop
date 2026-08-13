@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, net, protocol } from 'electron'
+import { readdirSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -9,6 +10,7 @@ export interface PluginManifest {
     version: string
     renderer: string
     main?: string
+    schemes?: string[]
 }
 
 interface DiscoveredPlugin {
@@ -32,17 +34,53 @@ const MIME_TYPES: Record<string, string> = {
     '.woff2': 'font/woff2'
 }
 
-export function registerPluginScheme(): void {
-    protocol.registerSchemesAsPrivileged([
-        {
-            scheme: PLUGIN_SCHEME,
-            privileges: {
-                standard: true,
-                secure: true,
-                supportFetchAPI: true,
-                corsEnabled: true
+const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*$/
+const RESERVED_SCHEMES = new Set([
+    'http', 'https', 'file', 'ftp', 'ws', 'wss', 'data', 'blob',
+    'about', 'chrome', 'devtools', 'javascript', PLUGIN_SCHEME
+])
+
+function collectDeclaredSchemes(): string[] {
+    const schemes = new Set<string>()
+    for (const root of pluginRoots()) {
+        let entries: string[]
+        try {
+            entries = readdirSync(root)
+        } catch {
+            continue
+        }
+        for (const entry of entries) {
+            let manifest: PluginManifest
+            try {
+                manifest = JSON.parse(
+                    readFileSync(join(root, entry, MANIFEST_FILE), 'utf-8')
+                )
+            } catch {
+                continue
+            }
+            for (const scheme of manifest.schemes ?? []) {
+                if (SCHEME_PATTERN.test(scheme) && !RESERVED_SCHEMES.has(scheme)) {
+                    schemes.add(scheme)
+                } else {
+                    console.warn(`[plugins] rejected scheme "${scheme}" from ${entry}`)
+                }
             }
         }
+    }
+    return [...schemes]
+}
+
+export function registerPluginScheme(): void {
+    const privileges = {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: true,
+        stream: true
+    }
+    protocol.registerSchemesAsPrivileged([
+        { scheme: PLUGIN_SCHEME, privileges },
+        ...collectDeclaredSchemes().map((scheme) => ({ scheme, privileges }))
     ])
 }
 

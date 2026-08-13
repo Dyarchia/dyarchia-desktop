@@ -86,6 +86,9 @@ importers:
       '@decimatio/sdk':
         specifier: workspace:*
         version: link:../sdk
+      electron:
+        specifier: ^43.3.0
+        version: 43.3.0
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2

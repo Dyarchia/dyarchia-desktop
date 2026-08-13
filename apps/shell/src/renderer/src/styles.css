@@ -1,0 +1,272 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background: #141417;
+    color: #e8e8e8;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.13);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.26);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #0f0f11;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    padding-left: 14px;
+    -webkit-app-region: drag;
+    user-select: none;
+    background: #0f0f11;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.topbar-title {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: #6f6f78;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.topbar-actions {
+    display: flex;
+    gap: 4px;
+    margin-right: 10px;
+    -webkit-app-region: no-drag;
+}
+
+.topbar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: #85858e;
+    cursor: pointer;
+}
+
+.topbar-toggle:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #e0e0e6;
+}
+
+.topbar-toggle-active {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #eceff6;
+}
+
+.topbar-icon,
+.topbar-icon svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+}
+
+.topbar-icon-text {
+    font-size: 12px;
+}
+
+.topbar-window-controls {
+    display: flex;
+    height: 100%;
+    -webkit-app-region: no-drag;
+}
+
+.topbar-winbtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: #9a9aa2;
+    cursor: default;
+}
+
+.topbar-winbtn svg {
+    width: 12px;
+    height: 12px;
+}
+
+.topbar-winbtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.topbar-winbtn-close:hover {
+    background: #d0362f;
+    color: #fff;
+}
+
+.shell-body {
+    flex: 1;
+    min-height: 0;
+}
+
+.shell-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 100%;
+}
+
+.shell-empty p:first-child {
+    font-size: 22px;
+    letter-spacing: 0.2em;
+    color: #666;
+}
+
+.shell-empty-hint {
+    color: #4a4a4a;
+}
+
+.dock-root {
+    height: 100%;
+}
+
+.dv-shell.dockview-theme-abyss-spaced {
+    --dv-group-view-background-color: transparent;
+    --dv-tabs-and-actions-container-background-color: transparent;
+    --dv-activegroup-visiblepanel-tab-background-color: transparent;
+    --dv-activegroup-hiddenpanel-tab-background-color: transparent;
+    --dv-inactivegroup-visiblepanel-tab-background-color: transparent;
+    --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
+    --dv-tab-divider-color: transparent;
+    --dv-activegroup-visiblepanel-tab-color: #e8e9ee;
+    --dv-activegroup-hiddenpanel-tab-color: #6e6e76;
+    --dv-inactivegroup-visiblepanel-tab-color: #8e8e96;
+    --dv-inactivegroup-hiddenpanel-tab-color: #55555c;
+    --dv-separator-border: transparent;
+    --dv-icon-hover-background-color: rgba(255, 255, 255, 0.08);
+    --dv-border-radius: 10px;
+    --dv-tab-border-radius: 6px;
+    --dv-tabs-and-actions-container-height: 34px;
+    --dv-tab-margin-block: 0.2rem;
+    --dv-floating-border: 1px solid rgba(255, 255, 255, 0.1);
+    --dv-floating-group-border: 1px solid rgba(255, 255, 255, 0.1);
+    --dv-spacing-padding: 14px;
+    --dv-tab-group-line-height: 0px;
+    --dv-tab-group-line-opacity: 0;
+    --dv-color-abyss-accent: rgba(255, 255, 255, 0.25);
+    --dv-active-sash-color: rgba(255, 255, 255, 0.18);
+    --dv-drag-over-background-color: rgba(150, 160, 175, 0.14);
+    --dv-edge-dock-indicator-color: rgba(180, 190, 205, 0.7);
+    --dv-paneview-active-outline-color: rgba(255, 255, 255, 0.25);
+}
+
+.dv-shell.dockview-theme-abyss-spaced .dv-groupview {
+    background: rgba(255, 255, 255, 0.028);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+}
+
+.dv-shell.dockview-theme-abyss-spaced .dv-resize-container .dv-groupview {
+    background: rgba(24, 24, 28, 0.86);
+}
+
+.panel-tab {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.group-actions {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-right: 8px;
+    gap: 2px;
+}
+
+.group-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #6e6e76;
+    cursor: pointer;
+}
+
+.group-action-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+.group-action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e0e0e6;
+}
+
+.plugin-panel-container {
+    height: 100%;
+    overflow: hidden;
+}
+
+.panel-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #666;
+}

@@ -1,0 +1,6 @@
+{
+    "id": "sample",
+    "name": "Sample",
+    "version": "0.1.0",
+    "renderer": "dist/renderer.js"
+}

@@ -1,0 +1,13 @@
+appId: dev.decimatio.desktop
+productName: decimatio
+directories:
+    output: release
+files:
+    - out/**
+asar: true
+win:
+    target:
+        - portable
+    icon: null
+portable:
+    artifactName: decimatio-${version}.exe

@@ -1,0 +1,10 @@
+{
+    "name": "decimatio-desktop",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "pnpm@10.23.0",
+    "scripts": {
+        "dev": "pnpm --filter @decimatio/shell dev",
+        "build": "pnpm -r build"
+    }
+}

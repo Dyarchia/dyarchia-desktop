@@ -1,0 +1,7 @@
+{
+    "id": "docviewer",
+    "name": "Docs",
+    "version": "0.1.0",
+    "renderer": "dist/renderer.js",
+    "main": "dist/main.js"
+}

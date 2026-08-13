@@ -138,7 +138,8 @@ export function activate(ctx: PluginContext): void {
             up.className = 'docviewer-entry docviewer-entry-dir'
             up.textContent = '..'
             up.onclick = () => {
-                const parent = dirPath.replace(/[\\/][^\\/]+$/, '')
+                let parent = dirPath.replace(/[\\/][^\\/]+$/, '')
+                if (/^[A-Za-z]:$/.test(parent)) parent += '\\'
                 if (parent && parent !== dirPath) void loadDir(parent)
             }
             tree.appendChild(up)

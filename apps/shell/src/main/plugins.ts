@@ -105,7 +105,8 @@ function servePluginFile(request: Request): Promise<Response> | Response {
                     status: res.status,
                     headers: {
                         'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
-                        'Access-Control-Allow-Origin': '*'
+                        'Access-Control-Allow-Origin': '*',
+                        'Cache-Control': 'no-store'
                     }
                 })
         )

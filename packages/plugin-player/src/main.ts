@@ -1,0 +1,35 @@
+import { readdir, readFile, stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import type { PluginMainContext } from '@decimatio/sdk'
+
+const MAX_MEDIA_SIZE = 250 * 1024 * 1024
+
+export function activate(ctx: PluginMainContext): void {
+    ctx.handle('home', () => homedir())
+
+    ctx.handle('list', async (...args: unknown[]) => {
+        const [dirPath] = args as [string]
+        const names = await readdir(dirPath, { withFileTypes: true })
+        return names
+            .filter((entry) => !entry.name.startsWith('.'))
+            .map((entry) => ({
+                name: entry.name,
+                isDir: entry.isDirectory(),
+                path: join(dirPath, entry.name)
+            }))
+            .sort((a, b) =>
+                a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1
+            )
+    })
+
+    ctx.handle('read-media', async (...args: unknown[]) => {
+        const [filePath] = args as [string]
+        const info = await stat(filePath)
+        if (info.size > MAX_MEDIA_SIZE) {
+            return { error: `File too large (${Math.round(info.size / 1024 / 1024)} MB, max 250 MB)` }
+        }
+        const data = await readFile(filePath)
+        return { data }
+    })
+}

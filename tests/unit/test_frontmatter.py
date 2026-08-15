@@ -47,3 +47,27 @@ def test_the_shared_banner_goes_and_the_metadata_stays() -> None:
         assert f'title: {expected}' in document
         assert 'Documentation index' not in document
     assert trimmed[0].endswith('First.')
+
+
+def test_a_long_block_is_still_a_block() -> None:
+    """The cap that replaced measurement: learn.chatgpt.com's median block is fifty-one lines."""
+    keys = '\n'.join(f'key{index}: value {index}' for index in range(80))
+    block, body = frontmatter.split(f'---\n{keys}\n---\n\nProse.')
+
+    assert block.startswith('---\nkey0: value 0')
+    assert block.endswith('---')
+    assert body == 'Prose.'
+
+
+def test_a_horizontal_rule_around_prose_is_not_a_block() -> None:
+    """Two rules give the same delimiters as front matter and none of the meaning."""
+    document = '---\n\nSome prose that opens under a rule.\n\n---\n\nMore prose.'
+    assert frontmatter.split(document) == ('', document)
+
+
+def test_a_wrapped_value_does_not_break_recognition() -> None:
+    document = '---\nsummary: a value that wraps\n  onto a second line\nname: thing\n---\n\nProse.'
+    block, body = frontmatter.split(document)
+
+    assert 'onto a second line' in block
+    assert body == 'Prose.'

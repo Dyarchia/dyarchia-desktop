@@ -12,8 +12,27 @@ up as a change.
 
 from __future__ import annotations
 
+import re
+
 DELIMITER = '---'
-MAX_LINES = 40
+_KEY = re.compile(r'^[A-Za-z_][A-Za-z0-9_.-]*\s*:')
+
+
+def _opens_like_yaml(lines: list[str]) -> bool:
+    """Whether what follows the opening fence reads as metadata rather than as prose.
+
+    A document may open with a horizontal rule and close a section with another, which gives the
+    same pair of delimiters and none of the meaning. Asking what sits between them tells the two
+    apart, and it does so without guessing at a maximum length: real front matter starts with a key.
+
+    An earlier version capped the search at forty lines instead. On learn.chatgpt.com the median
+    block is fifty-one lines and the longest is a hundred and twenty-five, so that cap silently
+    declined to recognise most of the metadata it was written to protect.
+    """
+    for line in lines:
+        if line.strip():
+            return _KEY.match(line) is not None
+    return False
 
 
 def split(document: str) -> tuple[str, str]:
@@ -23,10 +42,10 @@ def split(document: str) -> tuple[str, str]:
     document the same way.
     """
     lines = document.splitlines()
-    if not lines or lines[0].strip() != DELIMITER:
+    if not lines or lines[0].strip() != DELIMITER or not _opens_like_yaml(lines[1:]):
         return '', document
 
-    for index in range(1, min(len(lines), MAX_LINES + 1)):
+    for index in range(1, len(lines)):
         if lines[index].strip() == DELIMITER:
             block = '\n'.join(lines[: index + 1])
             body = '\n'.join(lines[index + 1 :])

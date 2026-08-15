@@ -137,6 +137,7 @@ files untouched.
     claude-api-docs        platform.claude.com, English   566
     claude-api-docs-es     platform.claude.com, Spanish   206
     openai-docs            developers.openai.com          612
+    chatgpt-docs           learn.chatgpt.com, Codex       246
 
 Every one of them fetches the markdown variant each site publishes, so the snapshot is the
 document rather than an extractor's reading of it. Page counts are from the last full run.

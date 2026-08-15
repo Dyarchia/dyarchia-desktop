@@ -255,6 +255,8 @@ def crawl(
     if result.snapshot is not None:
         console.print(f'snapshot: {summary_line(result.snapshot.report)}')
         console.print(f'  stored in {result.snapshot.directory}')
+        for warning in result.snapshot.warnings:
+            error_console.print(f'[bold yellow]{warning}[/bold yellow]')
         if commit and result.snapshot.persisted:
             _commit_snapshot(result.snapshot, settings)
         elif commit:

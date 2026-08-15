@@ -61,3 +61,14 @@ def test_blank_lines_alone_are_not_treated_as_a_banner() -> None:
 
 def test_empty_documents_do_not_break_detection() -> None:
     assert trim_shared_boilerplate(['', '', '']) == ['', '', '']
+
+
+def test_a_block_of_pure_punctuation_is_not_a_banner() -> None:
+    """A rule or a fence opens every page because it is structure, not because it is chrome.
+
+    Removing it does not tidy the document; it opens whatever the delimiter was closing. The front
+    matter case is handled before this point, but the invariant has to hold on its own.
+    """
+    documents = [f'---\n\n# Page {index}\n\nProse number {index}.' for index in range(5)]
+
+    assert trim_shared_boilerplate(documents) == documents

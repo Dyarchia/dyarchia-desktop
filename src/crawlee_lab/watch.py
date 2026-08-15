@@ -38,6 +38,7 @@ class WatchEntry:
     modified: int = 0
     first_run: bool = False
     error: str | None = None
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def failed(self) -> bool:
@@ -114,6 +115,7 @@ async def sweep(names: list[str], settings: Settings | None = None) -> WatchResu
                 entry.added = len(report.added)
                 entry.removed = len(report.removed)
                 entry.modified = len(report.modified)
+                entry.warnings = list(run.snapshot.warnings)
         result.entries.append(entry)
 
     result.finished_at = utcnow()
@@ -139,6 +141,9 @@ def render_markdown(result: WatchResult) -> str:
             lines.append(f'Failed: {entry.error}')
         else:
             lines.append(f'{entry.pages} pages. {entry.summary}')
+            for warning in entry.warnings:
+                lines.append('')
+                lines.append(f'> {warning}')
             if entry.changed:
                 lines.append('')
                 lines.append(f'See `crawlee-lab diff {entry.name} --unified`.')

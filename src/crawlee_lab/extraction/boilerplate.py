@@ -19,6 +19,18 @@ MIN_DOCUMENTS = 3
 MIN_SHARE = 0.9
 MAX_BLOCK_LINES = 25
 
+# Lines that structure a document rather than say anything in it. A block made only of these is
+# shared by every page because it is punctuation, not because it is a banner, and removing it
+# leaves whatever it was delimiting broken open.
+_STRUCTURAL = frozenset({'---', '***', '___', '```', '=', '-'})
+
+
+def _is_structural_only(block: tuple[str, ...]) -> bool:
+    lines = [line.strip() for line in block if line.strip()]
+    return bool(lines) and all(
+        line in _STRUCTURAL or set(line) <= {'-', '=', '*', '_', '`'} for line in lines
+    )
+
 
 def _shared_block(edges: list[tuple[str, ...]], share: float) -> tuple[str, ...]:
     """The longest run of lines that at least `share` of the documents open or close with."""
@@ -26,8 +38,11 @@ def _shared_block(edges: list[tuple[str, ...]], share: float) -> tuple[str, ...]
 
     for length in range(min(MAX_BLOCK_LINES, min(len(edge) for edge in edges)), 0, -1):
         candidate, count = Counter(edge[:length] for edge in edges).most_common(1)[0]
-        if count >= threshold and any(line.strip() for line in candidate):
-            return candidate
+        if count < threshold or not any(line.strip() for line in candidate):
+            continue
+        if _is_structural_only(candidate):
+            continue
+        return candidate
 
     return ()
 

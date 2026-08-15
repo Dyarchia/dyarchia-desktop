@@ -19,9 +19,9 @@ def test_apply_suffix_is_idempotent() -> None:
     assert apply_suffix(once, '.md') == once
 
 
-def test_a_directory_url_looks_for_an_index() -> None:
-    """A trailing slash cannot carry `.md`, but the directory's index can."""
-    assert apply_suffix('https://site.example/docs/', '.md') == 'https://site.example/docs/index.md'
+def test_a_directory_url_drops_its_slash_first() -> None:
+    """A trailing slash cannot carry `.md`, so the first guess is the page without it."""
+    assert apply_suffix('https://site.example/docs/', '.md') == 'https://site.example/docs.md'
     assert apply_suffix('https://site.example', '.md') == 'https://site.example/index.md'
 
 
@@ -31,10 +31,6 @@ def test_an_extensionless_url_offers_both_forms() -> None:
         'https://site.example/docs/intro.md',
         'https://site.example/docs/intro/index.md',
     ]
-
-
-def test_a_directory_url_offers_only_the_index_form() -> None:
-    assert suffix_candidates('https://site.example/docs/', '.md') == ['https://site.example/docs/index.md']
 
 
 def test_an_already_suffixed_url_offers_nothing_else() -> None:
@@ -79,3 +75,20 @@ def test_snapshot_paths_cannot_escape_upwards() -> None:
     """A target that puts traversal in its URLs must not be able to steer where we write."""
     path = snapshot_relative_path('https://site.example/../../etc/passwd')
     assert '..' not in path.parts
+
+
+def test_a_trailing_slash_offers_both_conventions() -> None:
+    """Publishers disagree about where the variant of a directory-shaped URL lives.
+
+    Some serve `section/index.md`, others drop the slash and serve `section.md`. Offering only one
+    of the two makes every page of a site that chose the other convention unreachable.
+    """
+    assert suffix_candidates('https://site.example/guide/', '.md') == [
+        'https://site.example/guide.md',
+        'https://site.example/guide/index.md',
+    ]
+
+
+def test_a_bare_host_has_no_stem_to_strip() -> None:
+    for url in ('https://site.example/', 'https://site.example'):
+        assert suffix_candidates(url, '.md') == ['https://site.example/index.md']

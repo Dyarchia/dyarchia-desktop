@@ -15,9 +15,13 @@ CANONICAL_URL_KEY = 'canonical_url'
 def suffix_candidates(url: str, suffix: str | None) -> list[str]:
     """Every place the suffixed variant of a page might live, best guess first.
 
-    A documentation site that serves `page.md` alongside `page` puts the variant of a section root
-    at `section/index.md`, not at `section.md`. Which of the two a URL is cannot be known from the
-    URL alone, so both are offered and the fetch decides.
+    Publishers disagree about where the variant of a directory-shaped URL goes. Some put the
+    variant of a section root at `section/index.md`; others drop the trailing slash and serve
+    `section.md`. Nothing in the URL says which, so both are offered and the fetch decides.
+
+    The order matters only for how many 404s a run spends finding out. A trailing slash that the
+    site itself redirects away is a hint that the unslashed form is canonical, so that one goes
+    first.
     """
     if not suffix:
         return [url]
@@ -31,8 +35,10 @@ def suffix_candidates(url: str, suffix: str | None) -> list[str]:
     def at(new_path: str) -> str:
         return urlunparse(parsed._replace(path=new_path))
 
-    if not path or path.endswith('/'):
+    if path in {'', '/'}:
         return [at(f'{path}{INDEX_STEM}{suffix}')]
+    if path.endswith('/'):
+        return [at(f'{path[:-1]}{suffix}'), at(f'{path}{INDEX_STEM}{suffix}')]
     return [at(f'{path}{suffix}'), at(f'{path}/{INDEX_STEM}{suffix}')]
 
 

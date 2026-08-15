@@ -7,7 +7,8 @@ import pytest
 from crawlee_lab.config import Settings
 from crawlee_lab.errors import RunAbortedError
 from crawlee_lab.models import FailureRecord, RunSpec, ScrapedItem
-from crawlee_lab.storage.snapshots import take_snapshot
+from crawlee_lab.storage.snapshots import churn_warnings, take_snapshot
+from crawlee_lab.versioning.diffing import ChangeKind, ChangeReport, PageChange
 
 BASE = 'https://site.example/docs/'
 
@@ -132,3 +133,36 @@ def test_items_without_content_are_not_stored(settings: Settings) -> None:
 
     assert result.written == []
     assert result.manifest.pages == {}
+
+
+def report_with(modified: int, unchanged: int, removed: int = 0) -> ChangeReport:
+    changes = [
+        PageChange(kind=ChangeKind.MODIFIED, url=f'https://site.example/m{index}')
+        for index in range(modified)
+    ]
+    changes += [
+        PageChange(kind=ChangeKind.REMOVED, url=f'https://site.example/r{index}') for index in range(removed)
+    ]
+    return ChangeReport(name='target', unchanged=unchanged, changes=changes)
+
+
+def test_a_handful_of_edits_says_nothing() -> None:
+    assert churn_warnings(report_with(modified=5, unchanged=200)) == []
+
+
+def test_most_of_the_corpus_moving_at_once_is_worth_saying_out_loud() -> None:
+    """The case that took a human eye to catch: 552 of 566 pages modified in four days."""
+    warnings = churn_warnings(report_with(modified=552, unchanged=0, removed=1))
+
+    assert len(warnings) == 1
+    assert '100%' in warnings[0]
+    assert 'format change' in warnings[0]
+
+
+def test_a_first_snapshot_cannot_churn() -> None:
+    report = ChangeReport(name='target', is_first_run=True)
+    assert churn_warnings(report) == []
+
+
+def test_a_run_with_nothing_to_compare_says_nothing() -> None:
+    assert churn_warnings(report_with(modified=0, unchanged=0)) == []

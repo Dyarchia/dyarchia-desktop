@@ -1,0 +1,18 @@
+name: gemini-docs
+description: Gemini API guides and REST reference, extracted from HTML for want of a markdown variant
+sitemap_urls:
+  - https://ai.google.dev/sitemap.xml
+include:
+  - /gemini-api/
+  # Anchored, because a bare /api/ also matches /edge/api/mediapipe, which is a different product.
+  - 're:^https://ai\.google\.dev/api/'
+exclude:
+  - hl=
+crawler: beautifulsoup
+extract: auto
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

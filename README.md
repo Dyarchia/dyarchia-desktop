@@ -138,6 +138,7 @@ files untouched.
     claude-api-docs-es     platform.claude.com, Spanish   206
     openai-docs            developers.openai.com          612
     chatgpt-docs           learn.chatgpt.com, Codex       246
+    gemini-docs            ai.google.dev, HTML            242
     xai-docs               docs.x.ai, Grok                163
 
 Every one of them fetches the markdown variant each site publishes, so the snapshot is the

@@ -72,3 +72,40 @@ def test_a_block_of_pure_punctuation_is_not_a_banner() -> None:
     documents = [f'---\n\n# Page {index}\n\nProse number {index}.' for index in range(5)]
 
     assert trim_shared_boilerplate(documents) == documents
+
+
+NOTICE = '> For the complete documentation index, see llms.txt.'
+
+
+def test_a_banner_below_the_title_is_still_a_banner() -> None:
+    """The shape OpenAI publishes: the page's own title first, the shared notice underneath.
+
+    A strict prefix search sees only the title, which differs on every page, and gives up before it
+    reaches the line that every page really does share.
+    """
+    documents = [f'# Page {index}\n\n{NOTICE}\n\nProse number {index}.' for index in range(6)]
+
+    trimmed = trim_shared_boilerplate(documents)
+
+    for index, document in enumerate(trimmed):
+        assert document == f'# Page {index}\n\nProse number {index}.'
+
+
+def test_the_title_survives_even_when_the_rest_is_shared() -> None:
+    documents = [f'# Page {index}\n\n{NOTICE}' for index in range(6)]
+
+    for index, document in enumerate(trim_shared_boilerplate(documents)):
+        assert f'# Page {index}' in document
+
+
+def test_a_banner_under_front_matter_and_a_title_still_goes() -> None:
+    documents = [
+        f'---\ntitle: Page {index}\n---\n\n# Page {index}\n\n{NOTICE}\n\nProse number {index}.'
+        for index in range(6)
+    ]
+
+    for index, document in enumerate(trim_shared_boilerplate(documents)):
+        assert document.startswith(f'---\ntitle: Page {index}\n---')
+        assert f'# Page {index}' in document
+        assert 'llms.txt' not in document
+        assert f'Prose number {index}.' in document

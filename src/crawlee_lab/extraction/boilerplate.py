@@ -79,17 +79,41 @@ def _strip_edges(document: str, prefix: list[str], suffix: list[str]) -> str:
     return '\n'.join(lines).strip('\n') if changed else document
 
 
+def _split_preamble(document: str) -> tuple[str, str]:
+    """Separate what a page puts above its shared banner from the rest of the page.
+
+    Two things can sit there and differ on every page: a front matter block, and the page's own
+    title. Either one stops the banner from being a prefix of anything, which is the only shape the
+    shared-edge search can see. Setting them aside first is what lets a banner that comes third on
+    the page be recognised as the banner it is.
+    """
+    block, rest = frontmatter.split(document)
+    lines = rest.splitlines()
+
+    if lines and lines[0].lstrip().startswith('#'):
+        body = '\n'.join(lines[1:]).lstrip('\n')
+        return frontmatter.join(block, lines[0]), body
+
+    return block, rest
+
+
+def _join_preamble(preamble: str, body: str) -> str:
+    if not preamble:
+        return body
+    return f'{preamble}{"\n"}{"\n"}{body}' if body else preamble
+
+
 def trim_shared_boilerplate(documents: list[str], share: float = MIN_SHARE) -> list[str]:
     """Drop the repeated header and footer from every document that carries them.
 
     A page that is nothing but the shared block is left exactly as it was, rather than vanishing
     from the run.
     """
-    split = [frontmatter.split(document) for document in documents]
+    split = [_split_preamble(document) for document in documents]
     bodies = [body for _, body in split]
 
     prefix, suffix = find_shared_edges(bodies, share)
     if not prefix and not suffix:
         return list(documents)
 
-    return [frontmatter.join(block, _strip_edges(body, prefix, suffix) or body) for block, body in split]
+    return [_join_preamble(preamble, _strip_edges(body, prefix, suffix) or body) for preamble, body in split]

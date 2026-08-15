@@ -18,32 +18,32 @@ uv run playwright install chromium
 Look before you leap. `inspect` reports what a crawl against a target would have to deal with:
 
 ```bash
-uv run crawlee-lab inspect https://books.toscrape.com/
+uv run crawlee-lab inspect https://code.claude.com/docs/en/overview
 ```
 
 Scrape a page with no configuration at all:
 
 ```bash
-uv run crawlee-lab crawl https://books.toscrape.com/
+uv run crawlee-lab crawl https://code.claude.com/docs/en/overview
 ```
 
 Pull specific fields, follow links, write CSV:
 
 ```bash
-uv run crawlee-lab crawl https://books.toscrape.com/ \
+uv run crawlee-lab crawl https://code.claude.com/docs/en/overview \
     --crawler parsel \
     --select title=h1 \
-    --select price=.price_color \
     --depth 2 \
     --max-pages 40 \
-    --follow /catalogue/ \
+    --follow /docs/en/ \
     --format csv
 ```
 
 Freeze that run and replay it later:
 
 ```bash
-uv run crawlee-lab crawl https://books.toscrape.com/ --select title=h1 --save-profile my-site
+uv run crawlee-lab crawl https://code.claude.com/docs/en/overview \
+    --select title=h1 --save-profile my-site
 uv run crawlee-lab crawl --profile my-site
 ```
 
@@ -128,16 +128,16 @@ files untouched.
 
 ## Bundled profiles
 
-    Profile                 Target                     Exercises
-    --------------------    ----------------------    --------------------------------
-    claude-docs             claude.com/docs           HttpCrawler, sitemap seeding,
-                                                      markdown variants, snapshots
-    books-toscrape          books.toscrape.com        BeautifulSoupCrawler, link
-                                                      following, CSV export
-    books-toscrape-parsel   books.toscrape.com        ParselCrawler on the same target
-    quotes-js               quotes.toscrape.com/js    PlaywrightCrawler, resource
-                                                      blocking
-    quotes-js-adaptive      quotes.toscrape.com/js    AdaptivePlaywrightCrawler
+    Profile                Target                       Pages
+    -------------------    -------------------------    -----
+    claude-docs            claude.com/docs                213
+    claude-code-docs       code.claude.com, English       187
+    claude-code-docs-es    code.claude.com, Spanish       166
+    claude-api-docs        platform.claude.com, English   553
+    claude-api-docs-es     platform.claude.com, Spanish   206
+
+Every one of them fetches the markdown variant each site publishes, so the snapshot is the
+document rather than an extractor's reading of it. Page counts are from the last full run.
 
 ## Politeness
 

@@ -8,6 +8,7 @@ cheaper representation of the page than its HTML.
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
@@ -23,6 +24,8 @@ MARKDOWN_SUFFIX = '.md'
 _TIMEOUT = 20.0
 _SPA_MARKERS = ('__NEXT_DATA__', 'id="root"', 'id="__nuxt"', 'ng-version', 'data-reactroot')
 _MIN_STATIC_CONTENT = 400
+_BARELY_ANY_CONTENT = 200
+_SCRIPT_TAG = re.compile(r'<script[\s>]', re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -42,13 +45,16 @@ class Recon:
     rendered_content_chars: int | None = None
     link_count: int = 0
     spa_markers: list[str] = field(default_factory=list)
+    runs_scripts: bool = False
     notes: list[str] = field(default_factory=list)
 
     @property
     def needs_browser(self) -> bool:
         if self.rendered_content_chars is not None:
             return self.rendered_content_chars > self.static_content_chars * 2
-        return self.static_content_chars < _MIN_STATIC_CONTENT and bool(self.spa_markers)
+        if self.static_content_chars < _MIN_STATIC_CONTENT and self.spa_markers:
+            return True
+        return self.static_content_chars < _BARELY_ANY_CONTENT and self.runs_scripts
 
     @property
     def recommended_crawler(self) -> CrawlerKind:
@@ -170,6 +176,7 @@ async def inspect_url(
             recon.link_count = len(dom.hrefs(recon.url))
             recon.static_content_chars = len(main_content(response.text, recon.url) or '')
             recon.spa_markers = [marker for marker in _SPA_MARKERS if marker in response.text]
+            recon.runs_scripts = _SCRIPT_TAG.search(response.text) is not None
 
         await asyncio.gather(
             _check_sitemap_fallback(client, recon.url, recon),

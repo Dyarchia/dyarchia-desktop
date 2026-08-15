@@ -1,7 +1,8 @@
 """End to end exercises of the command line.
 
-Everything here runs offline except the tests marked `network`, which are the ones that prove the
-crawlers actually work against the sandboxes they were designed for. CI runs the rest.
+Every test here runs offline. The ones that need a website get the fixture site from `conftest`,
+served on localhost for the session, so the suite proves the crawlers work without depending on
+somebody else's uptime. The `browser` marker still gates the tests that need Playwright installed.
 """
 
 from __future__ import annotations
@@ -18,9 +19,6 @@ from crawlee_lab.cli import app
 from crawlee_lab.config import get_settings
 
 runner = CliRunner()
-
-BOOKS = 'https://books.toscrape.com/'
-QUOTES_JS = 'https://quotes.toscrape.com/js/'
 
 
 def output(result: object) -> str:
@@ -71,8 +69,8 @@ def test_an_unknown_profile_is_reported(workspace: Path) -> None:
     assert 'unknown profile' in output(result)
 
 
-def test_a_malformed_selector_is_rejected(workspace: Path) -> None:
-    result = runner.invoke(app, ['crawl', BOOKS, '--select', 'no-equals-sign'])
+def test_a_malformed_selector_is_rejected(workspace: Path, site: str) -> None:
+    result = runner.invoke(app, ['crawl', site, '--select', 'no-equals-sign'])
     assert result.exit_code != 0
 
 
@@ -88,25 +86,24 @@ def test_diff_without_a_snapshot_says_so(workspace: Path) -> None:
     assert 'no change report' in output(result)
 
 
-@pytest.mark.network
-def test_a_static_page_is_scraped_with_selectors(workspace: Path) -> None:
+def test_a_static_page_is_scraped_with_selectors(workspace: Path, site: str) -> None:
     result = runner.invoke(
         app,
-        ['crawl', BOOKS, '--crawler', 'beautifulsoup', '--select', 'title=h1', '--name', 'books'],
+        ['crawl', site, '--crawler', 'beautifulsoup', '--select', 'title=h1', '--name', 'catalogue'],
     )
     assert result.exit_code == 0
 
-    items = read_items(workspace, 'books')
-    assert items[0]['fields'] == {'title': 'All products'}
+    items = read_items(workspace, 'catalogue')
+    assert items[0]['fields'] == {'title': 'Fixture catalogue'}
 
 
-@pytest.mark.network
-def test_link_following_respects_the_filters(workspace: Path) -> None:
+def test_link_following_respects_the_filters(workspace: Path, site: str) -> None:
+    """Following `/catalogue/` must reach the products and must never reach the page outside it."""
     result = runner.invoke(
         app,
         [
             'crawl',
-            BOOKS,
+            site,
             '--crawler',
             'parsel',
             '--depth',
@@ -116,29 +113,28 @@ def test_link_following_respects_the_filters(workspace: Path) -> None:
             '--follow',
             '/catalogue/',
             '--name',
-            'books-deep',
+            'deep',
         ],
     )
     assert result.exit_code == 0
 
-    items = read_items(workspace, 'books-deep')
-    assert len(items) > 1
-    assert any('/catalogue/' in str(item['url']) for item in items)
+    urls = [str(item['url']) for item in read_items(workspace, 'deep')]
+    assert len(urls) > 1
+    assert any('/catalogue/' in url for url in urls)
+    assert not any('/other/' in url for url in urls)
 
 
-@pytest.mark.network
-def test_inspect_finds_the_markdown_variant(workspace: Path) -> None:
-    result = runner.invoke(app, ['inspect', 'https://claude.com/docs/claude-science/get-started'])
+def test_inspect_finds_the_markdown_variant(workspace: Path, site: str) -> None:
+    result = runner.invoke(app, ['inspect', f'{site}guide.html'])
     assert result.exit_code == 0
     assert 'markdown variant' in output(result)
     assert '--crawler http' in output(result)
 
 
-@pytest.mark.network
-def test_a_run_can_be_saved_as_a_profile_and_replayed(workspace: Path) -> None:
+def test_a_run_can_be_saved_as_a_profile_and_replayed(workspace: Path, site: str) -> None:
     saved = runner.invoke(
         app,
-        ['crawl', BOOKS, '--crawler', 'parsel', '--select', 'title=h1', '--save-profile', 'saved-demo'],
+        ['crawl', site, '--crawler', 'parsel', '--select', 'title=h1', '--save-profile', 'saved-demo'],
     )
     assert saved.exit_code == 0
     assert (workspace / 'profiles' / 'saved-demo.yaml').is_file()
@@ -148,30 +144,25 @@ def test_a_run_can_be_saved_as_a_profile_and_replayed(workspace: Path) -> None:
     assert 'parsel' in output(replayed)
 
 
-@pytest.mark.network
 @pytest.mark.browser
-def test_a_javascript_page_needs_a_browser(workspace: Path) -> None:
+def test_a_javascript_page_needs_a_browser(workspace: Path, site: str) -> None:
     """The static crawler sees an empty shell; the browser-backed ones see the quotes."""
-    static = runner.invoke(
-        app,
-        ['crawl', QUOTES_JS, '--crawler', 'parsel', '--select', 'quotes=all:.quote .text', '--name', 's'],
-    )
+    quotes_url = f'{site}js/'
+    select = ['--select', 'quotes=all:.quote .text']
+
+    static = runner.invoke(app, ['crawl', quotes_url, '--crawler', 'parsel', *select, '--name', 's'])
     assert static.exit_code == 0
     assert read_items(workspace, 's')[0]['fields'] == {'quotes': []}
 
-    rendered = runner.invoke(
-        app,
-        ['crawl', QUOTES_JS, '--crawler', 'adaptive', '--select', 'quotes=all:.quote .text', '--name', 'r'],
-    )
+    rendered = runner.invoke(app, ['crawl', quotes_url, '--crawler', 'adaptive', *select, '--name', 'r'])
     assert rendered.exit_code == 0
-    quotes = read_items(workspace, 'r')[0]['fields']
-    assert isinstance(quotes, dict)
-    assert len(quotes['quotes']) == 10
+    fields = read_items(workspace, 'r')[0]['fields']
+    assert isinstance(fields, dict)
+    assert len(fields['quotes']) == 10
 
 
-@pytest.mark.network
-def test_a_snapshot_run_reports_no_change_on_a_rerun(workspace: Path) -> None:
-    args = ['crawl', BOOKS, '--crawler', 'parsel', '--snapshot', '--name', 'snap']
+def test_a_snapshot_run_reports_no_change_on_a_rerun(workspace: Path, site: str) -> None:
+    args = ['crawl', site, '--crawler', 'parsel', '--snapshot', '--name', 'snap']
 
     first = runner.invoke(app, args)
     assert first.exit_code == 0

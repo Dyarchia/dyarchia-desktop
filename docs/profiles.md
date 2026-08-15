@@ -37,16 +37,15 @@ profile is still a declaration, and it cannot call into Crawlee.
 The intended route is to get a run working ad-hoc and then freeze it:
 
 ```bash
-uv run crawlee-lab crawl https://books.toscrape.com/ \
+uv run crawlee-lab crawl https://code.claude.com/docs/en/overview \
     --crawler parsel \
     --select title=h1 \
-    --select price=.price_color \
     --depth 2 \
-    --follow /catalogue/ \
-    --save-profile books
+    --follow /docs/en/ \
+    --save-profile claude-code
 ```
 
-That writes `profiles/books.yaml` containing only the fields that differ from the defaults. Add a
+That writes `profiles/claude-code.yaml` containing only the fields that differ from the defaults. Add a
 `description` by hand afterwards; it shows up in `crawlee-lab profiles`.
 
 Writing one from scratch works too. Unknown keys are rejected rather than ignored, so a typo is a
@@ -163,47 +162,48 @@ segment inside `https://`, and it would fail silently.
 
 ## 7. Worked examples
 
-A catalogue with a list page and detail pages:
+A section of a site crawled by following links, pulling named fields rather than prose:
 
 ```yaml
-name: books-toscrape
-description: Book catalogue sandbox, parsed with BeautifulSoup
+name: reference-index
+description: An index page and the pages it links to, reduced to a table of fields
 start_urls:
-  - https://books.toscrape.com/
+  - https://example.com/reference/
 crawler: beautifulsoup
 extract: none
 selectors:
   title: h1
-  price: .price_color
-  cover: '#product_gallery img@src'
-  breadcrumbs: 'all:.breadcrumb li'
+  summary: .summary
+  updated: 'time@datetime'
+  tags: 'all:.tag'
 max_depth: 2
 max_pages: 40
 include:
-  - /catalogue/
+  - /reference/
 exclude:
-  - /category/
+  - /reference/archive/
 formats:
   - json
   - csv
 ```
 
-A page whose content only exists after JavaScript runs:
+A page whose content only exists after JavaScript runs. `extract: none` because the fields are the
+point, and the blocked resources because images and fonts cost time without changing any of them:
 
 ```yaml
-name: quotes-js
-description: Quotes rendered client side, which only a browser can read
+name: rendered-listing
+description: A listing built client side, which only a browser can read
 start_urls:
-  - https://quotes.toscrape.com/js/
+  - https://example.com/app/listing
 crawler: playwright
 extract: none
 selectors:
-  quotes: 'all:.quote .text'
-  authors: 'all:.quote .author'
+  rows: 'all:.row .label'
+  authors: 'all:.row .author'
 max_depth: 1
 max_pages: 10
 include:
-  - /js/page/
+  - /app/listing
 block_resources:
   - image
   - media

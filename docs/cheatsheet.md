@@ -240,23 +240,23 @@ uv run crawlee-lab crawl https://site.example/article --extract auto --format md
 Extract structured fields across a catalogue:
 
 ```bash
-uv run crawlee-lab crawl https://books.toscrape.com/ \
+uv run crawlee-lab crawl https://site.example/catalogue/ \
     --crawler parsel \
     --select title=h1 \
-    --select price=.price_color \
-    --select cover='#product_gallery img@src' \
+    --select price=.price \
+    --select cover='#gallery img@src' \
     --depth 2 \
     --follow /catalogue/ \
-    --exclude /category/ \
+    --exclude /catalogue/archive/ \
     --format csv
 ```
 
 Scrape a page that only exists after JavaScript runs:
 
 ```bash
-uv run crawlee-lab crawl https://quotes.toscrape.com/js/ \
+uv run crawlee-lab crawl https://site.example/app/listing \
     --crawler playwright \
-    --select quotes='all:.quote .text'
+    --select rows='all:.row .label'
 ```
 
 Harvest structured data instead of prose:

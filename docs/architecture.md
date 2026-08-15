@@ -209,8 +209,15 @@ Unit tests run against local fixtures with no network at all, and cover the part
 is subtle: pattern semantics, selector parsing, extraction modes, path derivation, manifest
 comparison, snapshot guards, profile loading.
 
-Tests that reach the network are marked `network` and those that need a browser are marked
-`browser`. They exercise the sandboxes at books.toscrape.com and quotes.toscrape.com through the
-real command line entry point, including the case that motivated the adaptive result checker: the
-static crawler sees an empty shell where the browser-backed one sees ten quotes. CI runs neither
-mark, so the pipeline never depends on a third party being up.
+Integration tests drive the real command line entry point against a fixture site served from
+`tests/fixtures/site` on localhost for the duration of the session. It is deliberately small and
+deliberately awkward: static pages with selectable structure, a catalogue to follow links into, a
+page outside it that a filter must exclude, a page published twice so the markdown probe has
+something to find, and one page whose quotes only exist after JavaScript runs. That last one is the
+case that motivated the adaptive result checker, and it is asserted from both sides: the static
+crawler sees an empty shell where the browser-backed one sees ten quotes.
+
+Nothing in the suite leaves the machine. Tests needing Playwright carry the `browser` mark, which is
+the only reason to deselect anything. An earlier version pointed these tests at public scraping
+sandboxes; the fixture answers the same questions without making the suite depend on someone else's
+uptime, or on the machine having a network at all.

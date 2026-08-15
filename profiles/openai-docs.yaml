@@ -1,0 +1,23 @@
+name: openai-docs
+description: OpenAI developer documentation, tracked from the markdown variants it publishes
+sitemap_urls:
+  - https://developers.openai.com/sitemap-index.xml
+include:
+  - /api/docs/
+  - /cookbook/
+  - /plugins/
+  - /blog/
+  - /ads/
+  - /commerce/
+  - /learn/
+  - /tracks/
+  - /workspace-agents/
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

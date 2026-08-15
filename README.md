@@ -134,8 +134,9 @@ files untouched.
     claude-docs            claude.com/docs                213
     claude-code-docs       code.claude.com, English       187
     claude-code-docs-es    code.claude.com, Spanish       166
-    claude-api-docs        platform.claude.com, English   553
+    claude-api-docs        platform.claude.com, English   566
     claude-api-docs-es     platform.claude.com, Spanish   206
+    openai-docs            developers.openai.com          612
 
 Every one of them fetches the markdown variant each site publishes, so the snapshot is the
 document rather than an extractor's reading of it. Page counts are from the last full run.

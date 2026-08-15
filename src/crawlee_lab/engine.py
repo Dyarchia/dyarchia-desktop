@@ -25,7 +25,7 @@ from crawlee_lab.patterns import to_matchers
 from crawlee_lab.runtime import reset_storage_state
 from crawlee_lab.storage.exporters import export_items
 from crawlee_lab.storage.snapshots import SnapshotResult, take_snapshot
-from crawlee_lab.urls import CANONICAL_URL_KEY, suffix_candidates
+from crawlee_lab.urls import CANONICAL_URL_KEY, collapse_slashes, suffix_candidates
 
 _DATASET_PAGE_SIZE = 500
 _REMAINING_KEY = 'suffix_candidates_left'
@@ -67,7 +67,8 @@ def _canonical_url(request: Any) -> str:
     """The page this request stands for, which is not the URL when a suffix was applied."""
     user_data = getattr(request, 'user_data', None) or {}
     canonical = user_data.get(CANONICAL_URL_KEY)
-    return str(canonical) if isinstance(canonical, str) else str(request.url)
+    url = str(canonical) if isinstance(canonical, str) else str(request.url)
+    return collapse_slashes(url)
 
 
 def _looks_like_html(context: Any, body: str) -> bool:
@@ -161,8 +162,9 @@ async def collect_items(crawler: AnyCrawler) -> list[ScrapedItem]:
 
 def _suffix_request(url: str, suffix: str) -> tuple[str, dict[str, Any]]:
     """The URL to fetch first, plus the state needed to fall back and to stay keyed by the page."""
-    candidates = suffix_candidates(url, suffix)
-    return candidates[0], {CANONICAL_URL_KEY: url, _REMAINING_KEY: candidates[1:]}
+    page = collapse_slashes(url)
+    candidates = suffix_candidates(page, suffix)
+    return candidates[0], {CANONICAL_URL_KEY: page, _REMAINING_KEY: candidates[1:]}
 
 
 def _suffix_transform(suffix: str) -> Callable[[RequestOptions], RequestOptions | RequestTransformAction]:

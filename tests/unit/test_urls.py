@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from crawlee_lab.urls import apply_suffix, snapshot_relative_path, strip_suffix, suffix_candidates
+from crawlee_lab.urls import (
+    apply_suffix,
+    collapse_slashes,
+    snapshot_relative_path,
+    strip_suffix,
+    suffix_candidates,
+)
 
 PAGE = 'https://site.example/docs/intro'
 
@@ -92,3 +98,18 @@ def test_a_trailing_slash_offers_both_conventions() -> None:
 def test_a_bare_host_has_no_stem_to_strip() -> None:
     for url in ('https://site.example/', 'https://site.example'):
         assert suffix_candidates(url, '.md') == ['https://site.example/index.md']
+
+
+def test_repeated_slashes_are_folded() -> None:
+    """docs.x.ai publishes its entire sitemap this way, and the manifest is keyed by URL."""
+    assert collapse_slashes('https://docs.x.ai///overview') == 'https://docs.x.ai/overview'
+    assert collapse_slashes('https://docs.x.ai//build/enterprise') == 'https://docs.x.ai/build/enterprise'
+
+
+def test_a_clean_url_is_returned_untouched() -> None:
+    for url in ('https://site.example/docs/intro', 'https://site.example/', 'https://site.example'):
+        assert collapse_slashes(url) == url
+
+
+def test_the_scheme_keeps_its_own_slashes() -> None:
+    assert collapse_slashes('https://site.example/a//b?q=x//y') == 'https://site.example/a/b?q=x//y'

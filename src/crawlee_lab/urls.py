@@ -7,9 +7,24 @@ from pathlib import PurePosixPath
 from urllib.parse import urlparse, urlunparse
 
 _UNSAFE_SEGMENT = re.compile(r'[^A-Za-z0-9._-]+')
+_REPEATED_SLASHES = re.compile(r'/{2,}')
 _RESERVED_STEMS = frozenset({'', '.', '..'})
 INDEX_STEM = 'index'
 CANONICAL_URL_KEY = 'canonical_url'
+
+
+def collapse_slashes(url: str) -> str:
+    """Fold repeated slashes in the path, which servers do anyway and manifests should too.
+
+    docs.x.ai publishes its whole sitemap with doubled slashes: `https://docs.x.ai//build/enterprise`
+    for a page that answers at `https://docs.x.ai/build/enterprise` and redirects the other form to
+    it. Crawling either works, but the manifest is keyed by URL, so recording the doubled form means
+    that the day the publisher fixes their sitemap every page in the corpus looks removed and
+    re-added at once. Only the path is touched; the slashes after the scheme are not part of it.
+    """
+    parsed = urlparse(url)
+    path = _REPEATED_SLASHES.sub('/', parsed.path)
+    return url if path == parsed.path else urlunparse(parsed._replace(path=path))
 
 
 def suffix_candidates(url: str, suffix: str | None) -> list[str]:

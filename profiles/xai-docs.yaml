@@ -1,0 +1,15 @@
+name: xai-docs
+description: xAI and Grok developer documentation, tracked from its markdown variants
+sitemap_urls:
+  - https://docs.x.ai/sitemap.xml
+exclude:
+  - /internal-only
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

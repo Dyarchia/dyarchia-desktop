@@ -10,14 +10,15 @@ from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
 - [3. crawl](#3-crawl)
 - [4. inspect](#4-inspect)
 - [5. diff](#5-diff)
-- [6. profiles](#6-profiles)
-- [7. version](#7-version)
-- [8. Selector syntax](#8-selector-syntax)
-- [9. URL pattern syntax](#9-url-pattern-syntax)
-- [10. Environment variables](#10-environment-variables)
-- [11. Where files land](#11-where-files-land)
-- [12. Recipes](#12-recipes)
-- [13. Development commands](#13-development-commands)
+- [6. watch](#6-watch)
+- [7. profiles](#7-profiles)
+- [8. version](#8-version)
+- [9. Selector syntax](#9-selector-syntax)
+- [10. URL pattern syntax](#10-url-pattern-syntax)
+- [11. Environment variables](#11-environment-variables)
+- [12. Where files land](#12-where-files-land)
+- [13. Recipes](#13-recipes)
+- [14. Development commands](#14-development-commands)
 
 ## 1. Setup
 
@@ -38,6 +39,7 @@ There are no commit hooks. The checks run when you ask for them, in
     crawl       Scrape URLs directly, or run a saved profile
     inspect     Probe a target before committing to a crawl
     diff        Show what changed the last time a target was snapshotted
+    watch       Sweep every tracked target once, for a scheduler to call
     profiles    List the profiles this project knows about
     version     Print the installed version
 
@@ -146,7 +148,38 @@ git log -- data/claude-docs
 git diff HEAD~1 -- data/claude-docs/CHANGES.md
 ```
 
-## 6. profiles
+## 6. watch
+
+```text
+crawlee-lab watch [OPTIONS] [NAMES...]
+```
+
+    Option      Value    Default    Meaning
+    ---------   ------   --------   -----------------------------------------------
+    --commit    flag     off        Commit the sweep, when data/ is versioned
+
+`NAMES` defaults to every profile with `snapshot: true`. One failing target costs only itself; the
+rest of the sweep still runs. A summary lands in `data/WATCH.md`.
+
+    Exit code   Meaning
+    ---------   ----------------------------------------------------------------
+    0           nothing changed
+    10          at least one target changed
+    1           at least one target failed, so the sweep cannot vouch for itself
+
+A first snapshot exits 0, not 10. There is nothing yet for it to differ from.
+
+On Windows:
+
+```powershell
+.\scripts\watch.ps1                                   # sweep, log, notify only if 10 or 1
+.\scripts\register-watch-task.ps1 -Time 08:00         # register the daily task
+.\scripts\register-watch-task.ps1 -Unregister         # remove it
+Start-ScheduledTask -TaskName 'crawlee-lab watch'      # run it now
+Get-ScheduledTaskInfo -TaskName 'crawlee-lab watch'    # when it last ran, and how it went
+```
+
+## 7. profiles
 
 ```text
 crawlee-lab profiles
@@ -155,13 +188,13 @@ crawlee-lab profiles
 Lists every profile, from `profiles/*.yaml` and from `src/crawlee_lab/sites/*.py`, with its crawler,
 first target and description.
 
-## 7. version
+## 8. version
 
 ```text
 crawlee-lab version
 ```
 
-## 8. Selector syntax
+## 9. Selector syntax
 
     Expression            Result
     ------------------    -------------------------------------------
@@ -174,7 +207,7 @@ Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action
 resolved against the page they were found on. A selector that matches nothing yields null, or an
 empty list with `all:`.
 
-## 9. URL pattern syntax
+## 10. URL pattern syntax
 
 Applies to `--follow` and `--exclude`.
 
@@ -186,7 +219,7 @@ Applies to `--follow` and `--exclude`.
     https://site.com/docs/**     Starts with this glob, matched against the whole URL
     re:^https://site\.com/\d+    An explicit regular expression, anchored at the start
 
-## 10. Environment variables
+## 11. Environment variables
 
 Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.
 
@@ -207,7 +240,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     CRAWLEE_LAB_OUTPUT_DIR                  output
     CRAWLEE_LAB_PROFILES_DIR                profiles
 
-## 11. Where files land
+## 12. Where files land
 
     Path                            Tracked by git    Contents
     ----------------------------    --------------    ----------------------------------
@@ -218,12 +251,14 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     data/<name>/manifest.json       no                Every URL with its status and hash
     data/<name>/changes.json        no                Last change report, machine readable
     data/<name>/CHANGES.md          no                Last change report, with diffs
+    data/WATCH.md                   no                Last sweep across every tracked target
+    output/watch.log                no                One line per scheduled sweep
     storage/                        no                Crawlee's own working directory
 
 `data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has
 nothing to record. Remove the entry from `.gitignore` to keep a dated history instead.
 
-## 12. Recipes
+## 13. Recipes
 
 Scout a target before writing anything:
 
@@ -297,7 +332,7 @@ Scrape something you own, ignoring its robots.txt:
 uv run crawlee-lab crawl https://staging.mysite.internal/ --ignore-robots
 ```
 
-## 13. Development commands
+## 14. Development commands
 
 ```bash
 uv run ruff check .

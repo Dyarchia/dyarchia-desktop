@@ -174,3 +174,37 @@ def test_a_snapshot_run_reports_no_change_on_a_rerun(workspace: Path, site: str)
 
     report = runner.invoke(app, ['diff', 'snap'])
     assert report.exit_code == 0
+
+
+def test_watch_sweeps_a_target_and_reports_no_change_the_second_time(workspace: Path, site: str) -> None:
+    """The scheduler reads the exit code, so the exit code is what this asserts."""
+    profiles = workspace / 'profiles'
+    profiles.mkdir(parents=True, exist_ok=True)
+    (profiles / 'local.yaml').write_text(
+        f'name: local\nstart_urls:\n  - {site}\ncrawler: parsel\nsnapshot: true\n',
+        encoding='utf-8',
+    )
+
+    first = runner.invoke(app, ['watch', 'local'])
+    assert first.exit_code == 0
+    assert 'first snapshot' in output(first)
+
+    second = runner.invoke(app, ['watch', 'local'])
+    assert second.exit_code == 0
+    assert 'no change across 1 targets' in output(second)
+
+    report = (workspace / 'data' / 'WATCH.md').read_text(encoding='utf-8')
+    assert '# Watch report' in report
+
+
+def test_watch_reports_a_target_that_could_not_be_reached(workspace: Path) -> None:
+    profiles = workspace / 'profiles'
+    profiles.mkdir(parents=True, exist_ok=True)
+    (profiles / 'gone.yaml').write_text(
+        'name: gone\nstart_urls:\n  - http://127.0.0.1:9/\ncrawler: parsel\nsnapshot: true\n',
+        encoding='utf-8',
+    )
+
+    result = runner.invoke(app, ['watch', 'gone'])
+    assert result.exit_code == 1
+    assert 'failed' in output(result)

@@ -11,7 +11,8 @@ How crawlee-lab is put together, and the reasoning behind the parts that are not
 - [5. Crawlee behaviours that had to be handled](#5-crawlee-behaviours-that-had-to-be-handled)
 - [6. Snapshots and the change history](#6-snapshots-and-the-change-history)
 - [7. Failure handling](#7-failure-handling)
-- [8. Testing strategy](#8-testing-strategy)
+- [8. Running unattended](#8-running-unattended)
+- [9. Testing strategy](#9-testing-strategy)
 
 ## 1. Two layers
 
@@ -36,6 +37,7 @@ rewriting; both landed in the engine and both are now available to every target.
     registry                Discovery of YAML and Python profiles           profiles, sites
     runtime                 Resetting Crawlee state between runs            nothing
     recon                   Target reconnaissance for the inspect command   extraction
+    watch                   Sweeping every tracked target unattended        registry, engine
     engine                  Running a crawl end to end                      almost everything
     crawlers.factory        Building the requested crawler                  settings, hooks
     crawlers.settings       Concurrency, rate limit, transport              config
@@ -203,7 +205,35 @@ Those locks bind to the event loop that created them, so a second run in the sam
 suite or a scheduler and not only from a CLI that exits afterwards. It also implies runs are
 sequential; concurrent crawls in one process were never safe under a global service locator.
 
-## 8. Testing strategy
+## 8. Running unattended
+
+A change detector that only detects when somebody remembers to launch it is a script rather than a
+monitor. `watch` closes that gap, and it is shaped by what a scheduler can actually consume.
+
+It sweeps every profile that asks for snapshots, one after another rather than concurrently: these
+are polite crawls of whole documentation sites, and running five at once would multiply the request
+rate against hosts that have done nothing to deserve it. A target that raises is recorded and the
+sweep continues, because one unreachable host must not hide the state of the other four.
+
+The verdict is the exit code, which is the only thing Task Scheduler reads without help:
+
+    Code    Meaning
+    ----    ----------------------------------------------------------------
+    0       nothing changed
+    10      at least one target changed
+    1       at least one target failed, so the sweep cannot vouch for itself
+
+A failure outranks a change deliberately. A target that did not answer may be sitting on a change
+nobody can see, so the sweep must not report success. A first snapshot deliberately does not count
+as a change: there is nothing yet for it to differ from, and a monitor that fires on its own first
+run teaches its reader to ignore it.
+
+Everything Windows-specific lives in `scripts/`, outside the package: `watch.ps1` adds the log and
+the desktop notification, and `register-watch-task.ps1` registers the daily task. Neither runs
+itself. Installing dependencies so a tool works is one kind of action; changing what a machine does
+every morning at eight is another, and that one gets proposed rather than performed.
+
+## 9. Testing strategy
 
 Unit tests run against local fixtures with no network at all, and cover the parts where correctness
 is subtle: pattern semantics, selector parsing, extraction modes, path derivation, manifest

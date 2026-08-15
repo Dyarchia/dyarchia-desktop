@@ -25,6 +25,12 @@ from crawlee_lab.storage.snapshots import SnapshotResult
 from crawlee_lab.versioning.diffing import ChangeKind, load_report
 from crawlee_lab.versioning.report import summary_line
 from crawlee_lab.versioning.vcs import commit_snapshot
+from crawlee_lab.watch import (
+    WatchResult,
+    save_report,
+    sweep,
+    watchable,
+)
 
 app = typer.Typer(
     name='crawlee-lab',
@@ -385,6 +391,73 @@ def profiles_command() -> None:
         table.add_row(profile.name, profile.crawler.value, target, profile.description or '-')
 
     console.print(table)
+
+
+@app.command(name='watch')
+def watch_command(
+    names: Annotated[
+        list[str] | None,
+        typer.Argument(help='Profiles to sweep. Defaults to every profile that asks for snapshots.'),
+    ] = None,
+    commit: Annotated[
+        bool, typer.Option('--commit', help='Commit each snapshot that moved, when data is versioned.')
+    ] = False,
+) -> None:
+    """Sweep every tracked target once and report whether a human needs to look.
+
+    Built for the scheduler rather than for a person: the exit code is the answer. 0 means nothing
+    changed, 10 means something did, 1 means a target failed and the sweep cannot vouch for itself.
+    """
+    settings = get_settings()
+    selected = list(names) if names else watchable(settings)
+
+    if not selected:
+        error_console.print(
+            '[bold red]no profiles ask for snapshots, so there is nothing to watch[/bold red]'
+        )
+        raise typer.Exit(code=1)
+
+    result = asyncio.run(sweep(selected, settings))
+    document = save_report(result, settings)
+
+    if commit:
+        _commit_sweep(result, settings)
+
+    render_watch(result, document)
+    raise typer.Exit(code=result.exit_code)
+
+
+def _commit_sweep(result: WatchResult, settings: Settings) -> None:
+    directory = settings.resolve(settings.data_dir)
+    message = f'watch: {result.headline}'
+    try:
+        revision = commit_snapshot(directory, message, settings.project_root)
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        return
+
+    if revision is not None:
+        console.print(f'committed {revision[:12]}')
+
+
+def render_watch(result: WatchResult, document: Path) -> None:
+    table = Table(title='watch', title_style='bold')
+    table.add_column('target', style='bold')
+    table.add_column('pages', justify='right')
+    table.add_column('outcome')
+
+    for entry in result.entries:
+        if entry.failed:
+            outcome = f'[bold red]{entry.error}[/bold red]'
+        elif entry.changed:
+            outcome = f'[bold yellow]{entry.summary}[/bold yellow]'
+        else:
+            outcome = entry.summary or 'no change'
+        table.add_row(entry.name, str(entry.pages), outcome)
+
+    console.print(table)
+    console.print(result.headline)
+    console.print(f'report: {document}', style='dim')
 
 
 @app.command()

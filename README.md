@@ -61,6 +61,7 @@ uv run crawlee-lab diff claude-docs --unified
     crawl        Scrape URLs directly, or run a saved profile
     inspect      Probe a target: robots, sitemaps, markdown variants, rendering, advice
     diff         Show what changed on a target the last time it was snapshotted
+    watch        Sweep every tracked target once and report whether anything moved
     profiles     List the profiles this project knows about
     version      Print the installed version
 
@@ -138,6 +139,36 @@ files untouched.
 
 Every one of them fetches the markdown variant each site publishes, so the snapshot is the
 document rather than an extractor's reading of it. Page counts are from the last full run.
+
+## Running unattended
+
+`watch` is the command a scheduler calls. It sweeps every profile that asks for snapshots, lets one
+failing target cost only its own target, writes `data/WATCH.md` describing the sweep, and answers
+through its exit code:
+
+    Code    Meaning
+    ----    ----------------------------------------------------------------
+    0       nothing changed, and nothing needs reading
+    10      at least one target changed
+    1       at least one target failed, so the sweep cannot vouch for itself
+
+A first snapshot is deliberately not a change. There is nothing yet for it to differ from, and a
+monitor that cries on its own first run teaches you to ignore it.
+
+```bash
+uv run crawlee-lab watch
+uv run crawlee-lab watch claude-docs claude-code-docs
+```
+
+On Windows, `scripts/watch.ps1` wraps that in a log and a desktop notification raised only when the
+exit code is not 0, and `scripts/register-watch-task.ps1` registers it with the Task Scheduler:
+
+```powershell
+.\scripts\register-watch-task.ps1 -Time 08:00
+```
+
+Nothing registers itself. Run that when you want the monitor to start, and
+`.\scripts\register-watch-task.ps1 -Unregister` when you want it to stop.
 
 ## Politeness
 

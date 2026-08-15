@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from collections import Counter
 
+from crawlee_lab.extraction import frontmatter
+
 MIN_DOCUMENTS = 3
 MIN_SHARE = 0.9
 MAX_BLOCK_LINES = 25
@@ -68,8 +70,11 @@ def trim_shared_boilerplate(documents: list[str], share: float = MIN_SHARE) -> l
     A page that is nothing but the shared block is left exactly as it was, rather than vanishing
     from the run.
     """
-    prefix, suffix = find_shared_edges(documents, share)
+    split = [frontmatter.split(document) for document in documents]
+    bodies = [body for _, body in split]
+
+    prefix, suffix = find_shared_edges(bodies, share)
     if not prefix and not suffix:
         return list(documents)
 
-    return [_strip_edges(document, prefix, suffix) or document for document in documents]
+    return [frontmatter.join(block, _strip_edges(body, prefix, suffix) or body) for block, body in split]

@@ -51,6 +51,8 @@ rewriting; both landed in the engine and both are now available to every target.
                             of a run shares
     extraction.markup       Cleaning of markup embedded in documents        nothing
                             that arrive as markdown
+    extraction.frontmatter  Splitting a metadata block off a document       nothing
+                            so the corpus judges only its prose
     profiles.schema         On-disk profile shape                           models
     profiles.loader         Reading and writing profile files               schema, errors
     storage.exporters       Output as json, jsonl, csv, markdown            models

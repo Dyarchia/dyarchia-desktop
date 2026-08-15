@@ -183,12 +183,12 @@ a guest on someone else's server.
 uv run ruff check .
 uv run ruff format .
 uv run mypy
-uv run pytest -m "not network and not browser"
 uv run pytest
+uv run pytest -m "not browser"
 ```
 
-Tests that reach the network are marked `network`, and those that need a browser are marked
-`browser`. CI runs neither.
+The suite runs offline. Tests that need a website get a fixture site served on localhost; the only
+mark left is `browser`, for the tests that need Playwright's Chromium installed.
 
 ## Documentation
 

@@ -338,7 +338,7 @@ uv run crawlee-lab crawl https://staging.mysite.internal/ --ignore-robots
 uv run ruff check .
 uv run ruff format .
 uv run mypy
-uv run pytest -m "not network and not browser"
+uv run pytest -m "not browser"
 uv run pytest
 uv run pytest --cov=crawlee_lab --cov-report=term-missing
 ```

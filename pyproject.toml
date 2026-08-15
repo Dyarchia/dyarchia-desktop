@@ -84,7 +84,6 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
-    "network: test performs real network requests (deselect with -m 'not network')",
     "browser: test requires Playwright browsers to be installed",
 ]
 addopts = "-ra --strict-markers"

@@ -62,6 +62,7 @@ uv run crawlee-lab diff claude-docs --unified
     inspect      Probe a target: robots, sitemaps, markdown variants, rendering, advice
     diff         Show what changed on a target the last time it was snapshotted
     watch        Sweep every tracked target once and report whether anything moved
+    urls         Report which URLs a snapshotted target is holding, broken down by section
     profiles     List the profiles this project knows about
     version      Print the installed version
 
@@ -104,6 +105,29 @@ A response that claims to be markdown but arrives as layout markup, which is wha
 for their landing pages, is reduced to the prose and links inside it. Headings living in component
 attributes are kept, and fenced code blocks are never touched. `--extract html` opts out by asking
 for the document exactly as fetched.
+
+## Deciding what is worth keeping
+
+A sitemap will happily hand over the whole site. `urls` reads the manifest back and reports what a
+target is actually holding, grouped by the path that holds each page and ordered by weight, so the
+sections that are paying their way are separated from the ones that are only bulk:
+
+```bash
+uv run crawlee-lab urls openai-docs --depth 1
+```
+
+    section                                   pages       size   share
+    ---------------------------------------   -----   --------   -----
+    developers.openai.com/cookbook              319    23.0 MB     52%
+    developers.openai.com/api                   174     3.1 MB     28%
+    developers.openai.com/plugins                30   376.2 KB      5%
+
+`--depth` rolls the grouping up to the first N path segments; without it each page is grouped under
+the path that holds it, which is the level an `include` or `exclude` rule is written against. Narrow
+the profile with those rules, then re-run the crawl to drop what the corpus does not need.
+
+`--list` prints one URL per line and nothing else, for piping into grep or a file. With no target
+named, every snapshotted target is reported in turn.
 
 ## Snapshots and change tracking
 

@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from crawlee_lab import __version__, registry
+from crawlee_lab import __version__, inventory, registry
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
 from crawlee_lab.errors import ConfigurationError, CrawleeLabError
@@ -307,6 +307,33 @@ def _build_spec(
     return RunSpec.model_validate(values)
 
 
+def render_inventory(found: inventory.TargetInventory, depth: int | None, limit: int) -> None:
+    title = f'{found.name}: {found.pages} pages, {inventory.human_bytes(found.bytes)}'
+    if not found.entries:
+        console.print(f'[bold]{found.name}[/bold] holds no stored pages')
+        return
+
+    sections = found.sections(depth)
+    table = Table(title=title, title_style='bold')
+    table.add_column('section', style='bold')
+    table.add_column('pages', justify='right')
+    table.add_column('size', justify='right')
+    table.add_column('share', justify='right')
+    for section in sections[:limit]:
+        table.add_row(
+            section.prefix,
+            str(section.pages),
+            inventory.human_bytes(section.bytes),
+            _percentage(section.pages / found.pages),
+        )
+    console.print(table)
+
+    if len(sections) > limit:
+        console.print(f'... and {len(sections) - limit} more sections')
+    if found.failed:
+        error_console.print(f'[yellow]{found.failed} pages failed in the last run[/yellow]')
+
+
 @app.command(name='inspect')
 def inspect_command(
     url: Annotated[str, typer.Argument(help='URL to probe.')],
@@ -393,6 +420,49 @@ def profiles_command() -> None:
         table.add_row(profile.name, profile.crawler.value, target, profile.description or '-')
 
     console.print(table)
+
+
+@app.command(name='urls')
+def urls_command(
+    names: Annotated[
+        list[str] | None,
+        typer.Argument(help='Targets to report on. Defaults to every snapshotted target.'),
+    ] = None,
+    plain: Annotated[
+        bool,
+        typer.Option('--list', '-l', help='Print one URL per line instead of the section breakdown.'),
+    ] = False,
+    depth: Annotated[
+        int | None,
+        typer.Option('--depth', min=1, help='Roll sections up to the first N path segments.'),
+    ] = None,
+    limit: Annotated[int, typer.Option('--limit', min=1, help='Maximum sections shown per target.')] = 20,
+) -> None:
+    """Show what a target is holding, by section, so bulk worth excluding is easy to spot."""
+    settings = get_settings()
+    wanted = list(names or inventory.tracked(settings))
+    if not wanted:
+        console.print('no snapshotted targets found')
+        return
+
+    collected: list[inventory.TargetInventory] = []
+    for name in wanted:
+        found = inventory.collect(name, settings)
+        if found is None:
+            directory = settings.resolve(settings.data_dir) / name
+            error_console.print(
+                f'[bold red]no snapshot for {name!r} in {directory}. '
+                f'Run "crawlee-lab crawl --profile {name} --snapshot" first.[/bold red]'
+            )
+            raise typer.Exit(code=1)
+        collected.append(found)
+
+    for found in collected:
+        if plain:
+            for entry in found.entries:
+                console.print(entry.url, soft_wrap=True, highlight=False, markup=False)
+        else:
+            render_inventory(found, depth=depth, limit=limit)
 
 
 @app.command(name='watch')

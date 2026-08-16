@@ -53,7 +53,7 @@ def read_items(workspace: Path, name: str) -> list[dict[str, object]]:
 def test_help_lists_every_command() -> None:
     result = runner.invoke(app, ['--help'])
     assert result.exit_code == 0
-    for command in ('crawl', 'inspect', 'diff', 'profiles'):
+    for command in ('crawl', 'inspect', 'diff', 'profiles', 'urls'):
         assert command in output(result)
 
 
@@ -222,3 +222,49 @@ def test_watch_reports_a_target_that_could_not_be_reached(workspace: Path) -> No
     result = runner.invoke(app, ['watch', 'gone'])
     assert result.exit_code == 1
     assert 'failed' in output(result)
+
+
+def snapshotted(site: str) -> None:
+    """Snapshot the fixture catalogue, which is what the inventory then reads back."""
+    result = runner.invoke(
+        app,
+        [
+            'crawl',
+            site,
+            '--crawler',
+            'parsel',
+            '--depth',
+            '1',
+            '--follow',
+            '/catalogue/',
+            '--snapshot',
+            '--name',
+            'kept',
+        ],
+    )
+    assert result.exit_code == 0
+
+
+def test_urls_breaks_a_target_down_by_section(workspace: Path, site: str) -> None:
+    snapshotted(site)
+
+    result = runner.invoke(app, ['urls', 'kept'])
+    assert result.exit_code == 0
+    assert 'kept' in output(result)
+    assert 'catalogue' in output(result)
+
+
+def test_urls_can_print_the_plain_list(workspace: Path, site: str) -> None:
+    snapshotted(site)
+
+    result = runner.invoke(app, ['urls', 'kept', '--list'])
+    assert result.exit_code == 0
+    lines = [line for line in (result.stdout or '').splitlines() if line.strip()]
+    assert lines
+    assert all(line.startswith('http://') for line in lines)
+
+
+def test_urls_without_a_snapshot_says_so(workspace: Path) -> None:
+    result = runner.invoke(app, ['urls', 'never-run'])
+    assert result.exit_code == 1
+    assert 'never-run' in output(result)

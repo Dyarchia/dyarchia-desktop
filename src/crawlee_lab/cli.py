@@ -389,7 +389,7 @@ def profiles_command() -> None:
     table.add_column('description')
 
     for profile in found.values():
-        target = profile.start_urls[0] if profile.start_urls else '-'
+        target = next(iter([*profile.start_urls, *profile.sitemap_urls]), '-')
         table.add_row(profile.name, profile.crawler.value, target, profile.description or '-')
 
     console.print(table)

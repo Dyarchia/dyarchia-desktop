@@ -80,6 +80,20 @@ def test_profiles_lists_the_bundled_python_profile(workspace: Path) -> None:
     assert 'claude-docs' in output(result)
 
 
+def test_profiles_shows_the_sitemap_a_target_starts_from(workspace: Path) -> None:
+    """Sitemap-driven profiles have no start URL, and the table must still say where they point."""
+    profiles = workspace / 'profiles'
+    profiles.mkdir(parents=True, exist_ok=True)
+    (profiles / 'mapped.yaml').write_text(
+        'name: mapped\nsitemap_urls:\n  - https://ex.co/s.xml\n',
+        encoding='utf-8',
+    )
+
+    result = runner.invoke(app, ['profiles'])
+    assert result.exit_code == 0
+    assert 'https://ex.co/s.xml' in output(result)
+
+
 def test_diff_without_a_snapshot_says_so(workspace: Path) -> None:
     result = runner.invoke(app, ['diff', 'claude-docs'])
     assert result.exit_code == 1

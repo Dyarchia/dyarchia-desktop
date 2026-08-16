@@ -14,6 +14,15 @@ data/
 # Spanish-language tutorial, kept locally
 docs/tutorial.md
 
+# Scraped reference material, kept locally alongside the corpora it belongs with
+docs/reference/
+
+# Target definitions, which describe somebody's corpus rather than the tool.
+# The package still ships one profile under src/crawlee_lab/sites/ as the worked
+# example; everything a given machine tracks lives here, untracked.
+profiles/*.yaml
+profiles/*.yml
+
 # Python
 __pycache__/
 *.py[cod]

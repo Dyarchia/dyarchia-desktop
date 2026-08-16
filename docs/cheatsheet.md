@@ -246,7 +246,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     ----------------------------    --------------    ----------------------------------
     output/<name>.json              no                Run output in the chosen formats
     output/<name>/*.md              no                One file per page, markdown format
-    profiles/<name>.yaml            yes               Saved profiles
+    profiles/<name>.yaml            no                Saved profiles
     data/<name>/pages/**            no                Snapshot payloads
     data/<name>/manifest.json       no                Every URL with its status and hash
     data/<name>/changes.json        no                Last change report, machine readable

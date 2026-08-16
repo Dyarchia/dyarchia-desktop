@@ -151,7 +151,12 @@ A run that failed too often writes nothing, because half a snapshot would read a
 the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves its
 files untouched.
 
-## Bundled profiles
+## Corpora
+
+Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
+lives on the machine that crawls it; the package ships `claude-docs` under `src/crawlee_lab/sites/`
+as the worked example, and `docs/profiles.md` documents the format. The nine this toolkit was built
+against:
 
     Profile                Target                       Pages
     -------------------    -------------------------    -----
@@ -160,9 +165,9 @@ files untouched.
     claude-code-docs-es    code.claude.com, Spanish       166
     claude-api-docs        platform.claude.com, English   566
     claude-api-docs-es     platform.claude.com, Spanish   206
-    openai-docs            developers.openai.com          612
+    openai-docs            developers.openai.com          542
     chatgpt-docs           learn.chatgpt.com, Codex       246
-    gemini-docs            ai.google.dev, HTML            242
+    gemini-docs            ai.google.dev, HTML            236
     xai-docs               docs.x.ai, Grok                163
 
 Every one of them fetches the markdown variant each site publishes, so the snapshot is the

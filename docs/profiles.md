@@ -22,7 +22,11 @@ Two sources share one namespace:
   `ProfileSpec`.
 
 A YAML file wins over a Python module of the same name, so a bundled definition can be overridden
-locally without editing the package. List what is available with:
+locally without editing the package.
+
+The YAML files are not tracked by git. A profile describes somebody's corpus, not the tool, so it
+lives on the machine that crawls it; the repository ships one Python profile as the worked example.
+List what is available with:
 
 ```bash
 uv run crawlee-lab profiles

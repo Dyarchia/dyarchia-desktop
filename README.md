@@ -118,9 +118,9 @@ uv run crawlee-lab urls openai-docs --depth 1
 
     section                                   pages       size   share
     ---------------------------------------   -----   --------   -----
-    developers.openai.com/cookbook              319    23.0 MB     52%
-    developers.openai.com/api                   174     3.1 MB     28%
-    developers.openai.com/plugins                30   376.2 KB      5%
+    developers.openai.com/cookbook              319    23.0 MB     59%
+    developers.openai.com/api                   174     3.1 MB     32%
+    developers.openai.com/plugins                30   376.2 KB      6%
 
 `--depth` rolls the grouping up to the first N path segments; without it each page is grouped under
 the path that holds it, which is the level an `include` or `exclude` rule is written against. Narrow
@@ -170,8 +170,9 @@ against:
     gemini-docs            ai.google.dev, HTML            236
     xai-docs               docs.x.ai, Grok                163
 
-Every one of them fetches the markdown variant each site publishes, so the snapshot is the
-document rather than an extractor's reading of it. Page counts are from the last full run.
+All but one fetch the markdown variant the site publishes, so the snapshot is the document rather
+than an extractor's reading of it. `ai.google.dev` publishes none, so `gemini-docs` is extracted
+from HTML instead. Page counts are from the last run of each.
 
 ## Running unattended
 

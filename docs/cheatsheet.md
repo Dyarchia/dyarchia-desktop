@@ -12,13 +12,14 @@ from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
 - [5. diff](#5-diff)
 - [6. watch](#6-watch)
 - [7. profiles](#7-profiles)
-- [8. version](#8-version)
-- [9. Selector syntax](#9-selector-syntax)
-- [10. URL pattern syntax](#10-url-pattern-syntax)
-- [11. Environment variables](#11-environment-variables)
-- [12. Where files land](#12-where-files-land)
-- [13. Recipes](#13-recipes)
-- [14. Development commands](#14-development-commands)
+- [8. urls](#8-urls)
+- [9. version](#9-version)
+- [10. Selector syntax](#10-selector-syntax)
+- [11. URL pattern syntax](#11-url-pattern-syntax)
+- [12. Environment variables](#12-environment-variables)
+- [13. Where files land](#13-where-files-land)
+- [14. Recipes](#14-recipes)
+- [15. Development commands](#15-development-commands)
 
 ## 1. Setup
 
@@ -30,7 +31,7 @@ uv run playwright install chromium
 Everything below assumes the `uv run` prefix. Drop it inside an activated virtual environment.
 
 There are no commit hooks. The checks run when you ask for them, in
-[section 13](#13-development-commands), and on every push in CI.
+[section 15](#15-development-commands), and on every push in CI.
 
 ## 2. Commands at a glance
 
@@ -41,6 +42,7 @@ There are no commit hooks. The checks run when you ask for them, in
     diff        Show what changed the last time a target was snapshotted
     watch       Sweep every tracked target once, for a scheduler to call
     profiles    List the profiles this project knows about
+    urls        Report what a snapshotted target is holding, by section
     version     Print the installed version
 
 ## 3. crawl
@@ -186,15 +188,44 @@ crawlee-lab profiles
 ```
 
 Lists every profile, from `profiles/*.yaml` and from `src/crawlee_lab/sites/*.py`, with its crawler,
-first target and description.
+target and description. The target is the profile's first start URL, or its first sitemap when it is
+sitemap-driven.
 
-## 8. version
+## 8. urls
+
+```text
+crawlee-lab urls [NAMES...] [OPTIONS]
+```
+
+Reads the manifest of every named target back and reports what it is holding, grouped by the path
+that holds each page and ordered by weight. With no name, every snapshotted target is reported.
+
+    Option            Default     Effect
+    --------------    --------    -----------------------------------------------------------
+    --list, -l        off         Print one URL per line and nothing else, for piping
+    --depth N         off         Group by the first N path segments instead of the parent path
+    --limit N         20          Maximum sections shown per target
+
+```text
+                   openai-docs: 542 pages, 26.5 MB
+    section                                  pages       size   share
+    --------------------------------------   -----   --------   -----
+    developers.openai.com/cookbook             319    23.0 MB     59%
+    developers.openai.com/api                  174     3.1 MB     32%
+    developers.openai.com/plugins               30   376.2 KB      6%
+```
+
+The section is the level an `include` or `exclude` rule is written against, which is what makes the
+report actionable: narrow the profile, re-run the crawl, and the pages drop out of the corpus. A
+target that has never been snapshotted exits 1 and says so.
+
+## 9. version
 
 ```text
 crawlee-lab version
 ```
 
-## 9. Selector syntax
+## 10. Selector syntax
 
     Expression            Result
     ------------------    -------------------------------------------
@@ -207,7 +238,7 @@ Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action
 resolved against the page they were found on. A selector that matches nothing yields null, or an
 empty list with `all:`.
 
-## 10. URL pattern syntax
+## 11. URL pattern syntax
 
 Applies to `--follow` and `--exclude`.
 
@@ -219,7 +250,7 @@ Applies to `--follow` and `--exclude`.
     https://site.com/docs/**     Starts with this glob, matched against the whole URL
     re:^https://site\.com/\d+    An explicit regular expression, anchored at the start
 
-## 11. Environment variables
+## 12. Environment variables
 
 Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.
 
@@ -240,7 +271,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     CRAWLEE_LAB_OUTPUT_DIR                  output
     CRAWLEE_LAB_PROFILES_DIR                profiles
 
-## 12. Where files land
+## 13. Where files land
 
     Path                            Tracked by git    Contents
     ----------------------------    --------------    ----------------------------------
@@ -258,7 +289,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
 `data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has
 nothing to record. Remove the entry from `.gitignore` to keep a dated history instead.
 
-## 13. Recipes
+## 14. Recipes
 
 Scout a target before writing anything:
 
@@ -332,7 +363,17 @@ Scrape something you own, ignoring its robots.txt:
 uv run crawlee-lab crawl https://staging.mysite.internal/ --ignore-robots
 ```
 
-## 14. Development commands
+Find the bulk in a corpus and cut it out:
+
+```bash
+uv run crawlee-lab urls my-site --depth 1
+uv run crawlee-lab urls my-site --list | grep /blog/
+```
+
+Remove the section from the profile's `include`, or add it to `exclude`, then re-run the crawl. The
+next snapshot reports the pages as removed and the corpus loses them.
+
+## 15. Development commands
 
 ```bash
 uv run ruff check .

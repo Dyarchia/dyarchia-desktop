@@ -38,6 +38,8 @@ rewriting; both landed in the engine and both are now available to every target.
     runtime                 Resetting Crawlee state between runs            nothing
     recon                   Target reconnaissance for the inspect command   extraction
     watch                   Sweeping every tracked target unattended        registry, engine
+    inventory               Reading a manifest back as a per-section        config,
+                            report of what a target is holding              versioning.manifest
     engine                  Running a crawl end to end                      almost everything
     crawlers.factory        Building the requested crawler                  settings, hooks
     crawlers.settings       Concurrency, rate limit, transport              config
@@ -62,7 +64,8 @@ rewriting; both landed in the engine and both are now available to every target.
     versioning.diffing      Manifest comparison into a change report        manifest
     versioning.report       Rendering a change report                       diffing
     versioning.vcs          Committing a snapshot                           errors
-    sites.claude_docs       The first Python profile                        profiles.schema
+    sites.claude_docs       The one profile the package ships, and the      profiles.schema
+                            worked example of a Python definition
 
 Dependencies point towards `models` and `config`, never towards `cli`.
 

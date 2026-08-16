@@ -6,11 +6,7 @@ include:
   - /api/docs/
   - /cookbook/
   - /plugins/
-  - /blog/
-  - /ads/
-  - /commerce/
   - /learn/
-  - /tracks/
   - /workspace-agents/
 fetch_suffix: .md
 crawler: http

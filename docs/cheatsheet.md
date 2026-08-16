@@ -250,6 +250,11 @@ Applies to `--follow` and `--exclude`.
     https://site.com/docs/**     Starts with this glob, matched against the whole URL
     re:^https://site\.com/\d+    An explicit regular expression, anchored at the start
 
+In Git Bash or any other MSYS shell on Windows, an argument that starts with `/` is rewritten into a
+Windows path before the command sees it: `--follow /docs/` arrives as `--follow C:/Program
+Files/Git/docs/` and quietly matches nothing. Prefix the run with `MSYS2_ARG_CONV_EXCL='*'`, or use
+PowerShell, where the pattern is passed through untouched. Quoting the pattern does not help.
+
 ## 12. Environment variables
 
 Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.

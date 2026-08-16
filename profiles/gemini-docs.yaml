@@ -8,6 +8,8 @@ include:
   - 're:^https://ai\.google\.dev/api/'
 exclude:
   - hl=
+  # The sitemap lists a plain-text twin of six reference pages; the page itself is already tracked.
+  - .md.txt
 crawler: beautifulsoup
 extract: auto
 formats:

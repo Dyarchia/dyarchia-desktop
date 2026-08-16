@@ -225,12 +225,10 @@ mark left is `browser`, for the tests that need Playwright's Chromium installed.
 
 ## Documentation
 
-- `docs/tutorial.md` — step by step from zero, in Spanish. Start here
 - `docs/cheatsheet.md` — every command and every option, on one page
 - `docs/architecture.md` — how the pieces fit together and why
 - `docs/profiles.md` — the profile file format, selector and pattern syntax
 - `docs/superpowers/specs/` — the approved design
-- `docs/reference/crawlee.md` — index of the Crawlee API documentation
 
 ## Cost
 

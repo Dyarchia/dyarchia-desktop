@@ -13,13 +13,14 @@ from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
 - [6. watch](#6-watch)
 - [7. profiles](#7-profiles)
 - [8. urls](#8-urls)
-- [9. version](#9-version)
-- [10. Selector syntax](#10-selector-syntax)
-- [11. URL pattern syntax](#11-url-pattern-syntax)
-- [12. Environment variables](#12-environment-variables)
-- [13. Where files land](#13-where-files-land)
-- [14. Recipes](#14-recipes)
-- [15. Development commands](#15-development-commands)
+- [9. audit](#9-audit)
+- [10. version](#10-version)
+- [11. Selector syntax](#11-selector-syntax)
+- [12. URL pattern syntax](#12-url-pattern-syntax)
+- [13. Environment variables](#13-environment-variables)
+- [14. Where files land](#14-where-files-land)
+- [15. Recipes](#15-recipes)
+- [16. Development commands](#16-development-commands)
 
 ## 1. Setup
 
@@ -43,6 +44,7 @@ There are no commit hooks. The checks run when you ask for them, in
     watch       Sweep every tracked target once, for a scheduler to call
     profiles    List the profiles this project knows about
     urls        Report what a snapshotted target is holding, by section
+    audit       Report which URLs bring malformed or irrelevant content
     version     Print the installed version
 
 ## 3. crawl
@@ -207,25 +209,63 @@ that holds each page and ordered by weight. With no name, every snapshotted targ
     --limit N         20          Maximum sections shown per target
 
 ```text
-                   openai-docs: 542 pages, 26.5 MB
+                   openai-docs: 532 pages, 26.5 MB
     section                                  pages       size   share
     --------------------------------------   -----   --------   -----
-    developers.openai.com/cookbook             319    23.0 MB     59%
-    developers.openai.com/api                  174     3.1 MB     32%
-    developers.openai.com/plugins               30   376.2 KB      6%
+    developers.openai.com/cookbook             309    23.0 MB     58%
+    developers.openai.com/api                  174     3.1 MB     33%
+    developers.openai.com/plugins               30   376.4 KB      6%
 ```
 
 The section is the level an `include` or `exclude` rule is written against, which is what makes the
 report actionable: narrow the profile, re-run the crawl, and the pages drop out of the corpus. A
 target that has never been snapshotted exits 1 and says so.
 
-## 9. version
+## 9. audit
+
+```text
+crawlee-lab audit [NAMES...] [OPTIONS]
+```
+
+Reports which URLs are bringing markdown nobody can read, and which are bringing pages the corpus
+has no use for. It reports only; no profile is ever edited.
+
+    Option            Default     Effect
+    --------------    --------    -----------------------------------------------------------
+    --dry-run         off         Measure and price the audit without calling any model
+    --depth N         off         Roll sections up to N path segments, the largest cost lever
+    --only-changed    off         Judge only pages whose content moved since the last audit
+    --budget N        5.00 USD    Refuse to submit a round projected above this
+    --list BUCKET     off         Print one URL per line from a bucket of the last audit
+
+Buckets are `malformed`, `irrelevant`, `disputed` and `control`.
+
+The local tier is free and always runs: it names the pages broken past argument and needs no key.
+The model tiers rule on sections first, then read only the pages still in question, and escalate to
+a better model only where the first one flagged something or was unsure. Verdicts are keyed by the
+manifest's content hash, so an unchanged page is never judged twice.
+
+```text
+    target              | pages | clean | suspect | broken | sections
+    --------------------+-------+-------+---------+--------+---------
+    gemini-docs         |   219 |   213 |       5 |      1 |        7
+
+    case               | requests | input tokens | output tokens |  USD
+    -------------------+----------+--------------+---------------+-----
+    sections settle it |      193 |      537,233 |        79,780 | 0.64
+    every page read    |      568 |    1,931,112 |       207,340 | 1.66
+```
+
+Exit codes follow `watch`: 0 nothing flagged, 10 something flagged, 1 the audit failed. Findings
+are written to `data/<name>/AUDIT.md`.
+
+## 10. version
 
 ```text
 crawlee-lab version
 ```
 
-## 10. Selector syntax
+## 11. Selector syntax
 
     Expression            Result
     ------------------    -------------------------------------------
@@ -238,7 +278,7 @@ Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action
 resolved against the page they were found on. A selector that matches nothing yields null, or an
 empty list with `all:`.
 
-## 11. URL pattern syntax
+## 12. URL pattern syntax
 
 Applies to `--follow` and `--exclude`.
 
@@ -255,7 +295,7 @@ Windows path before the command sees it: `--follow /docs/` arrives as `--follow 
 Files/Git/docs/` and quietly matches nothing. Prefix the run with `MSYS2_ARG_CONV_EXCL='*'`, or use
 PowerShell, where the pattern is passed through untouched. Quoting the pattern does not help.
 
-## 12. Environment variables
+## 13. Environment variables
 
 Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.
 
@@ -276,7 +316,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     CRAWLEE_LAB_OUTPUT_DIR                  output
     CRAWLEE_LAB_PROFILES_DIR                profiles
 
-## 13. Where files land
+## 14. Where files land
 
     Path                            Tracked by git    Contents
     ----------------------------    --------------    ----------------------------------
@@ -287,6 +327,8 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     data/<name>/manifest.json       no                Every URL with its status and hash
     data/<name>/changes.json        no                Last change report, machine readable
     data/<name>/CHANGES.md          no                Last change report, with diffs
+    data/<name>/audit.json          no                Audit verdicts, keyed by content hash
+    data/<name>/AUDIT.md            no                Last audit, by what each finding asks of you
     data/WATCH.md                   no                Last sweep across every tracked target
     output/watch.log                no                One line per scheduled sweep
     storage/                        no                Crawlee's own working directory
@@ -294,7 +336,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
 `data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has
 nothing to record. Remove the entry from `.gitignore` to keep a dated history instead.
 
-## 14. Recipes
+## 15. Recipes
 
 Scout a target before writing anything:
 
@@ -378,7 +420,7 @@ uv run crawlee-lab urls my-site --list | grep /blog/
 Remove the section from the profile's `include`, or add it to `exclude`, then re-run the crawl. The
 next snapshot reports the pages as removed and the corpus loses them.
 
-## 15. Development commands
+## 16. Development commands
 
 ```bash
 uv run ruff check .

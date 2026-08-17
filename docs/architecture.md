@@ -125,6 +125,21 @@ rather than merely tidy: component syntax puts real headings in attributes, so `
 `href` are rescued instead of stripped with the tag, and fenced code blocks are left untouched,
 because an HTML example inside a fence is the content rather than the chrome.
 
+The ratio test is not the whole answer, because two different faults arrive looking like one. A
+landing page is markup all the way down and the ratio finds it. A prose page that happens to define
+its interactive component carries a block of JavaScript instead, and it fails the ratio precisely
+because it is mostly prose; no amount of tag-stripping reaches a `useMemo` call in any case. That
+definition is removed outright and its invocation kept, so a reader still learns that a widget stood
+there. A code fence again exempts everything inside it, since a page teaching JavaScript is a page
+whose `export const` is the lesson.
+
+Extraction from HTML has a failure of its own, and it is corrected where it is made rather than
+where it is noticed. Collapsing a paragraph and the code block after it onto one line leaves a fence
+delimiter mid-line, which no parser can see; from there every delimiter reads as the opposite of
+what it is, and the page's prose is stored as code. Both repairs refuse to act unless the result is
+demonstrably better than the input, and neither touches a document fetched as markdown from its
+publisher: that one is stored as published, which is the only promise a snapshot of it makes.
+
 ## 5. Crawlee behaviours that had to be handled
 
 Four behaviours of the library are easy to get wrong and are handled explicitly. Each one was

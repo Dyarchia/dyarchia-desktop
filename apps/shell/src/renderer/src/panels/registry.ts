@@ -12,7 +12,12 @@ export function basePanelId(instanceId: string): string {
 
 export type PanelDispose = () => void
 
-export type PanelMount = (container: HTMLElement) => PanelDispose | void
+export interface PanelHandle {
+    readonly instanceId: string
+    close(): void
+}
+
+export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
 
 export interface RegisteredPanel {
     descriptor: PanelDescriptor

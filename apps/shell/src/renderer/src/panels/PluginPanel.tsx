@@ -9,7 +9,10 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
         const registered = getPanel(props.api.id)
         const container = containerRef.current
         if (!registered || !container) return
-        const dispose = registered.mount(container)
+        const dispose = registered.mount(container, {
+            instanceId: props.api.id,
+            close: () => props.api.close()
+        })
         return () => {
             dispose?.()
             container.replaceChildren()

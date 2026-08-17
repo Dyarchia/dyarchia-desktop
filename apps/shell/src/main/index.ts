@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'node:path'
 import { registerLayoutStore } from './layoutStore'
 import { registerWindowControls } from './windowControls'
@@ -6,7 +6,9 @@ import { registerPluginScheme, setupPlugins } from './plugins'
 
 registerPluginScheme()
 
-if (process.env['ELECTRON_RENDERER_URL'] || process.env['DECIMATIO_DEBUG']) {
+const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'] || process.env['DECIMATIO_DEBUG'])
+
+if (isDev) {
     app.commandLine.appendSwitch('remote-debugging-port', '9222')
 }
 
@@ -30,6 +32,14 @@ function createWindow(): void {
 
     win.on('ready-to-show', () => win.show())
 
+    if (isDev) {
+        win.webContents.on('before-input-event', (_event, input) => {
+            if (input.type === 'keyDown' && input.key === 'F12') {
+                win.webContents.toggleDevTools()
+            }
+        })
+    }
+
     if (process.env['ELECTRON_RENDERER_URL']) {
         win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
@@ -38,6 +48,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+    Menu.setApplicationMenu(null)
     registerLayoutStore()
     registerWindowControls()
     await setupPlugins()

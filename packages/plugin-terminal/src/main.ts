@@ -1,49 +1,38 @@
-import { spawn } from 'node-pty'
-import type { IPty } from 'node-pty'
-import { homedir } from 'node:os'
+import { app, ipcMain, MessageChannelMain, utilityProcess } from 'electron'
+import type { UtilityProcess } from 'electron'
+import { join } from 'node:path'
 import type { PluginMainContext } from '@decimatio/sdk'
 
-interface SpawnOptions {
-    cols: number
-    rows: number
+let host: UtilityProcess | null = null
+
+function ensureHost(): UtilityProcess {
+    if (host) return host
+    const spawned = utilityProcess.fork(join(import.meta.dirname, 'ptyhost.cjs'), [], {
+        serviceName: 'decimatio pty host'
+    })
+    spawned.on('exit', () => {
+        if (host === spawned) host = null
+    })
+    host = spawned
+    return spawned
 }
 
-const sessions = new Map<string, IPty>()
-let nextId = 1
-
-export function activate(ctx: PluginMainContext): void {
-    ctx.handle('spawn', (...args: unknown[]) => {
-        const { cols, rows } = args[0] as SpawnOptions
-        const id = String(nextId++)
-        const pty = spawn('pwsh.exe', ['-NoLogo'], {
-            name: 'xterm-256color',
-            cols,
-            rows,
-            cwd: homedir(),
-            env: process.env as Record<string, string>
-        })
-        pty.onData((data) => ctx.broadcast('data', id, data))
-        pty.onExit(({ exitCode }) => {
-            sessions.delete(id)
-            ctx.broadcast('exit', id, exitCode)
-        })
-        sessions.set(id, pty)
-        return id
+export function activate(_ctx: PluginMainContext): void {
+    ipcMain.handle('plugin:terminal:attach', (event, ...args: unknown[]) => {
+        const { attachId, cols, rows } = args[0] as {
+            attachId: string
+            cols: number
+            rows: number
+        }
+        const ptyHost = ensureHost()
+        const { port1, port2 } = new MessageChannelMain()
+        ptyHost.postMessage({ type: 'attach', attachId, cols, rows }, [port1])
+        event.sender.postMessage('decimatio:port', { pluginId: 'terminal', attachId }, [port2])
+        return true
     })
 
-    ctx.handle('write', (...args: unknown[]) => {
-        const [id, data] = args as [string, string]
-        sessions.get(id)?.write(data)
-    })
-
-    ctx.handle('resize', (...args: unknown[]) => {
-        const [id, cols, rows] = args as [string, number, number]
-        sessions.get(id)?.resize(cols, rows)
-    })
-
-    ctx.handle('kill', (...args: unknown[]) => {
-        const [id] = args as [string]
-        sessions.get(id)?.kill()
-        sessions.delete(id)
+    app.on('will-quit', () => {
+        host?.kill()
+        host = null
     })
 }

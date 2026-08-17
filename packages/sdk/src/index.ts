@@ -7,7 +7,12 @@ export interface PanelDescriptor {
 
 export type PanelDispose = () => void
 
-export type PanelMount = (container: HTMLElement) => PanelDispose | void
+export interface PanelHandle {
+    readonly instanceId: string
+    close(): void
+}
+
+export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
 
 export interface PluginContext {
     readonly pluginId: string

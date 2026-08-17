@@ -12,3 +12,7 @@ const api = {
 }
 
 contextBridge.exposeInMainWorld('decimatio', api)
+
+ipcRenderer.on('decimatio:port', (event, message: unknown) => {
+    window.postMessage({ decimatioPort: message }, '*', event.ports)
+})

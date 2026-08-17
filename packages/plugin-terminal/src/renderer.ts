@@ -1,5 +1,8 @@
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { Unicode11Addon } from '@xterm/addon-unicode11'
+import { WebglAddon } from '@xterm/addon-webgl'
+import { ClipboardAddon } from '@xterm/addon-clipboard'
 import xtermCss from '@xterm/xterm/css/xterm.css'
 import type { PluginContext } from '@decimatio/sdk'
 
@@ -25,10 +28,19 @@ function ensureStyles(): void {
 const TERMINAL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>'
 
+interface PortAnnouncement {
+    decimatioPort?: {
+        pluginId: string
+        attachId: string
+    }
+}
+
+type HostMessage = { t: 'data'; d: string } | { t: 'exit'; code: number }
+
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
         { id: 'terminal', title: 'Terminal', icon: TERMINAL_ICON, duplicable: true },
-        (container) => {
+        (container, handle) => {
         ensureStyles()
         container.style.padding = '6px 2px 2px 8px'
         container.style.background = 'rgba(0, 0, 0, 0.28)'
@@ -38,6 +50,8 @@ export function activate(ctx: PluginContext): void {
             fontSize: 13,
             cursorBlink: true,
             allowTransparency: true,
+            allowProposedApi: true,
+            scrollback: 10000,
             theme: {
                 background: '#00000000',
                 foreground: '#e0e0e0'
@@ -45,51 +59,121 @@ export function activate(ctx: PluginContext): void {
         })
         const fit = new FitAddon()
         terminal.loadAddon(fit)
+        terminal.loadAddon(new Unicode11Addon())
+        terminal.loadAddon(new ClipboardAddon())
+        terminal.unicode.activeVersion = '11'
         terminal.open(container)
+        try {
+            const webgl = new WebglAddon()
+            webgl.onContextLoss(() => webgl.dispose())
+            terminal.loadAddon(webgl)
+        } catch {}
         fit.fit()
 
-        let sessionId: string | null = null
+        let port: MessagePort | null = null
         let disposed = false
+        const attachId = crypto.randomUUID()
 
-        const offData = ctx.on('data', (...args) => {
-            const [id, data] = args as [string, string]
-            if (id === sessionId) terminal.write(data)
-        })
-        const offExit = ctx.on('exit', (...args) => {
-            const [id] = args as [string]
-            if (id === sessionId) {
-                sessionId = null
-                terminal.writeln('\r\n[session ended]')
+        const onHostMessage = (event: MessageEvent): void => {
+            const msg = event.data as HostMessage
+            if (msg.t === 'data') {
+                const chars = msg.d.length
+                terminal.write(msg.d, () => port?.postMessage({ t: 'ack', n: chars }))
+            } else if (msg.t === 'exit') {
+                port?.close()
+                port = null
+                terminal.write('\r\n[proceso terminado]\r\n')
+                setTimeout(() => {
+                    if (!disposed) handle.close()
+                }, 150)
             }
+        }
+
+        const onPortAnnouncement = (event: MessageEvent): void => {
+            const payload = (event.data as PortAnnouncement).decimatioPort
+            if (!payload || payload.pluginId !== 'terminal' || payload.attachId !== attachId) {
+                return
+            }
+            window.removeEventListener('message', onPortAnnouncement)
+            const received = event.ports[0]
+            if (!received) return
+            if (disposed) {
+                received.postMessage({ t: 'detach' })
+                received.close()
+                return
+            }
+            port = received
+            port.onmessage = onHostMessage
+            port.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
+        }
+        window.addEventListener('message', onPortAnnouncement)
+        void ctx.invoke('attach', { attachId, cols: terminal.cols, rows: terminal.rows })
+
+        const copySelection = (): void => {
+            if (!terminal.hasSelection()) return
+            void navigator.clipboard.writeText(terminal.getSelection())
+        }
+        const pasteClipboard = (): void => {
+            void navigator.clipboard.readText().then((text) => {
+                if (text) terminal.paste(text)
+            })
+        }
+
+        terminal.attachCustomKeyEventHandler((event) => {
+            if (event.type !== 'keydown') return true
+            if (!event.ctrlKey || event.altKey || event.metaKey) return true
+            const key = event.key.toLowerCase()
+            if (key === 'c' && terminal.hasSelection()) {
+                event.preventDefault()
+                copySelection()
+                terminal.clearSelection()
+                return false
+            }
+            if (key === 'v') {
+                event.preventDefault()
+                pasteClipboard()
+                return false
+            }
+            return true
         })
 
-        void ctx
-            .invoke('spawn', { cols: terminal.cols, rows: terminal.rows })
-            .then((id) => {
-                if (disposed) {
-                    void ctx.invoke('kill', id)
-                    return
-                }
-                sessionId = id as string
-            })
+        const onMouseUp = (event: MouseEvent): void => {
+            if (event.button === 0) copySelection()
+        }
+        const onContextMenu = (event: MouseEvent): void => {
+            event.preventDefault()
+            if (terminal.hasSelection()) {
+                copySelection()
+                terminal.clearSelection()
+            } else {
+                pasteClipboard()
+            }
+        }
+        container.addEventListener('mouseup', onMouseUp)
+        container.addEventListener('contextmenu', onContextMenu)
 
         const onInput = terminal.onData((data) => {
-            if (sessionId) void ctx.invoke('write', sessionId, data)
+            port?.postMessage({ t: 'in', d: data })
         })
 
         const observer = new ResizeObserver(() => {
             fit.fit()
-            if (sessionId) void ctx.invoke('resize', sessionId, terminal.cols, terminal.rows)
+            port?.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
         })
         observer.observe(container)
 
         return () => {
             disposed = true
             observer.disconnect()
-            offData()
-            offExit()
+            window.removeEventListener('message', onPortAnnouncement)
+            container.removeEventListener('mouseup', onMouseUp)
+            container.removeEventListener('contextmenu', onContextMenu)
             onInput.dispose()
-            if (sessionId) void ctx.invoke('kill', sessionId)
+            if (port) {
+                port.postMessage({ t: 'detach' })
+                port.close()
+                port = null
+            }
             terminal.dispose()
         }
     })

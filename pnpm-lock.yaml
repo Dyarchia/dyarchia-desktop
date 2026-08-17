@@ -51,21 +51,6 @@ importers:
         specifier: ^7.3.6
         version: 7.3.6(@types/node@26.2.0)(jiti@2.7.0)
 
-  packages/plugin-browser:
-    devDependencies:
-      '@decimatio/sdk':
-        specifier: workspace:*
-        version: link:../sdk
-      electron:
-        specifier: ^43.3.0
-        version: 43.3.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
   packages/plugin-docviewer:
     devDependencies:
       '@decimatio/sdk':

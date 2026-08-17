@@ -12,20 +12,33 @@ fence is the content, and stripping tags there would corrupt what the page is tr
 from __future__ import annotations
 
 import re
+from enum import StrEnum
 
-_FENCE = re.compile(r'^\s*(?:```|~~~)')
+_FENCE_DELIMITER = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 _VOID_BLOCKS = re.compile(r'<(svg|style|script|noscript)\b[^>]*>.*?</\1\s*>', re.DOTALL | re.IGNORECASE)
 _SELF_CLOSING_MEDIA = re.compile(r'<(svg|path|circle|rect|line|polygon)\b[^>]*/>', re.IGNORECASE)
 _ANCHOR = re.compile(r'<a\b[^>]*?href=["\']([^"\']+)["\'][^>]*>(.*?)</a\s*>', re.DOTALL | re.IGNORECASE)
 _ANY_TAG = re.compile(r'</?[a-zA-Z][^>]*>')
 _OPEN_TAG = re.compile(r'<[a-zA-Z][\w.:-]*((?:\s+[^<>]*?)?)\s*/?>')
 _TAGGED_LINE = re.compile(r'<[a-zA-Z/]')
+_COMPONENT_DEFINITION = re.compile(r'^export\s+(const|default|function)\b')
+_MARKDOWN_HEADING = re.compile(r'^#{1,6}\s')
+_GLUED_FENCE = re.compile(r'^(?!\s*[`~]{3,}\s*$)(.*?)([`~]{3,})\s*$')
 _BLANK_RUN = re.compile(r'\n{3,}')
 _SPACE_RUN = re.compile(r'[ \t]{2,}')
 _MAX_INDENT = 3
 
 MARKUP_LINE_RATIO = 0.15
 TEXTUAL_ATTRIBUTES = ('title', 'label', 'heading', 'alt', 'description')
+
+
+class FenceState(StrEnum):
+    """Where a single line sits relative to the fenced code blocks of its document."""
+
+    OUTSIDE = 'outside'
+    OPEN = 'open'
+    INSIDE = 'inside'
+    CLOSE = 'close'
 
 
 def _attribute_pattern(name: str) -> re.Pattern[str]:
@@ -36,26 +49,162 @@ _ATTRIBUTE = {name: _attribute_pattern(name) for name in TEXTUAL_ATTRIBUTES}
 _HREF = _attribute_pattern('href')
 
 
-def _outside_fences(text: str) -> list[str]:
-    """Line indices that are not inside a fenced code block."""
-    inside = False
-    free: list[str] = []
+def fence_states(text: str) -> list[FenceState]:
+    """Classify every line by its relationship to the fenced code blocks around it.
+
+    Counting delimiters and flipping a flag on each one is wrong, and wrong in a way that matters:
+    documentation about markdown wraps a three-backtick block inside a four-backtick one, which a
+    flag-flipper reads as two openings and thereafter has the document inverted, treating the code
+    samples as prose and the prose as code. `ai.google.dev/gemini-api/docs/generate-content/tokens`
+    is one such page, and it is not the only one.
+
+    A fence therefore closes only on a delimiter of the same character, at least as long as the one
+    that opened it, carrying nothing after it. That is the rule the markdown is written to.
+    """
+    states: list[FenceState] = []
+    marker = ''
+
     for line in text.splitlines():
-        if _FENCE.match(line):
-            inside = not inside
+        match = _FENCE_DELIMITER.match(line)
+
+        if not marker:
+            opens = match is not None and not (match.group(1)[0] == '`' and '`' in match.group(2))
+            if opens and match is not None:
+                marker = match.group(1)
+            states.append(FenceState.OPEN if opens else FenceState.OUTSIDE)
             continue
+
+        closes = (
+            match is not None
+            and match.group(1)[0] == marker[0]
+            and len(match.group(1)) >= len(marker)
+            and not match.group(2).strip()
+        )
+        if closes:
+            marker = ''
+        states.append(FenceState.CLOSE if closes else FenceState.INSIDE)
+
+    return states
+
+
+def ends_inside_a_fence(states: list[FenceState]) -> bool:
+    """Whether the document stopped with a fence still open, which is what truncation looks like."""
+    for state in reversed(states):
+        if state is FenceState.CLOSE:
+            return False
+        if state is FenceState.OPEN:
+            return True
+    return False
+
+
+def repair_glued_fences(text: str) -> str:
+    """Put back on its own line an opening fence that arrived glued to the text before it.
+
+    Extracting markdown from HTML can collapse a paragraph and the code block that follows it onto
+    a single line, leaving `...for example:```` with the delimiter stranded mid-line. A fence has to
+    open its own line to count, so no parser sees it, and every delimiter after it is read as the
+    opposite of what it is: the page's prose is treated as code, and the page's code as prose. On
+    `ai.google.dev` this swallowed the closing section of seventeen pages.
+
+    The repair is refused unless it works. A document whose fences already balance is returned
+    untouched, and so is one that stays unbalanced afterwards, because a page that is merely broken
+    is worth more than a page that has been guessed at.
+    """
+    if not ends_inside_a_fence(fence_states(text)):
+        return text
+
+    repaired: list[str] = []
+    for line in text.splitlines():
+        match = _GLUED_FENCE.match(line)
+        if match and match.group(1).strip():
+            repaired.append(match.group(1).rstrip())
+            repaired.append(match.group(2))
+        else:
+            repaired.append(line)
+
+    candidate = '\n'.join(repaired) + ('\n' if text.endswith('\n') else '')
+    return candidate if not ends_inside_a_fence(fence_states(candidate)) else text
+
+
+def strip_component_definitions(text: str) -> str:
+    """Remove the JavaScript an MDX page defines its interactive components with.
+
+    A documentation page built on MDX may declare the component it renders in the document itself:
+    `export const ClaudeExplorer = () => {...}`, a thousand lines of arrow functions, hooks and
+    style objects ahead of any prose. What a reader of the published page sees is the rendered
+    widget; what a reader of the markdown gets is the source, and no amount of tag-stripping helps
+    because the problem is not tags.
+
+    The invocation is kept. `<ContextWindow />` tells a reader that something interactive stood
+    here, which is worth knowing; the four hundred lines that built it are not.
+
+    Two things bound the removal. Anything inside a code fence is untouched, because a page
+    teaching JavaScript is a page whose `export const` is the lesson. And a markdown heading ends
+    the block wherever it is found, so a brace counted inside a string literal costs one component
+    rather than the rest of the document.
+    """
+    lines = text.splitlines()
+    states = fence_states(text)
+
+    kept: list[str] = []
+    depth = 0
+    inside = False
+    quoted = False
+
+    for line, state in zip(lines, states, strict=True):
+        if state is not FenceState.OUTSIDE:
+            kept.append(line)
+            continue
+
+        if not inside and _COMPONENT_DEFINITION.match(line):
+            inside, depth, quoted = True, 0, False
+
         if not inside:
-            free.append(line)
-    return free
+            kept.append(line)
+            continue
+
+        if _MARKDOWN_HEADING.match(line) and not quoted:
+            inside = False
+            kept.append(line)
+            continue
+
+        quoted ^= line.count('`') % 2 == 1
+        depth += sum(line.count(c) for c in '{([') - sum(line.count(c) for c in '})]')
+        if depth <= 0:
+            inside = False
+
+    if inside:
+        return text
+
+    return '\n'.join(kept) + ('\n' if text.endswith('\n') else '')
+
+
+def lines_outside_fences(text: str) -> list[str]:
+    """The lines of a document that are not inside a fenced code block.
+
+    Every judgement about how a document is written has to ask this first. A fenced block on a
+    documentation page routinely holds HTML, JSX or a nav-shaped list of links as its subject
+    matter, and counting those as defects would condemn the pages that teach them.
+    """
+    return [
+        line
+        for line, state in zip(text.splitlines(), fence_states(text), strict=True)
+        if state is FenceState.OUTSIDE
+    ]
+
+
+def markup_line_ratio(text: str) -> float:
+    """How much of a document, outside its code fences, is raw markup rather than prose."""
+    lines = [line for line in lines_outside_fences(text) if line.strip()]
+    if not lines:
+        return 0.0
+    tagged = sum(1 for line in lines if _TAGGED_LINE.search(line))
+    return tagged / len(lines)
 
 
 def looks_like_markup(text: str) -> bool:
     """Whether enough of this document is raw markup to be worth cleaning."""
-    lines = [line for line in _outside_fences(text) if line.strip()]
-    if not lines:
-        return False
-    tagged = sum(1 for line in lines if _TAGGED_LINE.search(line))
-    return tagged / len(lines) >= MARKUP_LINE_RATIO
+    return markup_line_ratio(text) >= MARKUP_LINE_RATIO
 
 
 def visible_attribute_text(attributes: str) -> str:
@@ -122,25 +271,32 @@ def clean_embedded_markup(text: str) -> str:
     """Reduce a markdown document carrying raw markup to the prose and links inside it."""
     output: list[str] = []
     buffer: list[str] = []
-    inside = False
+    states = fence_states(text)
 
-    for line in text.splitlines():
-        if _FENCE.match(line):
-            if not inside:
-                output.append(_clean_segment('\n'.join(buffer)))
-                buffer = []
-            else:
-                output.append('\n'.join(buffer))
-                buffer = []
-            output.append(line)
-            inside = not inside
+    for line, state in zip(text.splitlines(), states, strict=True):
+        if state is FenceState.OPEN:
+            output.append(_clean_segment('\n'.join(buffer)))
+        elif state is FenceState.CLOSE:
+            output.append('\n'.join(buffer))
+        else:
+            buffer.append(line)
             continue
-        buffer.append(line)
+        buffer = []
+        output.append(line)
 
-    output.append('\n'.join(buffer) if inside else _clean_segment('\n'.join(buffer)))
+    trailing = '\n'.join(buffer)
+    output.append(trailing if ends_inside_a_fence(states) else _clean_segment(trailing))
     return _BLANK_RUN.sub('\n\n', '\n'.join(output)).strip() + '\n'
 
 
 def clean_if_markup(text: str) -> str:
-    """Clean the document only when it is markup-heavy, leaving ordinary prose untouched."""
+    """Clean the document only where it needs it, leaving ordinary prose untouched.
+
+    Two different things arrive looking like one. A landing page is markup all the way down and is
+    reduced to the prose inside it, which is what the ratio measures. A prose page that happens to
+    define an interactive component carries a block of JavaScript and is otherwise fine, and it
+    fails that ratio precisely because it is mostly prose. Removing the definition is therefore
+    unconditional and the ratio is measured afterwards, on what is left.
+    """
+    text = strip_component_definitions(text)
     return clean_embedded_markup(text) if looks_like_markup(text) else text

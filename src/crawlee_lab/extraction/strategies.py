@@ -8,7 +8,7 @@ from typing import Any
 import trafilatura
 
 from crawlee_lab.extraction.dom import DomAdapter, read_fields
-from crawlee_lab.extraction.markup import clean_if_markup
+from crawlee_lab.extraction.markup import clean_if_markup, repair_glued_fences
 from crawlee_lab.models import ExtractionMode, RunSpec, ScrapedItem, utcnow
 
 
@@ -26,8 +26,16 @@ class RawPage:
 
 
 def main_content(html: str, url: str) -> str | None:
-    """Strip navigation and boilerplate, returning the article body as markdown."""
-    return trafilatura.extract(
+    """Strip navigation and boilerplate, returning the article body as markdown.
+
+    The markdown is repaired before it is returned. Extraction sometimes closes a paragraph and
+    opens the code block after it on the same line, which produces a delimiter no parser can see
+    and inverts every fence that follows. That is a defect of this step, so it is corrected here,
+    where it is made. Documents fetched as markdown from a publisher never pass through this
+    function: those are stored as published, and repairing somebody else's document would break
+    the one promise a snapshot makes.
+    """
+    extracted = trafilatura.extract(
         html,
         url=url,
         output_format='markdown',
@@ -35,6 +43,7 @@ def main_content(html: str, url: str) -> str | None:
         include_tables=True,
         favor_recall=True,
     )
+    return repair_glued_fences(extracted) if extracted else extracted
 
 
 def _content_for(mode: ExtractionMode, page: RawPage) -> str | None:

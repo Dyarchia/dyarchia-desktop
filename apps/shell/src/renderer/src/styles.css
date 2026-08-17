@@ -204,7 +204,6 @@ body {
     --dv-active-sash-color: rgba(255, 255, 255, 0.18);
     --dv-drag-over-background-color: rgba(150, 160, 175, 0.14);
     --dv-edge-dock-indicator-color: rgba(180, 190, 205, 0.7);
-    --dv-paneview-active-outline-color: rgba(255, 255, 255, 0.25);
 }
 
 .dv-shell.dockview-theme-abyss-spaced .dv-groupview {
@@ -261,12 +260,4 @@ body {
 .plugin-panel-container {
     height: 100%;
     overflow: hidden;
-}
-
-.panel-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #666;
 }

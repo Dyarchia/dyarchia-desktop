@@ -109,8 +109,6 @@ export function activate(ctx: PluginContext): void {
         root.append(tree, content)
         container.appendChild(root)
 
-        let currentDir = ''
-
         async function openFile(entry: DirEntry): Promise<void> {
             const ext = entry.name.slice(entry.name.lastIndexOf('.')).toLowerCase()
             const result = (await ctx.invoke('read', entry.path)) as {
@@ -132,7 +130,6 @@ export function activate(ctx: PluginContext): void {
 
         async function loadDir(dirPath: string): Promise<void> {
             const entries = (await ctx.invoke('list', dirPath)) as DirEntry[]
-            currentDir = dirPath
             tree.replaceChildren()
             const up = document.createElement('button')
             up.className = 'docviewer-entry docviewer-entry-dir'

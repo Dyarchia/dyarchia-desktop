@@ -26,12 +26,7 @@ const plugins = new Map<string, DiscoveredPlugin>()
 
 const MIME_TYPES: Record<string, string> = {
     '.js': 'text/javascript',
-    '.mjs': 'text/javascript',
-    '.css': 'text/css',
-    '.json': 'application/json',
-    '.svg': 'image/svg+xml',
-    '.png': 'image/png',
-    '.woff2': 'font/woff2'
+    '.mjs': 'text/javascript'
 }
 
 const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*$/

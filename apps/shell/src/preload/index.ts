@@ -12,5 +12,3 @@ const api = {
 }
 
 contextBridge.exposeInMainWorld('decimatio', api)
-
-export type DecimatioBridge = typeof api

@@ -6,21 +6,9 @@ interface DirEntry {
     path: string
 }
 
-const AUDIO_EXTENSIONS: Record<string, string> = {
-    '.mp3': 'audio/mpeg',
-    '.m4a': 'audio/mp4',
-    '.flac': 'audio/flac',
-    '.wav': 'audio/wav',
-    '.ogg': 'audio/ogg',
-    '.opus': 'audio/ogg'
-}
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.m4a', '.flac', '.wav', '.ogg', '.opus'])
 
-const VIDEO_EXTENSIONS: Record<string, string> = {
-    '.mp4': 'video/mp4',
-    '.webm': 'video/webm',
-    '.mkv': 'video/x-matroska',
-    '.mov': 'video/quicktime'
-}
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mkv', '.mov'])
 
 const PLAYER_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>'
@@ -119,7 +107,7 @@ export function activate(ctx: PluginContext): void {
 
             function play(entry: DirEntry, button: HTMLButtonElement): void {
                 const ext = extensionOf(entry.name)
-                const media = document.createElement(ext in VIDEO_EXTENSIONS ? 'video' : 'audio')
+                const media = document.createElement(VIDEO_EXTENSIONS.has(ext) ? 'video' : 'audio')
                 media.controls = true
                 media.autoplay = true
                 media.src = `decimatio-media://local/${encodeURIComponent(entry.path)}`
@@ -149,7 +137,7 @@ export function activate(ctx: PluginContext): void {
                 tree.appendChild(up)
                 for (const entry of entries) {
                     const ext = extensionOf(entry.name)
-                    if (!entry.isDir && !(ext in AUDIO_EXTENSIONS) && !(ext in VIDEO_EXTENSIONS)) {
+                    if (!entry.isDir && !AUDIO_EXTENSIONS.has(ext) && !VIDEO_EXTENSIONS.has(ext)) {
                         continue
                     }
                     const btn = document.createElement('button')

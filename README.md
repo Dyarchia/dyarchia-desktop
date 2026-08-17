@@ -48,6 +48,7 @@ Detalle de piezas:
             plugin-sample/       plugin minimo de referencia
             plugin-terminal/     terminal embebida (xterm.js + node-pty)
             plugin-docviewer/    arbol de ficheros + render markdown
+            plugin-player/       reproductor de audio/video (decimatio-media://)
         scripts/
             install-plugins.mjs  copia plugins a %APPDATA%/decimatio/plugins
         docs/

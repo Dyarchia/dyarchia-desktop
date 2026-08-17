@@ -13,9 +13,6 @@ uv sync --dev
 uv run playwright install chromium
 ```
 
-The `audit` command additionally needs the Anthropic SDK, which is kept out of the default install
-because nothing else uses it: `uv sync --group audit`.
-
 ## Quick start
 
 Look before you leap. `inspect` reports what a crawl against a target would have to deal with:
@@ -66,7 +63,6 @@ uv run crawlee-lab diff claude-docs --unified
     diff         Show what changed on a target the last time it was snapshotted
     watch        Sweep every tracked target once and report whether anything moved
     urls         Report which URLs a snapshotted target is holding, broken down by section
-    audit        Report which URLs are bringing malformed or irrelevant content
     profiles     List the profiles this project knows about
     version      Print the installed version
 
@@ -144,60 +140,6 @@ the profile with those rules, then re-run the crawl to drop what the corpus does
 
 `--list` prints one URL per line and nothing else, for piping into grep or a file. With no target
 named, every snapshotted target is reported in turn.
-
-## Auditing what came back
-
-`urls` says how much a section weighs. `audit` says whether what it holds is worth keeping: which
-URLs are bringing markdown nobody can read, and which are bringing pages this corpus has no use
-for. It reports; it never edits a profile.
-
-Most of the answer costs nothing. Local signals measure every page — markup that survived
-extraction, component tags, pages that are only links, code fences left open, pages with no prose
-in them — and that alone names the pages that are broken past argument:
-
-```bash
-uv run crawlee-lab audit --dry-run
-```
-
-    target              | pages | clean | suspect | broken | sections
-    --------------------+-------+-------+---------+--------+---------
-    claude-code-docs    |   168 |    68 |     100 |      0 |        2
-    gemini-docs         |   219 |   213 |       5 |      1 |        7
-    openai-docs         |   532 |   485 |      45 |      2 |      102
-
-What local signals cannot settle is whether a page is *about* anything the corpus wants. That
-needs a reader, and readers cost money, so the audit spends as little of it as it can. Sections are
-ruled on first, because ruling out `developers.openai.com/plugins` settles thirty pages for the
-price of one question. Only then are pages read, and only the ones still in question: what the
-signals could not vouch for, what sits in a section nobody could rule on, and a fixed sample of the
-pages that looked fine, which is the only thing that measures what the signals miss.
-
-A cheap model reads them all; a better one re-reads only the pages the first one condemned or was
-unsure about, because a wrong flag is what costs you a page you wanted. Where the two disagree
-nothing is decided: the URL is reported as disputed and left to you.
-
-    Flag             Effect
-    --------------   ----------------------------------------------------------------
-    --dry-run        Measure and price the audit without calling any model
-    --depth N        Roll sections up to N path segments, the largest lever on cost
-    --only-changed   Judge only pages whose content moved since the last audit
-    --budget N       Refuse to submit a round projected above N dollars
-    --list BUCKET    Print one URL per line, for piping into an exclude rule
-
-Verdicts are keyed by the content hash the manifest already holds, so an unchanged page is never
-judged twice and re-auditing an unchanged corpus costs nothing. Findings land in
-`data/<name>/AUDIT.md`, split by what they ask of you: `malformed` is extraction to fix,
-`irrelevant` is an exclude rule to write, `disputed` is yours to decide, and `control` is the
-sample that says how much the free signals missed.
-
-```bash
-uv run crawlee-lab audit openai-docs --list irrelevant >> exclusions.txt
-```
-
-The exit code follows `watch`: 0 nothing flagged, 10 something flagged, 1 the audit failed.
-
-Set `ANTHROPIC_API_KEY` to enable the model tiers; see `.env.example` for the models and the
-spending ceiling. Without it the local tier still runs and still reports.
 
 ## Snapshots and change tracking
 
@@ -303,13 +245,9 @@ mark left is `browser`, for the tests that need Playwright's Chromium installed.
 
 ## Cost
 
-Crawling costs nothing. The whole stack is open source and runs locally, and Apify Cloud, paid
-proxies and LLM-assisted extraction remain out of scope.
-
-`audit` is the one exception, and it is opt-in twice over: it does nothing unless you run it, and
-its model tiers do nothing unless a key is present. Its local tier is free and is what finds the
-pages that are broken past argument. Every round prints what it projects to cost before submitting
-anything, and refuses to submit a round projected above the ceiling.
+Nothing here costs money. The whole stack is open source and runs locally. Apify Cloud, paid
+proxies and LLM-assisted extraction are all deliberately out of scope: no model is consulted at any
+point between a URL going in and a snapshot coming out.
 
 ## License
 

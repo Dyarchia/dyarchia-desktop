@@ -19,6 +19,9 @@ dependencies = [
 crawlee-lab = "crawlee_lab.cli:app"
 
 [dependency-groups]
+audit = [
+    "anthropic>=0.40",
+]
 dev = [
     "ruff>=0.9",
     "mypy>=1.14",
@@ -76,7 +79,7 @@ mypy_path = "src"
 packages = ["crawlee_lab"]
 
 [[tool.mypy.overrides]]
-module = ["trafilatura.*"]
+module = ["trafilatura.*", "anthropic.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

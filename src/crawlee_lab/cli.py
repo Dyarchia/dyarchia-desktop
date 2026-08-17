@@ -13,6 +13,9 @@ from rich.console import Console
 from rich.table import Table
 
 from crawlee_lab import __version__, inventory, registry
+from crawlee_lab.audit import command as audit_console
+from crawlee_lab.audit import run as audit_run
+from crawlee_lab.audit import store as audit_store
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
 from crawlee_lab.errors import ConfigurationError, CrawleeLabError
@@ -530,6 +533,76 @@ def render_watch(result: WatchResult, document: Path) -> None:
     console.print(table)
     console.print(result.headline)
     console.print(f'report: {document}', style='dim')
+
+
+@app.command(name='audit')
+def audit_command(
+    names: Annotated[
+        list[str] | None,
+        typer.Argument(help='Targets to audit. Defaults to every snapshotted target.'),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option('--dry-run', help='Measure and price the audit without calling any model.'),
+    ] = False,
+    only_changed: Annotated[
+        bool,
+        typer.Option('--only-changed', help='Judge only pages whose content moved since the last audit.'),
+    ] = False,
+    listing: Annotated[
+        str | None,
+        typer.Option('--list', help='Print one URL per line from a bucket of the last audit.'),
+    ] = None,
+    budget: Annotated[
+        float | None,
+        typer.Option('--budget', min=0.0, help='Refuse to submit a round projected above this many USD.'),
+    ] = None,
+    depth: Annotated[
+        int | None,
+        typer.Option('--depth', min=1, help='Roll sections up to the first N path segments.'),
+    ] = None,
+) -> None:
+    """Report which URLs are bringing malformed or irrelevant content.
+
+    The local checks always run and cost nothing. Reaching a model is what costs money, so the
+    projection is printed before anything is submitted and a ceiling is enforced against it.
+    """
+    settings = get_settings()
+    selected = audit_command_targets(names, settings)
+    if not selected:
+        console.print('no snapshotted targets found')
+        return
+
+    try:
+        if listing is not None:
+            root = settings.resolve(settings.data_dir)
+            saved = [audit_store.load_state(root / name, name) for name in selected]
+            audit_console.print_bucket(saved, listing)
+            return
+
+        plans = [audit_run.plan(name, settings, only_changed, depth) for name in selected]
+        audit_console.render_local(plans)
+        audit_console.render_broken(plans)
+
+        if dry_run:
+            floor, ceiling = audit_console.projections(plans, settings)
+            audit_console.render_projection(floor, ceiling)
+            console.print('dry run, nothing submitted', style='dim')
+            return
+
+        states = audit_console.execute(plans, settings, budget or settings.audit_max_spend_usd)
+        for path in audit_run.persist(states, settings):
+            console.print(f'report: {path}', style='dim')
+        flagged = audit_console.render_findings(states)
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
+
+    raise typer.Exit(code=10 if flagged else 0)
+
+
+def audit_command_targets(names: list[str] | None, settings: Settings) -> list[str]:
+    return list(names) if names else inventory.tracked(settings)
 
 
 @app.command()

@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     output_dir: Path = Path('output')
     profiles_dir: Path = Path('profiles')
 
+    anthropic_api_key: str | None = None
+    audit_fast_model: str = 'claude-haiku-4-5'
+    audit_careful_model: str = 'claude-sonnet-5'
+    audit_arbiter_model: str = 'claude-opus-5'
+    audit_max_spend_usd: float = Field(default=5.0, ge=0.0)
+
     @property
     def project_root(self) -> Path:
         return find_project_root()

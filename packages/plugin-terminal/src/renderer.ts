@@ -4,12 +4,12 @@ import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { ClipboardAddon } from '@xterm/addon-clipboard'
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import type { PluginContext } from '@decimatio/sdk'
+import type { PluginContext } from '@dyarchia/sdk'
 
 function ensureStyles(): void {
-    if (document.getElementById('decimatio-terminal-styles')) return
+    if (document.getElementById('dyarchia-terminal-styles')) return
     const style = document.createElement('style')
-    style.id = 'decimatio-terminal-styles'
+    style.id = 'dyarchia-terminal-styles'
     style.textContent =
         xtermCss +
         '\n.xterm .xterm-viewport { background-color: transparent !important; }' +
@@ -29,7 +29,7 @@ const TERMINAL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>'
 
 interface PortAnnouncement {
-    decimatioPort?: {
+    dyarchiaPort?: {
         pluginId: string
         attachId: string
     }
@@ -90,7 +90,7 @@ export function activate(ctx: PluginContext): void {
         }
 
         const onPortAnnouncement = (event: MessageEvent): void => {
-            const payload = (event.data as PortAnnouncement).decimatioPort
+            const payload = (event.data as PortAnnouncement).dyarchiaPort
             if (!payload || payload.pluginId !== 'terminal' || payload.attachId !== attachId) {
                 return
             }

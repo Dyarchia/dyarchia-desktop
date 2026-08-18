@@ -11,8 +11,8 @@ const api = {
     }
 }
 
-contextBridge.exposeInMainWorld('decimatio', api)
+contextBridge.exposeInMainWorld('dyarchia', api)
 
-ipcRenderer.on('decimatio:port', (event, message: unknown) => {
-    window.postMessage({ decimatioPort: message }, '*', event.ports)
+ipcRenderer.on('dyarchia:port', (event, message: unknown) => {
+    window.postMessage({ dyarchiaPort: message }, '*', event.ports)
 })

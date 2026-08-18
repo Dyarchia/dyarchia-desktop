@@ -1,5 +1,5 @@
-appId: dev.decimatio.desktop
-productName: decimatio
+appId: dev.dyarchia.desktop
+productName: dyarchia
 directories:
     output: release
 files:
@@ -10,4 +10,4 @@ win:
         - portable
     icon: null
 portable:
-    artifactName: decimatio-${version}.exe
+    artifactName: dyarchia-${version}.exe

@@ -20,7 +20,7 @@ interface PluginModule {
 }
 
 export async function loadPlugins(): Promise<void> {
-    const bridge = window.decimatio
+    const bridge = window.dyarchia
     if (!bridge) return
     const entries = (await bridge.invoke('shell:plugins:list')) as PluginListEntry[]
     for (const entry of entries) {

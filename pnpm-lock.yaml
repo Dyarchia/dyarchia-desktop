@@ -53,7 +53,7 @@ importers:
 
   packages/plugin-docviewer:
     devDependencies:
-      '@decimatio/sdk':
+      '@dyarchia/sdk':
         specifier: workspace:*
         version: link:../sdk
       esbuild:
@@ -68,7 +68,7 @@ importers:
 
   packages/plugin-player:
     devDependencies:
-      '@decimatio/sdk':
+      '@dyarchia/sdk':
         specifier: workspace:*
         version: link:../sdk
       electron:
@@ -83,7 +83,7 @@ importers:
 
   packages/plugin-sample:
     devDependencies:
-      '@decimatio/sdk':
+      '@dyarchia/sdk':
         specifier: workspace:*
         version: link:../sdk
       esbuild:
@@ -99,7 +99,7 @@ importers:
         specifier: ^1.0.0
         version: 1.1.0
     devDependencies:
-      '@decimatio/sdk':
+      '@dyarchia/sdk':
         specifier: workspace:*
         version: link:../sdk
       '@xterm/addon-clipboard':

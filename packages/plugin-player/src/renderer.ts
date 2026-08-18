@@ -1,4 +1,4 @@
-import type { PluginContext } from '@decimatio/sdk'
+import type { PluginContext } from '@dyarchia/sdk'
 
 interface DirEntry {
     name: string
@@ -76,9 +76,9 @@ const STYLES = `
 `
 
 function ensureStyles(): void {
-    if (document.getElementById('decimatio-player-styles')) return
+    if (document.getElementById('dyarchia-player-styles')) return
     const style = document.createElement('style')
-    style.id = 'decimatio-player-styles'
+    style.id = 'dyarchia-player-styles'
     style.textContent = STYLES
     document.head.appendChild(style)
 }
@@ -110,7 +110,7 @@ export function activate(ctx: PluginContext): void {
                 const media = document.createElement(VIDEO_EXTENSIONS.has(ext) ? 'video' : 'audio')
                 media.controls = true
                 media.autoplay = true
-                media.src = `decimatio-media://local/${encodeURIComponent(entry.path)}`
+                media.src = `dyarchia-media://local/${encodeURIComponent(entry.path)}`
                 media.onerror = () => {
                     stage.innerHTML = '<div class="player-empty">Cannot play this file</div>'
                 }

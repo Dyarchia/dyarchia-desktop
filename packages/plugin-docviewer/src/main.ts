@@ -1,7 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginMainContext } from '@decimatio/sdk'
+import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
 

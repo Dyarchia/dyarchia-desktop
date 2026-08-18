@@ -6,7 +6,7 @@ import { registerPluginScheme, setupPlugins } from './plugins'
 
 registerPluginScheme()
 
-const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'] || process.env['DECIMATIO_DEBUG'])
+const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'] || process.env['DYARCHIA_DEBUG'])
 
 if (isDev) {
     app.commandLine.appendSwitch('remote-debugging-port', '9222')

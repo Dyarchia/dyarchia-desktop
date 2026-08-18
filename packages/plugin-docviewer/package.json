@@ -1,5 +1,5 @@
 {
-    "name": "@decimatio/plugin-docviewer",
+    "name": "@dyarchia/plugin-docviewer",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -9,7 +9,7 @@
         "build:main": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/main.js"
     },
     "devDependencies": {
-        "@decimatio/sdk": "workspace:*",
+        "@dyarchia/sdk": "workspace:*",
         "esbuild": "^0.28.2",
         "marked": "^16.4.1",
         "typescript": "^5.9.0"

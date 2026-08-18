@@ -1,14 +1,14 @@
 import { app, ipcMain, MessageChannelMain, utilityProcess } from 'electron'
 import type { UtilityProcess } from 'electron'
 import { join } from 'node:path'
-import type { PluginMainContext } from '@decimatio/sdk'
+import type { PluginMainContext } from '@dyarchia/sdk'
 
 let host: UtilityProcess | null = null
 
 function ensureHost(): UtilityProcess {
     if (host) return host
     const spawned = utilityProcess.fork(join(import.meta.dirname, 'ptyhost.cjs'), [], {
-        serviceName: 'decimatio pty host'
+        serviceName: 'dyarchia pty host'
     })
     spawned.on('exit', () => {
         if (host === spawned) host = null
@@ -27,7 +27,7 @@ export function activate(_ctx: PluginMainContext): void {
         const ptyHost = ensureHost()
         const { port1, port2 } = new MessageChannelMain()
         ptyHost.postMessage({ type: 'attach', attachId, cols, rows }, [port1])
-        event.sender.postMessage('decimatio:port', { pluginId: 'terminal', attachId }, [port2])
+        event.sender.postMessage('dyarchia:port', { pluginId: 'terminal', attachId }, [port2])
         return true
     })
 

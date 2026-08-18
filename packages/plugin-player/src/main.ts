@@ -4,9 +4,9 @@ import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
-import type { PluginMainContext } from '@decimatio/sdk'
+import type { PluginMainContext } from '@dyarchia/sdk'
 
-const MEDIA_SCHEME = 'decimatio-media'
+const MEDIA_SCHEME = 'dyarchia-media'
 
 const MIME_TYPES: Record<string, string> = {
     '.mp3': 'audio/mpeg',

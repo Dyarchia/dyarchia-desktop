@@ -18,9 +18,9 @@ interface DiscoveredPlugin {
     dir: string
 }
 
-const PLUGIN_SCHEME = 'decimatio-plugin'
+const PLUGIN_SCHEME = 'dyarchia-plugin'
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/
-const MANIFEST_FILE = 'decimatio-plugin.json'
+const MANIFEST_FILE = 'dyarchia-plugin.json'
 
 const plugins = new Map<string, DiscoveredPlugin>()
 
@@ -84,7 +84,7 @@ function pluginRoots(): string[] {
     if (!app.isPackaged) {
         roots.push(resolve(import.meta.dirname, '../../../..', 'packages'))
     }
-    roots.push(join(app.getPath('appData'), 'decimatio', 'plugins'))
+    roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))
     return roots
 }
 

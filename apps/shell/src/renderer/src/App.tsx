@@ -71,7 +71,7 @@ export function App(): React.JSX.Element {
                     <DockLayout onReady={handleReady} />
                 ) : (
                     <div className="shell-empty">
-                        <p>decimatio</p>
+                        <p>dyarchia</p>
                         <p className="shell-empty-hint">Loading plugins…</p>
                     </div>
                 )}

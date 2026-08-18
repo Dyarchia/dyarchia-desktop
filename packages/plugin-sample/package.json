@@ -1,5 +1,5 @@
 {
-    "name": "@decimatio/plugin-sample",
+    "name": "@dyarchia/plugin-sample",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -7,7 +7,7 @@
         "build": "esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js"
     },
     "devDependencies": {
-        "@decimatio/sdk": "workspace:*",
+        "@dyarchia/sdk": "workspace:*",
         "esbuild": "^0.28.2",
         "typescript": "^5.9.0"
     }

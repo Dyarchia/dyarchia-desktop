@@ -21,13 +21,13 @@ function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
 }
 
 function windowAction(action: string): void {
-    void window.decimatio?.invoke(`shell:window:${action}`)
+    void window.dyarchia?.invoke(`shell:window:${action}`)
 }
 
 export function TopBar({ panels, openPanelIds, onToggle }: TopBarProps): React.JSX.Element {
     return (
         <div className="topbar">
-            <div className="topbar-title">decimatio</div>
+            <div className="topbar-title">dyarchia</div>
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {panels.map((panel) => (

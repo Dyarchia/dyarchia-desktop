@@ -1,5 +1,5 @@
 import { marked } from 'marked'
-import type { PluginContext } from '@decimatio/sdk'
+import type { PluginContext } from '@dyarchia/sdk'
 
 interface DirEntry {
     name: string
@@ -83,9 +83,9 @@ const TEXT_EXTENSIONS = new Set([
 ])
 
 function ensureStyles(): void {
-    if (document.getElementById('decimatio-docviewer-styles')) return
+    if (document.getElementById('dyarchia-docviewer-styles')) return
     const style = document.createElement('style')
-    style.id = 'decimatio-docviewer-styles'
+    style.id = 'dyarchia-docviewer-styles'
     style.textContent = STYLES
     document.head.appendChild(style)
 }

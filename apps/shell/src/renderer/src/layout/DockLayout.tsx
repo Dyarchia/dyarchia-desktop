@@ -11,9 +11,9 @@ import type {
 import { PluginPanel } from '../panels/PluginPanel'
 import { basePanelId, getPanel } from '../panels/registry'
 
-const decimatioTheme: DockviewTheme = {
+const dyarchiaTheme: DockviewTheme = {
     ...themeAbyssSpaced,
-    name: 'decimatio',
+    name: 'dyarchia',
     gap: 14,
     tabGroupIndicator: 'none'
 }
@@ -76,7 +76,7 @@ export function DockLayout({ onReady }: DockLayoutProps): React.JSX.Element {
     const handleReady = useCallback(
         async (event: DockviewReadyEvent) => {
             const api = event.api
-            const bridge = window.decimatio
+            const bridge = window.dyarchia
             if (bridge) {
                 const saved = (await bridge.invoke('shell:layout:load')) as
                     | SerializedDockview
@@ -103,7 +103,7 @@ export function DockLayout({ onReady }: DockLayoutProps): React.JSX.Element {
     return (
         <DockviewReact
             className="dock-root"
-            theme={decimatioTheme}
+            theme={dyarchiaTheme}
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
             rightHeaderActionsComponent={GroupActions}

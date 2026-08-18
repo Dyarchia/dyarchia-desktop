@@ -1,4 +1,4 @@
-# Como escribir un plugin de decimatio-desktop
+# Como escribir un plugin de dyarchia-desktop
 
 Guia para crear una funcionalidad nueva y registrarla en el shell. Un plugin es una carpeta
 con un manifest y uno o dos bundles JavaScript; el shell lo descubre al arrancar.
@@ -8,7 +8,7 @@ con un manifest y uno o dos bundles JavaScript; el shell lo descubre al arrancar
 
     Fichero                    Obligatorio    Que es
     -----------------------    -----------    ------------------------------------------
-    decimatio-plugin.json      si             manifest: identidad y puntos de entrada
+    dyarchia-plugin.json      si             manifest: identidad y puntos de entrada
     dist/renderer.js           si             bundle ESM que corre en el renderer
     dist/main.js               no             modulo Node que corre en el proceso main
     node_modules/              no             dependencias nativas del modulo main
@@ -34,7 +34,7 @@ Reglas del manifest:
   (p. ej. streaming de media). El shell los declara como privilegiados en el boot
   (standard, secure, fetch, cors, stream) y el modulo main del plugin registra el handler
   con protocol.handle en su activate. Nombres en minusculas; los reservados (http, file,
-  decimatio-plugin, etc.) se rechazan.
+  dyarchia-plugin, etc.) se rechazan.
 
 
 ## 2. El bundle renderer
@@ -50,7 +50,7 @@ Modulo ESM que exporta activate(ctx). El contexto ofrece:
 El mount recibe el contenedor DOM del panel y devuelve (opcional) una funcion de limpieza:
 
 ```typescript
-import type { PluginContext } from '@decimatio/sdk'
+import type { PluginContext } from '@dyarchia/sdk'
 
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel({ id: 'miplugin', title: 'Mi Plugin', icon: 'M' }, (container) => {
@@ -89,7 +89,7 @@ plugin:terminal:spawn a nivel de IPC. Renderer y main del mismo plugin usan el m
 corto de canal.
 
 ```typescript
-import type { PluginMainContext } from '@decimatio/sdk'
+import type { PluginMainContext } from '@dyarchia/sdk'
 
 export function activate(ctx: PluginMainContext): void {
     ctx.handle('saluda', (...args) => `hola ${args[0]}`)
@@ -99,7 +99,7 @@ export function activate(ctx: PluginMainContext): void {
 
 ## 4. Build e instalacion
 
-Bundles con esbuild, formato ESM. El renderer se sirve por el protocolo decimatio-plugin://
+Bundles con esbuild, formato ESM. El renderer se sirve por el protocolo dyarchia-plugin://
 y el main se importa como modulo Node desde la carpeta del plugin.
 
 ```bash
@@ -118,7 +118,7 @@ Donde vive el plugin segun el modo:
     Modo         Ubicacion                                  Como llega
     ---------    ---------------------------------------    ---------------------------------
     dev          packages/<carpeta>/                        el shell escanea el workspace
-    portable     %APPDATA%/decimatio/plugins/<id>/          node scripts/install-plugins.mjs
+    portable     %APPDATA%/dyarchia/plugins/<id>/          node scripts/install-plugins.mjs
 
 En dev el workspace tiene prioridad sobre los instalados, de modo que la copia instalada
 nunca tapa a la version en desarrollo.
@@ -130,7 +130,7 @@ nunca tapa a la version en desarrollo.
 flowchart TD
     A[Arranque del shell] --> B[Discovery: lee manifests]
     B --> C[activate de modulos main]
-    C --> D[Renderer: import del bundle<br/>por decimatio-plugin://]
+    C --> D[Renderer: import del bundle<br/>por dyarchia-plugin://]
     D --> E[activate del renderer:<br/>registerPanel]
     E --> F[Toggle en barra superior]
     F -- "click" --> G[mount en contenedor DOM]
@@ -144,7 +144,7 @@ flowchart TD
 
 ## 6. Checklist para un plugin nuevo
 
-1. Carpeta en packages/ con decimatio-plugin.json valido.
+1. Carpeta en packages/ con dyarchia-plugin.json valido.
 2. renderer.ts con activate que registra al menos un panel.
 3. Script build con esbuild y dist/ generado.
 4. pnpm dev y comprobar: aparece el toggle, el panel monta y desmonta sin errores en consola.

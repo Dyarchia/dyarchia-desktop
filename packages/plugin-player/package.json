@@ -1,5 +1,5 @@
 {
-    "name": "@decimatio/plugin-player",
+    "name": "@dyarchia/plugin-player",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -9,7 +9,7 @@
         "build:main": "esbuild src/main.ts --bundle --platform=node --format=esm --external:electron --outfile=dist/main.js"
     },
     "devDependencies": {
-        "@decimatio/sdk": "workspace:*",
+        "@dyarchia/sdk": "workspace:*",
         "electron": "^43.3.0",
         "esbuild": "^0.28.2",
         "typescript": "^5.9.0"

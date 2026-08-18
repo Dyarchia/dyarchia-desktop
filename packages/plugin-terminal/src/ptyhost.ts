@@ -141,7 +141,7 @@ function createSession(cols: number, rows: number): Session {
     const env = { ...(process.env as Record<string, string>) }
     delete env['ELECTRON_RUN_AS_NODE']
     env['COLORTERM'] = 'truecolor'
-    env['TERM_PROGRAM'] = 'decimatio'
+    env['TERM_PROGRAM'] = 'dyarchia'
     const pty = spawn('pwsh.exe', ['-NoLogo'], {
         name: 'xterm-256color',
         cols,

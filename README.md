@@ -1,6 +1,6 @@
-# decimatio-desktop
+# dyarchia-desktop
 
-Shell de escritorio para el ecosistema decimatio. Contenedor de paneles al estilo del Code tab
+Shell de escritorio para el ecosistema dyarchia. Contenedor de paneles al estilo del Code tab
 de Claude Desktop: arranca vacio y cada funcionalidad se registra como plugin con sus propios
 paneles, draggables, redimensionables y persistentes entre sesiones.
 
@@ -16,7 +16,7 @@ paneles, draggables, redimensionables y persistentes entre sesiones.
 ```mermaid
 flowchart LR
     subgraph main [Proceso main]
-        D[Discovery de plugins] --> P[Protocolo decimatio-plugin://]
+        D[Discovery de plugins] --> P[Protocolo dyarchia-plugin://]
         D --> M[Modulos main de plugin<br/>node-pty, fs]
     end
     subgraph renderer [Renderer]
@@ -40,17 +40,17 @@ Detalle de piezas:
 
 ## 2. Estructura del repo
 
-    decimatio-desktop/
+    dyarchia-desktop/
         apps/
             shell/               app Electron (main, preload, renderer)
         packages/
-            sdk/                 @decimatio/sdk - tipos del contrato
+            sdk/                 @dyarchia/sdk - tipos del contrato
             plugin-sample/       plugin minimo de referencia
             plugin-terminal/     terminal embebida (xterm.js + node-pty)
             plugin-docviewer/    arbol de ficheros + render markdown
-            plugin-player/       reproductor de audio/video (decimatio-media://)
+            plugin-player/       reproductor de audio/video (dyarchia-media://)
         scripts/
-            install-plugins.mjs  copia plugins a %APPDATA%/decimatio/plugins
+            install-plugins.mjs  copia plugins a %APPDATA%/dyarchia/plugins
         docs/
             plugins.md           como escribir un plugin
 
@@ -70,10 +70,10 @@ Build de todos los workspaces:
 pnpm build
 ```
 
-Empaquetado portable de Windows (genera apps/shell/release/decimatio-x.y.z.exe):
+Empaquetado portable de Windows (genera apps/shell/release/dyarchia-x.y.z.exe):
 
 ```bash
-pnpm --filter @decimatio/shell package
+pnpm --filter @dyarchia/shell package
 ```
 
 Instalacion de plugins para la app empaquetada:
@@ -87,14 +87,14 @@ node scripts/install-plugins.mjs
 
     Dato                  Ruta
     ------------------    -------------------------------------------
-    Layout (dev)          %APPDATA%/@decimatio/shell/layout.json
-    Layout (portable)     %APPDATA%/decimatio/layout.json
-    Plugins instalados    %APPDATA%/decimatio/plugins/<id>/
+    Layout (dev)          %APPDATA%/@dyarchia/shell/layout.json
+    Layout (portable)     %APPDATA%/dyarchia/layout.json
+    Plugins instalados    %APPDATA%/dyarchia/plugins/<id>/
 
 
 ## 5. Debug
 
-Con la variable de entorno DECIMATIO_DEBUG=1 (o siempre en dev) el shell expone Chrome
+Con la variable de entorno DYARCHIA_DEBUG=1 (o siempre en dev) el shell expone Chrome
 DevTools Protocol en el puerto 9222. El renderer publica la API de dockview en
 window.__dockApi para inspeccion.
 

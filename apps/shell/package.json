@@ -1,6 +1,6 @@
 {
-    "name": "@decimatio/shell",
-    "productName": "decimatio",
+    "name": "@dyarchia/shell",
+    "productName": "dyarchia",
     "version": "0.1.0",
     "private": true,
     "type": "module",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@dyarchia/ui";
+import { Button, Kbd } from "@dyarchia/ui";
 import styles from "./App.module.css";
 
 type Theme = "light" | "dark";
@@ -33,6 +33,15 @@ export function App() {
                         <Button variant="secondary" disabled>
                             Disabled
                         </Button>
+                    </div>
+                </section>
+                <section className={styles.section}>
+                    <h2 className={styles.eyebrow}>Kbd</h2>
+                    <div className={styles.row}>
+                        <Kbd>Ctrl</Kbd>
+                        <Kbd>Shift</Kbd>
+                        <Kbd>K</Kbd>
+                        <Kbd pressed>K</Kbd>
                     </div>
                 </section>
             </main>

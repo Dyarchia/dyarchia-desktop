@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Button } from "../src";
+import { Button, Kbd } from "../src";
 
 describe("Button", () => {
     it("renders an accessible button with its label", () => {
@@ -39,5 +39,27 @@ describe("Button", () => {
     it("keeps the classes passed to it", () => {
         render(<Button className="extra">Deploy</Button>);
         expect(screen.getByRole("button").className).toContain("extra");
+    });
+});
+
+describe("Kbd", () => {
+    it("renders a kbd element", () => {
+        const { container } = render(<Kbd>K</Kbd>);
+        expect(container.querySelector("kbd")).not.toBeNull();
+    });
+
+    it("is not pressed by default", () => {
+        const { container } = render(<Kbd>K</Kbd>);
+        expect(container.querySelector("kbd")!.dataset.pressed).toBe("false");
+    });
+
+    it("exposes the pressed state", () => {
+        const { container } = render(<Kbd pressed>K</Kbd>);
+        expect(container.querySelector("kbd")!.dataset.pressed).toBe("true");
+    });
+
+    it("shows its content", () => {
+        render(<Kbd>Ctrl</Kbd>);
+        expect(screen.getByText("Ctrl")).toBeDefined();
     });
 });

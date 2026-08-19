@@ -432,9 +432,14 @@ Se resuelven mirando pantalla en la fase 1. Ninguna bloquea el arranque.
   el oscuro es frío (sesgo azul, de Raycast). Cada tema es coherente por dentro,
   pero conviene decidir si se unifica la temperatura o si la divergencia es
   deliberada.
-- **Relieve en claro.** Los cuatro valores de 7.2 en la columna clara son un
-  punto de partida razonado, no medido: Factory no tiene sombras que copiar.
+- **Relieve en claro.** Resuelto: verificado en el catálogo con el navegador, sin
+  necesidad de ajuste. El claro produce un anillo de contorno
+  `rgba(0,0,0,0.12)` y una luz interior `rgba(255,255,255,0.9)`; el oscuro
+  produce `rgba(255,255,255,0.15)` y `rgba(255,255,255,0.2)`. La receta
+  invierte tal como estaba diseñada y hace el ida y vuelta limpio al alternar
+  el tema.
 - **Conjuntos estilísticos de Geist.** Determinar empíricamente cuáles aportan.
   No se transfiere el `ss03` de la referencia, que es específico de Inter.
-- **Radio de la tecla.** 3px es lo que manda el sistema, pero una tecla física a
-  3px puede pedir el `--dya-radius-media` de 4px. Se decide en pantalla.
+- **Radio de la tecla.** Resuelto: 3px, `var(--dya-radius)`, el mismo que usa
+  el resto del sistema. No se introdujo un radio especial; se mantiene la
+  regla de los tres radios.

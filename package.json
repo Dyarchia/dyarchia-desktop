@@ -9,7 +9,7 @@
     "scripts": {
         "test": "vitest run",
         "test:watch": "vitest",
-        "typecheck": "tsc -b",
+        "typecheck": "tsc -p tsconfig.json",
         "catalog": "pnpm --filter @dyarchia/catalog dev"
     },
     "devDependencies": {

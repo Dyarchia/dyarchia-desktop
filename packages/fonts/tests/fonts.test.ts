@@ -28,7 +28,7 @@ describe("@dyarchia/fonts", () => {
         expect(urlMatches).toHaveLength(2);
 
         for (const match of urlMatches!) {
-            const url = match.match(/url\("([^"]+)"\)/)![1];
+            const url = match.match(/url\("([^"]+)"\)/)![1]!;
             const resolved = fileURLToPath(new URL(url, CSS_FILE_URL));
             expect(existsSync(resolved), `missing: ${url}`).toBe(true);
         }

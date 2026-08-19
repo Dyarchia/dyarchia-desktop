@@ -67,7 +67,7 @@ export function App() {
                     <Eyebrow>Badge and Separator</Eyebrow>
                     <div className={styles.row}>
                         <Badge>beta</Badge>
-                        <Badge tone="accent">nuevo</Badge>
+                        <Badge tone="accent">new</Badge>
                         <Separator orientation="vertical" />
                         <Badge>v0.1.0</Badge>
                     </div>

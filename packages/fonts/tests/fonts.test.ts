@@ -2,10 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const CSS = readFileSync(
-    fileURLToPath(new URL("../src/fonts.css", import.meta.url)),
-    "utf8",
-);
+const CSS_FILE_URL = new URL("../src/fonts.css", import.meta.url);
+const CSS = readFileSync(fileURLToPath(CSS_FILE_URL), "utf8");
 
 const FACES = [
     {
@@ -31,7 +29,7 @@ describe("@dyarchia/fonts", () => {
 
         for (const match of urlMatches!) {
             const url = match.match(/url\("([^"]+)"\)/)![1];
-            const resolved = fileURLToPath(new URL(url, import.meta.url));
+            const resolved = fileURLToPath(new URL(url, CSS_FILE_URL));
             expect(existsSync(resolved), `missing: ${url}`).toBe(true);
         }
     });

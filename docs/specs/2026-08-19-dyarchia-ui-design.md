@@ -310,6 +310,15 @@ en claro `#101010` a `#2e2c2b`, en oscuro `#e6e6e6` a `#ffffff`.
 --dya-dur-fast    160ms      --dya-dur-slow   320ms
 ```
 
+- **`box-shadow` no se transiciona nunca.** Cambia de golpe. Listar `box-shadow`
+  en `transition` congela la propiedad frente a los cambios de tema: el
+  navegador deja de reevaluar el `var()` del que deriva y la sombra conserva los
+  parámetros de relieve del tema anterior. Verificado en Chromium: un elemento
+  con `transition: box-shadow` mantiene el anillo del tema claro al pasar a
+  oscuro, y se corrige en el instante en que se le retira la transición. Es
+  además la propiedad más cara de animar, que §9 ya penaliza. Las transiciones
+  se limitan a `transform`, `opacity` y `background-color`, que sí reevalúan sus
+  tokens correctamente.
 - Pulsar nunca cambia solo el color: siempre escala hacia dentro. Filas a
   `scale(.98)`, teclas a `translateY(2px)`.
 - Menús y popovers se desplazan 2px, no más.

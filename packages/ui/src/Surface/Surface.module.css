@@ -1,0 +1,12 @@
+.surface {
+    padding: var(--dya-space-5);
+    border-radius: var(--dya-radius);
+}
+
+.surface[data-level="1"] {
+    background: var(--dya-surface-1);
+}
+
+.surface[data-level="2"] {
+    background: var(--dya-surface-2);
+}

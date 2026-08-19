@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Kbd } from "@dyarchia/ui";
+import { Button, Card, Input, Kbd, Surface } from "@dyarchia/ui";
 import styles from "./App.module.css";
 
 type Theme = "light" | "dark";
@@ -42,6 +42,24 @@ export function App() {
                         <Kbd>Shift</Kbd>
                         <Kbd>K</Kbd>
                         <Kbd pressed>K</Kbd>
+                    </div>
+                </section>
+
+                <section className={styles.section}>
+                    <h2 className={styles.eyebrow}>Input</h2>
+                    <div className={styles.row}>
+                        <Input placeholder="origin/main" />
+                        <Input defaultValue="dyarchia" />
+                        <Input placeholder="disabled" disabled />
+                    </div>
+                </section>
+
+                <section className={styles.section}>
+                    <h2 className={styles.eyebrow}>Surfaces</h2>
+                    <div className={styles.row}>
+                        <Card>Card on surface 1</Card>
+                        <Surface level={1}>Surface 1</Surface>
+                        <Surface level={2}>Surface 2</Surface>
                     </div>
                 </section>
             </main>

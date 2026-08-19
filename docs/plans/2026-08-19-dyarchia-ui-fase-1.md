@@ -1476,7 +1476,6 @@ export function Button({
     text-transform: uppercase;
     cursor: pointer;
     transition:
-        box-shadow var(--dya-dur-fast) var(--dya-ease),
         background-color var(--dya-dur-fast) var(--dya-ease),
         transform var(--dya-dur-press) var(--dya-ease-press);
 }
@@ -1715,9 +1714,7 @@ export function Kbd({ pressed = false, className, ...rest }: KbdProps) {
     letter-spacing: var(--dya-tracking-mono);
     text-transform: uppercase;
     user-select: none;
-    transition:
-        box-shadow var(--dya-dur-fast) var(--dya-ease-out),
-        transform var(--dya-dur-fast) var(--dya-ease-out);
+    transition: transform var(--dya-dur-fast) var(--dya-ease-out);
 }
 
 .kbd[data-pressed="true"] {
@@ -2358,6 +2355,10 @@ describe("the mandate", () => {
 
     it("rule 9: durations and curves go through tokens", () => {
         expect(offenders(/transition:[^;]*\b\d+m?s\b/)).toEqual([]);
+    });
+
+    it("box-shadow is never transitioned", () => {
+        expect(offenders(/transition:[^;]*box-shadow/)).toEqual([]);
     });
 });
 ```

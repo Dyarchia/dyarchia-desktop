@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Button, Kbd } from "../src";
+import { Button, Card, Input, Kbd, Surface } from "../src";
 
 describe("Button", () => {
     it("renders an accessible button with its label", () => {
@@ -61,5 +61,43 @@ describe("Kbd", () => {
     it("shows its content", () => {
         render(<Kbd>Ctrl</Kbd>);
         expect(screen.getByText("Ctrl")).toBeDefined();
+    });
+});
+
+describe("Input", () => {
+    it("renders a text field associable with its label", () => {
+        render(
+            <>
+                <label htmlFor="repo">Repo</label>
+                <Input id="repo" />
+            </>,
+        );
+        expect(screen.getByLabelText("Repo")).toBeDefined();
+    });
+
+    it("forwards placeholder, value and disabled", () => {
+        render(<Input placeholder="origin/main" defaultValue="dyarchia" disabled />);
+        const input = screen.getByPlaceholderText("origin/main") as HTMLInputElement;
+        expect(input.value).toBe("dyarchia");
+        expect(input.disabled).toBe(true);
+    });
+});
+
+describe("Card", () => {
+    it("renders its content", () => {
+        render(<Card>Plan</Card>);
+        expect(screen.getByText("Plan")).toBeDefined();
+    });
+});
+
+describe("Surface", () => {
+    it("defaults to level 1", () => {
+        const { container } = render(<Surface>panel</Surface>);
+        expect((container.firstElementChild as HTMLElement).dataset.level).toBe("1");
+    });
+
+    it("accepts level 2", () => {
+        const { container } = render(<Surface level={2}>panel</Surface>);
+        expect((container.firstElementChild as HTMLElement).dataset.level).toBe("2");
     });
 });

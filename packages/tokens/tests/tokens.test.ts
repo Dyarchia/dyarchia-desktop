@@ -106,3 +106,61 @@ describe("theme parity", () => {
         expect(shape).toEqual([]);
     });
 });
+
+describe("elevation", () => {
+    const RUNGS = [
+        "--dya-elev-flat",
+        "--dya-elev-raised",
+        "--dya-elev-raised-hover",
+        "--dya-elev-key",
+        "--dya-elev-key-pressed",
+        "--dya-elev-overlay",
+    ];
+
+    it("declares the six rungs", () => {
+        const missing = RUNGS.filter((rung) => !LIGHT.has(rung));
+        expect(missing).toEqual([]);
+    });
+
+    it("recipes carry no literal color, only relief parameters", () => {
+        for (const rung of RUNGS) {
+            const recipe = LIGHT.get(rung)!;
+            if (recipe === "none") {
+                continue;
+            }
+            expect(recipe, `${rung} carries a literal color`).not.toMatch(
+                /#(?!0{4}(?:[^0-9a-fA-F]|$))[0-9a-fA-F]{3,8}(?![\w-])/,
+            );
+        }
+    });
+
+    it("no raised rung is a lone diffuse shadow", () => {
+        for (const rung of ["--dya-elev-raised", "--dya-elev-key", "--dya-elev-overlay"]) {
+            const layers = LIGHT.get(rung)!.split(",");
+            expect(layers.length, `${rung} has fewer than three layers`).toBeGreaterThanOrEqual(3);
+            expect(LIGHT.get(rung)!, `${rung} has no inner light`).toContain("inset");
+        }
+    });
+
+    it("the flat rung paints nothing", () => {
+        expect(LIGHT.get("--dya-elev-flat")).toBe("none");
+    });
+});
+
+describe("motion", () => {
+    const MOTION = [
+        "--dya-ease",
+        "--dya-ease-out",
+        "--dya-ease-press",
+        "--dya-ease-enter",
+        "--dya-dur-press",
+        "--dya-dur-fast",
+        "--dya-dur",
+        "--dya-dur-slow",
+    ];
+
+    it("declares the four curves and the four durations", () => {
+        const missing = MOTION.filter((name) => !LIGHT.has(name));
+        expect(missing).toEqual([]);
+    });
+});

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { Button } from "../src";
 
 describe("Button", () => {
@@ -20,14 +20,20 @@ describe("Button", () => {
     });
 
     it("forwards type, disabled and onClick", () => {
-        render(
+        const { unmount } = render(
             <Button type="submit" disabled>
                 Deploy
             </Button>,
         );
-        const button = screen.getByRole("button") as HTMLButtonElement;
-        expect(button.type).toBe("submit");
-        expect(button.disabled).toBe(true);
+        const disabledButton = screen.getByRole("button") as HTMLButtonElement;
+        expect(disabledButton.type).toBe("submit");
+        expect(disabledButton.disabled).toBe(true);
+        unmount();
+
+        const handleClick = vi.fn();
+        render(<Button onClick={handleClick}>Deploy</Button>);
+        fireEvent.click(screen.getByRole("button"));
+        expect(handleClick).toHaveBeenCalledTimes(1);
     });
 
     it("keeps the classes passed to it", () => {

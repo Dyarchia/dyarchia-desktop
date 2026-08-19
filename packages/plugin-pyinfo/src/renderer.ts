@@ -68,7 +68,7 @@ export function activate(ctx: PluginContext): void {
             const echoBox = document.createElement('div')
             echoBox.className = 'pyinfo-echo'
             const input = document.createElement('input')
-            input.value = 'hola desde el renderer'
+            input.value = 'hello from the renderer'
             const button = document.createElement('button')
             button.textContent = 'echo'
             const echoOut = document.createElement('div')

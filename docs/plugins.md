@@ -1,188 +1,192 @@
-# Como escribir un plugin de dyarchia-desktop
+# Writing a dyarchia-desktop plugin
 
-Guia para crear una funcionalidad nueva y registrarla en el shell. Un plugin es una carpeta
-con un manifest y uno o dos bundles JavaScript; el shell lo descubre al arrancar.
+Guide to building a new feature and registering it with the shell. A plugin is a folder
+holding a manifest and one or two JavaScript bundles; the shell discovers it at startup.
 
 
-## 1. Anatomia de un plugin
+## 1. Anatomy of a plugin
 
-    Fichero                    Obligatorio    Que es
-    -----------------------    -----------    ------------------------------------------
-    dyarchia-plugin.json      si             manifest: identidad y puntos de entrada
-    dist/renderer.js           si             bundle ESM que corre en el renderer
-    dist/main.js               no             modulo Node que corre en el proceso main
-    main.py                    no             modulo Python que corre como proceso aparte
-    node_modules/              no             dependencias nativas del modulo main
+    File                       Required    What it is
+    -----------------------    --------    ------------------------------------------
+    dyarchia-plugin.json       yes         manifest: identity and entry points
+    dist/renderer.js           yes         ESM bundle that runs in the renderer
+    dist/main.js               no          Node module that runs in the main process
+    main.py                    no          Python module that runs as its own process
+    node_modules/              no          native dependencies of the main module
 
-El manifest:
+The manifest:
 
 ```json
 {
-    "id": "miplugin",
-    "name": "Mi Plugin",
+    "id": "myplugin",
+    "name": "My Plugin",
     "version": "0.1.0",
     "renderer": "dist/renderer.js",
     "main": "dist/main.js"
 }
 ```
 
-Reglas del manifest:
+Manifest rules:
 
-- id en minusculas, patron ^[a-z][a-z0-9-]*$. Es el namespace de los canales IPC.
-- renderer es obligatorio; main solo si el plugin necesita Node (fs, procesos, nativos).
-- python: entrada de un modulo Python, alternativa a main. Un plugin declara main o python,
-  no los dos. El renderer no nota la diferencia: usa invoke y on igual en ambos casos.
-- Si dos plugins declaran el mismo id, gana el primero descubierto y el resto se ignora.
-- schemes (opcional): lista de schemes de protocolo custom que el plugin quiere servir
-  (p. ej. streaming de media). El shell los declara como privilegiados en el boot
-  (standard, secure, fetch, cors, stream) y el modulo main del plugin registra el handler
-  con protocol.handle en su activate. Nombres en minusculas; los reservados (http, file,
-  dyarchia-plugin, etc.) se rechazan.
+- id is lowercase, pattern ^[a-z][a-z0-9-]*$. It is the namespace of the IPC channels.
+- renderer is required; main only if the plugin needs Node (fs, processes, native modules).
+- python is an alternative to main. A plugin declares main or python, never both. The
+  renderer cannot tell the difference: it uses invoke and on the same way for either.
+- If two plugins declare the same id, the first one discovered wins and the rest are ignored.
+- schemes (optional): list of custom protocol schemes the plugin wants to serve, for media
+  streaming for instance. The shell declares them as privileged at boot (standard, secure,
+  fetch, cors, stream) and the plugin's main module registers the handler with
+  protocol.handle inside its activate. Lowercase names; reserved ones (http, file,
+  dyarchia-plugin, and so on) are rejected.
 
 
-## 2. El bundle renderer
+## 2. The renderer bundle
 
-Modulo ESM que exporta activate(ctx). El contexto ofrece:
+An ESM module exporting activate(ctx). The context offers:
 
-    Metodo                        Uso
+    Method                        Use
     --------------------------    ------------------------------------------------
-    registerPanel(desc, mount)    registra un panel en el shell
-    invoke(canal, ...args)        llama a un handler del modulo main del plugin
-    on(canal, listener)           se suscribe a broadcasts del modulo main
+    registerPanel(desc, mount)    registers a panel with the shell
+    invoke(channel, ...args)      calls a handler in the plugin's main module
+    on(channel, listener)         subscribes to broadcasts from the main module
 
-El mount recibe el contenedor DOM del panel y devuelve (opcional) una funcion de limpieza:
+The mount receives the panel's DOM container and optionally returns a cleanup function:
 
 ```typescript
 import type { PluginContext } from '@dyarchia/sdk'
 
 export function activate(ctx: PluginContext): void {
-    ctx.registerPanel({ id: 'miplugin', title: 'Mi Plugin', icon: 'M' }, (container) => {
+    ctx.registerPanel({ id: 'myplugin', title: 'My Plugin', icon: 'M' }, (container) => {
         const el = document.createElement('div')
-        el.textContent = 'hola'
+        el.textContent = 'hello'
         container.appendChild(el)
         return () => el.remove()
     })
 }
 ```
 
-Notas:
+Notes:
 
-- El shell no impone framework: dentro del mount se puede montar React, un canvas o DOM puro.
-  Cada plugin empaqueta sus propias dependencias de UI.
-- El icon es el contenido del boton de toggle en la barra superior: markup SVG inline
-  (recomendado, p. ej. un icono de Lucide con stroke="currentColor") o, como fallback,
-  un texto corto de un caracter.
-- duplicable: true permite abrir varias instancias del panel (boton + en la cabecera del
-  grupo). Cada instancia recibe su propio mount/dispose; el id de instancia interno es
-  <id>#<n> pero el plugin no necesita gestionarlo.
-- Los estilos se inyectan desde el propio plugin (tag style con id propio para no duplicar).
+- The shell imposes no framework: the mount can host React, a canvas, or plain DOM. Each
+  plugin bundles its own UI dependencies.
+- icon is the content of the toggle button in the top bar: inline SVG markup, recommended,
+  such as a Lucide icon with stroke="currentColor"; or, as a fallback, a short
+  one-character string.
+- duplicable: true allows several instances of the panel, through a + button in the group
+  header. Each instance gets its own mount/dispose; the internal instance id is <id>#<n>,
+  but the plugin never needs to handle it.
+- Styles are injected by the plugin itself, using a style tag with its own id to avoid
+  duplicates.
 
 
-## 3. El modulo main (opcional)
+## 3. The main module (optional)
 
-Modulo ESM para Node que exporta activate(ctx) con:
+An ESM module for Node exporting activate(ctx) with:
 
-    Metodo                       Uso
-    -------------------------    --------------------------------------------------
-    handle(canal, handler)       responde a los invoke del renderer
-    broadcast(canal, ...args)    emite un evento a todas las ventanas
+    Method                         Use
+    ---------------------------    --------------------------------------------------
+    handle(channel, handler)       answers invoke calls from the renderer
+    broadcast(channel, ...args)    emits an event to every window
 
-Los canales se namespacian solos: un handle('spawn') del plugin terminal se convierte en
-plugin:terminal:spawn a nivel de IPC. Renderer y main del mismo plugin usan el mismo nombre
-corto de canal.
+Channels namespace themselves: a handle('spawn') in the terminal plugin becomes
+plugin:terminal:spawn at the IPC level. The renderer and the main module of the same plugin
+use the same short channel name.
 
 ```typescript
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 export function activate(ctx: PluginMainContext): void {
-    ctx.handle('saluda', (...args) => `hola ${args[0]}`)
+    ctx.handle('greet', (...args) => `hello ${args[0]}`)
 }
 ```
 
 
-## 3.5. El modulo main en Python (opcional)
+## 4. The main module in Python (optional)
 
-Alternativa a main para logica que se escribe mejor en Python. El contrato es el mismo que
-el de Node, con los nombres en snake_case:
+An alternative to main, for logic better written in Python. The contract is the same as the
+Node one, with snake_case names:
 
-    Metodo                       Uso
-    -------------------------    --------------------------------------------------
-    handle(canal, handler)       responde a los invoke del renderer
-    broadcast(canal, *args)      emite un evento a todas las ventanas
+    Method                        Use
+    --------------------------    --------------------------------------------------
+    handle(channel, handler)      answers invoke calls from the renderer
+    broadcast(channel, *args)     emits an event to every window
 
 ```python
 def activate(ctx):
-    ctx.handle("saluda", lambda nombre: f"hola {nombre}")
+    ctx.handle("greet", lambda name: f"hello {name}")
 ```
 
-Como funciona por dentro:
+How it works underneath:
 
-- El shell lanza un proceso Python por plugin y habla con el por stdin/stdout en JSON,
-  una linea por mensaje. El proceso muere cuando se cierra la app.
-- Los invoke se corren en un pool de hilos y se correlacionan por id, asi que un handler
-  lento no bloquea a los demas y las respuestas pueden volver desordenadas.
-- stdout esta reservado para el protocolo: dentro del plugin, print va a stderr y sale
-  en la consola del shell prefijado con [python:<id>].
-- El interprete se busca como py -3 en Windows y python3 en el resto. La variable
-  DYARCHIA_PYTHON fuerza una ruta concreta.
+- The shell spawns one Python process per plugin and talks to it over stdin/stdout in JSON,
+  one message per line. The process dies when the app closes.
+- Invokes run in a thread pool and are correlated by id, so a slow handler blocks nothing
+  and replies may arrive out of order.
+- stdout is reserved for the protocol: inside the plugin, print goes to stderr and shows up
+  in the shell console prefixed with [python:<id>].
+- The interpreter is looked up as py -3 on Windows and python3 elsewhere. The
+  DYARCHIA_PYTHON environment variable forces a specific path.
 
-El runtime vive en packages/pysdk (dyarchia_sdk) y es stdlib pura: no hay que instalar
-nada con pip. Esta capa es deliberadamente fina — el dia que exista un daemon que sirva
-como fuente de verdad, se sustituye el transporte stdio sin tocar el activate de ningun
-plugin ni el renderer.
+The runtime lives in packages/pysdk (dyarchia_sdk) and is stdlib only: nothing to install
+with pip. The layer is deliberately thin — context.py is the contract, host.py is the stdio
+transport, and only the transport changes the day an API tier owns this logic. No plugin
+activate and no renderer code is affected.
 
 
-## 4. Build e instalacion
+## 5. Build and installation
 
-Bundles con esbuild, formato ESM. El renderer se sirve por el protocolo dyarchia-plugin://
-y el main se importa como modulo Node desde la carpeta del plugin.
+Bundles are built with esbuild, ESM format. The renderer is served over the
+dyarchia-plugin:// protocol and the main module is imported as a Node module from the
+plugin folder.
 
 ```bash
 esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js
 esbuild src/main.ts --bundle --platform=node --format=esm --external:node-pty --outfile=dist/main.js
 ```
 
-Reglas de build:
+Build rules:
 
-- Dependencias nativas (node-pty) se marcan external y se copian a node_modules/ dentro de
-  la carpeta instalada del plugin; el resto se bundlea.
-- El modulo Python no se bundlea: main.py se copia tal cual junto al manifest.
-- CSS de librerias se importa como texto (--loader:.css=text) y se inyecta en un tag style.
+- Native dependencies such as node-pty are marked external and copied into node_modules/
+  inside the installed plugin folder; everything else is bundled.
+- Library CSS is imported as text (--loader:.css=text) and injected into a style tag.
+- The Python module is not bundled: main.py is copied as-is next to the manifest.
 
-Donde vive el plugin segun el modo:
+Where a plugin lives, by mode:
 
-    Modo         Ubicacion                                  Como llega
+    Mode         Location                                   How it gets there
     ---------    ---------------------------------------    ---------------------------------
-    dev          packages/<carpeta>/                        el shell escanea el workspace
-    portable     %APPDATA%/dyarchia/plugins/<id>/          node scripts/install-plugins.mjs
+    dev          packages/<folder>/                         the shell scans the workspace
+    portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
 
-En dev el workspace tiene prioridad sobre los instalados, de modo que la copia instalada
-nunca tapa a la version en desarrollo.
+In dev the workspace takes priority over installed plugins, so an installed copy never
+shadows the version under development.
 
 
-## 5. Ciclo de vida
+## 6. Lifecycle
 
 ```mermaid
 flowchart TD
-    A[Arranque del shell] --> B[Discovery: lee manifests]
-    B --> C[activate de modulos main]
-    C --> D[Renderer: import del bundle<br/>por dyarchia-plugin://]
-    D --> E[activate del renderer:<br/>registerPanel]
-    E --> F[Toggle en barra superior]
-    F -- "click" --> G[mount en contenedor DOM]
-    G -- "cierre del panel" --> H[dispose]
+    A[Shell startup] --> B[Discovery: read manifests]
+    B --> C[activate of main modules]
+    C --> D[Renderer: import the bundle<br/>over dyarchia-plugin://]
+    D --> E[activate of the renderer:<br/>registerPanel]
+    E --> F[Toggle in the top bar]
+    F -- "click" --> G[mount into the DOM container]
+    G -- "panel closed" --> H[dispose]
 ```
 
-- El layout se persiste solo; si al arrancar un panel guardado ya no tiene plugin, el shell
-  lo poda del layout sin fallar.
-- El dispose debe liberar todo: observers, suscripciones on(), sesiones abiertas via invoke.
+- The layout persists itself; if a saved panel no longer has a plugin at startup, the shell
+  prunes it from the layout without failing.
+- dispose must release everything: observers, on() subscriptions, sessions opened via invoke.
 
 
-## 6. Checklist para un plugin nuevo
+## 7. Checklist for a new plugin
 
-1. Carpeta en packages/ con dyarchia-plugin.json valido.
-2. renderer.ts con activate que registra al menos un panel.
-3. Script build con esbuild y dist/ generado.
-4. pnpm dev y comprobar: aparece el toggle, el panel monta y desmonta sin errores en consola.
-5. Si hay modulo main: probar invoke y broadcast desde el panel.
-6. node scripts/install-plugins.mjs y probar tambien en la app empaquetada.
+1. A folder under packages/ with a valid dyarchia-plugin.json.
+2. renderer.ts with an activate that registers at least one panel.
+3. A build script with esbuild, producing dist/.
+4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
+   console errors.
+5. If there is a main module, whether Node or Python: test invoke and broadcast from the
+   panel.
+6. node scripts/install-plugins.mjs, then test in the packaged app too.

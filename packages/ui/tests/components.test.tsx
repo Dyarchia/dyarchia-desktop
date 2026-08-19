@@ -109,8 +109,8 @@ describe("Badge", () => {
     });
 
     it("accepts the accent tone", () => {
-        render(<Badge tone="accent">nuevo</Badge>);
-        expect(screen.getByText("nuevo").dataset.tone).toBe("accent");
+        render(<Badge tone="accent">new</Badge>);
+        expect(screen.getByText("new").dataset.tone).toBe("accent");
     });
 });
 

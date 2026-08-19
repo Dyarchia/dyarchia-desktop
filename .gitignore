@@ -6,3 +6,5 @@ release/
 .DS_Store
 __pycache__/
 *.py[cod]
+CLAUDE.md
+README.md

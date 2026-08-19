@@ -1,6 +1,0 @@
-.card {
-    padding: var(--dya-space-6) var(--dya-space-5);
-    background: var(--dya-surface-1);
-    border: var(--dya-border-width) solid var(--dya-border-card);
-    border-radius: var(--dya-radius);
-}

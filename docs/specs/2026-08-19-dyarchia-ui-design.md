@@ -17,9 +17,8 @@ Consumidores: dyarchia-desktop (Electron + React 19 + Vite), web (Next.js)
 - [7. Elevación](#7-elevación)
 - [8. Movimiento](#8-movimiento)
 - [9. Rendimiento](#9-rendimiento)
-- [10. Arquitectura](#10-arquitectura)
-- [11. Catálogo y fases](#11-catálogo-y-fases)
-- [12. Calibraciones abiertas](#12-calibraciones-abiertas)
+- [10. Consumo](#10-consumo)
+- [11. Calibraciones abiertas](#11-calibraciones-abiertas)
 
 
 ## 1. El mandato
@@ -213,90 +212,78 @@ incluida la del propio acento.
 Aportación de dyarchia. Ninguna de las dos extracciones la trae: Raycast tiene
 sombras pero con su propia paleta, Factory no tiene ninguna.
 
-**Principio: nunca una sombra difusa sola.** Todo elemento elevado combina luz
-interior arriba, anillo fino de contorno y sombra difusa abajo.
+**Los dos temas no comparten geometría.** Es el error que costó más iteraciones:
+transferir la geometría del oscuro al claro produce un cerco gris difuso
+alrededor de cada elemento, porque una sombra con `spread` que sobre fondo
+oscuro se funde, sobre fondo claro se ve por los cuatro lados. Cada tema declara
+sus recetas completas.
 
-### 7.1 Los cuatro peldaños
+En claro el relieve es **filo más sombra escalonada**, sin luz interior: una
+línea blanca en el borde superior produce una costura visible en cuanto el
+elemento tiene relleno oscuro, como el botón primario.
 
-```text
---dya-elev-flat      por defecto: paneles, filas, celdas, contenedores
---dya-elev-raised    lo que se puede pulsar: boton, control
---dya-elev-key       la tecla fisica: kbd, atajos
---dya-elev-overlay   lo que flota: modal, popover, dropdown, palette
-```
-
-### 7.2 Parámetros
-
-La receta es la misma en ambos temas. Solo cambian estos cuatro valores, y en
-claro **invierten**: la luz sube y el anillo pasa de alfa blanca a alfa negra.
-
-```text
-Parametro                 Oscuro      Claro       Papel
------------------------   ---------   ---------   --------------------------
---dya-relief-light        #ffffff33   #ffffffe6   luz interior superior
---dya-relief-ring         #ffffff26   #0000001f   anillo de contorno, reposo
---dya-relief-ring-strong  #ffffff59   #00000038   anillo de contorno, hover
---dya-relief-shade        #00000040   #0000000d   sombra interior desde arriba
---dya-relief-drop         #00000066   #0000001a   sombra difusa inferior
-```
-
-El anillo tiene dos pasos porque la regla 2 del mandato exige que el hover se
-exprese en el anillo. Sin el segundo valor no hay con qué expresarlo.
-
-### 7.3 Recetas
+En oscuro el relieve es **luz superior más canto negro**. El canto es negro, no
+blanco: un anillo blanco sobre casi-negro dibuja un contorno gris en vez de
+profundidad.
 
 ```css
 :root {
     --dya-elev-flat: none;
 
     --dya-elev-raised:
-        inset 0 1px 0 var(--dya-relief-light),
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 -1px 0 var(--dya-relief-shade);
+        0 0 0 1px #0000001a,
+        0 1px 2px #0000001f,
+        0 4px 8px -2px #00000014;
 
     --dya-elev-raised-hover:
-        inset 0 1px 0 var(--dya-relief-light),
-        0 0 0 1px var(--dya-relief-ring-strong),
-        inset 0 -1px 0 var(--dya-relief-shade);
+        0 0 0 1px #00000026,
+        0 2px 4px #00000026,
+        0 6px 12px -2px #0000001f;
 
-    --dya-elev-key:
-        0 1.5px 0.5px 2.5px var(--dya-relief-drop),
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 2px 1px 1px var(--dya-relief-shade),
-        inset 0 1px 1px 1px var(--dya-relief-light);
-
-    --dya-elev-key-pressed:
-        0 0 #0000,
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 2px 1px 1px var(--dya-relief-shade),
-        inset 0 1px 1px var(--dya-relief-light);
+    --dya-elev-pressed:
+        inset 0 2px 4px #0000001f,
+        0 0 0 1px #00000026;
 
     --dya-elev-overlay:
-        0 4px 40px 8px var(--dya-relief-drop),
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 1px 0 var(--dya-relief-light);
+        0 0 0 1px #0000001a,
+        0 2px 4px #0000001f,
+        0 16px 32px -8px #00000029;
+}
+
+:root[data-dya-theme="dark"] {
+    --dya-elev-raised:
+        inset 0 1px 0 #ffffff26,
+        0 0 0 1px #000000,
+        0 2px 4px #00000099,
+        0 8px 16px -4px #000000b3;
+
+    --dya-elev-raised-hover:
+        inset 0 1px 0 #ffffff40,
+        0 0 0 1px #000000,
+        0 3px 6px #000000b3,
+        0 10px 20px -4px #000000cc;
+
+    --dya-elev-pressed:
+        inset 0 2px 4px #000000cc,
+        0 0 0 1px #000000;
+
+    --dya-elev-overlay:
+        inset 0 1px 0 #ffffff26,
+        0 0 0 1px #000000,
+        0 24px 48px -12px #000000e6;
 }
 ```
 
-### 7.4 Estados
+Reglas de uso:
 
-```text
-Componente        Reposo        Hover          Active            Foco
----------------   -----------   ------------   ---------------   -----------
-boton secundario  elev-raised   anillo mas     anillo mas        anillo de
-                                opaco          tenue + .98       foco 2px
-boton primario    relleno       relleno un     relleno + .98     anillo de
-                  inverse       paso claro                       foco 2px
-tecla / kbd       elev-key      elev-key       elev-key-pressed  anillo de
-                                               + translateY 2px  foco 2px
-fila de lista     plano         fondo suave    scale(.98)        fondo firme
-enlace de nav     sin subray.   subrayado de   -                 anillo de
-                                acento 200ms                     foco 2px
-```
-
-El botón primario es el único componente que cambia de relleno, y solo un paso:
-en claro `#101010` a `#2e2c2b`, en oscuro `#e6e6e6` a `#ffffff`.
-
+- **Sobresale todo lo que se puede pulsar.** Botones, controles, items de barra.
+  Un contenedor que agrupa controles no lleva relieve propio: si lo lleva, los
+  controles de dentro se leen hundidos en un hueco.
+- **Se hunde solo lo que recibe entrada**: los campos de texto, que son huecos
+  donde se escribe, y cualquier control mientras está pulsado.
+- **Superficies y filas son planas.** Su estado se expresa con fondo.
+- Ninguna sombra usa `spread` positivo. La expansión negativa de la capa larga
+  la mantiene recogida debajo del elemento.
 
 ## 8. Movimiento
 
@@ -376,70 +363,50 @@ Base UI                     import por componente, nunca barrel
 Con `--dya-glass: none`, el sistema entero es CSS estático: coste de runtime cero.
 
 
-## 10. Arquitectura
+## 10. Consumo
+
+El sistema es CSS estático y dos fuentes. No hay build, no hay paquete, no hay
+dependencias.
 
 ```text
-dyarchia-ui/
-├─ packages/
-│  ├─ tokens/    @dyarchia/tokens   CSS puro: tokens.css, reset.css, motion.css
-│  ├─ fonts/     @dyarchia/fonts    @font-face de Geist para consumidores sin
-│  │                                next/font
-│  └─ ui/        @dyarchia/ui       React + CSS Modules
-└─ apps/catalog/                    app Vite, una ruta por componente
+css/dyarchia.css     importa los cuatro de abajo, es el unico punto de entrada
+css/fonts.css        los dos @font-face
+css/tokens.css       los dos temas
+css/reset.css        normalizacion, foco, scrollbars, movimiento reducido
+css/motion.css       cuatro keyframes
+fonts/               los dos woff2 variables, 140 KB en total
 ```
 
-- Motor de estilos: custom properties + CSS Modules. Nativo en Vite y en Next,
-  sin configuración añadida.
-- Accesibilidad: Base UI para todo lo que tenga foco atrapado, teclado, ARIA o
-  posicionamiento con colisiones. El resto a mano, sin dependencias.
-- Distribución: npm bajo el scope `@dyarchia`; `link:` de pnpm en desarrollo.
-- Catálogo con Vite, no Storybook.
+Se copia la carpeta al proyecto y se enlaza una hoja:
 
-
-## 11. Catálogo y fases
-
-```text
-Primitivas      Button, IconButton, Kbd, Input, Textarea, Card, Surface,
-sin deps        Badge, Separator, Text, Heading, Spinner, Avatar, Eyebrow
-Sobre Base UI   Dialog, AlertDialog, Popover, Tooltip, DropdownMenu,
-                ContextMenu, Select, Tabs, Switch, Checkbox, Radio, Slider,
-                Accordion, Toast, ScrollArea, Progress
-Composites      CommandPalette, ListRow, SectionTitle, PanelHeader, Toolbar,
-dyarchia        StatusDot, EmptyState
+```html
+<link rel="stylesheet" href="css/dyarchia.css">
 ```
 
-```text
-Fase   Contenido                                      Motivo
-----   --------------------------------------------   -----------------------
-1      tokens + fonts + catalogo + Button, Kbd,       valida el relieve en los
-       Input, Card, Badge, Separator, Eyebrow         DOS temas antes de nada
-2      migrar el shell de dyarchia-desktop            un sistema sin consumidor
-                                                      se pudre
-3      tier de Base UI completo                       ya sobre tokens probados
-4      composites de dyarchia                         lo que el shell necesita
-5      landing Next.js                                validacion final
+El tema claro es el de por defecto. El oscuro se activa con un atributo en la
+raíz, y la elección es del producto, no del sistema operativo:
+
+```js
+document.documentElement.dataset.dyaTheme = "dark";
 ```
 
-Los dos temas se construyen a la vez desde la fase 1. No hay fase de "añadir el
-tema claro": ambos son entrada conocida.
+Los productos construyen sus propios componentes contra los tokens. El sistema
+no impone framework: funciona igual en React, en LWC de Salesforce o en un HTML
+suelto, porque no es más que custom properties.
+
+`demo/relieve.html` renderiza controles, barra, lista y superficies en los dos
+temas. Es la referencia visual y el sitio donde comprobar cualquier ajuste del
+relieve.
 
 
-## 12. Calibraciones abiertas
-
-Se resuelven mirando pantalla en la fase 1. Ninguna bloquea el arranque.
+## 11. Calibraciones abiertas
 
 - **Temperatura de los neutros.** El claro es cálido (tinte marrón, de Factory) y
   el oscuro es frío (sesgo azul, de Raycast). Cada tema es coherente por dentro,
-  pero conviene decidir si se unifica la temperatura o si la divergencia es
-  deliberada.
-- **Relieve en claro.** Resuelto: verificado en el catálogo con el navegador, sin
-  necesidad de ajuste. El claro produce un anillo de contorno
-  `rgba(0,0,0,0.12)` y una luz interior `rgba(255,255,255,0.9)`; el oscuro
-  produce `rgba(255,255,255,0.15)` y `rgba(255,255,255,0.2)`. La receta
-  invierte tal como estaba diseñada y hace el ida y vuelta limpio al alternar
-  el tema.
+  pero cambiar de uno a otro se nota como un cambio de temperatura y no solo de
+  luminosidad. Queda decidir si se unifica o si la divergencia es deliberada.
 - **Conjuntos estilísticos de Geist.** Determinar empíricamente cuáles aportan.
   No se transfiere el `ss03` de la referencia, que es específico de Inter.
-- **Radio de la tecla.** Resuelto: 3px, `var(--dya-radius)`, el mismo que usa
-  el resto del sistema. No se introdujo un radio especial; se mantiene la
-  regla de los tres radios.
+- **`--dya-text-3` en oscuro.** Da 3.75:1 sobre el fondo, así que está limitado a
+  texto de 18px o mayor. Conviene revisar cada uso al construir componentes: es
+  fácil aplicarlo a una etiqueta de 12px y bajar de AA sin darse cuenta.

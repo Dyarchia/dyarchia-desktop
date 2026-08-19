@@ -59,11 +59,27 @@
     --dya-line: #0000000f;
     --dya-faint: #201e1e3b;
 
-    --dya-relief-light: #ffffffe6;
-    --dya-relief-ring: #0000001f;
-    --dya-relief-ring-strong: #00000038;
-    --dya-relief-shade: #0000000d;
-    --dya-relief-drop: #0000001a;
+    --dya-elev-flat: none;
+
+    --dya-elev-raised:
+        0 0 0 1px #0000001a,
+        0 1px 2px #0000001f,
+        0 4px 8px -2px #00000014;
+
+    --dya-elev-raised-hover:
+        0 0 0 1px #00000026,
+        0 2px 4px #00000026,
+        0 6px 12px -2px #0000001f;
+
+    --dya-elev-pressed:
+        inset 0 2px 4px #0000001f,
+        0 0 0 1px #00000026;
+
+    --dya-elev-overlay:
+        0 0 0 1px #0000001a,
+        0 2px 4px #0000001f,
+        0 16px 32px -8px #00000029;
+
     --dya-focus: #00000066;
 
     --dya-ease: ease-in-out;
@@ -75,35 +91,6 @@
     --dya-dur-fast: 160ms;
     --dya-dur: 220ms;
     --dya-dur-slow: 320ms;
-
-    --dya-elev-flat: none;
-
-    --dya-elev-raised:
-        inset 0 1px 0 var(--dya-relief-light),
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 -1px 0 var(--dya-relief-shade);
-
-    --dya-elev-raised-hover:
-        inset 0 1px 0 var(--dya-relief-light),
-        0 0 0 1px var(--dya-relief-ring-strong),
-        inset 0 -1px 0 var(--dya-relief-shade);
-
-    --dya-elev-key:
-        0 1.5px 0.5px 2.5px var(--dya-relief-drop),
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 2px 1px 1px var(--dya-relief-shade),
-        inset 0 1px 1px 1px var(--dya-relief-light);
-
-    --dya-elev-key-pressed:
-        0 0 #0000,
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 2px 1px 1px var(--dya-relief-shade),
-        inset 0 1px 1px var(--dya-relief-light);
-
-    --dya-elev-overlay:
-        0 4px 40px 8px var(--dya-relief-drop),
-        0 0 0 1px var(--dya-relief-ring),
-        inset 0 1px 0 var(--dya-relief-light);
 }
 
 :root[data-dya-theme="dark"] {
@@ -123,10 +110,26 @@
     --dya-line: #ffffff0f;
     --dya-faint: #ffffff3b;
 
-    --dya-relief-light: #ffffff33;
-    --dya-relief-ring: #ffffff26;
-    --dya-relief-ring-strong: #ffffff59;
-    --dya-relief-shade: #00000040;
-    --dya-relief-drop: #00000066;
+    --dya-elev-raised:
+        inset 0 1px 0 #ffffff26,
+        0 0 0 1px #000000,
+        0 2px 4px #00000099,
+        0 8px 16px -4px #000000b3;
+
+    --dya-elev-raised-hover:
+        inset 0 1px 0 #ffffff40,
+        0 0 0 1px #000000,
+        0 3px 6px #000000b3,
+        0 10px 20px -4px #000000cc;
+
+    --dya-elev-pressed:
+        inset 0 2px 4px #000000cc,
+        0 0 0 1px #000000;
+
+    --dya-elev-overlay:
+        inset 0 1px 0 #ffffff26,
+        0 0 0 1px #000000,
+        0 24px 48px -12px #000000e6;
+
     --dya-focus: #ffffff80;
 }

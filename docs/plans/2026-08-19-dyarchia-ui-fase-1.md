@@ -2298,12 +2298,11 @@ describe("the mandate", () => {
     });
 
     it("rule 3: no literal color lives outside tokens.css", () => {
+        const GENERATED = /(^|[\\/])(node_modules|dist|out|coverage)([\\/]|$)/;
         const sources = [
             ...globSync("packages/**/*.css", { cwd: REPO_ROOT }),
             ...globSync("apps/**/*.css", { cwd: REPO_ROOT }),
-        ].filter(
-            (file) => !file.includes("node_modules") && !file.endsWith("tokens.css"),
-        );
+        ].filter((file) => !GENERATED.test(file) && !file.endsWith("tokens.css"));
         expect(sources.length).toBeGreaterThanOrEqual(9);
         const bad: string[] = [];
         for (const file of sources) {
@@ -2316,7 +2315,7 @@ describe("the mandate", () => {
     });
 
     it("rule 5: no component declares a literal radius", () => {
-        expect(offenders(/border-radius:\s*(?!var\(--dya-radius)/)).toEqual([]);
+        expect(offenders(/border-radius:(?!\s*var\(--dya-radius)/)).toEqual([]);
     });
 
     it("no literal colors in the components", () => {

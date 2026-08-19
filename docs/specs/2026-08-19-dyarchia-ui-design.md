@@ -313,12 +313,26 @@ en claro `#101010` a `#2e2c2b`, en oscuro `#e6e6e6` a `#ffffff`.
 - **`box-shadow` no se transiciona nunca.** Cambia de golpe. Listar `box-shadow`
   en `transition` congela la propiedad frente a los cambios de tema: el
   navegador deja de reevaluar el `var()` del que deriva y la sombra conserva los
-  parámetros de relieve del tema anterior. Verificado en Chromium: un elemento
-  con `transition: box-shadow` mantiene el anillo del tema claro al pasar a
-  oscuro, y se corrige en el instante en que se le retira la transición. Es
-  además la propiedad más cara de animar, que §9 ya penaliza. Las transiciones
-  se limitan a `transform`, `opacity` y `background-color`, que sí reevalúan sus
-  tokens correctamente.
+  parámetros de relieve del tema anterior. Es además la propiedad más cara de
+  animar, que §9 ya penaliza. Las transiciones se limitan a `transform`,
+  `opacity` y `background-color`, que sí reevalúan sus tokens correctamente.
+
+Medición que fija la regla, tomada en Chromium sobre el catálogo en tema oscuro,
+con `--dya-relief-ring` resolviendo correctamente a `#ffffff26`:
+
+```text
+Elemento              transition                               Anillo resuelto
+-------------------   --------------------------------------   -----------------------
+toggle de cabecera    all                                      rgba(255,255,255,.15) ok
+Button secundario     box-shadow, background-color, transform  rgba(0,0,0,.12) congelado
+Kbd                   box-shadow, transform                    rgba(0,0,0,.12) congelado
+Kbd, transition:none  none                                     rgba(255,255,255,.15) ok
+```
+
+El mismo elemento, con y sin transición, da resultados distintos: retirarla
+corrige el valor al instante. `background-color` no se ve afectado aunque figure
+en la misma lista, así que el problema es específico de `box-shadow`, cuya
+interpolación depende de la estructura de la lista de sombras.
 - Pulsar nunca cambia solo el color: siempre escala hacia dentro. Filas a
   `scale(.98)`, teclas a `translateY(2px)`.
 - Menús y popovers se desplazan 2px, no más.

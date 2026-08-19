@@ -1,0 +1,45 @@
+.page {
+    min-height: 100vh;
+    background: var(--dya-bg);
+    color: var(--dya-text);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    padding: 0 var(--dya-space-6);
+    border-bottom: var(--dya-border-width) solid var(--dya-line);
+}
+
+.wordmark {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label);
+    letter-spacing: var(--dya-tracking-mono);
+    text-transform: uppercase;
+}
+
+.toggle {
+    height: 32px;
+    padding: 0 14px;
+    color: var(--dya-text);
+    background: var(--dya-bg);
+    border: none;
+    border-radius: var(--dya-radius);
+    box-shadow: var(--dya-elev-raised);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label);
+    letter-spacing: var(--dya-tracking-mono);
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-16);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--dya-space-16) var(--dya-space-8);
+}

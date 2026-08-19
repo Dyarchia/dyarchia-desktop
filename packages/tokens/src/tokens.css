@@ -1,0 +1,68 @@
+:root {
+    --dya-radius: 3px;
+    --dya-radius-media: 4px;
+    --dya-radius-full: 999px;
+    --dya-border-width: 1px;
+
+    --dya-space-1: 4px;
+    --dya-space-2: 8px;
+    --dya-space-3: 12px;
+    --dya-space-4: 16px;
+    --dya-space-5: 24px;
+    --dya-space-6: 32px;
+    --dya-space-8: 48px;
+    --dya-space-12: 64px;
+    --dya-space-16: 96px;
+    --dya-space-24: 160px;
+
+    --dya-font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --dya-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --dya-size-display: 64px;
+    --dya-size-h1: 48px;
+    --dya-size-h2: 36px;
+    --dya-size-h3: 24px;
+    --dya-size-body: 18px;
+    --dya-size-body-sm: 16px;
+    --dya-size-label: 14px;
+    --dya-size-label-sm: 12px;
+
+    --dya-tracking-display: -0.04em;
+    --dya-tracking-h1: -0.035em;
+    --dya-tracking-h2: -0.031em;
+    --dya-tracking-h3: -0.02em;
+    --dya-tracking-mono: -0.02em;
+
+    --dya-leading-tight: 100%;
+    --dya-leading-heading: 110%;
+    --dya-leading-body: 120%;
+
+    --dya-accent: #ee6018;
+    --dya-accent-soft: #ee601826;
+
+    --dya-glass: none;
+    --dya-glass-bg: transparent;
+
+    --dya-bg: #f5f5f5;
+    --dya-surface-1: #ffffff;
+    --dya-surface-2: #ebebeb;
+    --dya-surface-inverse: #101010;
+    --dya-surface-inverse-hover: #2e2c2b;
+    --dya-on-inverse: #f5f5f5;
+    --dya-text: #020202;
+    --dya-text-2: #3d3a39;
+    --dya-text-3: #5c5855;
+    --dya-text-4: #8a8380;
+    --dya-border: #b8b3b0;
+    --dya-border-control: #a49d9a;
+    --dya-border-card: #e0dedc;
+    --dya-line: #0000000f;
+    --dya-faint: #201e1e3b;
+
+    --dya-relief-light: #ffffffe6;
+    --dya-relief-ring: #0000001f;
+    --dya-relief-ring-strong: #00000038;
+    --dya-relief-shade: #0000000d;
+    --dya-relief-drop: #0000001a;
+    --dya-focus: #00000066;
+}

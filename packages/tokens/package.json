@@ -1,0 +1,13 @@
+{
+    "name": "@dyarchia/tokens",
+    "version": "0.1.0",
+    "type": "module",
+    "sideEffects": ["*.css"],
+    "exports": {
+        ".": "./src/index.css",
+        "./tokens.css": "./src/tokens.css",
+        "./reset.css": "./src/reset.css",
+        "./motion.css": "./src/motion.css"
+    },
+    "files": ["src"]
+}

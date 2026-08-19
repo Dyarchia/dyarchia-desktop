@@ -2436,13 +2436,66 @@ document.documentElement.dataset.dyaTheme = "dark";
 
 En `docs/specs/2026-08-19-dyarchia-ui-design.md` §12, sustituir la viñeta **Relieve en claro** por los valores finales a los que se llegó en las Tasks 8 y 9, y la viñeta **Radio de la tecla** por la decisión tomada. Dejar las otras dos viñetas como están.
 
-- [ ] **Step 3: Verificación final**
+- [ ] **Step 3: Arreglar `pnpm typecheck`**
+
+El script está roto desde la Task 1: la raíz declara `tsc -b` pero no existe
+`tsconfig.json` raíz, y `-b` exige project references con `composite`, que es
+incompatible con el `noEmit: true` que hereda todo. Se detectó en la Task 8 y se
+difirió aquí, que es la única tarea que ejecuta typecheck. La solución está
+verificada: estas cuatro piezas juntas dejan `tsc` sin salida.
+
+Crear `tsconfig.json` en la raíz:
+
+```json
+{
+    "extends": "./tsconfig.base.json",
+    "include": [
+        "packages/*/src/**/*",
+        "packages/*/tests/**/*",
+        "apps/*/src/**/*"
+    ]
+}
+```
+
+Crear `packages/ui/src/css-modules.d.ts`. Sin esto fallan los ocho imports de
+CSS Modules de `@dyarchia/ui` y también el del catálogo, porque la declaración
+es ambiente y el `include` raíz cubre ambos:
+
+```ts
+declare module "*.module.css" {
+    const classes: Readonly<Record<string, string>>;
+    export default classes;
+}
+```
+
+Corregir `packages/fonts/tests/fonts.test.ts`. El capture group devuelve
+`string | undefined` bajo `noUncheckedIndexedAccess`, y `new URL` no lo acepta.
+Es un error real, latente desde la Task 6 porque el typecheck nunca llegó a
+ejecutarse. La línea:
+
+```ts
+            const url = match.match(/url\("([^"]+)"\)/)![1];
+```
+
+pasa a:
+
+```ts
+            const url = match.match(/url\("([^"]+)"\)/)![1]!;
+```
+
+Y en el `package.json` raíz, `"typecheck": "tsc -b"` pasa a:
+
+```json
+        "typecheck": "tsc -p tsconfig.json",
+```
+
+- [ ] **Step 4: Verificación final**
 
 ```bash
 pnpm install && pnpm typecheck && pnpm test
 ```
 
-Expected: typecheck sin errores, 54 tests PASS.
+Expected: typecheck sin salida ni errores, 55 tests PASS.
 
 ```bash
 pnpm catalog
@@ -2450,7 +2503,7 @@ pnpm catalog
 
 Expected: las seis secciones se ven correctamente en los dos temas. Comprobar con el conmutador que ningún componente pierde legibilidad al cambiar.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A

@@ -2025,7 +2025,7 @@ describe("Badge", () => {
     });
 
     it("accepts the accent tone", () => {
-        render(<Badge tone="accent">nuevo</Badge>);
+        render(<Badge tone="accent">new</Badge>);
         expect(screen.getByText("nuevo").dataset.tone).toBe("accent");
     });
 });
@@ -2241,7 +2241,7 @@ En `App.tsx`, sustituir cada `<h2 className={styles.eyebrow}>` por `<Eyebrow>`, 
                     <Eyebrow>Badge and Separator</Eyebrow>
                     <div className={styles.row}>
                         <Badge>beta</Badge>
-                        <Badge tone="accent">nuevo</Badge>
+                        <Badge tone="accent">new</Badge>
                         <Separator orientation="vertical" />
                         <Badge>v0.1.0</Badge>
                     </div>

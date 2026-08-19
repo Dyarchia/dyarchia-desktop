@@ -16,9 +16,7 @@
     letter-spacing: var(--dya-tracking-mono);
     text-transform: uppercase;
     user-select: none;
-    transition:
-        box-shadow var(--dya-dur-fast) var(--dya-ease-out),
-        transform var(--dya-dur-fast) var(--dya-ease-out);
+    transition: transform var(--dya-dur-fast) var(--dya-ease-out);
 }
 
 .kbd[data-pressed="true"] {

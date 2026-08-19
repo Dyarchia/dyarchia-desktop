@@ -15,7 +15,6 @@
     text-transform: uppercase;
     cursor: pointer;
     transition:
-        box-shadow var(--dya-dur-fast) var(--dya-ease),
         background-color var(--dya-dur-fast) var(--dya-ease),
         transform var(--dya-dur-press) var(--dya-ease-press);
 }

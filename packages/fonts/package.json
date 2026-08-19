@@ -1,0 +1,13 @@
+{
+    "name": "@dyarchia/fonts",
+    "version": "0.1.0",
+    "type": "module",
+    "sideEffects": ["*.css"],
+    "exports": {
+        ".": "./src/fonts.css"
+    },
+    "files": ["src"],
+    "dependencies": {
+        "geist": "1.7.2"
+    }
+}

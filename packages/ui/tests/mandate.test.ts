@@ -69,7 +69,8 @@ describe("the mandate", () => {
                 Number(match[1]),
             ),
         );
-        expect(Math.max(0, ...weights)).toBeLessThanOrEqual(500);
+        expect(weights.length).toBeGreaterThan(0);
+        expect(Math.max(...weights)).toBeLessThanOrEqual(500);
     });
 
     it("rule 9: no component emits backdrop-filter", () => {

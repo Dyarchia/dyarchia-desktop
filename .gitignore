@@ -1,4 +1,4 @@
-# Dependencias y salida de build
+# Dependencies and build output
 node_modules/
 dist/
 out/
@@ -6,25 +6,25 @@ build/
 coverage/
 *.tsbuildinfo
 
-# Utillaje de agentes y sesiones
+# Agent and session tooling
 .superpowers/
 .claude/
 .cursor/
 .aider*
 
-# Editores
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Sistema operativo
+# Operating system
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Registros y entorno
+# Logs and environment
 *.log
 npm-debug.log*
 pnpm-debug.log*
@@ -33,7 +33,7 @@ yarn-error.log*
 .env.*
 !.env.example
 
-# Temporales
+# Temporary
 *.tmp
 *.bak
 .cache/

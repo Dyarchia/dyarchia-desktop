@@ -1112,7 +1112,6 @@ git commit -m "feat(fonts): declare Geist Sans and Mono variable faces"
     "dependencies": {
         "@dyarchia/fonts": "workspace:*",
         "@dyarchia/tokens": "workspace:*",
-        "@dyarchia/ui": "workspace:*",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
     },
@@ -1542,7 +1541,21 @@ Expected: 31 tests PASS.
 
 - [ ] **Step 6: Añadir la sección al catálogo**
 
-En `apps/catalog/src/App.tsx`, importar `Button` desde `@dyarchia/ui` y sustituir `<main className={styles.main} />` por:
+El catálogo aún no depende de `@dyarchia/ui` —la Task 7 no podía declararlo
+porque el paquete no existía—. Añadirlo ahora a `apps/catalog/package.json`,
+en `dependencies`, ordenado alfabéticamente junto a los otros dos:
+
+```json
+        "@dyarchia/ui": "workspace:*",
+```
+
+Y volver a instalar:
+
+```bash
+pnpm install
+```
+
+Después, en `apps/catalog/src/App.tsx`, importar `Button` desde `@dyarchia/ui` y sustituir `<main className={styles.main} />` por:
 
 ```tsx
             <main className={styles.main}>

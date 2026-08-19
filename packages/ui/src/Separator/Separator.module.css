@@ -1,0 +1,17 @@
+.separator {
+    border: 0 solid var(--dya-border);
+}
+
+.separator[aria-orientation="horizontal"] {
+    width: 100%;
+    border-top-width: var(--dya-border-width);
+}
+
+.separator[aria-orientation="vertical"] {
+    align-self: stretch;
+    border-left-width: var(--dya-border-width);
+}
+
+.separator[data-dashed="true"] {
+    border-style: dashed;
+}

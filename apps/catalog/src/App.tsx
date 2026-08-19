@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Card, Input, Kbd, Surface } from "@dyarchia/ui";
+import { Badge, Button, Card, Eyebrow, Input, Kbd, Separator, Surface } from "@dyarchia/ui";
 import styles from "./App.module.css";
 
 type Theme = "light" | "dark";
@@ -25,7 +25,7 @@ export function App() {
             </header>
             <main className={styles.main}>
                 <section className={styles.section}>
-                    <h2 className={styles.eyebrow}>Button</h2>
+                    <Eyebrow>Button</Eyebrow>
                     <div className={styles.row}>
                         <Button variant="primary">Primary</Button>
                         <Button variant="secondary">Secondary</Button>
@@ -36,7 +36,7 @@ export function App() {
                     </div>
                 </section>
                 <section className={styles.section}>
-                    <h2 className={styles.eyebrow}>Kbd</h2>
+                    <Eyebrow>Kbd</Eyebrow>
                     <div className={styles.row}>
                         <Kbd>Ctrl</Kbd>
                         <Kbd>Shift</Kbd>
@@ -46,7 +46,7 @@ export function App() {
                 </section>
 
                 <section className={styles.section}>
-                    <h2 className={styles.eyebrow}>Input</h2>
+                    <Eyebrow>Input</Eyebrow>
                     <div className={styles.row}>
                         <Input placeholder="origin/main" />
                         <Input defaultValue="dyarchia" />
@@ -55,12 +55,23 @@ export function App() {
                 </section>
 
                 <section className={styles.section}>
-                    <h2 className={styles.eyebrow}>Surfaces</h2>
+                    <Eyebrow>Surfaces</Eyebrow>
                     <div className={styles.row}>
                         <Card>Card on surface 1</Card>
                         <Surface level={1}>Surface 1</Surface>
                         <Surface level={2}>Surface 2</Surface>
                     </div>
+                </section>
+
+                <section className={styles.section}>
+                    <Eyebrow>Badge and Separator</Eyebrow>
+                    <div className={styles.row}>
+                        <Badge>beta</Badge>
+                        <Badge tone="accent">nuevo</Badge>
+                        <Separator orientation="vertical" />
+                        <Badge>v0.1.0</Badge>
+                    </div>
+                    <Separator dashed />
                 </section>
             </main>
         </div>

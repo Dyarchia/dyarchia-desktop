@@ -50,26 +50,6 @@
     gap: var(--dya-space-5);
 }
 
-.eyebrow {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    font-weight: 400;
-    letter-spacing: var(--dya-tracking-mono);
-    text-transform: uppercase;
-    color: var(--dya-text-3);
-}
-
-.eyebrow::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-accent);
-}
-
 .row {
     display: flex;
     flex-wrap: wrap;

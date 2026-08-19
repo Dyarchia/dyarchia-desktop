@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Button, Card, Input, Kbd, Surface } from "../src";
+import { Badge, Button, Card, Eyebrow, Input, Kbd, Separator, Surface } from "../src";
 
 describe("Button", () => {
     it("renders an accessible button with its label", () => {
@@ -99,5 +99,44 @@ describe("Surface", () => {
     it("accepts level 2", () => {
         const { container } = render(<Surface level={2}>panel</Surface>);
         expect((container.firstElementChild as HTMLElement).dataset.level).toBe("2");
+    });
+});
+
+describe("Badge", () => {
+    it("defaults to neutral", () => {
+        render(<Badge>beta</Badge>);
+        expect(screen.getByText("beta").dataset.tone).toBe("neutral");
+    });
+
+    it("accepts the accent tone", () => {
+        render(<Badge tone="accent">nuevo</Badge>);
+        expect(screen.getByText("nuevo").dataset.tone).toBe("accent");
+    });
+});
+
+describe("Separator", () => {
+    it("is a horizontal separator by default", () => {
+        render(<Separator />);
+        const separator = screen.getByRole("separator");
+        expect(separator.getAttribute("aria-orientation")).toBe("horizontal");
+    });
+
+    it("accepts vertical orientation", () => {
+        render(<Separator orientation="vertical" />);
+        expect(screen.getByRole("separator").getAttribute("aria-orientation")).toBe(
+            "vertical",
+        );
+    });
+
+    it("exposes the dashed variant", () => {
+        render(<Separator dashed />);
+        expect(screen.getByRole("separator").dataset.dashed).toBe("true");
+    });
+});
+
+describe("Eyebrow", () => {
+    it("renders its label", () => {
+        render(<Eyebrow>Pricing</Eyebrow>);
+        expect(screen.getByText("Pricing")).toBeDefined();
     });
 });

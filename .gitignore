@@ -39,3 +39,7 @@ yarn-error.log*
 .cache/
 scratch/
 tmp/
+
+# Not shipped: visual reference and design rationale, kept on disk only
+demo/
+docs/

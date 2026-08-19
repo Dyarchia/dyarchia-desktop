@@ -10,11 +10,9 @@ const CSS = readFileSync(
 const FACES = [
     {
         family: "Geist",
-        file: "../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2",
     },
     {
         family: "Geist Mono",
-        file: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2",
     },
 ];
 
@@ -27,9 +25,14 @@ describe("@dyarchia/fonts", () => {
     });
 
     it("points at woff2 files that exist in geist", () => {
-        for (const face of FACES) {
-            const resolved = fileURLToPath(new URL(face.file, import.meta.url));
-            expect(existsSync(resolved), `missing: ${face.file}`).toBe(true);
+        const urlMatches = CSS.match(/url\("([^"]+)"\)/g);
+        expect(urlMatches).not.toBeNull();
+        expect(urlMatches).toHaveLength(2);
+
+        for (const match of urlMatches!) {
+            const url = match.match(/url\("([^"]+)"\)/)![1];
+            const resolved = fileURLToPath(new URL(url, import.meta.url));
+            expect(existsSync(resolved), `missing: ${url}`).toBe(true);
         }
     });
 

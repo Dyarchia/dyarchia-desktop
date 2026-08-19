@@ -1274,7 +1274,15 @@ pnpm install
 pnpm catalog
 ```
 
-Expected: Vite sirve en `http://localhost:5180`. La página muestra la cabecera con el wordmark en mono mayúsculas y el botón de tema. Al pulsarlo el fondo pasa de `#f5f5f5` a `#07080a` y el texto invierte. Si las fuentes no cargan, revisar que Vite resuelve el `url()` de `fonts.css`; en ese caso el `src` debe apuntar a la ruta relativa `../../node_modules/geist/...` en lugar de al especificador de paquete.
+Expected: Vite sirve en `http://localhost:5180`. La página muestra la cabecera con
+el wordmark en mono mayúsculas y el botón de tema. Al pulsarlo el fondo pasa de
+`#f5f5f5` a `#07080a` y el texto invierte.
+
+Comprobar además que la tipografía es Geist y no el fallback `system-ui`. La
+Task 6 dejó los `@font-face` apuntando a `../node_modules/geist/...`, una ruta
+relativa a `fonts.css`, precisamente porque `geist` declara un `exports` map que
+no expone `./dist/*` y un especificador de paquete no resolvería. Si el texto se
+ve con la fuente del sistema, el fallo está en esa resolución y no en el tema.
 
 - [ ] **Step 4: Commit**
 

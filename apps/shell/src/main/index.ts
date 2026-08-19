@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { registerLayoutStore } from './layoutStore'
 import { registerWindowControls } from './windowControls'
 import { registerPluginScheme, setupPlugins } from './plugins'
+import { stopPythonPlugins } from './pythonHost'
 
 registerPluginScheme()
 
@@ -56,6 +57,10 @@ app.whenReady().then(async () => {
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
+})
+
+app.on('will-quit', () => {
+    stopPythonPlugins()
 })
 
 app.on('window-all-closed', () => {

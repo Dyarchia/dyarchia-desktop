@@ -11,6 +11,7 @@ con un manifest y uno o dos bundles JavaScript; el shell lo descubre al arrancar
     dyarchia-plugin.json      si             manifest: identidad y puntos de entrada
     dist/renderer.js           si             bundle ESM que corre en el renderer
     dist/main.js               no             modulo Node que corre en el proceso main
+    main.py                    no             modulo Python que corre como proceso aparte
     node_modules/              no             dependencias nativas del modulo main
 
 El manifest:
@@ -29,6 +30,8 @@ Reglas del manifest:
 
 - id en minusculas, patron ^[a-z][a-z0-9-]*$. Es el namespace de los canales IPC.
 - renderer es obligatorio; main solo si el plugin necesita Node (fs, procesos, nativos).
+- python: entrada de un modulo Python, alternativa a main. Un plugin declara main o python,
+  no los dos. El renderer no nota la diferencia: usa invoke y on igual en ambos casos.
 - Si dos plugins declaran el mismo id, gana el primero descubierto y el resto se ignora.
 - schemes (opcional): lista de schemes de protocolo custom que el plugin quiere servir
   (p. ej. streaming de media). El shell los declara como privilegiados en el boot
@@ -97,6 +100,38 @@ export function activate(ctx: PluginMainContext): void {
 ```
 
 
+## 3.5. El modulo main en Python (opcional)
+
+Alternativa a main para logica que se escribe mejor en Python. El contrato es el mismo que
+el de Node, con los nombres en snake_case:
+
+    Metodo                       Uso
+    -------------------------    --------------------------------------------------
+    handle(canal, handler)       responde a los invoke del renderer
+    broadcast(canal, *args)      emite un evento a todas las ventanas
+
+```python
+def activate(ctx):
+    ctx.handle("saluda", lambda nombre: f"hola {nombre}")
+```
+
+Como funciona por dentro:
+
+- El shell lanza un proceso Python por plugin y habla con el por stdin/stdout en JSON,
+  una linea por mensaje. El proceso muere cuando se cierra la app.
+- Los invoke se corren en un pool de hilos y se correlacionan por id, asi que un handler
+  lento no bloquea a los demas y las respuestas pueden volver desordenadas.
+- stdout esta reservado para el protocolo: dentro del plugin, print va a stderr y sale
+  en la consola del shell prefijado con [python:<id>].
+- El interprete se busca como py -3 en Windows y python3 en el resto. La variable
+  DYARCHIA_PYTHON fuerza una ruta concreta.
+
+El runtime vive en packages/pysdk (dyarchia_sdk) y es stdlib pura: no hay que instalar
+nada con pip. Esta capa es deliberadamente fina — el dia que exista un daemon que sirva
+como fuente de verdad, se sustituye el transporte stdio sin tocar el activate de ningun
+plugin ni el renderer.
+
+
 ## 4. Build e instalacion
 
 Bundles con esbuild, formato ESM. El renderer se sirve por el protocolo dyarchia-plugin://
@@ -111,6 +146,7 @@ Reglas de build:
 
 - Dependencias nativas (node-pty) se marcan external y se copian a node_modules/ dentro de
   la carpeta instalada del plugin; el resto se bundlea.
+- El modulo Python no se bundlea: main.py se copia tal cual junto al manifest.
 - CSS de librerias se importa como texto (--loader:.css=text) y se inyecta en un tag style.
 
 Donde vive el plugin segun el modo:

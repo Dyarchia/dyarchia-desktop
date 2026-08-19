@@ -23,6 +23,10 @@ for (const entry of entries) {
     await cp(manifestPath, join(target, 'dyarchia-plugin.json'))
     await cp(join(pluginDir, 'dist'), join(target, 'dist'), { recursive: true })
 
+    if (manifest.python) {
+        await cp(join(pluginDir, manifest.python), join(target, manifest.python))
+    }
+
     for (const dep of NATIVE_DEPS[manifest.id] ?? []) {
         await cp(
             join(pluginDir, 'node_modules', dep),

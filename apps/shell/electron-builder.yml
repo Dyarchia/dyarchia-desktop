@@ -4,6 +4,11 @@ directories:
     output: release
 files:
     - out/**
+extraResources:
+    - from: ../../packages/pysdk
+      to: pysdk
+      filter:
+          - dyarchia_sdk/**
 asar: true
 win:
     target:

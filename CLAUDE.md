@@ -12,6 +12,10 @@ Runs `electron-vite dev --watch` on the shell. **Run `pnpm install` then `pnpm b
 plugin `dist/` is gitignored and the shell loads `dist/renderer.js` even in dev, so a fresh
 clone otherwise opens an empty window with no toggles.
 
+A `predev` hook runs [scripts/ensure-runtime.mjs](scripts/ensure-runtime.mjs), which downloads
+the Electron binary if its postinstall never ran (pnpm can skip it even when the package is
+allowlisted) and warns when no Python interpreter is found.
+
 ```bash
 pnpm build
 ```
@@ -38,6 +42,14 @@ node scripts/install-plugins.mjs
 
 Copies each plugin's manifest + `dist/` (+ native deps listed in `NATIVE_DEPS`) into
 `%APPDATA%/dyarchia/plugins/<id>/`, which is where the packaged app looks.
+
+```bash
+printf '{"t":"invoke","id":1,"channel":"info","args":[]}
+' | (cd packages/pysdk && py -m dyarchia_sdk ../plugin-pyinfo)
+```
+
+Drives a Python plugin without Electron: the host speaks JSON lines on stdin/stdout, so a
+plugin can be exercised straight from a shell.
 
 ```bash
 npx tsc -p apps/shell
@@ -107,6 +119,26 @@ crash or a blocking native call cannot take down the main process. It owns flow 
 flush), and a 1 MB scrollback buffer that is replayed on reattach. Sessions therefore survive
 a panel being closed and reopened; the renderer must send `{t:'detach'}` rather than killing
 the session on dispose.
+
+**Python plugin mains.** A manifest declares either `main` (Node module, imported into the
+Electron main process) or `python` (a `main.py` run as its own process). The Python side gets
+the same two-method contract — `ctx.handle` / `ctx.broadcast` — from
+[packages/pysdk](packages/pysdk/dyarchia_sdk/context.py), and the renderer cannot tell the
+difference: `ctx.invoke` and `ctx.on` are unchanged.
+
+The shell spawns one interpreter per Python plugin
+([pythonHost.ts](apps/shell/src/main/pythonHost.ts)), exchanges JSON lines over stdio, and
+registers `plugin:<id>:<channel>` handlers from the channel list the plugin reports in its
+`ready` frame. Invokes run in a thread pool and are correlated by `id`, so replies may arrive
+out of order and a slow handler blocks nothing. The child's stdout is the protocol channel —
+`dyarchia_sdk` redirects plugin `print` to stderr so it cannot corrupt the stream.
+
+`packages/pysdk` is stdlib-only; there is nothing to `pip install`. The layer is deliberately
+thin: when a daemon eventually owns this logic, only the stdio transport is replaced — no
+plugin `activate` and no renderer code changes.
+
+**Hot paths stay local.** The terminal keeps its MessagePort channel rather than routing
+per-keystroke traffic through any host process. Latency-sensitive plugins should do the same.
 
 **Custom protocol schemes.** A plugin that serves its own scheme (the player serves
 `dyarchia-media://`) declares it in `schemes` in the manifest. Electron requires

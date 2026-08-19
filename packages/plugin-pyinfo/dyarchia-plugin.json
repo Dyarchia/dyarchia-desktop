@@ -1,0 +1,7 @@
+{
+    "id": "pyinfo",
+    "name": "Python",
+    "version": "0.1.0",
+    "renderer": "dist/renderer.js",
+    "python": "main.py"
+}

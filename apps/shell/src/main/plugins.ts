@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { invokePythonPlugin, startPythonPlugin } from './pythonHost'
 
 export interface PluginManifest {
     id: string
@@ -10,6 +11,7 @@ export interface PluginManifest {
     version: string
     renderer: string
     main?: string
+    python?: string
     schemes?: string[]
 }
 
@@ -171,10 +173,24 @@ async function activateMainModules(): Promise<void> {
     }
 }
 
+async function activatePythonModules(): Promise<void> {
+    for (const { manifest, dir } of plugins.values()) {
+        if (!manifest.python) continue
+        const channels = await startPythonPlugin(manifest.id, dir)
+        if (!channels) continue
+        for (const channel of channels) {
+            ipcMain.handle(`plugin:${manifest.id}:${channel}`, (_event, ...args) =>
+                invokePythonPlugin(manifest.id, channel, args)
+            )
+        }
+    }
+}
+
 export async function setupPlugins(): Promise<void> {
     protocol.handle(PLUGIN_SCHEME, servePluginFile)
     await discoverPlugins()
     await activateMainModules()
+    await activatePythonModules()
     ipcMain.handle('shell:plugins:list', () =>
         [...plugins.values()].map(({ manifest }) => ({
             manifest,

@@ -22,7 +22,7 @@ function createWindow(): void {
         show: false,
         autoHideMenuBar: true,
         titleBarStyle: 'hidden',
-        backgroundColor: '#141417',
+        backgroundColor: '#07080a',
         webPreferences: {
             preload: join(import.meta.dirname, '../preload/index.mjs'),
             contextIsolation: true,

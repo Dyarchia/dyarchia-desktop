@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DockviewReact, themeAbyssSpaced } from 'dockview-react'
 import type {
     DockviewApi,
@@ -14,7 +14,7 @@ import { basePanelId, getPanel } from '../panels/registry'
 const dyarchiaTheme: DockviewTheme = {
     ...themeAbyssSpaced,
     name: 'dyarchia',
-    gap: 14,
+    gap: 12,
     tabGroupIndicator: 'none'
 }
 
@@ -24,7 +24,18 @@ const CLOSE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
 
 function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
-    return <div className="panel-tab">{props.api.title}</div>
+    const [active, setActive] = useState(props.api.isActive)
+
+    useEffect(() => {
+        const subscription = props.api.onDidActiveChange((event) => setActive(event.isActive))
+        return () => subscription.dispose()
+    }, [props.api])
+
+    return (
+        <div className={active ? 'panel-tab panel-tab-active' : 'panel-tab'}>
+            {props.api.title}
+        </div>
+    )
 }
 
 function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {

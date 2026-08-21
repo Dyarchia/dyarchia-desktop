@@ -39,6 +39,8 @@ Text           --dya-text  --dya-text-2  --dya-text-3  --dya-text-4
 Relief         --dya-elev-raised  --dya-elev-raised-hover
                --dya-elev-pressed  --dya-elev-overlay  --dya-elev-flat
 Accent         --dya-accent  --dya-accent-soft
+Status         --dya-danger  --dya-success  --dya-warning
+               --dya-*-soft for each, --dya-on-danger for a fill
 Shape          --dya-radius  --dya-radius-media  --dya-radius-full
 Type           --dya-font-sans  --dya-font-mono  --dya-size-*  --dya-tracking-*
 Spacing        --dya-space-1 .. --dya-space-24
@@ -67,7 +69,7 @@ A minimal button with the whole system applied:
 .button:active { box-shadow: var(--dya-elev-pressed); transform: translateY(1px); }
 ```
 
-## Four rules to respect
+## Five rules to respect
 
 - **What can be pressed stands out.** Only what receives input sits recessed:
   text fields, and any control while it is being pressed. Surfaces and rows are
@@ -81,6 +83,42 @@ A minimal button with the whole system applied:
 - **The orange appears sparingly.** Never as a button fill and never as text on
   a background: at 3.05:1 it clears the bar for a graphical object but not for
   text.
+- **Status colour is not accent colour.** The three status hues state an outcome
+  — a failure, a gain, a caution — and they are readable as text, which the
+  orange is not. They never mark what is merely active or selected: that is the
+  orange's job and it does not change hands.
+
+## Status
+
+Three hues, one role each, and unlike the accent they are meant to be read.
+
+```text
+Token             Light      Dark       Use
+---------------   --------   --------   ---------------------------------
+--dya-danger      #a8271c    #f0857c    error text, a negative delta,
+                                        the hover of a destructive control
+--dya-success     #1c6b39    #63cf95    confirmation, a positive delta
+--dya-warning     #7d5100    #d6a95c    caution that is not yet a failure
+--dya-on-danger   #ffffff    #07080a    text or icon on a --dya-danger fill
+```
+
+Each has a `-soft` companion — the same hex at 15% — for the background of a
+badge or a row.
+
+Measured against `--dya-surface-1`, the tightest surface in each theme, every
+hue lands between 6.5:1 and 9.9:1. The margin over the 4.5:1 line is deliberate:
+these appear at label sizes, and a thin stem at 12px loses to antialiasing what
+the number says it has.
+
+Rules:
+
+- **Only `--dya-danger` may fill.** A destructive action earns a red button; a
+  success or a warning does not earn a green or yellow one.
+- **Never the only signal.** Colour states the outcome, a word or an icon says
+  what it is. The two themes do not share these values, so nothing survives a
+  theme change except the role.
+- **The dark yellow stays dark.** A canary yellow is illegible on the light
+  canvas and shouts on the dark one.
 
 ## Themes
 

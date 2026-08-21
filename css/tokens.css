@@ -40,6 +40,14 @@
     --dya-accent: #ee6018;
     --dya-accent-soft: #ee601826;
 
+    --dya-danger: #a8271c;
+    --dya-danger-soft: #a8271c26;
+    --dya-on-danger: #ffffff;
+    --dya-success: #1c6b39;
+    --dya-success-soft: #1c6b3926;
+    --dya-warning: #7d5100;
+    --dya-warning-soft: #7d510026;
+
     --dya-glass: none;
     --dya-glass-bg: transparent;
 
@@ -109,6 +117,14 @@
     --dya-border-card: #ffffff1a;
     --dya-line: #ffffff0f;
     --dya-faint: #ffffff3b;
+
+    --dya-danger: #f0857c;
+    --dya-danger-soft: #f0857c26;
+    --dya-on-danger: #07080a;
+    --dya-success: #63cf95;
+    --dya-success-soft: #63cf9526;
+    --dya-warning: #d6a95c;
+    --dya-warning-soft: #d6a95c26;
 
     --dya-elev-raised:
         inset 0 1px 0 #ffffff26,

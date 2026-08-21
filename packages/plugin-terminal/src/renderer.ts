@@ -1,4 +1,5 @@
 import { Terminal } from '@xterm/xterm'
+import type { ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebglAddon } from '@xterm/addon-webgl'
@@ -12,17 +13,56 @@ function ensureStyles(): void {
     style.id = 'dyarchia-terminal-styles'
     style.textContent =
         xtermCss +
+        '\n.dyarchia-terminal {' +
+        ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
         '\n.xterm .xterm-viewport { background-color: transparent !important; }' +
         '\n.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }' +
         '\n.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }' +
         '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb {' +
-        ' background-color: transparent; border-radius: 8px;' +
-        ' border: 2px solid transparent; background-clip: padding-box; }' +
+        ' background-color: transparent; border-radius: var(--dya-radius); }' +
         '\n.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {' +
-        ' background-color: rgba(255, 255, 255, 0.13); }' +
+        ' background-color: var(--dya-border); }' +
         '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {' +
-        ' background-color: rgba(255, 255, 255, 0.26); }'
+        ' background-color: var(--dya-border-control); }'
     document.head.appendChild(style)
+}
+
+const ANSI_LIGHT: ITheme = {
+    black: '#141312',
+    red: '#8f1414',
+    green: '#175226',
+    yellow: '#6b4400',
+    blue: '#173c80',
+    magenta: '#6d2478',
+    cyan: '#0b515b',
+    white: '#4a4643',
+    brightBlack: '#5c5855',
+    brightRed: '#a81f1f',
+    brightGreen: '#1d6a34',
+    brightYellow: '#7d5100',
+    brightBlue: '#1f4c9c',
+    brightMagenta: '#832d92',
+    brightCyan: '#0d626e',
+    brightWhite: '#020202'
+}
+
+const ANSI_DARK: ITheme = {
+    black: '#3a3d42',
+    red: '#e07b7b',
+    green: '#7fc99a',
+    yellow: '#d6b168',
+    blue: '#7ba6e8',
+    magenta: '#c493dd',
+    cyan: '#6dc3cf',
+    white: '#a0a3a8',
+    brightBlack: '#6a6b6c',
+    brightRed: '#f09a9a',
+    brightGreen: '#9bdcb2',
+    brightYellow: '#e8c98a',
+    brightBlue: '#9dbef2',
+    brightMagenta: '#d7b0e8',
+    brightCyan: '#8fd6e0',
+    brightWhite: '#f4f4f6'
 }
 
 const TERMINAL_ICON =
@@ -42,20 +82,28 @@ export function activate(ctx: PluginContext): void {
         { id: 'terminal', title: 'Terminal', icon: TERMINAL_ICON, duplicable: true },
         (container, handle) => {
         ensureStyles()
-        container.style.padding = '6px 2px 2px 8px'
-        container.style.background = 'rgba(0, 0, 0, 0.28)'
+        container.classList.add('dyarchia-terminal')
+
+        const terminalTheme = (): ITheme => ({
+            ...(ctx.theme.current === 'dark' ? ANSI_DARK : ANSI_LIGHT),
+            background: ctx.theme.token('surface-1'),
+            foreground: ctx.theme.token('text'),
+            cursor: ctx.theme.token('text'),
+            cursorAccent: ctx.theme.token('surface-1'),
+            selectionBackground: ctx.theme.token('accent-soft')
+        })
 
         const terminal = new Terminal({
-            fontFamily: 'Cascadia Mono, Consolas, monospace',
+            fontFamily: "'Geist Mono', 'Cascadia Mono', Consolas, monospace",
             fontSize: 13,
             cursorBlink: true,
-            allowTransparency: true,
             allowProposedApi: true,
+            minimumContrastRatio: 4.5,
             scrollback: 10000,
-            theme: {
-                background: '#00000000',
-                foreground: '#e0e0e0'
-            }
+            theme: terminalTheme()
+        })
+        const unwatchTheme = ctx.theme.onChange(() => {
+            terminal.options.theme = terminalTheme()
         })
         const fit = new FitAddon()
         terminal.loadAddon(fit)
@@ -82,7 +130,7 @@ export function activate(ctx: PluginContext): void {
             } else if (msg.t === 'exit') {
                 port?.close()
                 port = null
-                terminal.write('\r\n[proceso terminado]\r\n')
+                terminal.write('\r\n[process exited]\r\n')
                 setTimeout(() => {
                     if (!disposed) handle.close()
                 }, 150)
@@ -164,6 +212,7 @@ export function activate(ctx: PluginContext): void {
 
         return () => {
             disposed = true
+            unwatchTheme()
             observer.disconnect()
             window.removeEventListener('message', onPortAnnouncement)
             container.removeEventListener('mouseup', onMouseUp)
@@ -175,6 +224,7 @@ export function activate(ctx: PluginContext): void {
                 port = null
             }
             terminal.dispose()
+            container.classList.remove('dyarchia-terminal')
         }
     })
 }

@@ -11,69 +11,114 @@ const STYLES = `
 .docviewer {
     display: flex;
     height: 100%;
-    background: transparent;
-    color: #ddd;
-    font-size: 13px;
+    color: var(--dya-text-2);
+    font-size: var(--dya-size-label);
 }
 .docviewer-tree {
     width: 230px;
     min-width: 160px;
     overflow-y: auto;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 6px 0;
+    padding: var(--dya-space-2) 0;
+    border-right: var(--dya-border-width) solid var(--dya-line);
 }
 .docviewer-entry {
     display: block;
     width: 100%;
-    padding: 3px 12px;
+    padding: 3px var(--dya-space-3);
     border: none;
+    border-left: 2px solid transparent;
     background: none;
-    color: #bbb;
+    color: var(--dya-text-3);
     text-align: left;
     cursor: pointer;
-    font: inherit;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
-.docviewer-entry:hover { background: #222; color: #fff; }
-.docviewer-entry-dir { color: #7aa2c7; }
+.docviewer-entry:hover {
+    color: var(--dya-text);
+    background: var(--dya-surface-2);
+}
+.docviewer-entry-dir {
+    color: var(--dya-text-2);
+}
+.docviewer-entry-active {
+    color: var(--dya-text);
+    background: var(--dya-surface-2);
+    border-left-color: var(--dya-accent);
+}
 .docviewer-content {
     flex: 1;
     overflow-y: auto;
-    padding: 18px 26px;
-    line-height: 1.55;
+    padding: var(--dya-space-5) var(--dya-space-6);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-2);
 }
-.docviewer-content h1, .docviewer-content h2, .docviewer-content h3 {
-    margin: 0.8em 0 0.4em;
-    color: #f0f0f0;
+.docviewer-content h1,
+.docviewer-content h2,
+.docviewer-content h3 {
+    margin: var(--dya-space-5) 0 var(--dya-space-2);
+    color: var(--dya-text);
+    font-weight: 400;
+    line-height: var(--dya-leading-heading);
 }
-.docviewer-content p { margin: 0.5em 0; }
+.docviewer-content h1 { font-size: var(--dya-size-h3); letter-spacing: var(--dya-tracking-h3); }
+.docviewer-content h2 { font-size: var(--dya-size-body); }
+.docviewer-content h3 { font-size: var(--dya-size-body-sm); }
+.docviewer-content p {
+    margin: var(--dya-space-2) 0;
+}
 .docviewer-content pre {
-    background: rgba(0, 0, 0, 0.32);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
-    padding: 10px 12px;
+    margin: var(--dya-space-3) 0;
+    padding: var(--dya-space-3);
+    background: var(--dya-surface-2);
+    border: var(--dya-border-width) solid var(--dya-border-card);
+    border-radius: var(--dya-radius);
     overflow-x: auto;
 }
 .docviewer-content code {
-    font-family: 'Cascadia Mono', Consolas, monospace;
-    font-size: 12px;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
 }
-.docviewer-content ul, .docviewer-content ol { padding-left: 1.6em; margin: 0.5em 0; }
-.docviewer-content a { color: #7aa2c7; }
+.docviewer-content ul,
+.docviewer-content ol {
+    margin: var(--dya-space-2) 0;
+    padding-left: var(--dya-space-5);
+}
+.docviewer-content a {
+    color: var(--dya-text);
+    text-decoration: underline;
+    text-decoration-color: var(--dya-accent);
+    text-underline-offset: 3px;
+}
 .docviewer-content blockquote {
-    border-left: 3px solid #3a4a5a;
-    margin: 0.6em 0;
-    padding-left: 12px;
-    color: #999;
+    margin: var(--dya-space-3) 0;
+    padding-left: var(--dya-space-3);
+    border-left: 2px solid var(--dya-border);
+    color: var(--dya-text-3);
+}
+.docviewer-content hr {
+    margin: var(--dya-space-5) 0;
+    border: none;
+    border-top: var(--dya-border-width) solid var(--dya-line);
 }
 .docviewer-empty {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #555;
+    color: var(--dya-text-3);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    text-transform: uppercase;
 }
 `
 
@@ -109,7 +154,12 @@ export function activate(ctx: PluginContext): void {
         root.append(tree, content)
         container.appendChild(root)
 
-        async function openFile(entry: DirEntry): Promise<void> {
+        let activeEntry: HTMLButtonElement | null = null
+
+        async function openFile(entry: DirEntry, button: HTMLButtonElement): Promise<void> {
+            activeEntry?.classList.remove('docviewer-entry-active')
+            activeEntry = button
+            button.classList.add('docviewer-entry-active')
             const ext = entry.name.slice(entry.name.lastIndexOf('.')).toLowerCase()
             const result = (await ctx.invoke('read', entry.path)) as {
                 content?: string
@@ -130,6 +180,7 @@ export function activate(ctx: PluginContext): void {
 
         async function loadDir(dirPath: string): Promise<void> {
             const entries = (await ctx.invoke('list', dirPath)) as DirEntry[]
+            activeEntry = null
             tree.replaceChildren()
             const up = document.createElement('button')
             up.className = 'docviewer-entry docviewer-entry-dir'
@@ -152,7 +203,7 @@ export function activate(ctx: PluginContext): void {
                 btn.textContent = entry.isDir ? `${entry.name}/` : entry.name
                 btn.onclick = () => {
                     if (entry.isDir) void loadDir(entry.path)
-                    else void openFile(entry)
+                    else void openFile(entry, btn)
                 }
                 tree.appendChild(btn)
             }

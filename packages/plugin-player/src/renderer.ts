@@ -17,62 +17,83 @@ const STYLES = `
 .player {
     display: flex;
     height: 100%;
-    color: #ddd;
-    font-size: 13px;
+    color: var(--dya-text-2);
+    font-size: var(--dya-size-label);
 }
 .player-tree {
     width: 230px;
     min-width: 160px;
     overflow-y: auto;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 6px 0;
+    padding: var(--dya-space-2) 0;
+    border-right: var(--dya-border-width) solid var(--dya-line);
 }
 .player-entry {
     display: block;
     width: 100%;
-    padding: 3px 12px;
+    padding: 3px var(--dya-space-3);
     border: none;
+    border-left: 2px solid transparent;
     background: none;
-    color: #bbb;
+    color: var(--dya-text-3);
     text-align: left;
     cursor: pointer;
-    font: inherit;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
-.player-entry:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
-.player-entry-dir { color: #7aa2c7; }
-.player-entry-active { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.player-entry:hover {
+    color: var(--dya-text);
+    background: var(--dya-surface-2);
+}
+.player-entry-dir {
+    color: var(--dya-text-2);
+}
+.player-entry-active {
+    color: var(--dya-text);
+    background: var(--dya-surface-2);
+    border-left-color: var(--dya-accent);
+}
 .player-stage {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
-    padding: 18px;
+    gap: var(--dya-space-3);
+    padding: var(--dya-space-5);
     min-width: 0;
 }
 .player-stage video {
     max-width: 100%;
     max-height: calc(100% - 40px);
-    border-radius: 8px;
-    background: #000;
+    border-radius: var(--dya-radius-media);
+    background: var(--dya-surface-inverse);
     outline: none;
 }
 .player-stage audio {
     width: min(420px, 90%);
 }
 .player-title {
-    color: #9a9aa2;
-    font-size: 12px;
     max-width: 90%;
+    color: var(--dya-text-3);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.player-empty { color: #555; }
+.player-empty {
+    color: var(--dya-text-3);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    text-transform: uppercase;
+}
 `
 
 function ensureStyles(): void {

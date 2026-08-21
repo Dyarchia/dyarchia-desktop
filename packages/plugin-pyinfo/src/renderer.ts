@@ -6,22 +6,106 @@ const PYINFO_ICON =
 const STYLE_ID = 'dyarchia-pyinfo-style'
 
 const STYLE = `
-.pyinfo-root { height: 100%; overflow: auto; padding: 18px 22px; color: #c9c9d1;
-    font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
-.pyinfo-title { font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
-    color: #6f6f7b; margin-bottom: 14px; }
-.pyinfo-row { display: flex; gap: 12px; padding: 3px 0; }
-.pyinfo-key { min-width: 130px; color: #6f6f7b; }
-.pyinfo-value { color: #c9c9d1; word-break: break-all; }
-.pyinfo-section { margin-top: 20px; }
-.pyinfo-tick { color: #7ec9a5; }
-.pyinfo-error { color: #d98b8b; }
-.pyinfo-echo { margin-top: 10px; display: flex; gap: 8px; }
-.pyinfo-echo input { flex: 1; background: #1b1b20; border: 1px solid #2c2c34; border-radius: 4px;
-    color: #c9c9d1; padding: 5px 8px; font: inherit; }
-.pyinfo-echo button { background: #24242b; border: 1px solid #2c2c34; border-radius: 4px;
-    color: #c9c9d1; padding: 5px 12px; font: inherit; cursor: pointer; }
-.pyinfo-echo button:hover { background: #2c2c34; }
+.pyinfo-root {
+    height: 100%;
+    overflow: auto;
+    padding: var(--dya-space-5) var(--dya-space-5);
+    color: var(--dya-text-2);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: 1.7;
+}
+.pyinfo-title {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    margin-bottom: var(--dya-space-4);
+    color: var(--dya-text-3);
+    text-transform: uppercase;
+}
+.pyinfo-title::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-accent);
+}
+.pyinfo-row {
+    display: flex;
+    gap: var(--dya-space-3);
+    padding: 2px 0;
+}
+.pyinfo-key {
+    min-width: 130px;
+    color: var(--dya-text-3);
+    text-transform: uppercase;
+}
+.pyinfo-value {
+    color: var(--dya-text-2);
+    word-break: break-all;
+}
+.pyinfo-section {
+    margin-top: var(--dya-space-5);
+}
+.pyinfo-tick {
+    align-items: center;
+    color: var(--dya-text-2);
+}
+.pyinfo-tick::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-accent);
+}
+.pyinfo-error {
+    color: var(--dya-danger);
+}
+.pyinfo-echo {
+    display: flex;
+    gap: var(--dya-space-2);
+    max-width: 520px;
+    margin-top: var(--dya-space-3);
+}
+.pyinfo-echo input {
+    flex: 1;
+    height: 28px;
+    padding: 0 var(--dya-space-3);
+    border: none;
+    border-radius: var(--dya-radius);
+    color: var(--dya-text);
+    background: var(--dya-bg);
+    box-shadow: var(--dya-elev-pressed);
+    font: inherit;
+    letter-spacing: inherit;
+}
+.pyinfo-echo input::placeholder {
+    color: var(--dya-text-3);
+}
+.pyinfo-echo button {
+    height: 28px;
+    padding: 0 var(--dya-space-4);
+    border: none;
+    border-radius: var(--dya-radius);
+    color: var(--dya-text);
+    background: var(--dya-surface-1);
+    box-shadow: var(--dya-elev-raised);
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform var(--dya-dur-press) var(--dya-ease-press);
+}
+.pyinfo-echo button:hover {
+    box-shadow: var(--dya-elev-raised-hover);
+}
+.pyinfo-echo button:active {
+    box-shadow: var(--dya-elev-pressed);
+    transform: translateY(1px);
+}
 `
 
 function ensureStyle(): void {

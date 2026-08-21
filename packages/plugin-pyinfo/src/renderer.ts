@@ -43,7 +43,7 @@ const STYLE = `
     text-transform: uppercase;
 }
 .pyinfo-value {
-    color: var(--dya-text-2);
+    color: var(--dya-text);
     word-break: break-all;
 }
 .pyinfo-section {

@@ -317,12 +317,13 @@ Before a panel is considered done:
   it. xterm's `minimumContrastRatio` is set to 4.5 as the backstop, which lifts
   any foreground the palette cannot reach. A plugin that renders text it does
   not control needs an equivalent guard.
-- **`--dya-text-3` in dark gives 3.75:1**, so it is only compliant at 18px and
-  above. Chrome labels use it at 12px, which is below AA. The dark ramp has two
-  compliant text levels and the shell wants three, so either the token moves
-  upstream (about `#8b8e93` would give 5.83:1) or the shell collapses to two
-  levels. Until then, nothing that must be read to operate the app is allowed
-  below `--dya-text-3`, and `--dya-text-4` is not used for text at all.
+- **The dark ramp has a narrow middle.** `--dya-text-3` was raised upstream to
+  `#8b8e93` so the third level clears AA at 12px, which is the size this app
+  writes at. It costs separation: `--dya-text-2` and `--dya-text-3` now sit 1.30
+  apart instead of 2.11, so the second and third levels take a moment to tell
+  apart. Whether `--dya-text-2` moves up to reopen the gap is undecided
+  upstream. `--dya-text-4` stays out of text entirely — at 2.20:1 it is
+  decorative.
 - **The two themes have opposite neutral temperature** — warm in light, cold in
   dark. Switching reads as a change of temperature, not only of luminance.
   Upstream is still deciding whether to unify.

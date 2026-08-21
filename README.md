@@ -210,11 +210,24 @@ On Windows, `scripts/watch.ps1` wraps that in a log and a desktop notification r
 exit code is not 0, and `scripts/register-watch-task.ps1` registers it with the Task Scheduler:
 
 ```powershell
-.\scripts\register-watch-task.ps1 -Time 08:00
+.\scripts\register-watch-task.ps1
 ```
 
-Nothing registers itself. Run that when you want the monitor to start, and
-`.\scripts\register-watch-task.ps1 -Unregister` when you want it to stop.
+The task fires at every logon and the wrapper decides whether the week is still owed a sweep, so the
+round happens the first time you log on in a given week: Monday if you turn the machine on that day,
+the first day you do if you do not. A run that finds the week already swept exits 20 and does
+nothing. A week whose sweep failed is still owed one, so the next logon takes it.
+
+Every task carries a name, `labs-docs` by default, and lives under the `\crawlee-lab\` folder of the
+Task Scheduler. The name keys the log and the record of the last week swept, so sweeps over
+different profiles can sit side by side without taking each other's turn:
+
+```powershell
+.\scripts\register-watch-task.ps1 -Name claude-only -Profiles claude-docs, claude-code-docs
+```
+
+Nothing registers itself. Run that when you want a monitor to start, and
+`.\scripts\register-watch-task.ps1 -Name labs-docs -Unregister` when you want it to stop.
 
 ## Politeness
 

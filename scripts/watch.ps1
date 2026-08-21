@@ -8,7 +8,19 @@
     A quiet sweep stays quiet: a monitor that speaks every day stops being read.
 
     Exit codes are passed through unchanged, so the Task Scheduler history shows the same verdict:
-    0 nothing changed, 10 something did, 1 a target failed.
+    0 nothing changed, 10 something did, 1 a target failed. The wrapper adds 20 for a run that
+    decided the week was already swept and did nothing.
+
+    With -OncePerWeek the wrapper keeps a record of the last ISO week it swept and refuses to sweep
+    that week twice, which is what turns a trigger that fires on every logon into one sweep a week.
+    The record is written only after a sweep that finished, so a week whose sweep failed is still
+    owed one and the next logon takes it.
+
+    The log and that record are named after -Name, so several scheduled sweeps can run side by side
+    without overwriting each other's turn.
+
+.PARAMETER Name
+    Names this sweep's log and its record of the last week swept. Defaults to 'labs-docs'.
 
 .PARAMETER Profiles
     Profiles to sweep. Defaults to every profile that asks for snapshots.
@@ -16,17 +28,27 @@
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
+.PARAMETER OncePerWeek
+    Do nothing if this name has already swept the current ISO week.
+
 .EXAMPLE
     .\scripts\watch.ps1
     .\scripts\watch.ps1 -Profiles claude-docs, claude-code-docs
+    .\scripts\watch.ps1 -Name labs-docs -OncePerWeek
 #>
 [CmdletBinding()]
 param(
+    [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')]
+    [string]$Name = 'labs-docs',
     [string[]]$Profiles = @(),
-    [switch]$Commit
+    [switch]$Commit,
+    [switch]$OncePerWeek
 )
 
 $ErrorActionPreference = 'Stop'
+
+# A -File invocation hands a comma-separated list over as one string, so split it back apart.
+$Profiles = @($Profiles | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 
@@ -41,7 +63,8 @@ elseif ([System.IO.Path]::IsPathRooted($configuredOutput)) {
 else {
     $logDirectory = Join-Path $projectRoot $configuredOutput
 }
-$logFile = Join-Path $logDirectory 'watch.log'
+$logFile = Join-Path $logDirectory "watch-$Name.log"
+$weekFile = Join-Path $logDirectory "watch-$Name.week"
 
 function Write-Log {
     param([string]$Message)
@@ -51,6 +74,11 @@ function Write-Log {
     }
     $stamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
     Add-Content -Path $logFile -Value "$stamp  $Message" -Encoding utf8
+}
+
+function Get-WeekKey {
+    $now = Get-Date
+    '{0}-W{1:d2}' -f [System.Globalization.ISOWeek]::GetYear($now), [System.Globalization.ISOWeek]::GetWeekOfYear($now)
 }
 
 function Show-Notification {
@@ -78,13 +106,20 @@ function Show-Notification {
     }
 }
 
+$week = Get-WeekKey
+
+if ($OncePerWeek -and (Test-Path $weekFile) -and (Get-Content -Path $weekFile -Raw).Trim() -eq $week) {
+    Write-Log "skipped: $week has already been swept"
+    exit 20
+}
+
 Set-Location $projectRoot
 
 $arguments = @('run', 'crawlee-lab', 'watch')
 if ($Profiles.Count -gt 0) { $arguments += $Profiles }
 if ($Commit) { $arguments += '--commit' }
 
-Write-Log "sweep started: uv $($arguments -join ' ')"
+Write-Log "sweep started ($week): uv $($arguments -join ' ')"
 
 $transcript = & uv @arguments 2>&1 | Out-String
 $code = $LASTEXITCODE
@@ -93,6 +128,13 @@ $headline = ($transcript -split "`n" | Where-Object { $_ -match 'targets (change
 if (-not $headline) { $headline = "watch exited with $code" }
 
 Write-Log "sweep finished ($code): $headline"
+
+if ($code -eq 0 -or $code -eq 10) {
+    if (-not (Test-Path $logDirectory)) {
+        New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+    }
+    Set-Content -Path $weekFile -Value $week -Encoding utf8
+}
 
 switch ($code) {
     10 { Show-Notification -Title 'crawlee-lab: a tracked site changed' -Message $headline }

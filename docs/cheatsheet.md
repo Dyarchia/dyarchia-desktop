@@ -174,12 +174,17 @@ A first snapshot exits 0, not 10. There is nothing yet for it to differ from.
 On Windows:
 
 ```powershell
-.\scripts\watch.ps1                                   # sweep, log, notify only if 10 or 1
-.\scripts\register-watch-task.ps1 -Time 08:00         # register the daily task
-.\scripts\register-watch-task.ps1 -Unregister         # remove it
-Start-ScheduledTask -TaskName 'crawlee-lab watch'      # run it now
-Get-ScheduledTaskInfo -TaskName 'crawlee-lab watch'    # when it last ran, and how it went
+.\scripts\watch.ps1                                  # sweep, log, notify only if 10 or 1
+.\scripts\register-watch-task.ps1                    # register 'labs-docs', one sweep a week
+.\scripts\register-watch-task.ps1 -Name labs-docs -Unregister
+Start-ScheduledTask -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
+Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 ```
+
+The task fires at every logon; the wrapper sweeps only if the current ISO week has not been swept
+yet, and exits 20 without sweeping if it has. Name a task to run more than one sweep on a machine:
+`-Name claude-only -Profiles claude-docs, claude-code-docs`. The name keys `output/watch-<name>.log`
+and `output/watch-<name>.week`, the record of the last week swept.
 
 ## 7. profiles
 
@@ -288,7 +293,8 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     data/<name>/changes.json        no                Last change report, machine readable
     data/<name>/CHANGES.md          no                Last change report, with diffs
     data/WATCH.md                   no                Last sweep across every tracked target
-    output/watch.log                no                One line per scheduled sweep
+    output/watch-<name>.log         no                One line per sweep of that task
+    output/watch-<name>.week        no                The last ISO week that task swept
     storage/                        no                Crawlee's own working directory
 
 `data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has

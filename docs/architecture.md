@@ -249,9 +249,22 @@ as a change: there is nothing yet for it to differ from, and a monitor that fire
 run teaches its reader to ignore it.
 
 Everything Windows-specific lives in `scripts/`, outside the package: `watch.ps1` adds the log and
-the desktop notification, and `register-watch-task.ps1` registers the daily task. Neither runs
+the desktop notification, and `register-watch-task.ps1` registers the weekly task. Neither runs
 itself. Installing dependencies so a tool works is one kind of action; changing what a machine does
-every morning at eight is another, and that one gets proposed rather than performed.
+at every logon is another, and that one gets proposed rather than performed.
+
+The weekly cadence is not a weekly trigger. Task Scheduler fires the task at every logon and the
+wrapper decides whether the week is owed a sweep, comparing the current ISO week against the last
+one it recorded. A trigger tied to an hour asks the machine to be awake at that hour, and a machine
+that was off on Monday morning loses the week; a trigger tied to logon cannot lose it, because the
+first logon of the week is by definition the first moment there is anyone to notify. The record is
+written only after a sweep that finished, so a week whose sweep failed is still owed one and the
+next logon takes it. The wrapper reports a skipped run as 20, which no sweep returns, so the task
+history distinguishes a week that was quiet from a week that was already done.
+
+The record and the log are keyed by the task's name rather than fixed, because one machine may
+watch several sets of profiles on different schedules. Two tasks sharing a name would share the
+record, and the second would spend the week believing the first had been its own run.
 
 ## 9. Testing strategy
 

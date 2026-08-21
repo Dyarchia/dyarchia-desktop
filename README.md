@@ -144,9 +144,12 @@ raycast.com. The relief and the accent are dyarchia's own and apply to both.
 
 ## Known limits
 
-- `--dya-text-3` in dark yields 3.75:1 against the background, so it is limited
-  to text of 18px or larger. Easy to apply to a small label and drop below AA
-  without noticing.
+- **The dark ramp has a narrow middle.** `--dya-text-3` was raised to `#8b8e93`
+  so that the third level clears AA at any size — it gives 6.09:1 against the
+  background, where it used to give 3.75:1 and was legal only at 18px and above.
+  The cost is that `--dya-text-2` and `--dya-text-3` now sit 1.30 apart, down
+  from 2.11: they are still two levels, but a reader has to look. Opening that
+  gap again means moving `--dya-text-2` up too, which is not decided.
 - The two themes have opposite neutral temperature. Each is internally coherent,
   but switching reads as a change of temperature and not only of luminance.
   Whether to unify them is still open.

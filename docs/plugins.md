@@ -49,6 +49,7 @@ An ESM module exporting activate(ctx). The context offers:
     registerPanel(desc, mount)    registers a panel with the shell
     invoke(channel, ...args)      calls a handler in the plugin's main module
     on(channel, listener)         subscribes to broadcasts from the main module
+    theme                         current theme, token lookup, change subscription
 
 The mount receives the panel's DOM container and optionally returns a cleanup function:
 
@@ -76,7 +77,13 @@ Notes:
   header. Each instance gets its own mount/dispose; the internal instance id is <id>#<n>,
   but the plugin never needs to handle it.
 - Styles are injected by the plugin itself, using a style tag with its own id to avoid
-  duplicates.
+  duplicates. What goes inside that tag is not free: the shell links the shared design
+  system once, so every --dya-* token is already resolvable and a plugin must never write
+  a literal colour, font or radius. See docs/ui.md for the rules, the token list and the
+  recipes.
+- ctx.theme covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
+  resolved string. token('accent') returns the value, onChange(listener) fires on every
+  theme flip and returns its own unsubscribe, which the panel's dispose must call.
 
 
 ## 3. The main module (optional)
@@ -187,6 +194,8 @@ flowchart TD
 3. A build script with esbuild, producing dist/.
 4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
    console errors.
-5. If there is a main module, whether Node or Python: test invoke and broadcast from the
+5. Flip the theme with the top bar toggle and walk every state of the panel. Nothing keeps
+   the previous theme's colours or relief. The rest of the gate is in docs/ui.md.
+6. If there is a main module, whether Node or Python: test invoke and broadcast from the
    panel.
-6. node scripts/install-plugins.mjs, then test in the packaged app too.
+7. node scripts/install-plugins.mjs, then test in the packaged app too.

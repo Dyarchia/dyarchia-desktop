@@ -12,6 +12,8 @@ own panels — draggable, resizable, and persistent across sessions.
   recompiling to add or remove functionality.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
+- The look is not the shell's: it is the shared dyarchia design system, vendored into
+  packages/ui and linked once. Plugins inherit its tokens and are expected to use them.
 
 ```mermaid
 flowchart LR
@@ -32,6 +34,7 @@ The pieces:
     Piece                       Location                     Responsibility
     -----------------------     -------------------------    ----------------------------------------
     Shell (Electron app)        apps/shell                   window, layout, toggles, persistence
+    Design system               packages/ui                  tokens, fonts, reset, theme helpers
     SDK                         packages/sdk                 TypeScript plugin contract
     Python SDK                  packages/pysdk               Python plugin contract and stdio host
     Discovery + protocol        apps/shell/src/main          manifest scanning, bundle serving
@@ -45,6 +48,7 @@ The pieces:
         apps/
             shell/               Electron app (main, preload, renderer)
         packages/
+            ui/                  @dyarchia/ui - vendored design system and theme helpers
             sdk/                 @dyarchia/sdk - contract types
             pysdk/               dyarchia_sdk - python plugin runtime
             plugin-sample/       minimal reference plugin
@@ -55,8 +59,10 @@ The pieces:
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes
             install-plugins.mjs  copies plugins to %APPDATA%/dyarchia/plugins
+            sync-ui.mjs          re-copies the design system from the dyarchia-ui checkout
         docs/
             plugins.md           how to write a plugin
+            ui.md                the UI contract: tokens, rules, recipes
 
 
 ## 3. Commands
@@ -87,6 +93,12 @@ Install plugins for the packaged app:
 node scripts/install-plugins.mjs
 ```
 
+Re-sync the design system after a change upstream in dyarchia-ui:
+
+```bash
+node scripts/sync-ui.mjs
+```
+
 There is no test runner, linter or formatter. Type checking is manual, as every tsconfig
 sets noEmit:
 
@@ -102,6 +114,7 @@ npx tsc -p apps/shell
     Layout (dev)          %APPDATA%/@dyarchia/shell/layout.json
     Layout (portable)     %APPDATA%/dyarchia/layout.json
     Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
+    Theme choice          renderer localStorage, key dyarchia:theme
 
 
 ## 5. Debugging

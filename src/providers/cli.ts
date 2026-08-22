@@ -19,6 +19,7 @@ interface Sink {
     delta(text: string): void
     replace(id: string, text: string): void
     usage(patch: Partial<Usage>): void
+    session(id: string): void
 }
 
 interface CliSpec {
@@ -46,6 +47,7 @@ const claude: CliSpec = {
     args(request) {
         return [
             '-p',
+            ...(request.session ? ['--resume', request.session] : []),
             '--safe-mode',
             '--setting-sources',
             '',
@@ -56,7 +58,7 @@ const claude: CliSpec = {
             '--model',
             request.model,
             '--allowed-tools',
-            '',
+            'WebSearch WebFetch',
             '--permission-mode',
             'dontAsk',
             '--system-prompt',
@@ -72,6 +74,7 @@ const claude: CliSpec = {
             return
         }
         if (event.type !== 'result') return
+        if (typeof event.session_id === 'string') sink.session(event.session_id)
         const usage = asRecord(event.usage)
         sink.usage({
             inputTokens: asNumber(usage.input_tokens) + asNumber(usage.cache_creation_input_tokens),
@@ -89,23 +92,25 @@ const codex: CliSpec = {
     bin: 'codex',
     inlineSystem: true,
     args(request, scratch) {
-        return [
-            'exec',
+        const shared = [
             '--json',
-            '--sandbox',
-            'read-only',
             '--skip-git-repo-check',
-            '--ephemeral',
             '--ignore-user-config',
             '--ignore-rules',
-            '-C',
-            scratch,
+            '-c',
+            'tools.web_search=true',
             '-m',
             request.model,
             '-'
         ]
+        if (request.session) return ['exec', 'resume', request.session, ...shared]
+        return ['exec', '--sandbox', 'read-only', '-C', scratch, ...shared]
     },
     consume(event, sink) {
+        if (event.type === 'thread.started' && typeof event.thread_id === 'string') {
+            sink.session(event.thread_id)
+            return
+        }
         if (event.type === 'item.completed') {
             const item = asRecord(event.item)
             if (item.type === 'agent_message' && typeof item.text === 'string') {
@@ -129,9 +134,20 @@ const opencode: CliSpec = {
     bin: 'opencode',
     inlineSystem: true,
     args(request, scratch) {
-        return ['run', '--pure', '--format', 'json', '-m', request.model, '--dir', scratch]
+        return [
+            'run',
+            '--pure',
+            '--format',
+            'json',
+            '-m',
+            request.model,
+            '--dir',
+            scratch,
+            ...(request.session ? ['-s', request.session] : [])
+        ]
     },
     consume(event, sink) {
+        if (typeof event.sessionID === 'string') sink.session(event.sessionID)
         const part = asRecord(event.part)
         if (event.type === 'text' && typeof part.text === 'string') {
             sink.replace(String(part.id ?? 'text'), part.text)
@@ -164,6 +180,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     const started = Date.now()
     const parts = new Map<string, string>()
     let streamed = ''
+    let session: string | null = request.session
     const usage: Usage = {
         inputTokens: 0,
         outputTokens: 0,
@@ -188,6 +205,9 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
         },
         usage(patch) {
             Object.assign(usage, patch)
+        },
+        session(id) {
+            session = id
         }
     }
 
@@ -246,7 +266,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     const text = streamed || [...parts.values()].join('')
     if (!text.trim()) throw new Error(stderr.trim().split('\n').pop() ?? `${spec.bin} returned no text`)
 
-    return { text, usage, ms: Date.now() - started }
+    return { text, usage, ms: Date.now() - started, session }
 }
 
 async function codexModels(): Promise<{ id: string; label: string }[]> {

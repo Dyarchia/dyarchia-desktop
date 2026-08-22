@@ -8,15 +8,17 @@ reasoning underneath it.
 ## Index
 
 - [1. The pipeline](#1-the-pipeline)
-- [2. Routes and adapters](#2-routes-and-adapters)
-- [3. The catalogue is discovered, not declared](#3-the-catalogue-is-discovered-not-declared)
-- [4. Isolation from your own configuration](#4-isolation-from-your-own-configuration)
-- [5. What each route costs](#5-what-each-route-costs)
-- [6. The IPC contract](#6-the-ipc-contract)
-- [7. The nested menu](#7-the-nested-menu)
-- [8. Styling without a dependency](#8-styling-without-a-dependency)
-- [9. Reading order and the shape of the panel](#9-reading-order-and-the-shape-of-the-panel)
-- [10. Deliberate omissions](#10-deliberate-omissions)
+- [2. Conversation](#2-conversation)
+- [3. Routes and adapters](#3-routes-and-adapters)
+- [4. The catalogue is discovered, not declared](#4-the-catalogue-is-discovered-not-declared)
+- [5. Web search and fetch](#5-web-search-and-fetch)
+- [6. Isolation from your own configuration](#6-isolation-from-your-own-configuration)
+- [7. What each route costs](#7-what-each-route-costs)
+- [8. The IPC contract](#8-the-ipc-contract)
+- [9. The nested menu](#9-the-nested-menu)
+- [10. Styling without a dependency](#10-styling-without-a-dependency)
+- [11. Reading order and the shape of the panel](#11-reading-order-and-the-shape-of-the-panel)
+- [12. Deliberate omissions](#12-deliberate-omissions)
 
 
 ## 1. The pipeline
@@ -63,7 +65,52 @@ prompt, the reply is parsed with a brace-balancing extractor that tolerates fenc
 surrounding prose, and one retry with a stricter instruction follows a parse failure.
 
 
-## 2. Routes and adapters
+## 2. Conversation
+
+A run is not one-shot. Every participant keeps a thread of its own, and none of them can see
+anyone else's:
+
+```text
+Thread              Holds
+-----------------   -------------------------------------------------------
+member:1 .. n       that member's own questions and its own answers
+analyst:analysis    the comparisons it has produced
+analyst:writer      the answers it has written
+```
+
+Members must not see each other across turns any more than within one. Three models that
+have read each other's previous answers converge, and a panel that converges has nothing
+left to compare. Isolation is the product.
+
+Continuity uses each route's native mechanism rather than replaying a transcript:
+
+```text
+Route       Mechanism                         Captured from
+---------   -------------------------------   -----------------------------
+claude      --resume <session_id>             the result event's session_id
+codex       exec resume <thread_id>           the thread.started event
+opencode    -s <sessionID>                    any event's sessionID
+anthropic   messages[] replay                 n/a
+openai      input[] replay                    n/a
+```
+
+This is not just tidier than resending history — it keeps each CLI's prompt cache warm.
+Claude Code carries a ~47k token prefix per call; resuming its session means paying cache
+read rather than cache write for it. A measured second turn cost $0.0376 against $0.0493 for
+the first.
+
+Two consequences worth knowing. Codex cannot resume a session it never wrote, so
+`--ephemeral` is used only on the first turn of a thread; sessions do reach disk. And a
+thread is keyed by seat index plus model and mode, so changing a seat's model mid-conversation
+starts that seat afresh rather than handing a claude session id to codex.
+
+Conversations are capped at ten turns. On the eleventh the run is refused with a message
+rather than silently dropping the oldest exchange: with CLI session resume the history lives
+inside the CLI, so a sliding window would mean different routes forgetting different things.
+`New` clears every thread and the counter.
+
+
+## 3. Routes and adapters
 
 Five routes, two families.
 
@@ -92,7 +139,7 @@ against what it already holds and forwards only the growth. A route that later g
 streaming needs no change to the runner.
 
 
-## 3. The catalogue is discovered, not declared
+## 4. The catalogue is discovered, not declared
 
 No model list is hardcoded. Each source is asked what it currently offers:
 
@@ -133,7 +180,40 @@ No preset seats the same model twice through two routes. A panel of one model re
 ways agrees with itself, which is the failure mode this whole design exists to avoid.
 
 
-## 4. Isolation from your own configuration
+## 5. Web search and fetch
+
+Every member and the analyst can search and fetch, always, with no toggle. This mirrors
+Fusion, where the panel answers with both tools enabled and the analyst gets them too.
+
+An earlier version of this document claimed the opposite — that tools were switched off so
+members answered from their own knowledge. That was true of exactly one route. Checking the
+event streams rather than the prose showed what was really happening:
+
+```text
+Route       Before            Now
+---------   ---------------   ------------------------------------------------
+claude      off               --allowed-tools "WebSearch WebFetch"
+codex       on, by default    -c tools.web_search=true, stated rather than assumed
+opencode    on, by default    unchanged; --pure only drops external plugins
+anthropic   n/a               web_search + web_fetch server tools, max_uses 4
+openai      n/a               Responses API with the web_search tool
+```
+
+`--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
+plugins; neither touches web search. Both were searching all along.
+
+The Anthropic route picks its tool variant by model: `web_search_20260209` and
+`web_fetch_20260209` on the current family, the older `_20250305` / `_20250910` pair on
+Haiku 4.5 and anything else dated 4.5. Because server tools can end a turn with
+`stop_reason: pause_turn`, the adapter loops on that, appending the assistant turn and
+continuing, up to the same four iterations.
+
+This is also what makes the analyst worth having. Ask three models for a version number and
+they will search, land on different pages, and return different answers — that disagreement
+is data, and it is exactly what the comparison stage is for.
+
+
+## 6. Isolation from your own configuration
 
 A CLI agent invoked as an inference endpoint still loads everything it normally loads: your
 memory files, your skills, your MCP servers, your hooks. The first working run of this
@@ -165,7 +245,7 @@ The isolation is measurable, not just theoretical: it cut Claude Code's context 
 roughly halved the notional cost of a one-word reply.
 
 
-## 5. What each route costs
+## 7. What each route costs
 
 Measured with a prompt that asks for a single word, so the numbers are almost entirely
 fixed overhead rather than work.
@@ -195,7 +275,7 @@ in; OpenAI's are left empty on purpose, because a wrong price displayed with con
 worse than no price. An empty table yields token counts and no dollar figure.
 
 
-## 6. The IPC contract
+## 8. The IPC contract
 
 Channel names are short; the shell prefixes them with `plugin:eforoi:`.
 
@@ -207,6 +287,8 @@ invoke      keys        where each API key comes from: stored, env, or none
 invoke      setKey      encrypt a key into userData, or clear it
 invoke      run         start a run, returns a run id
 invoke      cancel      abort a run in flight
+invoke      reset       forget every thread of one conversation
+invoke      turns       how many turns a conversation has spent
 broadcast   event       every run event, tagged with its run id
 ```
 
@@ -220,7 +302,7 @@ They are never placed in `localStorage`, never sent to the renderer, and never l
 renderer can learn that a key exists and where it came from; it cannot read it.
 
 
-## 7. The nested menu
+## 9. The nested menu
 
 Each seat has two controls that open the same menu: the model, and the mode. Choosing a
 model opens a side panel with `Subscription` and `API`, each enabled only if that route can
@@ -239,7 +321,7 @@ The catalogue runs to nearly forty models once three plans are signed in, so the
 with a focused filter box that matches on both model name and group.
 
 
-## 8. Styling without a dependency
+## 10. Styling without a dependency
 
 The plugin imports nothing from `dyarchia-ui` and nothing from `dyarchia-desktop`. It does
 not need to: the panel mounts into the shell's own document, so every `--dya-*` custom
@@ -261,7 +343,7 @@ are recessed, rows are flat and express selection with a two-pixel accent edge, 
 never fills and never carries text, and `box-shadow` never appears in a transition.
 
 
-## 9. Reading order and the shape of the panel
+## 11. Reading order and the shape of the panel
 
 The panel is laid out on a twelve-column grid so that nothing is allocated width it does not
 use.
@@ -310,15 +392,11 @@ rendering it is less work than fighting it. The streaming path stays plain text 
 markup is applied once, on completion.
 
 
-## 10. Deliberate omissions
+## 12. Deliberate omissions
 
 ```text
 Absent               Why
 ------------------   ---------------------------------------------------------
-web search / fetch   Fusion enables them on every member. Here the tools are
-                     switched off so members answer from their own knowledge and
-                     stay comparable. Re-enabling them is per-route work, not a
-                     flag.
 temperature          Current Anthropic models reject the parameter with a 400,
                      and no CLI route exposes one. A control that worked on two
                      routes out of five would mislead.

@@ -1,4 +1,5 @@
 import { complete } from '../providers/registry.js'
+import type { CompletionResult, Turn } from '../providers/adapter.js'
 import type { Analysis, MemberResult, RunConfig, RunSummary, Seat, Stage, Usage } from '../types.js'
 import { parseAnalysis } from './parse.js'
 import { ANALYST_SYSTEM, PANEL_SYSTEM, WRITER_SYSTEM, analysisPrompt, answerPrompt } from './prompts.js'
@@ -14,6 +15,64 @@ export interface RunEvents {
 
 const RETRY_NUDGE = '\n\nYour previous reply was not valid JSON. Return only the JSON object.'
 
+export interface ThreadState {
+    session: string | null
+    history: Turn[]
+}
+
+export type Threads = Map<string, ThreadState>
+
+function threadOf(threads: Threads, key: string): ThreadState {
+    const existing = threads.get(key)
+    if (existing) return existing
+    const fresh: ThreadState = { session: null, history: [] }
+    threads.set(key, fresh)
+    return fresh
+}
+
+interface SpeakOptions {
+    system: string
+    prompt: string
+    json: boolean
+    config: RunConfig
+    signal: AbortSignal
+    onDelta(text: string): void
+}
+
+async function speak(
+    threads: Threads,
+    key: string,
+    seat: Seat,
+    options: SpeakOptions
+): Promise<CompletionResult> {
+    const thread = threadOf(threads, key)
+
+    const result = await complete(seat, {
+        system: options.system,
+        prompt: options.prompt,
+        temperature: options.config.temperature,
+        maxTokens: options.config.maxTokens,
+        json: options.json,
+        signal: options.signal,
+        history: thread.history,
+        session: thread.session,
+        onDelta: options.onDelta
+    })
+
+    if (result.session) {
+        thread.session = result.session
+    } else {
+        thread.history = [
+            ...thread.history,
+            { role: 'user', content: options.prompt },
+            { role: 'assistant', content: result.text }
+        ]
+    }
+
+    return result
+}
+
+
 function accumulate(target: RunSummary, usage: Usage): void {
     target.inputTokens += usage.inputTokens
     target.outputTokens += usage.outputTokens
@@ -27,16 +86,16 @@ async function member(
     index: number,
     config: RunConfig,
     events: RunEvents,
-    signal: AbortSignal
+    signal: AbortSignal,
+    threads: Threads
 ): Promise<MemberResult> {
     const started = Date.now()
     try {
-        const result = await complete(seat, {
+        const result = await speak(threads, `member:${index}`, seat, {
             system: PANEL_SYSTEM,
             prompt: config.prompt,
-            temperature: config.temperature,
-            maxTokens: config.maxTokens,
             json: false,
+            config,
             signal,
             onDelta: (text) => events.memberDelta(index, text)
         })
@@ -56,18 +115,18 @@ async function member(
 async function analyse(
     config: RunConfig,
     survivors: MemberResult[],
-    signal: AbortSignal
+    signal: AbortSignal,
+    threads: Threads
 ): Promise<{ analysis: Analysis; usage: Usage; ms: number }> {
     const prompt = analysisPrompt(config.prompt, survivors)
     let nudge = ''
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
-        const result = await complete(config.analyst, {
+        const result = await speak(threads, 'analyst:analysis', config.analyst, {
             system: ANALYST_SYSTEM + nudge,
             prompt,
-            temperature: 0,
-            maxTokens: config.maxTokens,
             json: true,
+            config,
             signal,
             onDelta: () => undefined
         })
@@ -85,7 +144,8 @@ async function analyse(
 export async function runFusion(
     config: RunConfig,
     events: RunEvents,
-    signal: AbortSignal
+    signal: AbortSignal,
+    threads: Threads
 ): Promise<void> {
     const started = Date.now()
     const summary: RunSummary = {
@@ -93,12 +153,16 @@ export async function runFusion(
         costUsd: 0,
         meteredCostUsd: 0,
         inputTokens: 0,
-        outputTokens: 0
+        outputTokens: 0,
+        turn: 0,
+        maxTurns: 0
     }
 
     events.stage('panel')
     const members = await Promise.all(
-        config.panel.map((seat, position) => member(seat, position + 1, config, events, signal))
+        config.panel.map((seat, position) =>
+            member(seat, position + 1, config, events, signal, threads)
+        )
     )
     for (const result of members) {
         accumulate(summary, result.usage)
@@ -109,17 +173,16 @@ export async function runFusion(
     if (!survivors.length) throw new Error('every panel member failed')
 
     events.stage('analysis')
-    const analysed = await analyse(config, survivors, signal)
+    const analysed = await analyse(config, survivors, signal, threads)
     accumulate(summary, analysed.usage)
     events.analysis(analysed.analysis, analysed.usage, analysed.ms)
 
     events.stage('answer')
-    const answer = await complete(config.analyst, {
+    const answer = await speak(threads, 'analyst:writer', config.analyst, {
         system: WRITER_SYSTEM,
         prompt: answerPrompt(config.prompt, analysed.analysis),
-        temperature: config.temperature,
-        maxTokens: config.maxTokens,
         json: false,
+        config,
         signal,
         onDelta: (text) => events.answerDelta(text)
     })

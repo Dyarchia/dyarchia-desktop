@@ -46,6 +46,9 @@ export const WRITER_SYSTEM = [
     '- Address the blind spots if you can, and say so if you cannot.',
     '- Write the answer itself. Do not describe the panel, the members, the comparison or the process.',
     '  Someone asked a question and wants it answered.',
+    '- Never introduce a fact that appears in neither the analysis nor the question.',
+    '  Where members disagree on a specific value, name the competing values and say which is',
+    '  better supported. Do not average them, and do not invent a third.',
     '- Do not open with a heading that restates the question, and do not sign off.',
     '- Answer in the language the question was asked in.'
 ].join('\n')

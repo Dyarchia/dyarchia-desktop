@@ -1,5 +1,10 @@
 import type { RouteId, Usage } from '../types.js'
 
+export interface Turn {
+    role: 'user' | 'assistant'
+    content: string
+}
+
 export interface CompletionRequest {
     model: string
     system: string
@@ -8,6 +13,8 @@ export interface CompletionRequest {
     maxTokens: number
     json: boolean
     signal: AbortSignal
+    history: Turn[]
+    session: string | null
     onDelta(text: string): void
 }
 
@@ -15,6 +22,7 @@ export interface CompletionResult {
     text: string
     usage: Usage
     ms: number
+    session: string | null
 }
 
 export interface RouteStatus {

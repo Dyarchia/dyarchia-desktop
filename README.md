@@ -24,6 +24,11 @@ insights, blind spots — and the final answer is written from that. Agreement a
 independent members is evidence; disagreement is surfaced rather than smoothed away.
 
 
+Every member and the analyst can search and fetch the web, always. Ask three models for a
+version number and they will search, land on different pages and disagree — which is the
+disagreement the analyst exists to surface.
+
+
 ## Two ways to reach a model
 
 Every model in the catalogue offers up to two routes, chosen per seat from the side menu:
@@ -41,6 +46,14 @@ quota. API mode calls the provider directly with a key held in the OS keychain.
 
 A mode that cannot work is shown greyed with the reason: no CLI on PATH, no key stored, or
 the model not offered on that route.
+
+
+## Conversation
+
+Runs are not one-shot. Each panel member keeps a thread of its own and the analyst keeps
+its own, so a follow-up like "which of the three you just named is hardest?" works — and no
+member ever sees another member's answers, which is what keeps the panel worth polling.
+Ten turns per conversation; `New` starts over.
 
 
 ## Presets

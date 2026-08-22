@@ -190,7 +190,7 @@ function apply(catalog: Catalog, preset: Preset): Stored {
     }
 }
 
-function mount(ctx: PluginContext, container: HTMLElement): () => void {
+function mount(ctx: PluginContext, container: HTMLElement, conversation: string): () => void {
     const root = el('div', 'eforoi')
     const head = el('div', 'eforoi-head')
     const results = el('div', 'eforoi-results')
@@ -217,7 +217,11 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const removeButton = el('button', 'eforoi-button eforoi-icon', '−')
     const presetButton = el('button', 'eforoi-button', 'Preset')
     const refreshButton = el('button', 'eforoi-button', 'Refresh')
+    const newButton = el('button', 'eforoi-button', 'New')
+    const turnLabel = el('span', 'eforoi-meta')
     const status = el('span', 'eforoi-meta')
+
+    newButton.title = 'forget the conversation and start over'
 
     addButton.title = 'add a panel member'
     removeButton.title = 'remove the last panel member'
@@ -233,7 +237,14 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         el('span', 'eforoi-meta', 'compares the panel, then writes the answer')
     )
 
-    bar.append(refreshButton, el('span', 'eforoi-spacer'), status, runButton)
+    bar.append(
+        refreshButton,
+        newButton,
+        turnLabel,
+        el('span', 'eforoi-spacer'),
+        status,
+        runButton
+    )
 
     const promptColumn = el('div', 'eforoi-column')
     promptColumn.dataset.side = 'prompt'
@@ -539,6 +550,9 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                     ? `${money(event.summary.meteredCostUsd)} metered`
                     : 'plan only'
             status.textContent = `${seconds(event.summary.ms)} · ${spend} · ${event.summary.outputTokens} out`
+            turnLabel.textContent = `turn ${event.summary.turn}/${event.summary.maxTurns}`
+            promptBox.value = ''
+            promptBox.focus()
             renderSeats()
             runId = null
             runButton.textContent = 'Run'
@@ -581,6 +595,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         try {
             runId = String(
                 await ctx.invoke('run', {
+                    conversation,
                     prompt: promptBox.value,
                     panel: state.panel,
                     analyst: state.analyst,
@@ -654,6 +669,16 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         commit()
     })
 
+    newButton.addEventListener('click', () => {
+        void ctx.invoke('reset', conversation)
+        turnLabel.textContent = ''
+        status.textContent = 'conversation cleared'
+        cards.clear()
+        grid.replaceChildren()
+        promptBox.value = ''
+        promptBox.focus()
+    })
+
     refreshButton.addEventListener('click', () => void refresh(true))
     runButton.addEventListener('click', () => void start())
     promptBox.addEventListener('keydown', (event) => {
@@ -662,6 +687,10 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const unsubscribe = ctx.on('event', onEvent)
     void refresh(false)
+    void ctx.invoke('turns', conversation).then((raw) => {
+        const state = raw as { turn: number; maxTurns: number }
+        if (state?.turn) turnLabel.textContent = `turn ${state.turn}/${state.maxTurns}`
+    })
 
     return () => {
         unsubscribe()
@@ -672,7 +701,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
 export function activate(ctx: PluginContext): void {
     injectStyles()
-    ctx.registerPanel({ id: 'eforoi', title: 'Eforoi', icon: ICON, duplicable: true }, (container) =>
-        mount(ctx, container)
+    ctx.registerPanel(
+        { id: 'eforoi', title: 'Eforoi', icon: ICON, duplicable: true },
+        (container, handle) => mount(ctx, container, handle.instanceId)
     )
 }

@@ -1,6 +1,6 @@
 import type { PluginMainContext } from '@dyarchia/sdk'
 import { runFusion } from './fusion/run.js'
-import type { RunEvents } from './fusion/run.js'
+import type { RunEvents, Threads } from './fusion/run.js'
 import { keyOrigin, writeKey } from './providers/keys.js'
 import type { KeyName } from './providers/keys.js'
 import { catalog, invalidate } from './providers/registry.js'
@@ -8,6 +8,12 @@ import type { KeyState, RunConfig, RunEvent } from './types.js'
 
 const MIN_PANEL = 2
 const MAX_PANEL = 5
+const MAX_TURNS = 10
+
+interface Conversation {
+    turns: number
+    threads: Threads
+}
 
 let counter = 0
 
@@ -20,7 +26,16 @@ function validate(config: RunConfig): void {
 
 export function activate(ctx: PluginMainContext): void {
     const running = new Map<string, AbortController>()
+    const conversations = new Map<string, Conversation>()
     const emit = (event: RunEvent): void => ctx.broadcast('event', event)
+
+    const conversationOf = (id: string): Conversation => {
+        const existing = conversations.get(id)
+        if (existing) return existing
+        const fresh: Conversation = { turns: 0, threads: new Map() }
+        conversations.set(id, fresh)
+        return fresh
+    }
 
     ctx.handle('catalog', (refresh) => catalog(refresh === true))
 
@@ -35,9 +50,24 @@ export function activate(ctx: PluginMainContext): void {
         return true
     })
 
+    ctx.handle('reset', (id) => {
+        conversations.delete(String(id))
+        return true
+    })
+
+    ctx.handle('turns', (id) => ({
+        turn: conversations.get(String(id))?.turns ?? 0,
+        maxTurns: MAX_TURNS
+    }))
+
     ctx.handle('run', (raw) => {
         const config = raw as RunConfig
         validate(config)
+
+        const conversation = conversationOf(config.conversation)
+        if (conversation.turns >= MAX_TURNS) {
+            throw new Error(`conversation limit reached (${MAX_TURNS} turns) — start a new one`)
+        }
 
         counter += 1
         const runId = `run-${counter}`
@@ -50,10 +80,19 @@ export function activate(ctx: PluginMainContext): void {
             memberDone: (result) => emit({ runId, type: 'member:done', result }),
             analysis: (analysis, usage, ms) => emit({ runId, type: 'analysis', analysis, usage, ms }),
             answerDelta: (text) => emit({ runId, type: 'answer:delta', text }),
-            done: (answer, summary) => emit({ runId, type: 'done', answer, summary })
+            done: (answer, summary) =>
+                emit({
+                    runId,
+                    type: 'done',
+                    answer,
+                    summary: { ...summary, turn: conversation.turns + 1, maxTurns: MAX_TURNS }
+                })
         }
 
-        runFusion(config, events, controller.signal)
+        runFusion(config, events, controller.signal, conversation.threads)
+            .then(() => {
+                conversation.turns += 1
+            })
             .catch((error: unknown) => {
                 const message = error instanceof Error ? error.message : String(error)
                 emit({ runId, type: 'error', message })

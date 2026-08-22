@@ -1,5 +1,6 @@
 import { runFusion } from '../src/fusion/run.js'
 import { catalog } from '../src/providers/registry.js'
+import type { Threads } from '../src/fusion/run.js'
 import type { RunConfig, Seat } from '../src/types.js'
 
 const [, , command, ...rest] = process.argv
@@ -26,7 +27,21 @@ if (command === 'catalog') {
     const seats = rest.map(parseSeat)
     if (seats.length < 3) throw new Error('usage: probe run <panel@mode> <panel@mode> <analyst@mode> "prompt"')
 
+    const turns = prompt.split('||').map((part) => part.trim()).filter(Boolean)
+    const threads: Threads = new Map()
+
+    for (const [index, turn] of turns.entries()) {
+        if (turns.length > 1) console.log(`
+######## turn ${index + 1}: ${turn}`)
+        await runTurn(turn, seats, threads)
+    }
+} else {
+    console.log('usage: pnpm probe catalog | pnpm probe run <seat> <seat> <analyst> "prompt || follow-up"')
+}
+
+async function runTurn(prompt: string, seats: Seat[], threads: Threads): Promise<void> {
     const config: RunConfig = {
+        conversation: 'probe',
         prompt,
         panel: seats.slice(0, -1),
         analyst: seats[seats.length - 1],
@@ -56,8 +71,7 @@ if (command === 'catalog') {
                         `$${summary.meteredCostUsd.toFixed(4)} metered ==`
                 )
         },
-        new AbortController().signal
+        new AbortController().signal,
+        threads
     )
-} else {
-    console.log('usage: pnpm probe catalog | pnpm probe run <seat> <seat> <analyst> "prompt"')
 }

@@ -41,58 +41,97 @@ function cost(table: Record<string, Price>, model: string, usage: Usage): number
     )
 }
 
+const MAX_WEB_USES = 4
+const LEGACY_TOOLS = /haiku|-4-5/
+
+function anthropicTools(model: string): Anthropic.ToolUnion[] {
+    const legacy = LEGACY_TOOLS.test(model)
+    return [
+        {
+            type: legacy ? 'web_search_20250305' : 'web_search_20260209',
+            name: 'web_search',
+            max_uses: MAX_WEB_USES
+        },
+        {
+            type: legacy ? 'web_fetch_20250910' : 'web_fetch_20260209',
+            name: 'web_fetch',
+            max_uses: MAX_WEB_USES
+        }
+    ]
+}
+
 async function anthropicComplete(apiKey: string, request: CompletionRequest): Promise<CompletionResult> {
     const client = new Anthropic({ apiKey })
     const started = Date.now()
 
-    const stream = client.messages.stream(
-        {
-            model: request.model,
-            max_tokens: request.maxTokens,
-            system: request.system,
-            messages: [{ role: 'user', content: request.prompt }]
-        },
-        { signal: request.signal }
-    )
-
-    stream.on('text', (text) => request.onDelta(text))
-    const message = await stream.finalMessage()
-
-    const text = message.content
-        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-        .map((block) => block.text)
-        .join('')
-
+    const messages: Anthropic.MessageParam[] = [
+        ...request.history.map((turn): Anthropic.MessageParam => ({
+            role: turn.role,
+            content: turn.content
+        })),
+        { role: 'user', content: request.prompt }
+    ]
     const usage: Usage = {
-        inputTokens: message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0),
-        outputTokens: message.usage.output_tokens,
-        cachedTokens: message.usage.cache_read_input_tokens ?? 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cachedTokens: 0,
         costUsd: null,
         billing: 'metered'
     }
-    usage.costUsd = cost(ANTHROPIC_PRICES, request.model, usage)
 
-    if (message.stop_reason === 'refusal') {
-        throw new Error(`refused: ${message.stop_details?.category ?? 'unspecified'}`)
+    let text = ''
+
+    for (let turn = 0; turn <= MAX_WEB_USES; turn += 1) {
+        const stream = client.messages.stream(
+            {
+                model: request.model,
+                max_tokens: request.maxTokens,
+                system: request.system,
+                tools: anthropicTools(request.model),
+                messages
+            },
+            { signal: request.signal }
+        )
+
+        stream.on('text', (chunk) => request.onDelta(chunk))
+        const message = await stream.finalMessage()
+
+        usage.inputTokens += message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0)
+        usage.outputTokens += message.usage.output_tokens
+        usage.cachedTokens += message.usage.cache_read_input_tokens ?? 0
+
+        text += message.content
+            .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+            .map((block) => block.text)
+            .join('')
+
+        if (message.stop_reason === 'refusal') {
+            throw new Error(`refused: ${message.stop_details?.category ?? 'unspecified'}`)
+        }
+
+        if (message.stop_reason !== 'pause_turn') break
+        messages.push({ role: 'assistant', content: message.content })
     }
 
-    return { text, usage, ms: Date.now() - started }
+    usage.costUsd = cost(ANTHROPIC_PRICES, request.model, usage)
+    return { text, usage, ms: Date.now() - started, session: null }
 }
 
 async function openaiComplete(apiKey: string, request: CompletionRequest): Promise<CompletionResult> {
     const client = new OpenAI({ apiKey })
     const started = Date.now()
 
-    const stream = await client.chat.completions.create(
+    const stream = await client.responses.create(
         {
             model: request.model,
-            max_completion_tokens: request.maxTokens,
-            messages: [
-                { role: 'system', content: request.system },
-                { role: 'user', content: request.prompt }
+            instructions: request.system,
+            input: [
+                ...request.history.map((turn) => ({ role: turn.role, content: turn.content })),
+                { role: 'user' as const, content: request.prompt }
             ],
-            stream: true,
-            stream_options: { include_usage: true }
+            max_output_tokens: request.maxTokens,
+            tools: [{ type: 'web_search' }],
+            stream: true
         },
         { signal: request.signal }
     )
@@ -106,20 +145,22 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
         billing: 'metered'
     }
 
-    for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content
-        if (delta) {
-            text += delta
-            request.onDelta(delta)
+    for await (const event of stream) {
+        if (event.type === 'response.output_text.delta') {
+            text += event.delta
+            request.onDelta(event.delta)
+            continue
         }
-        if (!chunk.usage) continue
-        usage.cachedTokens = chunk.usage.prompt_tokens_details?.cached_tokens ?? 0
-        usage.inputTokens = chunk.usage.prompt_tokens - usage.cachedTokens
-        usage.outputTokens = chunk.usage.completion_tokens
+        if (event.type !== 'response.completed') continue
+        const totals = event.response.usage
+        if (!totals) continue
+        usage.cachedTokens = totals.input_tokens_details?.cached_tokens ?? 0
+        usage.inputTokens = totals.input_tokens - usage.cachedTokens
+        usage.outputTokens = totals.output_tokens
     }
 
     usage.costUsd = cost(OPENAI_PRICES, request.model, usage)
-    return { text, usage, ms: Date.now() - started }
+    return { text, usage, ms: Date.now() - started, session: null }
 }
 
 function missing(variable: string): RouteStatus {

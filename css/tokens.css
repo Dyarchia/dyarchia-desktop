@@ -54,6 +54,7 @@
     --dya-bg: #f5f5f5;
     --dya-surface-1: #ffffff;
     --dya-surface-2: #ebebeb;
+    --dya-surface-3: #e1e1e1;
     --dya-surface-inverse: #101010;
     --dya-surface-inverse-hover: #2e2c2b;
     --dya-on-inverse: #f5f5f5;
@@ -105,17 +106,18 @@
     --dya-bg: #07080a;
     --dya-surface-1: #0e0f11;
     --dya-surface-2: #16171a;
+    --dya-surface-3: #1c1d21;
     --dya-surface-inverse: #e6e6e6;
     --dya-surface-inverse-hover: #ffffff;
     --dya-on-inverse: #07080a;
     --dya-text: #f4f4f6;
-    --dya-text-2: #a0a3a8;
+    --dya-text-2: #b0b3b9;
     --dya-text-3: #8b8e93;
     --dya-text-4: #4a4b4e;
-    --dya-border: #ffffff0f;
-    --dya-border-control: #ffffff26;
-    --dya-border-card: #ffffff1a;
-    --dya-line: #ffffff0f;
+    --dya-border: #24262b;
+    --dya-border-control: #3d4048;
+    --dya-border-card: #2e3138;
+    --dya-line: #1a1b1e;
     --dya-faint: #ffffff3b;
 
     --dya-danger: #f0857c;

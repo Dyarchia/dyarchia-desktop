@@ -8,7 +8,7 @@ of relief. No dependencies, no build step, no JavaScript.
 ```text
 css/dyarchia.css     single entry point, imports the four below
 css/fonts.css        the two Geist @font-face declarations
-css/tokens.css       both themes: 85 custom properties
+css/tokens.css       both themes: 73 custom properties
 css/reset.css        normalisation, focus, scrollbars, reduced motion
 css/motion.css       four keyframes
 fonts/               Geist Sans and Geist Mono variable, 140 KB for both
@@ -34,7 +34,10 @@ consults `prefers-color-scheme`.
 ## The tokens you will reach for
 
 ```text
-Surface        --dya-bg  --dya-surface-1  --dya-surface-2  --dya-surface-inverse
+Surface        --dya-bg  --dya-surface-1  --dya-surface-2  --dya-surface-3
+               --dya-surface-inverse
+Line           --dya-line  --dya-border  --dya-border-card
+               --dya-border-control
 Text           --dya-text  --dya-text-2  --dya-text-3  --dya-text-4
 Relief         --dya-elev-raised  --dya-elev-raised-hover
                --dya-elev-pressed  --dya-elev-overlay  --dya-elev-flat

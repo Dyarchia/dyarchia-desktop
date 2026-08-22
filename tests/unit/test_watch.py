@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from crawlee_lab.config import Settings
 from crawlee_lab.watch import (
     EXIT_CHANGES,
     EXIT_FAILED,
@@ -9,6 +12,8 @@ from crawlee_lab.watch import (
     WatchEntry,
     WatchResult,
     render_markdown,
+    save_report,
+    watchable,
 )
 
 
@@ -58,3 +63,59 @@ def test_the_document_names_what_moved_and_how_to_look() -> None:
     assert '# Watch report' in document
     assert 'crawlee-lab diff b --unified' in document
     assert 'crawlee-lab diff a' not in document
+
+
+def in_group(entry: WatchEntry, group: str | None) -> WatchEntry:
+    entry.group = group
+    return entry
+
+
+def test_a_sweep_of_one_group_files_its_report_inside_it(settings: Settings) -> None:
+    """Two scheduled rounds would otherwise each overwrite the other's account of its week."""
+    result = WatchResult(entries=[in_group(quiet('a'), 'docs-labs'), in_group(moved('b'), 'docs-labs')])
+
+    document = save_report(result, settings)
+
+    assert document == settings.resolve(settings.data_dir) / 'docs-labs' / 'WATCH.md'
+
+
+def test_a_sweep_that_crossed_groups_files_its_report_at_the_root(settings: Settings) -> None:
+    """No one group holds all of what it found, so no one group can claim the report."""
+    result = WatchResult(entries=[in_group(quiet('a'), 'docs-labs'), in_group(quiet('b'), None)])
+
+    document = save_report(result, settings)
+
+    assert document == settings.resolve(settings.data_dir) / 'WATCH.md'
+
+
+def watched_profile(settings: Settings, name: str, group: str | None = None, snapshot: bool = True) -> Path:
+    directory = settings.resolve(settings.profiles_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    body = f"""
+start_urls:
+  - https://site.example/
+snapshot: {str(snapshot).lower()}
+"""
+    if group:
+        body += f'group: {group}'
+    path = directory / f'{name}.yaml'
+    path.write_text(body, encoding='utf-8')
+    return path
+
+
+def test_a_group_sweeps_only_its_own_corpus(settings: Settings) -> None:
+    """A round must not quietly adopt every target added to the machine since it was scheduled."""
+    watched_profile(settings, 'claude-docs', group='docs-labs')
+    watched_profile(settings, 'openai-docs', group='docs-labs')
+    watched_profile(settings, 'some-other-lab', group='docs-china')
+
+    assert watchable(settings, 'docs-labs') == ['claude-docs', 'openai-docs']
+    assert watchable(settings, 'docs-china') == ['some-other-lab']
+    assert watchable(settings) == ['claude-docs', 'openai-docs', 'some-other-lab']
+
+
+def test_a_profile_that_does_not_ask_for_snapshots_is_not_swept_by_its_group(settings: Settings) -> None:
+    watched_profile(settings, 'tracked', group='docs-labs')
+    watched_profile(settings, 'untracked', group='docs-labs', snapshot=False)
+
+    assert watchable(settings, 'docs-labs') == ['tracked']

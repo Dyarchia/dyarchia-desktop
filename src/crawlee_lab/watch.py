@@ -31,6 +31,7 @@ class WatchEntry:
     """One target's outcome within a sweep."""
 
     name: str
+    group: str | None = None
     summary: str = ''
     pages: int = 0
     added: int = 0
@@ -84,10 +85,18 @@ class WatchResult:
         return f'no change across {len(self.entries)} targets'
 
 
-def watchable(settings: Settings | None = None) -> list[str]:
-    """Every profile that asks to be snapshotted, which is the same as every tracked target."""
+def watchable(settings: Settings | None = None, group: str | None = None) -> list[str]:
+    """Every profile that asks to be snapshotted, which is the same as every tracked target.
+
+    Naming a group narrows the sweep to the profiles that belong to it, which is how one scheduled
+    round covers its own corpus and leaves every other corpus to the round that owns it.
+    """
     settings = settings or get_settings()
-    return [name for name, profile in registry.discover(settings).items() if profile.snapshot]
+    return [
+        name
+        for name, profile in registry.discover(settings).items()
+        if profile.snapshot and (group is None or profile.group == group)
+    ]
 
 
 async def sweep(names: list[str], settings: Settings | None = None) -> WatchResult:
@@ -99,6 +108,7 @@ async def sweep(names: list[str], settings: Settings | None = None) -> WatchResu
         entry = WatchEntry(name=name)
         try:
             profile = registry.load(name, settings)
+            entry.group = profile.group
             run = await execute(profile.to_run_spec(snapshot=True), settings)
         except CrawleeLabError as error:
             entry.error = str(error)
@@ -152,10 +162,21 @@ def render_markdown(result: WatchResult) -> str:
     return '\n'.join(lines)
 
 
+def _covered_group(result: WatchResult) -> str | None:
+    """The one group a sweep covered, when it covered exactly one and nothing outside it."""
+    groups = {entry.group for entry in result.entries}
+    return groups.pop() if len(groups) == 1 else None
+
+
 def save_report(result: WatchResult, settings: Settings | None = None) -> Path:
-    """Write the sweep next to the snapshots it describes."""
+    """Write the sweep next to the snapshots it describes.
+
+    A sweep of one group lands inside that group, or two scheduled rounds would each overwrite the
+    other's account of a week. A sweep that crossed groups lands at the root, because no one group
+    holds all of what it found.
+    """
     settings = settings or get_settings()
-    directory = settings.resolve(settings.data_dir)
+    directory = settings.data_root(_covered_group(result))
     directory.mkdir(parents=True, exist_ok=True)
 
     target = directory / WATCH_DOCUMENT

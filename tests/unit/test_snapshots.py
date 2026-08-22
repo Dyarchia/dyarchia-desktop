@@ -31,6 +31,14 @@ def test_first_snapshot_writes_the_tree(settings: Settings) -> None:
     assert (result.directory / 'CHANGES.md').is_file()
 
 
+def test_a_group_nests_the_target_inside_it(settings: Settings) -> None:
+    """A grouped target keeps its own name; the group is the folder it sits in."""
+    result = take_snapshot([item('a', 'Alpha')], [], snapshot_spec(group='docs-labs'), settings, 1.0)
+
+    assert result.directory == settings.resolve(settings.data_dir) / 'docs-labs' / 'demo'
+    assert (result.directory / 'manifest.json').is_file()
+
+
 def test_an_unchanged_rerun_writes_nothing(settings: Settings) -> None:
     items = [item('a', 'Alpha')]
     take_snapshot(items, [], snapshot_spec(), settings, 1.0)

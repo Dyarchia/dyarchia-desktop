@@ -113,6 +113,7 @@ Output and history.
     --------------------    ----------------------------------------------    ---------
     --format                json, jsonl, csv, md, repeatable                   json
     --output-dir            path                                              output/
+    --group                 folder to keep this target under                   none
     --snapshot              flag, store content under data/ and diff it        off
     --commit                flag, commit the snapshot when it changed          off
     --verbose, -v           flag, verbose logging                              off
@@ -160,7 +161,7 @@ crawlee-lab watch [OPTIONS] [NAMES...]
     ---------   ------   --------   -----------------------------------------------
     --commit    flag     off        Commit the sweep, when data/ is versioned
 
-`NAMES` defaults to every profile with `snapshot: true`. One failing target costs only itself; the
+`NAMES` defaults to every profile with `snapshot: true`, or to the ones in `--group GROUP`. One failing target costs only itself; the
 rest of the sweep still runs. A summary lands in `data/WATCH.md`.
 
     Exit code   Meaning
@@ -175,16 +176,17 @@ On Windows:
 
 ```powershell
 .\scripts\watch.ps1                                  # sweep, log, notify only if 10 or 1
-.\scripts\register-watch-task.ps1                    # register 'labs-docs', one sweep a week
+.\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs
 .\scripts\register-watch-task.ps1 -Name labs-docs -Unregister
 Start-ScheduledTask -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 ```
 
 The task fires at every logon; the wrapper sweeps only if the current ISO week has not been swept
-yet, and exits 20 without sweeping if it has. Name a task to run more than one sweep on a machine:
-`-Name claude-only -Profiles claude-docs, claude-code-docs`. The name keys `output/watch-<name>.log`
-and `output/watch-<name>.week`, the record of the last week swept.
+yet, and exits 20 without sweeping if it has. `-Group` is what the round covers, `-Profiles` names
+targets instead, and neither means every profile that asks for snapshots. The task's name keys
+`output/watch-<name>.log` and `output/watch-<name>.week`, the record of the last week swept, so
+rounds must not share one.
 
 ## 7. profiles
 
@@ -293,6 +295,8 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     data/<name>/changes.json        no                Last change report, machine readable
     data/<name>/CHANGES.md          no                Last change report, with diffs
     data/WATCH.md                   no                Last sweep across every tracked target
+    data/<group>/**                 no                The same, for a target that names a group
+    output/<group>/<name>.jsonl     no                Run output for a grouped target
     output/watch-<name>.log         no                One line per sweep of that task
     output/watch-<name>.week        no                The last ISO week that task swept
     storage/                        no                Crawlee's own working directory

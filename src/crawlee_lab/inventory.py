@@ -12,7 +12,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
 
+from crawlee_lab import registry
 from crawlee_lab.config import Settings, get_settings
+from crawlee_lab.errors import CrawleeLabError
 from crawlee_lab.versioning.manifest import load_manifest, manifest_path
 
 UNITS = ('B', 'KB', 'MB', 'GB')
@@ -93,10 +95,47 @@ def _stored_bytes(directory: Path, relative: str | None) -> int:
     return path.stat().st_size if path.is_file() else 0
 
 
+def _group_of(name: str, settings: Settings) -> str | None:
+    """The group a target's profile puts it in, when a profile of that name still exists."""
+    try:
+        return registry.load(name, settings).group
+    except CrawleeLabError:
+        return None
+
+
+def directory_for(name: str, settings: Settings | None = None) -> Path:
+    """Where a target's snapshot is, which its group decides and the disk confirms.
+
+    Writing a snapshot derives the path from the profile and nothing else. Reading one has to be
+    more forgiving, because a target whose profile joins a group does not take its files with it:
+    the group is tried first, then the data root, then any group folder that actually holds the
+    manifest. A move left half done therefore reports what is on disk rather than what should have
+    been. When nothing is found the answer is where the target belongs, which is what an error
+    message needs to say.
+    """
+    settings = settings or get_settings()
+    root = settings.resolve(settings.data_dir)
+
+    group = _group_of(name, settings)
+    candidates = [root / group / name] if group else []
+    candidates.append(root / name)
+
+    for candidate in candidates:
+        if manifest_path(candidate).is_file():
+            return candidate
+
+    if root.is_dir():
+        for child in sorted(root.iterdir()):
+            if child.is_dir() and manifest_path(child / name).is_file():
+                return child / name
+
+    return candidates[0]
+
+
 def collect(name: str, settings: Settings | None = None) -> TargetInventory | None:
     """Read one target's inventory, or None when it has never been snapshotted."""
     settings = settings or get_settings()
-    directory = settings.resolve(settings.data_dir) / name
+    directory = directory_for(name, settings)
     manifest = load_manifest(directory)
     if manifest is None:
         return None
@@ -109,9 +148,27 @@ def collect(name: str, settings: Settings | None = None) -> TargetInventory | No
 
 
 def tracked(settings: Settings | None = None) -> list[str]:
-    """Every target that has a manifest on disk, named in the order they should be reported."""
+    """Every target that has a manifest on disk, named in the order they should be reported.
+
+    A group is a folder holding targets rather than a target itself, so the walk goes one level
+    deeper wherever it finds no manifest. Grouped and ungrouped targets therefore report side by
+    side, which is what a corpus part way through a move looks like.
+    """
     settings = settings or get_settings()
     root = settings.resolve(settings.data_dir)
     if not root.is_dir():
         return []
-    return sorted(path.name for path in root.iterdir() if path.is_dir() and manifest_path(path).is_file())
+
+    names: list[str] = []
+    for path in sorted(root.iterdir()):
+        if not path.is_dir():
+            continue
+        if manifest_path(path).is_file():
+            names.append(path.name)
+            continue
+        names.extend(
+            child.name
+            for child in sorted(path.iterdir())
+            if child.is_dir() and manifest_path(child).is_file()
+        )
+    return sorted(dict.fromkeys(names))

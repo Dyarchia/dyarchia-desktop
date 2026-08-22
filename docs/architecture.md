@@ -187,6 +187,19 @@ of the site. A manifest beside the pages records per-URL status and hash, which 
 report without invoking git, and what allows a page that disappeared to be told apart from a page
 that failed to download.
 
+A profile may name a `group`, which nests that target one level deeper, at `data/<group>/<name>/`,
+and sends its output to `output/<group>/`. The group is a folder and a round at once: it is also
+what `watch --group` sweeps, so the targets that share a subject share a schedule, and a corpus
+added later joins neither by accident. That double duty is the point. A machine watching several
+corpora otherwise has one flat data directory and one round that quietly grows to whatever asked
+for snapshots most recently.
+
+Writing derives the path from the profile alone, and reading does not. A profile that joins a group
+does not carry its files with it, so `inventory.directory_for` tries the group, then the data root,
+then any group folder that actually holds the manifest. Half a move therefore reports what is on
+disk instead of declaring the corpus missing and crawling it again from nothing. The tolerance
+belongs on the reading side only: a write that guessed would scatter one target across two folders.
+
 Git is optional, and in this repository it is declined: `data/` is ignored in full. That is worth
 being precise about, because it sounds like it should break change tracking and does not. Detection
 compares the incoming run against the manifest and pages already on disk, so it works identically

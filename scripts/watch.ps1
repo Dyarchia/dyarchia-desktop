@@ -25,6 +25,10 @@
 .PARAMETER Profiles
     Profiles to sweep. Defaults to every profile that asks for snapshots.
 
+.PARAMETER Group
+    Sweep only the profiles that belong to this group. Cannot be combined with -Profiles, which
+    already names a set of targets.
+
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
@@ -34,13 +38,15 @@
 .EXAMPLE
     .\scripts\watch.ps1
     .\scripts\watch.ps1 -Profiles claude-docs, claude-code-docs
-    .\scripts\watch.ps1 -Name labs-docs -OncePerWeek
+    .\scripts\watch.ps1 -Name labs-docs -Group docs-labs -OncePerWeek
 #>
 [CmdletBinding()]
 param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')]
     [string]$Name = 'labs-docs',
     [string[]]$Profiles = @(),
+    [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
+    [string]$Group = '',
     [switch]$Commit,
     [switch]$OncePerWeek
 )
@@ -117,6 +123,7 @@ Set-Location $projectRoot
 
 $arguments = @('run', 'crawlee-lab', 'watch')
 if ($Profiles.Count -gt 0) { $arguments += $Profiles }
+elseif ($Group) { $arguments += @('--group', $Group) }
 if ($Commit) { $arguments += '--commit' }
 
 Write-Log "sweep started ($week): uv $($arguments -join ' ')"

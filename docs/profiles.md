@@ -77,10 +77,23 @@ Sources. At least one of `start_urls` or `sitemap_urls` is required.
     Field           Type            Default    Meaning
     ------------    -----------    -------    ------------------------------------------------
     name            string          filename   Profile name, also used for output filenames
+    group           string          none       Folder this target's files are kept under
     description     string          none       Shown when listing profiles
     start_urls      list            empty      URLs the crawl begins from
     sitemap_urls    list            empty      Sitemaps to seed requests from
     fetch_suffix    string          none       Appended to each URL path before fetching
+
+A group is a folder and a round in one. `group: docs-labs` puts this target's snapshots under
+`data/docs-labs/<name>/` and its output under `output/docs-labs/<name>.jsonl`, and makes it part of
+what `crawlee-lab watch --group docs-labs` sweeps. Targets that share a subject therefore share a
+folder and a schedule, and a corpus added later joins neither until its profile says so. The value
+is a single folder name in lowercase, digits and hyphens: it becomes a path segment, so it may not
+be one that walks out of the data directory.
+
+Changing the group of a profile does not move the files it already wrote. Move
+`data/<name>/` into `data/<group>/` yourself, or the next run finds no manifest, calls itself a
+first snapshot and rewrites the corpus with no change detected. Reading tolerates the gap and finds
+the files wherever they still are; writing does not.
 
 Crawling.
 

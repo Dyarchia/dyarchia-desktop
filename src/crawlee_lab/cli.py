@@ -139,6 +139,9 @@ def crawl(
         str | None, typer.Option('--save-profile', help='Save this run as a reusable profile.')
     ] = None,
     name: Annotated[str | None, typer.Option('--name', help='Run name, used for output filenames.')] = None,
+    group: Annotated[
+        str | None, typer.Option('--group', help='Folder to keep this target under, in data/ and output/.')
+    ] = None,
     crawler: Annotated[
         CrawlerKind, typer.Option('--crawler', help='Which Crawlee crawler to drive.')
     ] = CrawlerKind.ADAPTIVE,
@@ -203,6 +206,7 @@ def crawl(
 
     fields_by_option = {
         'name': ('name', name),
+        'group': ('group', group),
         'crawler': ('crawler', crawler),
         'extract': ('extract', extract),
         'select': ('selectors', parse_selectors(select)),
@@ -361,7 +365,7 @@ def diff_command(
 ) -> None:
     """Show what changed on a target the last time it was snapshotted."""
     settings = get_settings()
-    directory = settings.resolve(settings.data_dir) / name
+    directory = inventory.directory_for(name, settings)
 
     report = load_report(directory)
     if report is None:
@@ -449,7 +453,7 @@ def urls_command(
     for name in wanted:
         found = inventory.collect(name, settings)
         if found is None:
-            directory = settings.resolve(settings.data_dir) / name
+            directory = inventory.directory_for(name, settings)
             error_console.print(
                 f'[bold red]no snapshot for {name!r} in {directory}. '
                 f'Run "crawlee-lab crawl --profile {name} --snapshot" first.[/bold red]'
@@ -471,6 +475,9 @@ def watch_command(
         list[str] | None,
         typer.Argument(help='Profiles to sweep. Defaults to every profile that asks for snapshots.'),
     ] = None,
+    group: Annotated[
+        str | None, typer.Option('--group', help='Sweep only the profiles that belong to this group.')
+    ] = None,
     commit: Annotated[
         bool, typer.Option('--commit', help='Commit each snapshot that moved, when data is versioned.')
     ] = False,
@@ -479,14 +486,25 @@ def watch_command(
 
     Built for the scheduler rather than for a person: the exit code is the answer. 0 means nothing
     changed, 10 means something did, 1 means a target failed and the sweep cannot vouch for itself.
+    A group narrows the sweep to its own corpus, so one scheduled round does not quietly adopt
+    every target added since.
     """
     settings = get_settings()
-    selected = list(names) if names else watchable(settings)
+
+    if names and group is not None:
+        error_console.print(
+            '[bold red]name the targets or name a group, not both: '
+            'a group is already a set of them[/bold red]'
+        )
+        raise typer.Exit(code=1)
+
+    selected = list(names) if names else watchable(settings, group)
 
     if not selected:
-        error_console.print(
-            '[bold red]no profiles ask for snapshots, so there is nothing to watch[/bold red]'
+        whose = (
+            f'no profiles in group {group!r} ask for snapshots' if group else 'no profiles ask for snapshots'
         )
+        error_console.print(f'[bold red]{whose}, so there is nothing to watch[/bold red]')
         raise typer.Exit(code=1)
 
     result = asyncio.run(sweep(selected, settings))

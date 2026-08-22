@@ -125,3 +125,19 @@ def test_the_http_crawler_refuses_to_follow_links(settings: Settings) -> None:
 def test_a_negative_depth_is_rejected() -> None:
     with pytest.raises(ValidationError):
         RunSpec(name='demo', start_urls=['https://site.example/'], max_depth=-1)
+
+
+def test_a_group_travels_from_the_file_into_the_run(tmp_path: Path) -> None:
+    path = write(tmp_path, 'claude-docs', MINIMAL + 'group: docs-labs')
+
+    profile = load_profile_file(path)
+
+    assert profile.group == 'docs-labs'
+    assert profile.to_run_spec().group == 'docs-labs'
+
+
+def test_a_group_that_could_escape_its_folder_is_refused() -> None:
+    """The group becomes a path segment, so it may not be one that walks out of the data tree."""
+    for escape in ('../elsewhere', 'labs/docs', 'C:'):
+        with pytest.raises(ValidationError):
+            RunSpec(name='demo', start_urls=['https://site.example/'], group=escape)

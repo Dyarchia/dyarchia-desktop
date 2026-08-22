@@ -54,6 +54,16 @@ class Settings(BaseSettings):
         """Turn a possibly relative configured path into an absolute one under the project root."""
         return path if path.is_absolute() else self.project_root / path
 
+    def data_root(self, group: str | None = None) -> Path:
+        """Where a target's snapshots live, inside its group's folder when it names one."""
+        root = self.resolve(self.data_dir)
+        return root / group if group else root
+
+    def output_root(self, group: str | None = None) -> Path:
+        """Where a run's output files land, grouped the way its snapshots are."""
+        root = self.resolve(self.output_dir)
+        return root / group if group else root
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

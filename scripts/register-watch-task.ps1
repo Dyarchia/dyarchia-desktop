@@ -26,6 +26,11 @@
 .PARAMETER Profiles
     Profiles to sweep. Defaults to every profile that asks for snapshots.
 
+.PARAMETER Group
+    Sweep only the profiles that belong to this group, which is how a round stays over its own
+    corpus instead of adopting every target added to the machine after it was registered. Cannot
+    be combined with -Profiles, which already names a set of targets.
+
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
@@ -37,7 +42,7 @@
     Remove the task of that name instead of creating it.
 
 .EXAMPLE
-    .\scripts\register-watch-task.ps1
+    .\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs
     .\scripts\register-watch-task.ps1 -Name claude-only -Profiles claude-docs, claude-code-docs
     .\scripts\register-watch-task.ps1 -Name labs-docs -Unregister
 #>
@@ -46,6 +51,8 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')]
     [string]$Name = 'labs-docs',
     [string[]]$Profiles = @(),
+    [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
+    [string]$Group = '',
     [switch]$Commit,
     [ValidatePattern('^P(T(\d+H)?(\d+M)?(\d+S)?)$')]
     [string]$Delay = 'PT2M',
@@ -69,6 +76,10 @@ if (-not (Test-Path $wrapper)) {
     throw "cannot find $wrapper"
 }
 
+if ($Group -and $Profiles.Count -gt 0) {
+    throw 'name the profiles or name a group, not both: a group is already a set of them'
+}
+
 $arguments = @(
     '-NoProfile'
     '-NonInteractive'
@@ -80,6 +91,10 @@ $arguments = @(
 if ($Profiles.Count -gt 0) {
     $arguments += '-Profiles'
     $arguments += ($Profiles -join ',')
+}
+elseif ($Group) {
+    $arguments += '-Group'
+    $arguments += $Group
 }
 if ($Commit) {
     $arguments += '-Commit'
@@ -93,6 +108,17 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 
 Register-ScheduledTask -TaskName $Name -TaskPath $taskPath -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
-Write-Output "registered '$Name', at logon, sweeping once per week"
+$covers = 'every profile that asks for snapshots'
+if ($Profiles.Count -gt 0) {
+    $covers = $Profiles -join ', '
+}
+elseif ($Group) {
+    $covers = "group $Group"
+}
+else {
+    Write-Warning "this task sweeps $covers, including any added after today. Name a group to keep it over one corpus."
+}
+
+Write-Output "registered '$Name', at logon, sweeping $covers once per week"
 Write-Output "run it now with: Start-ScheduledTask -TaskName '$Name' -TaskPath '$taskPath'"
 Write-Output "remove it with:  .\scripts\register-watch-task.ps1 -Name $Name -Unregister"

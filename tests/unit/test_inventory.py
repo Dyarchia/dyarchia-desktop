@@ -5,14 +5,20 @@ from __future__ import annotations
 from pathlib import Path
 
 from crawlee_lab.config import Settings
-from crawlee_lab.inventory import collect, human_bytes, section_of, tracked
+from crawlee_lab.inventory import collect, directory_for, human_bytes, section_of, tracked
 from crawlee_lab.models import PageStatus
 from crawlee_lab.versioning.manifest import PageRecord, RunManifest, save_manifest
 
 
-def snapshot(settings: Settings, name: str, pages: dict[str, str], failed: list[str] | None = None) -> Path:
+def snapshot(
+    settings: Settings,
+    name: str,
+    pages: dict[str, str],
+    failed: list[str] | None = None,
+    group: str | None = None,
+) -> Path:
     """Write a manifest and the page files it points at, the way a snapshotted run leaves them."""
-    directory = settings.resolve(settings.data_dir) / name
+    directory = settings.data_root(group) / name
     records: dict[str, PageRecord] = {}
     for url, body in pages.items():
         relative = f'pages/{url.removeprefix("https://")}.md'
@@ -99,3 +105,62 @@ def test_sizes_read_in_units_a_human_can_compare() -> None:
     assert human_bytes(512) == '512 B'
     assert human_bytes(2048) == '2.0 KB'
     assert human_bytes(5 * 1024 * 1024) == '5.0 MB'
+
+
+def test_a_grouped_target_is_still_found_by_its_own_name(settings: Settings) -> None:
+    directory = snapshot(settings, 'claude-docs', {'https://site.example/a': 'Alpha'}, group='docs-labs')
+
+    assert tracked(settings) == ['claude-docs']
+    assert directory_for('claude-docs', settings) == directory
+    found = collect('claude-docs', settings)
+    assert found is not None
+    assert len(found.entries) == 1
+
+
+def test_grouped_and_ungrouped_targets_report_side_by_side(settings: Settings) -> None:
+    """What a corpus part way through a move looks like, which must not hide half of itself."""
+    snapshot(settings, 'moved', {'https://site.example/a': 'Alpha'}, group='docs-labs')
+    snapshot(settings, 'stayed', {'https://site.example/b': 'Beta'})
+
+    assert tracked(settings) == ['moved', 'stayed']
+
+
+def test_a_group_folder_is_not_itself_a_target(settings: Settings) -> None:
+    snapshot(settings, 'claude-docs', {'https://site.example/a': 'Alpha'}, group='docs-labs')
+
+    assert 'docs-labs' not in tracked(settings)
+
+
+def test_a_target_that_was_never_snapshotted_points_at_where_it_belongs(settings: Settings) -> None:
+    """The answer an error message needs: not where it looked, but where the file should be."""
+    assert directory_for('absent', settings) == settings.resolve(settings.data_dir) / 'absent'
+
+
+def profile(settings: Settings, name: str, group: str | None = None) -> None:
+    """A profile file for `name`, which is what tells a reader the group it belongs to."""
+    directory = settings.resolve(settings.profiles_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    body = """
+start_urls:
+  - https://site.example/
+snapshot: true
+"""
+    if group:
+        body += f'group: {group}'
+    (directory / f'{name}.yaml').write_text(body, encoding='utf-8')
+
+
+def test_a_profile_that_joins_a_group_still_reads_the_files_it_left_behind(settings: Settings) -> None:
+    """Changing the profile does not move 94 MB of snapshots, and reading must survive the gap."""
+    directory = snapshot(settings, 'claude-docs', {'https://site.example/a': 'Alpha'})
+    profile(settings, 'claude-docs', group='docs-labs')
+
+    assert directory_for('claude-docs', settings) == directory
+    assert collect('claude-docs', settings) is not None
+
+
+def test_once_the_files_move_the_group_is_where_they_are_read_from(settings: Settings) -> None:
+    moved = snapshot(settings, 'claude-docs', {'https://site.example/a': 'Alpha'}, group='docs-labs')
+    profile(settings, 'claude-docs', group='docs-labs')
+
+    assert directory_for('claude-docs', settings) == moved

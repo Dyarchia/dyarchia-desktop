@@ -111,6 +111,7 @@ class RunSpec(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     name: str
+    group: str | None = Field(default=None, pattern=r'^[a-z0-9][a-z0-9-]*$')
     start_urls: list[str] = Field(default_factory=list)
     sitemap_urls: list[str] = Field(default_factory=list)
     fetch_suffix: str | None = None

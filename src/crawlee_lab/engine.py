@@ -283,7 +283,7 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     items = await collect_items(crawler)
     if spec.trim_boilerplate:
         trim_run_boilerplate(items)
-    outputs = export_items(items, spec, settings.resolve(settings.output_dir))
+    outputs = export_items(items, spec, settings.output_root(spec.group))
 
     result = RunResult(
         spec=spec,

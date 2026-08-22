@@ -144,7 +144,9 @@ named, every snapshotted target is reported in turn.
 ## Snapshots and change tracking
 
 `--snapshot` writes each page's content to `data/<name>/pages/<host>/<path>.md`, mirroring the URL
-structure, and records hashes and per-URL status in a manifest beside it.
+structure, and records hashes and per-URL status in a manifest beside it. A profile that names a
+group nests one level deeper, at `data/<group>/<name>/`, and its output goes to
+`output/<group>/<name>.jsonl`.
 
 Detection does not depend on git. The manifest holds the previous hash of every page and the stored
 pages hold the previous text, so every run reports what was added, removed and modified against what
@@ -186,6 +188,10 @@ All but one fetch the markdown variant the site publishes, so the snapshot is th
 than an extractor's reading of it. `ai.google.dev` publishes none, so `gemini-docs` is extracted
 from HTML instead. Page counts are from the last run of each.
 
+All nine declare `group: docs-labs`, so they share `data/docs-labs/`, `output/docs-labs/` and one
+weekly round. A corpus on another subject gets its own group, and with it its own folder and its
+own schedule, rather than joining this one by having asked for snapshots.
+
 ## Running unattended
 
 `watch` is the command a scheduler calls. It sweeps every profile that asks for snapshots, lets one
@@ -210,7 +216,7 @@ On Windows, `scripts/watch.ps1` wraps that in a log and a desktop notification r
 exit code is not 0, and `scripts/register-watch-task.ps1` registers it with the Task Scheduler:
 
 ```powershell
-.\scripts\register-watch-task.ps1
+.\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs
 ```
 
 The task fires at every logon and the wrapper decides whether the week is still owed a sweep, so the
@@ -219,12 +225,16 @@ the first day you do if you do not. A run that finds the week already swept exit
 nothing. A week whose sweep failed is still owed one, so the next logon takes it.
 
 Every task carries a name, `labs-docs` by default, and lives under the `\crawlee-lab\` folder of the
-Task Scheduler. The name keys the log and the record of the last week swept, so sweeps over
-different profiles can sit side by side without taking each other's turn:
+Task Scheduler. The name keys the log and the record of the last week swept, so rounds over
+different corpora sit side by side without taking each other's turn. `-Group` is what a round
+covers; naming profiles instead covers exactly those:
 
 ```powershell
 .\scripts\register-watch-task.ps1 -Name claude-only -Profiles claude-docs, claude-code-docs
 ```
+
+A task registered with neither sweeps every profile that asks for snapshots, including the ones
+added after it was registered, and says so when you register it.
 
 Nothing registers itself. Run that when you want a monitor to start, and
 `.\scripts\register-watch-task.ps1 -Name labs-docs -Unregister` when you want it to stop.

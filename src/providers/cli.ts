@@ -7,6 +7,7 @@ import type { CompletionRequest, CompletionResult, Route, RouteStatus } from './
 import { which } from './which.js'
 
 const CLAUDE_MODELS = [
+    { id: 'fable', label: 'Claude Fable 5' },
     { id: 'opus', label: 'Claude Opus 5' },
     { id: 'sonnet', label: 'Claude Sonnet 5' },
     { id: 'haiku', label: 'Claude Haiku 4.5' }

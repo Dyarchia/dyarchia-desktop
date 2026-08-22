@@ -15,7 +15,8 @@ reasoning underneath it.
 - [6. The IPC contract](#6-the-ipc-contract)
 - [7. The nested menu](#7-the-nested-menu)
 - [8. Styling without a dependency](#8-styling-without-a-dependency)
-- [9. Deliberate omissions](#9-deliberate-omissions)
+- [9. Reading order and the shape of the panel](#9-reading-order-and-the-shape-of-the-panel)
+- [10. Deliberate omissions](#10-deliberate-omissions)
 
 
 ## 1. The pipeline
@@ -98,7 +99,7 @@ No model list is hardcoded. Each source is asked what it currently offers:
 ```text
 Route       Source of truth
 ---------   ---------------------------------------------------
-claude      the CLI's model aliases: opus, sonnet, haiku
+claude      the CLI's model aliases: fable, opus, sonnet, haiku
 codex       ~/.codex/models_cache.json, in the order it lists
 opencode    opencode models
 anthropic   GET /v1/models
@@ -109,17 +110,27 @@ A model that exists on both a CLI and an API becomes one catalogue entry with tw
 Anthropic needs an explicit pairing because the CLI takes aliases (`opus`) and the API takes
 identifiers (`claude-opus-5`); OpenAI pairs on the identifier directly.
 
-Catalogue order is provenance order, and it carries a `rank` that the seeder uses to pick
-sensible defaults. This matters more than it sounds: an earlier version scored models by
-parsing version numbers out of their names, which ranked "Claude Haiku 4.5" above "Claude
-Opus 5" because the latter has no decimal point. Vendors already list their models best
-first — Codex's cache opens with the model it calls its latest frontier model. Trust that
-ordering and penalise only the tiers whose names announce themselves as lesser (`mini`,
-`flash`, `free`, `preview`).
+Catalogue order is provenance order, and it carries a `rank` that the presets use to pick
+seats. This matters more than it sounds. Two scoring schemes were tried and thrown away
+before the current one:
 
-The seeder fills the three default seats from three different families and refuses to seat
-the same model twice through two routes. A panel of one model reached three ways agrees
-with itself, which is the failure mode this whole design exists to avoid.
+- Parsing version numbers out of model names ranked "Claude Haiku 4.5" above "Claude Opus 5",
+  because the latter has no decimal point.
+- Treating "the name announces a lesser tier" as the definition of cheap, then inverting it
+  for the budget preset, seated **Claude Fable 5** — the most expensive model on offer —
+  because Haiku's name contains none of `mini`, `flash` or `free`, so nothing in the family
+  matched and rank 0 won by default.
+
+Vendors already order their own models best first; Codex's cache opens with the one it calls
+its latest frontier model. So rank carries the ordering, and only two regexes adjust it:
+`EXCLUDE` removes pools that should never be auto-seated (`free`, `preview`, `contributor`,
+and `reserve`, which is a fallback model rather than a cheap one), and `LIGHT` marks the
+small tiers. A preset asking for capability walks rank forwards and skips `LIGHT`; a preset
+asking for economy walks rank backwards and prefers it. Budget therefore lands on Haiku 4.5
+even though nothing in its name says so.
+
+No preset seats the same model twice through two routes. A panel of one model reached three
+ways agrees with itself, which is the failure mode this whole design exists to avoid.
 
 
 ## 4. Isolation from your own configuration
@@ -250,7 +261,40 @@ are recessed, rows are flat and express selection with a two-pixel accent edge, 
 never fills and never carries text, and `box-shadow` never appears in a transition.
 
 
-## 9. Deliberate omissions
+## 9. Reading order and the shape of the panel
+
+The panel splits into a fixed head and a scrolling result region. The head is two columns:
+the prompt on the left, the seats and the preset control on the right. Results run the full
+width underneath.
+
+Cards are created up front, in a fixed order, the moment a run starts — answer, analysis,
+then one per member in seat order. An earlier version created each card when its first token
+arrived, which ordered them by whoever streamed fastest: the panel showed 2, 1, 3 while the
+analysis referred to members 1, 2 and 3. Attribution the reader cannot follow is worse than
+no attribution.
+
+The answer leads because it is the deliverable; the analysis follows because it is the
+evidence; members collapse because they are the raw material. Prose caps at 92ch — a card
+spans the window, but a line of text that spans 1900 pixels is not read, it is scanned.
+
+Two details worth keeping in mind for anything else built in this shell:
+
+- **`overflow: hidden` inside a column flex container is a trap.** Cards clip their corners
+  with `overflow: hidden`, which per the flexbox spec sets their automatic minimum size to
+  zero. Once the results outgrew the region, every collapsed card was squashed from 31px to
+  15px and read as a row of stray horizontal lines. `flex: none` on the card is the fix.
+- **The `dyarchia-plugin://` protocol response is cached, and the main module is only read
+  at startup.** Reinstalling a build and restarting the shell updates the main module but
+  can still serve the previous renderer bundle. Reload ignoring cache after every install,
+  or spend an hour convinced your changes are not compiling.
+
+The writer's output is rendered through a small markdown subset — paragraphs, headings,
+lists, bold, inline code. Models reach for markdown whether or not you ask them to, and
+rendering it is less work than fighting it. The streaming path stays plain text and the
+markup is applied once, on completion.
+
+
+## 10. Deliberate omissions
 
 ```text
 Absent               Why
@@ -262,9 +306,9 @@ web search / fetch   Fusion enables them on every member. Here the tools are
 temperature          Current Anthropic models reject the parameter with a 400,
                      and no CLI route exposes one. A control that worked on two
                      routes out of five would mislead.
-model presets        Fusion ships curated panels. The catalogue here depends on
-                     which CLIs are installed and which plans are active, so the
-                     defaults are computed at discovery time instead.
+analyst warnings     A weak analyst under a strong panel is a legitimate choice
+                     — comparison is a bounded task. The UI names the role
+                     instead of second-guessing who fills it.
 uniform streaming    Members stream where their route allows it — claude and
                      opencode emit deltas, codex only a final message — so cards
                      fill at different rates. The analyst's JSON call never

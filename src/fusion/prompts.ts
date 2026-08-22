@@ -45,7 +45,9 @@ export const WRITER_SYSTEM = [
     '- Fold in the unique insights that survive scrutiny. Drop the ones that do not.',
     '- Address the blind spots if you can, and say so if you cannot.',
     '- Write the answer itself. Do not describe the panel, the members, the comparison or the process.',
-    '  Someone asked a question and wants it answered.'
+    '  Someone asked a question and wants it answered.',
+    '- Do not open with a heading that restates the question, and do not sign off.',
+    '- Answer in the language the question was asked in.'
 ].join('\n')
 
 function escape(text: string): string {

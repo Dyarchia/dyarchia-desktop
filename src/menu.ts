@@ -10,10 +10,14 @@ export interface MenuLeaf {
 }
 
 export interface MenuRow {
+    key: string
     label: string
     group: string
     leaves: MenuLeaf[]
     selected?: boolean
+    tier?: string
+    note?: string
+    direct?: boolean
 }
 
 export interface MenuOptions {
@@ -172,17 +176,40 @@ export function openMenu(options: MenuOptions): () => void {
 
             const label = document.createElement('span')
             label.textContent = row.label
+            item.appendChild(label)
+
+            if (row.tier) {
+                const tier = document.createElement('span')
+                tier.className = 'eforoi-tier'
+                tier.textContent = row.tier
+                item.appendChild(tier)
+            }
+
+            if (row.note) {
+                const note = document.createElement('span')
+                note.className = 'eforoi-menu-hint'
+                note.textContent = row.note
+                item.appendChild(note)
+            }
+
             const arrow = document.createElement('span')
             arrow.className = 'eforoi-menu-arrow'
-            arrow.textContent = '›'
-            item.append(label, arrow)
+            arrow.textContent = row.direct ? '' : '›'
+            item.appendChild(arrow)
 
             const index = rendered.length
             item.addEventListener('mouseenter', () => {
                 focus(index)
-                openSubmenu(index)
+                if (!row.direct) openSubmenu(index)
             })
-            item.addEventListener('click', () => openSubmenu(index))
+            item.addEventListener('click', () => {
+                if (!row.direct) {
+                    openSubmenu(index)
+                    return
+                }
+                options.onPick(row, row.leaves[0])
+                close()
+            })
             list.appendChild(item)
             rendered.push({ row, element: item })
         }
@@ -212,6 +239,12 @@ export function openMenu(options: MenuOptions): () => void {
         }
         if (event.key === 'ArrowRight' || event.key === 'Enter') {
             event.preventDefault()
+            const current = rendered[active]?.row
+            if (current?.direct) {
+                options.onPick(current, current.leaves[0])
+                close()
+                return
+            }
             if (active >= 0) openSubmenu(active)
             submenu?.querySelector<HTMLButtonElement>('.eforoi-menu-item:not([disabled])')?.focus()
             return

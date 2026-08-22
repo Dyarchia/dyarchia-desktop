@@ -43,6 +43,22 @@ A mode that cannot work is shown greyed with the reason: no CLI on PATH, no key 
 the model not offered on that route.
 
 
+## Presets
+
+The panel can be seated one model at a time, or in one click:
+
+```text
+Preset     Panel                                        Analyst
+--------   ------------------------------------------   ------------------
+Frontier   the strongest available, capability first    the strongest
+Diverse    one model per vendor, for real disagreement   the strongest
+Budget     the light tiers                              the light tier
+```
+
+Presets resolve against whatever is actually installed and signed in, so they name an intent
+rather than a fixed list of models.
+
+
 ## Install
 
 ```bash

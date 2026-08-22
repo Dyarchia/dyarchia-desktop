@@ -1,4 +1,5 @@
 import type { PluginContext } from '@dyarchia/sdk'
+import { renderMarkdown } from './markdown.js'
 import { openMenu } from './menu.js'
 import type { MenuLeaf, MenuRow } from './menu.js'
 import { STYLES, STYLE_ID } from './styles.js'
@@ -7,9 +8,14 @@ import type { Analysis, Catalog, CatalogEntry, MemberResult, Mode, RunEvent, Sea
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>'
 
-const STORAGE = 'eforoi:seats'
+const SEATS_KEY = 'eforoi:seats'
+const LATENCY_KEY = 'eforoi:latency'
 const MIN_PANEL = 2
 const MAX_PANEL = 5
+
+const EXCLUDE = /free|preview|contributor|reserve/i
+const LIGHT = /mini|flash|lightning|nano|haiku/i
+const UNPAID = 'opencode/opencode/'
 
 interface Stored {
     panel: Seat[]
@@ -17,10 +23,53 @@ interface Stored {
 }
 
 interface Card {
-    card: HTMLElement
+    root: HTMLElement
     dot: HTMLElement
     title: HTMLElement
+    note: HTMLElement
     body: HTMLElement
+    chevron: HTMLElement
+    open(next: boolean): void
+}
+
+type Family = (entry: CatalogEntry) => boolean
+
+interface Preset {
+    label: string
+    hint: string
+    panel: { family: Family; cheap?: boolean }[]
+    analyst: { family: Family; cheap?: boolean }
+}
+
+const ANTHROPIC: Family = (entry) => entry.group === 'Anthropic'
+const OPENAI: Family = (entry) => entry.group === 'OpenAI'
+const OPENCODE: Family = (entry) => entry.group.startsWith('opencode')
+const OPENCODE_NATIVE: Family = (entry) => OPENCODE(entry) && !entry.key.includes('/gpt-')
+const ANY: Family = () => true
+
+const PRESETS: Record<string, Preset> = {
+    Frontier: {
+        label: 'Frontier',
+        hint: 'the strongest models available, capability over variety',
+        panel: [{ family: ANTHROPIC }, { family: OPENAI }, { family: ANTHROPIC }],
+        analyst: { family: ANTHROPIC }
+    },
+    Diverse: {
+        label: 'Diverse',
+        hint: 'one model per vendor, so the analyst has real disagreement to compare',
+        panel: [{ family: ANTHROPIC }, { family: OPENAI }, { family: OPENCODE_NATIVE }],
+        analyst: { family: ANTHROPIC }
+    },
+    Budget: {
+        label: 'Budget',
+        hint: 'the light tiers, for questions that do not need the frontier',
+        panel: [
+            { family: ANTHROPIC, cheap: true },
+            { family: OPENAI, cheap: true },
+            { family: OPENCODE, cheap: true }
+        ],
+        analyst: { family: ANTHROPIC, cheap: true }
+    }
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -35,7 +84,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 function injectStyles(): void {
-    if (document.getElementById(STYLE_ID)) return
+    const existing = document.getElementById(STYLE_ID)
+    if (existing) existing.remove()
     const style = el('style')
     style.id = STYLE_ID
     style.textContent = STYLES
@@ -50,21 +100,28 @@ function money(value: number): string {
     return value >= 0.01 ? `$${value.toFixed(2)}` : `$${value.toFixed(4)}`
 }
 
-function load(): Stored | null {
+function read<T>(key: string, fallback: T): T {
     try {
-        const raw = localStorage.getItem(STORAGE)
-        return raw ? (JSON.parse(raw) as Stored) : null
+        const raw = localStorage.getItem(key)
+        return raw ? (JSON.parse(raw) as T) : fallback
     } catch {
-        return null
+        return fallback
     }
 }
 
-function save(stored: Stored): void {
+function write(key: string, value: unknown): void {
     try {
-        localStorage.setItem(STORAGE, JSON.stringify(stored))
+        localStorage.setItem(key, JSON.stringify(value))
     } catch {
         /* a full quota is not worth failing a run over */
     }
+}
+
+function tierOf(key: string): string | undefined {
+    if (/free/i.test(key)) return 'free'
+    if (/preview/i.test(key)) return 'preview'
+    if (/mini|flash|lightning/i.test(key)) return 'light'
+    return undefined
 }
 
 function usable(entry: CatalogEntry): boolean {
@@ -75,20 +132,19 @@ function firstMode(entry: CatalogEntry): Mode | null {
     return entry.modes.find((mode) => mode.available)?.mode ?? null
 }
 
-const DEMOTE = /free|mini|reserve|lightning|flash|contributor|preview/i
-const UNPAID = 'opencode/opencode/'
-
-function score(entry: CatalogEntry): number {
+function score(entry: CatalogEntry, cheap: boolean): number {
     let penalty = 0
-    if (DEMOTE.test(entry.key)) penalty += 1000
-    if (entry.key.startsWith(UNPAID)) penalty += 500
-    return entry.rank + penalty
+    if (EXCLUDE.test(entry.key)) penalty += 1_000_000
+    if (entry.key.startsWith(UNPAID)) penalty += 500_000
+    if (LIGHT.test(entry.key) !== cheap) penalty += 100_000
+    return penalty + (cheap ? -entry.rank : entry.rank)
 }
 
 function best(
     catalog: Catalog,
-    family: (entry: CatalogEntry) => boolean,
-    taken: CatalogEntry[]
+    family: Family,
+    taken: CatalogEntry[],
+    cheap = false
 ): CatalogEntry | null {
     return (
         catalog.entries
@@ -99,95 +155,113 @@ function best(
                         (chosen) => chosen.key === candidate.key || chosen.label === candidate.label
                     )
             )
-            .sort((left, right) => score(left) - score(right))[0] ?? null
+            .sort((left, right) => score(left, cheap) - score(right, cheap))[0] ?? null
     )
 }
 
-function seed(catalog: Catalog): Stored {
-    const families = [
-        (entry: CatalogEntry) => entry.group === 'Anthropic',
-        (entry: CatalogEntry) => entry.group === 'OpenAI',
-        (entry: CatalogEntry) => entry.group.startsWith('opencode'),
-        () => true
-    ]
+function toSeat(entry: CatalogEntry | null): Seat | null {
+    const mode = entry ? firstMode(entry) : null
+    return entry && mode ? { key: entry.key, mode } : null
+}
 
+function apply(catalog: Catalog, preset: Preset): Stored {
     const chosen: CatalogEntry[] = []
-    for (const family of families) {
-        if (chosen.length >= 3) break
-        const pick = best(catalog, family, chosen)
+
+    for (const slot of preset.panel) {
+        const pick =
+            best(catalog, slot.family, chosen, slot.cheap === true) ??
+            best(catalog, ANY, chosen, slot.cheap === true)
         if (pick) chosen.push(pick)
     }
 
     while (chosen.length < MIN_PANEL) {
-        const spare = best(catalog, () => true, chosen)
+        const spare = best(catalog, ANY, chosen)
         if (!spare) break
         chosen.push(spare)
     }
 
-    const picks = chosen
-        .map((entry): Seat | null => {
-            const mode = firstMode(entry)
-            return mode ? { key: entry.key, mode } : null
-        })
-        .filter((seat): seat is Seat => seat !== null)
+    const analyst =
+        best(catalog, preset.analyst.family, [], preset.analyst.cheap === true) ??
+        best(catalog, ANY, [], preset.analyst.cheap === true)
 
-    return { panel: picks, analyst: picks[0] ?? null }
+    return {
+        panel: chosen.map(toSeat).filter((seat): seat is Seat => seat !== null),
+        analyst: toSeat(analyst)
+    }
 }
 
 function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const root = el('div', 'eforoi')
-    const scroll = el('div', 'eforoi-scroll')
-    root.appendChild(scroll)
+    const head = el('div', 'eforoi-head')
+    const results = el('div', 'eforoi-results')
+    root.append(head, results)
     container.appendChild(root)
 
     let catalog: Catalog | null = null
-    let state: Stored = load() ?? { panel: [], analyst: null }
+    let state: Stored = read<Stored>(SEATS_KEY, { panel: [], analyst: null })
+    let latency = read<Record<string, number>>(LATENCY_KEY, {})
     let runId: string | null = null
+    let answerText = ''
 
     const promptBox = el('textarea', 'eforoi-prompt')
-    promptBox.placeholder = 'Ask the panel'
+    promptBox.placeholder = 'Ask the panel — ctrl+enter to run'
 
     const seats = el('div', 'eforoi-seats')
+    const analystSeat = el('div', 'eforoi-seats')
     const bar = el('div', 'eforoi-bar')
-    const results = el('div', 'eforoi-scroll')
-    results.style.padding = '0'
-    results.style.overflow = 'visible'
-    results.style.flex = 'none'
 
     const runButton = el('button', 'eforoi-button', 'Run')
     const addButton = el('button', 'eforoi-button eforoi-icon', '+')
     const removeButton = el('button', 'eforoi-button eforoi-icon', '−')
+    const presetButton = el('button', 'eforoi-button', 'Preset')
     const refreshButton = el('button', 'eforoi-button', 'Refresh')
     const status = el('span', 'eforoi-meta')
 
     addButton.title = 'add a panel member'
     removeButton.title = 'remove the last panel member'
+    presetButton.title = 'seat the whole panel at once'
     refreshButton.title = 'rediscover installed CLIs, plans and API models'
 
-    bar.append(addButton, removeButton, refreshButton, el('span', 'eforoi-spacer'), status, runButton)
+    const panelLegend = el('div', 'eforoi-legend')
+    panelLegend.append(el('span', 'eforoi-label', 'Panel'), presetButton, addButton, removeButton)
 
-    scroll.append(
-        el('div', 'eforoi-label', 'Prompt'),
-        promptBox,
-        el('div', 'eforoi-label', 'Panel'),
-        seats,
-        bar,
-        results
+    const analystLegend = el('div', 'eforoi-legend')
+    analystLegend.append(
+        el('span', 'eforoi-label', 'Analyst'),
+        el('span', 'eforoi-meta', 'compares the panel, then writes the answer')
     )
+
+    bar.append(refreshButton, el('span', 'eforoi-spacer'), status, runButton)
+
+    const promptColumn = el('div', 'eforoi-column')
+    promptColumn.dataset.side = 'prompt'
+    promptColumn.append(el('span', 'eforoi-label', 'Prompt'), promptBox)
+
+    const panelColumn = el('div', 'eforoi-column')
+    panelColumn.dataset.side = 'panel'
+    panelColumn.append(panelLegend, seats, analystLegend, analystSeat)
+
+    const columns = el('div', 'eforoi-columns')
+    columns.append(promptColumn, panelColumn)
+    head.append(columns, bar)
 
     const entryOf = (key: string): CatalogEntry | undefined =>
         catalog?.entries.find((candidate) => candidate.key === key)
 
-    const describe = (seat: Seat | null): string => {
-        if (!seat) return 'select a model'
-        return entryOf(seat.key)?.label ?? seat.key
-    }
+    const labelOf = (seat: Seat | null): string =>
+        seat ? (entryOf(seat.key)?.label ?? seat.key) : 'select a model'
+
+    const offerOf = (seat: Seat | null) =>
+        seat ? entryOf(seat.key)?.modes.find((mode) => mode.mode === seat.mode) : undefined
 
     const rowsFor = (selected: Seat | null): MenuRow[] => {
         if (!catalog) return []
         return catalog.entries.map((entry) => ({
+            key: entry.key,
             label: entry.label,
             group: entry.group,
+            tier: tierOf(entry.key),
+            note: latency[entry.key] ? seconds(latency[entry.key]) : undefined,
             selected: selected?.key === entry.key,
             leaves: entry.modes.map(
                 (mode): MenuLeaf => ({
@@ -202,58 +276,70 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     }
 
     const commit = (): void => {
-        save(state)
+        write(SEATS_KEY, state)
         renderSeats()
     }
 
-    const pickSeat = (anchor: HTMLElement, current: Seat | null, apply: (seat: Seat) => void): void => {
+    const pickSeat = (anchor: HTMLElement, current: Seat | null, set: (seat: Seat) => void): void => {
         openMenu({
             anchor,
             rows: rowsFor(current),
             filter: 'filter models',
             onPick: (row, leaf) => {
-                const entry = catalog?.entries.find((candidate) => candidate.label === row.label)
-                if (!entry) return
-                apply({ key: entry.key, mode: leaf.value as Mode })
+                set({ key: row.key, mode: leaf.value as Mode })
                 commit()
             }
         })
     }
 
-    const seatRow = (seat: Seat | null, ordinal: string, apply: (next: Seat) => void): HTMLElement => {
+    const seatRow = (
+        seat: Seat | null,
+        lead: { ordinal?: string; role?: string },
+        set: (next: Seat) => void
+    ): HTMLElement => {
         const row = el('div', 'eforoi-seat')
-        if (ordinal === '*') row.dataset.role = 'analyst'
+        const offer = offerOf(seat)
 
-        const model = el('button', 'eforoi-pick')
-        model.textContent = describe(seat)
+        if (lead.role) {
+            row.dataset.role = 'analyst'
+            row.append(el('span', 'eforoi-role', lead.role))
+        } else {
+            row.append(el('span', 'eforoi-ordinal', lead.ordinal ?? ''))
+        }
+
+        const model = el('button', 'eforoi-pick eforoi-model', labelOf(seat))
         model.dataset.empty = String(!seat)
-        model.addEventListener('click', () => pickSeat(model, seat, apply))
+        model.addEventListener('click', () => pickSeat(model, seat, set))
 
         const mode = el('button', 'eforoi-pick eforoi-mode')
-        const offer = seat ? entryOf(seat.key)?.modes.find((candidate) => candidate.mode === seat.mode) : null
         mode.textContent = seat ? `${seat.mode === 'api' ? 'API' : 'Subscription'} ›` : '—'
         mode.dataset.empty = String(!seat)
-        if (offer && !offer.available) {
-            mode.style.color = 'var(--e-danger)'
-            mode.title = offer.reason ?? 'unavailable'
-        }
-        mode.addEventListener('click', () => pickSeat(mode, seat, apply))
+        mode.dataset.broken = String(Boolean(seat) && !offer?.available)
+        if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
+        mode.addEventListener('click', () => pickSeat(mode, seat, set))
 
-        row.append(el('span', 'eforoi-ordinal', ordinal), model, mode)
+        row.append(model, mode)
+
+        if (offer?.available) row.append(el('span', 'eforoi-route', offer.route))
+        const tier = seat ? tierOf(seat.key) : undefined
+        if (tier) row.append(el('span', 'eforoi-tier', tier))
+        if (seat && latency[seat.key]) {
+            row.append(el('span', 'eforoi-route', `~${seconds(latency[seat.key])}`))
+        }
+
         return row
     }
 
     function renderSeats(): void {
-        seats.replaceChildren()
-        state.panel.forEach((seat, index) => {
-            seats.appendChild(
-                seatRow(seat, String(index + 1), (next) => {
+        seats.replaceChildren(
+            ...state.panel.map((seat, index) =>
+                seatRow(seat, { ordinal: String(index + 1) }, (next) => {
                     state.panel[index] = next
                 })
             )
-        })
-        seats.appendChild(
-            seatRow(state.analyst, '*', (next) => {
+        )
+        analystSeat.replaceChildren(
+            seatRow(state.analyst, { role: 'analyst' }, (next) => {
                 state.analyst = next
             })
         )
@@ -263,34 +349,73 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const cards = new Map<string, Card>()
 
-    const card = (id: string, title: string): Card => {
-        const existing = cards.get(id)
-        if (existing) return existing
-
+    const makeCard = (id: string, title: string, role: string, expanded: boolean): Card => {
         const wrapper = el('div', 'eforoi-card')
-        const head = el('button', 'eforoi-card-head')
+        wrapper.dataset.role = role
+
+        const header = el('button', 'eforoi-card-head')
+        const chevron = el('span', 'eforoi-chevron', expanded ? '▾' : '▸')
         const dot = el('span', 'eforoi-dot')
         const label = el('span', 'eforoi-card-title', title)
+        const note = el('span', 'eforoi-card-note')
         const body = el('div', 'eforoi-body')
+        body.hidden = !expanded
 
-        head.append(dot, label)
-        head.addEventListener('click', () => {
-            body.hidden = !body.hidden
-        })
-        wrapper.append(head, body)
+        const card: Card = {
+            root: wrapper,
+            dot,
+            title: label,
+            note,
+            body,
+            chevron,
+            open(next) {
+                body.hidden = !next
+                chevron.textContent = next ? '▾' : '▸'
+            }
+        }
+
+        header.append(chevron, dot, label, note)
+        header.addEventListener('click', () => card.open(body.hidden))
+        wrapper.append(header, body)
         results.appendChild(wrapper)
-
-        const made = { card: wrapper, dot, title: label, body }
-        cards.set(id, made)
-        return made
+        cards.set(id, card)
+        return card
     }
 
-    const renderAnalysis = (analysis: Analysis, ms: number): void => {
-        const target = card('analysis', `Analysis · ${seconds(ms)}`)
-        target.dot.dataset.state = 'done'
-        target.body.replaceChildren()
-        target.body.style.padding = '0'
-        target.body.style.whiteSpace = 'normal'
+    const prepare = (): void => {
+        cards.clear()
+        results.replaceChildren()
+
+        const analyst = labelOf(state.analyst)
+        const answer = makeCard('answer', 'Answer', 'answer', true)
+        answer.note.textContent = `written by ${analyst}`
+        answer.body.append(el('span', 'eforoi-pending', 'waiting for the panel'))
+
+        const analysis = makeCard('analysis', 'Analysis', 'analysis', true)
+        analysis.note.textContent = `compared by ${analyst}`
+        analysis.body.append(el('span', 'eforoi-pending', 'waiting for the panel'))
+
+        state.panel.forEach((seat, index) => {
+            const card = makeCard(`member-${index + 1}`, `${index + 1}. ${labelOf(seat)}`, 'member', false)
+            card.note.textContent = seat.mode === 'api' ? 'API' : 'plan'
+        })
+    }
+
+    const remember = (key: string, ms: number): void => {
+        latency = { ...latency, [key]: ms }
+        write(LATENCY_KEY, latency)
+    }
+
+    const renderAnalysis = (analysis: Analysis): void => {
+        const card = cards.get('analysis')
+        if (!card) return
+
+        card.body.replaceChildren()
+        card.body.dataset.structured = 'true'
+
+        const escape = (text: string): string =>
+            text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        const tag = (label: string): string => `<span class="eforoi-tag">${label}</span>`
 
         const section = (heading: string, items: string[]): void => {
             if (!items.length) return
@@ -303,12 +428,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                 list.appendChild(entry)
             }
             block.appendChild(list)
-            target.body.appendChild(block)
+            card.body.appendChild(block)
         }
-
-        const tag = (label: string): string => `<span class="eforoi-tag">${label}</span>`
-        const escape = (text: string): string =>
-            text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
         section(
             'Consensus',
@@ -334,25 +455,18 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         )
         section('Blind spots', analysis.blind_spots.map(escape))
 
-        if (!target.body.childElementCount) {
+        if (!card.body.childElementCount) {
             const block = el('div', 'eforoi-section')
-            block.appendChild(el('h4', undefined, 'Nothing to separate them'))
-            target.body.appendChild(block)
+            block.appendChild(el('h4', undefined, 'Nothing separated them'))
+            card.body.appendChild(block)
         }
     }
 
-    const memberTitle = (result: MemberResult): string => {
-        const entry = entryOf(result.seat.key)
-        const label = entry?.label ?? result.seat.key
+    const memberNote = (result: MemberResult): string => {
         const parts = [seconds(result.ms), result.seat.mode === 'api' ? 'API' : 'plan']
         if (result.usage.costUsd) parts.push(money(result.usage.costUsd))
         if (result.usage.outputTokens) parts.push(`${result.usage.outputTokens} out`)
-        return `${result.index}. ${label} — ${parts.join(' · ')}`
-    }
-
-    const reset = (): void => {
-        cards.clear()
-        results.replaceChildren()
+        return parts.join(' · ')
     }
 
     const onEvent = (raw: unknown): void => {
@@ -361,50 +475,69 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
         if (event.type === 'stage') {
             status.textContent = `${event.stage}…`
-            if (event.stage === 'analysis') card('analysis', 'Analysis').dot.dataset.state = 'running'
-            if (event.stage === 'answer') card('answer', 'Answer').dot.dataset.state = 'running'
+            const card = cards.get(event.stage === 'analysis' ? 'analysis' : 'answer')
+            if (event.stage !== 'panel' && card) {
+                card.dot.dataset.state = 'running'
+                card.body.replaceChildren()
+            }
             return
         }
 
         if (event.type === 'member:delta') {
-            const target = card(`member-${event.index}`, `${event.index}. running`)
-            target.dot.dataset.state = 'running'
-            target.body.textContent = (target.body.textContent ?? '') + event.text
+            const card = cards.get(`member-${event.index}`)
+            if (!card) return
+            card.dot.dataset.state = 'running'
+            card.body.textContent = (card.body.textContent ?? '') + event.text
             return
         }
 
         if (event.type === 'member:done') {
-            const target = card(`member-${event.result.index}`, memberTitle(event.result))
-            target.title.textContent = memberTitle(event.result)
-            target.dot.dataset.state = event.result.error ? 'error' : 'done'
+            const card = cards.get(`member-${event.result.index}`)
+            if (!card) return
+            card.dot.dataset.state = event.result.error ? 'error' : 'done'
+            card.note.textContent = event.result.error ?? memberNote(event.result)
             if (event.result.error) {
-                target.body.replaceChildren(el('div', 'eforoi-error', event.result.error))
-            } else if (!target.body.textContent) {
-                target.body.textContent = event.result.text
+                card.body.replaceChildren(el('div', 'eforoi-error', event.result.error))
+            } else {
+                if (!card.body.textContent) card.body.textContent = event.result.text
+                remember(event.result.seat.key, event.result.ms)
             }
-            target.body.hidden = true
             return
         }
 
         if (event.type === 'analysis') {
-            renderAnalysis(event.analysis, event.ms)
+            const card = cards.get('analysis')
+            if (card) {
+                card.dot.dataset.state = 'done'
+                card.note.textContent = `compared by ${labelOf(state.analyst)} · ${seconds(event.ms)}`
+            }
+            renderAnalysis(event.analysis)
             return
         }
 
         if (event.type === 'answer:delta') {
-            const target = card('answer', 'Answer')
-            target.dot.dataset.state = 'running'
-            target.body.textContent = (target.body.textContent ?? '') + event.text
+            const card = cards.get('answer')
+            if (!card) return
+            card.dot.dataset.state = 'running'
+            answerText += event.text
+            card.body.textContent = answerText
             return
         }
 
         if (event.type === 'done') {
-            card('answer', 'Answer').dot.dataset.state = 'done'
+            const card = cards.get('answer')
+            if (card) {
+                card.dot.dataset.state = 'done'
+                card.note.textContent = `written by ${labelOf(state.analyst)}`
+                card.body.dataset.prose = 'true'
+                card.body.innerHTML = renderMarkdown(answerText || event.answer)
+            }
             const spend =
                 event.summary.meteredCostUsd > 0
-                    ? ` · ${money(event.summary.meteredCostUsd)} metered`
-                    : ' · plan only'
-            status.textContent = `${seconds(event.summary.ms)}${spend} · ${event.summary.outputTokens} out`
+                    ? `${money(event.summary.meteredCostUsd)} metered`
+                    : 'plan only'
+            status.textContent = `${seconds(event.summary.ms)} · ${spend} · ${event.summary.outputTokens} out`
+            renderSeats()
             runId = null
             runButton.textContent = 'Run'
             return
@@ -412,7 +545,11 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
         if (event.type === 'error') {
             status.textContent = ''
-            results.appendChild(el('div', 'eforoi-error', event.message))
+            const card = cards.get('answer')
+            if (card) {
+                card.dot.dataset.state = 'error'
+                card.body.replaceChildren(el('div', 'eforoi-error', event.message))
+            }
             runId = null
             runButton.textContent = 'Run'
         }
@@ -432,7 +569,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
             return
         }
 
-        reset()
+        prepare()
+        answerText = ''
         status.textContent = 'starting…'
         runButton.textContent = 'Cancel'
 
@@ -461,9 +599,9 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         state.panel = state.panel.filter((seat) => known.has(seat.key))
         if (state.analyst && !known.has(state.analyst.key)) state.analyst = null
 
-        if (state.panel.length < MIN_PANEL) {
-            const seeded = seed(catalog)
-            state.panel = seeded.panel
+        if (state.panel.length < MIN_PANEL || !state.analyst) {
+            const seeded = apply(catalog, PRESETS.Diverse)
+            if (state.panel.length < MIN_PANEL) state.panel = seeded.panel
             state.analyst = state.analyst ?? seeded.analyst
         }
 
@@ -474,13 +612,35 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         status.textContent = live.length ? `routes: ${live.join(' ')}` : 'no route available'
     }
 
+    presetButton.addEventListener('click', () => {
+        if (!catalog) return
+        openMenu({
+            anchor: presetButton,
+            filter: 'filter presets',
+            rows: Object.entries(PRESETS).map(([key, preset]) => ({
+                key,
+                label: preset.label,
+                group: 'Seat the whole panel',
+                note: preset.hint.slice(0, 46),
+                direct: true,
+                leaves: [{ label: 'Apply', value: key }]
+            })),
+            onPick: (row) => {
+                const preset = PRESETS[row.key]
+                if (!preset || !catalog) return
+                state = apply(catalog, preset)
+                commit()
+            }
+        })
+    })
+
     addButton.addEventListener('click', () => {
         if (state.panel.length >= MAX_PANEL || !catalog) return
-        const spare = catalog.entries.find(
-            (entry) => usable(entry) && !state.panel.some((seat) => seat.key === entry.key)
-        )
-        const mode = spare ? firstMode(spare) : null
-        if (spare && mode) state.panel.push({ key: spare.key, mode })
+        const taken = state.panel
+            .map((seat) => entryOf(seat.key))
+            .filter((entry): entry is CatalogEntry => entry !== undefined)
+        const seat = toSeat(best(catalog, ANY, taken))
+        if (seat) state.panel.push(seat)
         commit()
     })
 

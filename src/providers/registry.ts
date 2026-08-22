@@ -5,6 +5,7 @@ import { cliRoute } from './cli.js'
 import { readKey, scratch } from './keys.js'
 
 const ANTHROPIC_PAIRS: { alias: string; api: string; label: string }[] = [
+    { alias: 'fable', api: 'claude-fable-5', label: 'Claude Fable 5' },
     { alias: 'opus', api: 'claude-opus-5', label: 'Claude Opus 5' },
     { alias: 'sonnet', api: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
     { alias: 'haiku', api: 'claude-haiku-4-5', label: 'Claude Haiku 4.5' }

@@ -58,9 +58,9 @@ The analysis schema:
 Members are 1-based and match the seat ordinals in the panel, so every claim in the analysis
 traces back to a card the reader can open.
 
-The seat that plays this role is labelled **Apartia** in the panel — απαρτία, the Greek for
-quorum: the count of members that has to be present before a decision carries. The code calls
-it the analyst throughout, which is what it does; Apartia is what it is.
+The seat that plays this role is labelled **Dogma** in the panel — δόγμα, from δοκεῖν, "to
+seem good": in Greek usage the resolution a council arrives at and issues. The code calls it
+the analyst throughout, which is what it does; Dogma is what it produces.
 
 Structured output is not requested through any provider's JSON mode. Three of the five
 routes are CLI agents that have no such parameter, and an analyst whose behaviour changed

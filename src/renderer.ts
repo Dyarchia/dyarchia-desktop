@@ -6,7 +6,7 @@ import { STYLES, STYLE_ID } from './styles.js'
 import type { Analysis, Catalog, CatalogEntry, MemberResult, Mode, RunEvent, Seat } from './types.js'
 
 const ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>'
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.3" r="3.5"/><circle cx="12" cy="4.8" r="2" fill="currentColor" stroke="none"/><circle cx="19.4" cy="17.6" r="2" fill="currentColor" stroke="none"/><circle cx="4.6" cy="17.6" r="2" fill="currentColor" stroke="none"/></svg>'
 
 const COPY_ICON =
     '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>'
@@ -370,7 +370,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             )
         )
         analystSeat.replaceChildren(
-            seatRow(state.analyst, { role: 'apartia' }, (next) => {
+            seatRow(state.analyst, { role: 'dogma' }, (next) => {
                 state.analyst = next
             })
         )

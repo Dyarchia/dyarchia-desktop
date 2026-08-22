@@ -163,10 +163,12 @@ export function openMenu(options: MenuOptions): () => void {
         for (const row of visible) {
             if (row.group !== group) {
                 group = row.group
-                const heading = document.createElement('div')
-                heading.className = 'eforoi-menu-group'
-                heading.textContent = group
-                list.appendChild(heading)
+                if (group) {
+                    const heading = document.createElement('div')
+                    heading.className = 'eforoi-menu-group'
+                    heading.textContent = group
+                    list.appendChild(heading)
+                }
             }
 
             const item = document.createElement('button')

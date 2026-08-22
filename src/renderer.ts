@@ -211,7 +211,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const runButton = el('button', 'eforoi-button', 'Run')
     const addButton = el('button', 'eforoi-button eforoi-icon', '+')
     const removeButton = el('button', 'eforoi-button eforoi-icon', '−')
-    const panelsButton = el('button', 'eforoi-button', 'Panels')
+    const panelsButton = el('button', 'eforoi-button', 'Presets')
     const saveButton = el('button', 'eforoi-button', 'Save')
     const nameInput = el('input', 'eforoi-name')
     const refreshButton = el('button', 'eforoi-button', 'Refresh')
@@ -223,10 +223,10 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
     addButton.title = 'add a panel member'
     removeButton.title = 'remove the last panel member'
-    panelsButton.title = 'load or delete a saved panel'
-    saveButton.title = 'save this panel'
+    panelsButton.title = 'load or delete a saved preset'
+    saveButton.title = 'save this preset'
     nameInput.type = 'text'
-    nameInput.placeholder = 'name this panel, enter to save'
+    nameInput.placeholder = 'name it, enter to save'
     nameInput.spellcheck = false
     nameInput.hidden = true
     refreshButton.title = 'rediscover installed CLIs, plans and API models'
@@ -718,15 +718,13 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const applyPanel = (entry: SavedPanel): void => {
         state = { panel: entry.panel.map((seat) => ({ ...seat })), analyst: entry.analyst }
         commit()
-        status.textContent = `loaded ${entry.name}`
     }
 
     panelsButton.addEventListener('click', () => {
         const saved: MenuRow[] = store.items.map((item) => ({
             key: item.name,
             label: item.name,
-            group: 'Saved panels',
-            note: `${item.panel.length} seats`,
+            group: 'Presets',
             leaves: [
                 { label: 'Load', value: 'load' },
                 { label: 'Delete', value: 'delete' }
@@ -735,14 +733,13 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
         openMenu({
             anchor: panelsButton,
-            filter: 'filter saved panels',
+            filter: 'filter presets',
             rows: [
                 ...saved,
                 {
                     key: '',
-                    label: 'New panel',
-                    group: 'Start over',
-                    note: 'a fresh arrangement, one model per vendor',
+                    label: 'New',
+                    group: '',
                     direct: true,
                     leaves: [{ label: 'New', value: 'new' }]
                 }
@@ -752,7 +749,6 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
                     if (!catalog) return
                     state = defaultPanel(catalog)
                     commit()
-                    status.textContent = 'new panel'
                     return
                 }
                 const entry = store.items.find((item) => item.name === row.key)
@@ -833,7 +829,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         store = raw as PanelStore
         saveButton.title = `save this panel to ${store.path}`
     })
-    void refresh(false)
+    void refresh(true)
     void ctx.invoke('turns', conversation).then((raw) => {
         const state = raw as { turn: number; maxTurns: number }
         if (state?.turn) turnLabel.textContent = `turn ${state.turn}/${state.maxTurns}`

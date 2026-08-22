@@ -57,7 +57,7 @@ member's answers, which is what keeps the panel worth polling. Ten turns per con
 `New` starts over.
 
 
-## Saved panels and effort
+## Presets and effort
 
 A seat is a model, a route, and an effort level. The model button opens the catalogue; the
 route button opens both the route and the effort levels that route actually offers for that
@@ -74,10 +74,10 @@ anthropic   output_config.effort
 openai      reasoning.effort
 ```
 
-`Save` names the current arrangement and keeps it; `Panels` loads or deletes one, and offers
-`New panel` for a fresh arrangement of one model per vendor. Effort is saved with the seat.
+`Save` names the current arrangement; `Presets` loads or deletes one, or starts a new
+arrangement. Effort is saved with the seat.
 
-Saved panels live in a JSON file next to the plugin's other state, outside the repository:
+Presets live in a JSON file next to the plugin's other state, outside the repository:
 
 ```text
 Windows   %APPDATA%\dyarchia\eforoi\panels.json

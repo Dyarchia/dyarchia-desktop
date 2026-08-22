@@ -11,7 +11,7 @@ reasoning underneath it.
 - [2. Conversation](#2-conversation)
 - [3. Routes and adapters](#3-routes-and-adapters)
 - [4. The catalogue is discovered, not declared](#4-the-catalogue-is-discovered-not-declared)
-- [5. Effort and saved panels](#5-effort-and-saved-panels)
+- [5. Effort and presets](#5-effort-and-presets)
 - [6. Web search and fetch](#6-web-search-and-fetch)
 - [7. Isolation from your own configuration](#7-isolation-from-your-own-configuration)
 - [8. What each route costs](#8-what-each-route-costs)
@@ -203,7 +203,7 @@ A fresh panel never seats the same model twice through two routes. A panel of on
 ways agrees with itself, which is the failure mode this whole design exists to avoid.
 
 
-## 5. Effort and saved panels
+## 5. Effort and presets
 
 A seat is three things: a model, a route, and an effort level. Effort turned out to be
 available on every route, with a different spelling on each:
@@ -227,7 +227,7 @@ Haiku 4.5 is given no levels at all, because effort errors on it.
 An effort the selected route does not list is dropped before the call rather than passed and
 rejected, so changing a seat's route cannot silently send a level that route never offered.
 
-Panels are saved by name to a JSON file beside the encrypted key store:
+Presets are saved by name to a JSON file beside the encrypted key store:
 
 ```text
 Windows   %APPDATA%\dyarchia\eforoi\panels.json
@@ -239,6 +239,13 @@ It holds the seats, their routes and their efforts, plus a save timestamp, and i
 by the main process — the renderer never touches the path. Forty entries are kept, newest
 first, and saving under an existing name replaces it. The `Save` tooltip shows the resolved
 path, so the answer to "where is this stored" is in the interface and not only in this file.
+
+The catalogue is fetched fresh every time a panel mounts, not once per session. It used to be
+fetched with whatever the main process had cached, which meant a panel opened before a
+capability was discovered offered less than the plugin could do, silently — the effort levels
+were missing from the menu with nothing to say why. Discovery costs a couple of seconds and
+runs off the render path, which is a cheap price for never having to wonder whether the panel
+is showing you everything.
 
 
 ## 6. Web search and fetch
@@ -352,9 +359,9 @@ invoke      run         start a run, returns a run id
 invoke      cancel      abort a run in flight
 invoke      reset       forget every thread of one conversation
 invoke      turns       how many turns a conversation has spent
-invoke      panels      the saved panels and the path they live at
+invoke      panels      the saved presets and the path they live at
 invoke      savePanel   store the current arrangement under a name
-invoke      deletePanel forget one saved panel
+invoke      deletePanel forget one saved preset
 broadcast   event       every run event, tagged with its run id
 ```
 

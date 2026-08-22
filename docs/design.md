@@ -393,8 +393,13 @@ analysis referred to members 1, 2 and 3. Attribution the reader cannot follow is
 no attribution.
 
 The answer leads because it is the deliverable; the analysis follows because it is the
-evidence; members collapse because they are the raw material. Prose caps at 92ch — a card
-spans the window, but a line of text that spans 1900 pixels is not read, it is scanned.
+evidence; members collapse because they are the raw material.
+
+Line length is governed by the grid rather than by a character cap. An earlier version put a
+`max-width` in characters on every prose block, which left a card spanning the window with its
+text stopping a third of the way across — the width was allocated and then refused. Splitting
+the answer and the analysis into six columns each solved it properly: both fill what they are
+given, and neither line runs the full width of a wide window.
 
 Two details worth keeping in mind for anything else built in this shell:
 

@@ -50,10 +50,11 @@ the model not offered on that route.
 
 ## Conversation
 
-Runs are not one-shot. Each panel member keeps a thread of its own and the analyst — the seat
-the panel labels **Dogma**, δόγμα, the resolution a council issues — keeps its own, so a follow-up like "which of the three you just named is hardest?" works — and no
-member ever sees another member's answers, which is what keeps the panel worth polling.
-Ten turns per conversation; `New` starts over.
+Runs are not one-shot. Each panel member keeps a thread of its own, and so does the analyst —
+the seat the panel labels **Dogma**, δόγμα, the resolution a council issues. So a follow-up
+like "which of the three you just named is hardest?" works, and no member ever sees another
+member's answers, which is what keeps the panel worth polling. Ten turns per conversation;
+`New` starts over.
 
 
 ## Presets
@@ -92,11 +93,12 @@ The orchestration layer runs headless, which is how it is tested:
 
 ```bash
 pnpm probe catalog
-pnpm probe run "anthropic/claude-opus-5@subscription" "openai/gpt-5.6-sol@subscription" "anthropic/claude-opus-5@subscription" "your prompt"
+pnpm probe run "anthropic/claude-opus-5@subscription" "openai/gpt-5.6-sol@subscription" "anthropic/claude-opus-5@subscription" "your prompt || a follow-up that depends on the first"
 ```
 
-The last seat is the analyst. `scripts/electron-stub.mjs` stands in for the two Electron
-APIs the plugin uses, so no window is involved.
+The last seat is the analyst, and `||` splits the prompt into consecutive turns of one
+conversation, which is how the threading is tested. `scripts/electron-stub.mjs` stands in for
+the two Electron APIs the plugin uses, so no window is involved.
 
 
 ## Documentation

@@ -256,12 +256,12 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     panelLegend.append(el('span', 'eforoi-label', 'Panel'), legendActions)
 
     bar.append(
+        runButton,
         refreshButton,
         newButton,
         turnLabel,
         el('span', 'eforoi-spacer'),
-        status,
-        runButton
+        status
     )
 
     const promptColumn = el('div', 'eforoi-column')
@@ -679,10 +679,8 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         }
 
         renderSeats()
-        const live = Object.entries(catalog.routes)
-            .filter(([, value]) => value.available)
-            .map(([id]) => id)
-        status.textContent = live.length ? `routes: ${live.join(' ')}` : 'no route available'
+        const live = Object.values(catalog.routes).filter((route) => route.available)
+        status.textContent = live.length ? '' : 'no route available'
     }
 
     presetButton.addEventListener('click', () => {

@@ -1,4 +1,4 @@
-# dyarchia-ui
+# dyarchia-kanon
 
 Shared CSS for the dyarchia products. Two themes, one typeface and one grammar
 of relief. No dependencies, no build step, no JavaScript.

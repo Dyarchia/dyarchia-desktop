@@ -54,7 +54,7 @@ const STYLES = `
 }
 .player-entry-active {
     color: var(--dya-text);
-    background: var(--dya-surface-2);
+    background: var(--dya-surface-3);
     border-left-color: var(--dya-accent);
 }
 .player-stage {

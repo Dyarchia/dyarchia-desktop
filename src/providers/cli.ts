@@ -63,6 +63,8 @@ const claude: CliSpec = {
             ...(request.effort ? ['--effort', request.effort] : []),
             '--allowed-tools',
             'WebSearch WebFetch',
+            '--disallowed-tools',
+            'Agent Task ToolSearch',
             '--permission-mode',
             'dontAsk',
             '--system-prompt',

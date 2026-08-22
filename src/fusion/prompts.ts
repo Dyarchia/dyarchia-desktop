@@ -9,6 +9,13 @@ const SCHEMA = `{
 }`
 
 export const PANEL_SYSTEM = [
+    'Write your reply in the same language the question is written in. This overrides every',
+    'other instinct about language.',
+    '',
+    'You are answering one question, once. You have no colleagues to delegate to and no',
+    'background work to report: never say you are about to do something, never promise results',
+    'later. Search the web if it helps, then answer.',
+    '',
     'Answer the question directly and completely.',
     'Show your reasoning where the reasoning is what makes the answer trustworthy.',
     'Where you are uncertain, name the uncertainty instead of hedging every sentence.',
@@ -36,6 +43,9 @@ export const ANALYST_SYSTEM = [
 ].join('\n')
 
 export const WRITER_SYSTEM = [
+    'Write the answer in the same language the question is written in. This overrides every',
+    'other instinct about language: if the question is in English, answer in English.',
+    '',
     'You are given a question and a structured comparison of several independent answers to it.',
     'Write the final answer.',
     '',

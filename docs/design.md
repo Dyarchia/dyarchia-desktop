@@ -63,6 +63,12 @@ The seat that plays this role is labelled **Dogma** in the panel — δόγμα,
 seem good": in Greek usage the resolution a council arrives at and issues. The code calls it
 the analyst throughout, which is what it does; Dogma is what it produces.
 
+Both system prompts open with the language rule — write in the language the question is
+written in — because a buried instruction is not an instruction. It sat as the last of eight
+bullets, and Sonnet 5 answered an English question in Italian. The system prompt itself was
+arriving intact: told to answer in French, the same route replies "La capitale de l'Italie est
+Rome." What failed was salience, not plumbing.
+
 Structured output is not requested through any provider's JSON mode. Three of the five
 routes are CLI agents that have no such parameter, and an analyst whose behaviour changed
 with the route would not be comparable across runs. Instead the schema is specified in the
@@ -260,7 +266,7 @@ event streams rather than the prose showed what was really happening:
 ```text
 Route       Before            Now
 ---------   ---------------   ------------------------------------------------
-claude      off               --allowed-tools "WebSearch WebFetch"
+claude      off               --allowed-tools "WebSearch WebFetch", Agent denied
 codex       on, by default    -c tools.web_search=true, stated rather than assumed
 opencode    on, by default    unchanged; --pure only drops external plugins
 anthropic   n/a               web_search + web_fetch server tools, max_uses 4
@@ -269,6 +275,17 @@ openai      n/a               Responses API with the web_search tool
 
 `--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
 plugins; neither touches web search. Both were searching all along.
+
+**An allowlist is not enough on the claude route.** Given a research question, a member
+answered "I've launched a search agent to find the latest information — you'll be notified
+when the results come back", then invented an answer from nothing. Its transcript shows the
+`Agent` tool in use and a subagent transcript written beside it, despite
+`--allowed-tools "WebSearch WebFetch"`. Driving a coding agent as an inference endpoint means
+inheriting its instinct to delegate and to narrate work in progress, and naming what is
+allowed does not by itself deny what is not. `--disallowed-tools "Agent Task ToolSearch"`
+does, and the panel system prompt now says in as many words that the member has nobody to
+delegate to and no later results to promise. The same question afterwards used WebSearch three
+times and answered from what it found.
 
 The Anthropic route picks its tool variant by model: `web_search_20260209` and
 `web_fetch_20260209` on the current family, the older `_20250305` / `_20250910` pair on
@@ -295,6 +312,7 @@ across runs, and neither holds if each one silently inherits an operator's envir
 Route       Flag                                  What it drops
 ---------   -----------------------------------   -------------------------------------
 claude      --safe-mode --setting-sources ""      CLAUDE.md, skills, plugins, hooks, MCP
+claude      --disallowed-tools "Agent Task …"     delegating to subagents
 codex       --ignore-user-config --ignore-rules   config.toml, execpolicy rules
 opencode    --pure                                external plugins
 ```

@@ -5,8 +5,9 @@ typeface, one grammar of relief. This document is the desktop side of that
 contract — what the shell provides, and what a plugin must respect to look like
 it belongs.
 
-The system itself is specified in the `dyarchia-ui` repository. This document
-never restates its values; it says how they reach a plugin.
+The system itself is specified in the `dyarchia-kanon` repository, named
+`dyarchia-ui` until 2026-08-22. This document never restates its values; it says
+how they reach a plugin.
 
 
 ## Index
@@ -24,8 +25,9 @@ never restates its values; it says how they reach a plugin.
 
 ## 1. Where the system lives
 
-`packages/ui` is a vendored copy of `dyarchia-ui`, published to the workspace as
-`@dyarchia/ui`.
+`packages/ui` is a vendored copy of `dyarchia-kanon`, published to the workspace
+as `@dyarchia/ui`. The package name describes its role in this workspace, not
+the product it carries.
 
 ```text
 Path                        What it is
@@ -37,14 +39,26 @@ scripts/sync-ui.mjs         re-copies css/ and fonts/ from the upstream checkout
 ```
 
 `css/` and `fonts/` are never edited here. A change to the system is a change
-upstream followed by:
+upstream, and it reaches the app through the sync:
 
 ```bash
 node scripts/sync-ui.mjs
 ```
 
-The script reads `DYARCHIA_UI` for the upstream checkout and falls back to
-`../dyarchia-ui` next to this repository.
+**The sync runs itself.** `predev`, `prebuild` and `prepackage` invoke it with
+`--if-present`, so `pnpm dev` and `pnpm build` cannot start against a stale
+copy, and a machine without the sibling checkout keeps the vendored files and
+carries on. It prints what it changed, or that the copy already matched.
+
+Vendoring is deliberate: the packaged app and a fresh clone must build with no
+sibling repository present. The cost is drift, and the automatic sync is what
+pays it. Running the script by hand was not enough — a token fix sat unnoticed
+in the app for a day because nobody remembered the step.
+
+The upstream checkout is located by walking up from the repository looking for
+a folder named `dyarchia-kanon`, then `dyarchia-ui`; `DYARCHIA_KANON` overrides,
+with `DYARCHIA_UI` still honoured. CSS is normalised to LF on the way in, so the
+vendored copy does not churn against whatever line endings upstream carries.
 
 
 ## 2. The ambient contract
@@ -114,7 +128,8 @@ Two more that are cheap to get right:
 ```text
 Group     Tokens
 -------   ----------------------------------------------------------------
-Surface   --dya-bg  --dya-surface-1  --dya-surface-2  --dya-surface-inverse
+Surface   --dya-bg  --dya-surface-1  --dya-surface-2  --dya-surface-3
+          --dya-surface-inverse
 Text      --dya-text  --dya-text-2  --dya-text-3  --dya-text-4
 Relief    --dya-elev-raised  --dya-elev-raised-hover  --dya-elev-pressed
           --dya-elev-overlay  --dya-elev-flat

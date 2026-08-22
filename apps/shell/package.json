@@ -6,11 +6,12 @@
     "type": "module",
     "main": "./out/main/index.js",
     "scripts": {
-        "predev": "node ../../scripts/ensure-runtime.mjs",
+        "predev": "node ../../scripts/sync-ui.mjs --if-present && node ../../scripts/ensure-runtime.mjs",
         "dev": "electron-vite dev --watch",
+        "prebuild": "node ../../scripts/sync-ui.mjs --if-present",
         "build": "electron-vite build",
         "start": "electron-vite preview",
-        "prepackage": "node ../../scripts/ensure-runtime.mjs",
+        "prepackage": "node ../../scripts/sync-ui.mjs --if-present && node ../../scripts/ensure-runtime.mjs",
         "package": "electron-vite build && electron-builder --win"
     },
     "dependencies": {

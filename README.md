@@ -12,8 +12,9 @@ own panels — draggable, resizable, and persistent across sessions.
   recompiling to add or remove functionality.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
-- The look is not the shell's: it is the shared dyarchia design system, vendored into
-  packages/ui and linked once. Plugins inherit its tokens and are expected to use them.
+- The look is not the shell's: it is dyarchia-kanon, the shared design system, vendored
+  into packages/ui and linked once. Plugins inherit its tokens and are expected to use
+  them. The vendored copy is re-synced automatically before dev, build and package.
 
 ```mermaid
 flowchart LR
@@ -59,7 +60,7 @@ The pieces:
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes
             install-plugins.mjs  copies plugins to %APPDATA%/dyarchia/plugins
-            sync-ui.mjs          re-copies the design system from the dyarchia-ui checkout
+            sync-ui.mjs          re-copies the design system from the dyarchia-kanon checkout
         docs/
             plugins.md           how to write a plugin
             ui.md                the UI contract: tokens, rules, recipes
@@ -93,7 +94,8 @@ Install plugins for the packaged app:
 node scripts/install-plugins.mjs
 ```
 
-Re-sync the design system after a change upstream in dyarchia-ui:
+Re-sync the design system by hand. predev, prebuild and prepackage already run it, so
+this is only needed to pull a token change into an app that is already running:
 
 ```bash
 node scripts/sync-ui.mjs

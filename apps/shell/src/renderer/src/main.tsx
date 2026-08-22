@@ -1,7 +1,7 @@
 import ReactDOM from 'react-dom/client'
 import { App } from './App'
 import { bootstrapTheme } from './theme'
-import '@dyarchia/ui/css/dyarchia.css'
+import '@dyarchia/kanon/css/dyarchia.css'
 import 'dockview/dist/styles/dockview.css'
 import './styles.css'
 

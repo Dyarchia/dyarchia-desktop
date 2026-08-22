@@ -3,9 +3,9 @@ import { existsSync } from 'node:fs'
 import { dirname, extname, join, relative, resolve } from 'node:path'
 
 const repoRoot = resolve(import.meta.dirname, '..')
-const target = join(repoRoot, 'packages', 'ui')
+const target = join(repoRoot, 'packages', 'kanon')
 const FOLDERS = ['css', 'fonts']
-const CHECKOUT_NAMES = ['dyarchia-kanon', 'dyarchia-ui']
+const CHECKOUT_NAME = 'dyarchia-kanon'
 const optional = process.argv.includes('--if-present')
 
 function isCheckout(path) {
@@ -15,10 +15,8 @@ function isCheckout(path) {
 function findUpwards() {
     let dir = repoRoot
     while (true) {
-        for (const name of CHECKOUT_NAMES) {
-            const candidate = join(dir, name)
-            if (isCheckout(candidate)) return candidate
-        }
+        const candidate = join(dir, CHECKOUT_NAME)
+        if (isCheckout(candidate)) return candidate
         const parent = dirname(dir)
         if (parent === dir) return null
         dir = parent
@@ -26,28 +24,25 @@ function findUpwards() {
 }
 
 function fromEnvironment() {
-    for (const key of ['DYARCHIA_KANON', 'DYARCHIA_UI']) {
-        const value = process.env[key]
-        if (!value) continue
-        const path = resolve(value)
-        if (isCheckout(path)) return path
-        const message = `${key} is set to ${path}, which is not a dyarchia-kanon checkout`
-        if (optional) {
-            console.log(`[sync-ui] ${message} — keeping the vendored copy`)
-            process.exit(0)
-        }
-        console.error(message)
-        process.exit(1)
+    const value = process.env['DYARCHIA_KANON']
+    if (!value) return null
+    const path = resolve(value)
+    if (isCheckout(path)) return path
+    const message = `DYARCHIA_KANON is set to ${path}, which is not a ${CHECKOUT_NAME} checkout`
+    if (optional) {
+        console.log(`[sync-kanon] ${message} — keeping the vendored copy`)
+        process.exit(0)
     }
-    return null
+    console.error(message)
+    process.exit(1)
 }
 
 const source = fromEnvironment() ?? findUpwards()
 
 if (!source) {
-    const message = 'no dyarchia-kanon checkout found; set DYARCHIA_KANON to its path'
+    const message = `no ${CHECKOUT_NAME} checkout found; set DYARCHIA_KANON to its path`
     if (optional) {
-        console.log(`[sync-ui] ${message} — keeping the vendored copy`)
+        console.log(`[sync-kanon] ${message} — keeping the vendored copy`)
         process.exit(0)
     }
     console.error(message)
@@ -92,8 +87,8 @@ for (const folder of FOLDERS) {
 }
 
 if (changed.length === 0) {
-    console.log(`[sync-ui] vendored copy already matches ${source}`)
+    console.log(`[sync-kanon] vendored copy already matches ${source}`)
 } else {
-    console.log(`[sync-ui] synced from ${source}`)
-    for (const line of changed) console.log(`[sync-ui]   ${line}`)
+    console.log(`[sync-kanon] synced from ${source}`)
+    for (const line of changed) console.log(`[sync-kanon]   ${line}`)
 }

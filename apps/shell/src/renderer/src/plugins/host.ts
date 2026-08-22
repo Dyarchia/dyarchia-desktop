@@ -1,4 +1,4 @@
-import { getTheme, onThemeChange, token } from '@dyarchia/ui'
+import { getTheme, onThemeChange, token } from '@dyarchia/kanon'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import type { ThemeApi } from '../panels/registry'

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getTheme, onThemeChange } from '@dyarchia/ui'
-import type { ThemeName } from '@dyarchia/ui'
+import { getTheme, onThemeChange } from '@dyarchia/kanon'
+import type { ThemeName } from '@dyarchia/kanon'
 import { toggleTheme } from '../theme'
 import type { PanelDescriptor } from '../panels/registry'
 

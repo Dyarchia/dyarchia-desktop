@@ -1,4 +1,4 @@
-# @dyarchia/ui
+# @dyarchia/kanon
 
 Vendored copy of the shared dyarchia design system: two themes, one typeface,
 one grammar of relief. No build step, no dependencies.
@@ -21,7 +21,7 @@ plugin never imports CSS from here, it just reads `var(--dya-*)`.
 a `var()` — a canvas, WebGL, or xterm's theme object:
 
 ```typescript
-import { getTheme, onThemeChange, setTheme, token } from '@dyarchia/ui'
+import { getTheme, onThemeChange, setTheme, token } from '@dyarchia/kanon'
 
 const background = token('bg')
 const dispose = onThemeChange(() => repaint())
@@ -36,7 +36,7 @@ Upstream is the `dyarchia-ui` repository. `css/` and `fonts/` are copied
 verbatim and must never be edited here — fix them upstream and re-sync:
 
 ```bash
-node scripts/sync-ui.mjs
+node scripts/sync-kanon.mjs
 ```
 
 The script reads `DYARCHIA_UI` for the upstream checkout, falling back to

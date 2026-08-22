@@ -10,9 +10,9 @@ importers:
 
   apps/shell:
     dependencies:
-      '@dyarchia/ui':
+      '@dyarchia/kanon':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/kanon
       dockview:
         specifier: ^8.0.0
         version: 8.0.0
@@ -53,6 +53,8 @@ importers:
       vite:
         specifier: ^7.3.6
         version: 7.3.6(@types/node@26.2.0)(jiti@2.7.0)
+
+  packages/kanon: {}
 
   packages/plugin-docviewer:
     devDependencies:
@@ -143,8 +145,6 @@ importers:
         version: 5.9.3
 
   packages/sdk: {}
-
-  packages/ui: {}
 
 packages:
 

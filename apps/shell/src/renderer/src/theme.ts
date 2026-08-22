@@ -1,5 +1,5 @@
-import { getTheme, setTheme } from '@dyarchia/ui'
-import type { ThemeName } from '@dyarchia/ui'
+import { getTheme, setTheme } from '@dyarchia/kanon'
+import type { ThemeName } from '@dyarchia/kanon'
 
 const STORAGE_KEY = 'dyarchia:theme'
 

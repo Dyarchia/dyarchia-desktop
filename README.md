@@ -13,7 +13,7 @@ own panels — draggable, resizable, and persistent across sessions.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
 - The look is not the shell's: it is dyarchia-kanon, the shared design system, vendored
-  into packages/ui and linked once. Plugins inherit its tokens and are expected to use
+  into packages/kanon and linked once. Plugins inherit its tokens and are expected to use
   them. The vendored copy is re-synced automatically before dev, build and package.
 
 ```mermaid
@@ -35,7 +35,7 @@ The pieces:
     Piece                       Location                     Responsibility
     -----------------------     -------------------------    ----------------------------------------
     Shell (Electron app)        apps/shell                   window, layout, toggles, persistence
-    Design system               packages/ui                  tokens, fonts, reset, theme helpers
+    Design system               packages/kanon               tokens, fonts, reset, theme helpers
     SDK                         packages/sdk                 TypeScript plugin contract
     Python SDK                  packages/pysdk               Python plugin contract and stdio host
     Discovery + protocol        apps/shell/src/main          manifest scanning, bundle serving
@@ -49,7 +49,7 @@ The pieces:
         apps/
             shell/               Electron app (main, preload, renderer)
         packages/
-            ui/                  @dyarchia/ui - vendored design system and theme helpers
+            kanon/               @dyarchia/kanon - vendored design system and theme helpers
             sdk/                 @dyarchia/sdk - contract types
             pysdk/               dyarchia_sdk - python plugin runtime
             plugin-sample/       minimal reference plugin
@@ -60,7 +60,7 @@ The pieces:
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes
             install-plugins.mjs  copies plugins to %APPDATA%/dyarchia/plugins
-            sync-ui.mjs          re-copies the design system from the dyarchia-kanon checkout
+            sync-kanon.mjs       re-copies the design system from the dyarchia-kanon checkout
         docs/
             plugins.md           how to write a plugin
             ui.md                the UI contract: tokens, rules, recipes
@@ -98,7 +98,7 @@ Re-sync the design system by hand. predev, prebuild and prepackage already run i
 this is only needed to pull a token change into an app that is already running:
 
 ```bash
-node scripts/sync-ui.mjs
+node scripts/sync-kanon.mjs
 ```
 
 There is no test runner, linter or formatter. Type checking is manual, as every tsconfig

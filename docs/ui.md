@@ -5,9 +5,8 @@ typeface, one grammar of relief. This document is the desktop side of that
 contract — what the shell provides, and what a plugin must respect to look like
 it belongs.
 
-The system itself is specified in the `dyarchia-kanon` repository, named
-`dyarchia-ui` until 2026-08-22. This document never restates its values; it says
-how they reach a plugin.
+The system itself is specified in the `dyarchia-kanon` repository. This document
+never restates its values; it says how they reach a plugin.
 
 
 ## Index
@@ -25,24 +24,23 @@ how they reach a plugin.
 
 ## 1. Where the system lives
 
-`packages/ui` is a vendored copy of `dyarchia-kanon`, published to the workspace
-as `@dyarchia/ui`. The package name describes its role in this workspace, not
-the product it carries.
+`packages/kanon` is a vendored copy of `dyarchia-kanon`, published to the
+workspace as `@dyarchia/kanon`.
 
 ```text
-Path                        What it is
--------------------------   -------------------------------------------------
-packages/ui/css/            the stylesheet, copied verbatim from upstream
-packages/ui/fonts/          Geist Sans and Geist Mono variable, 140 KB
-packages/ui/src/index.ts    theme helpers for code that needs literal values
-scripts/sync-ui.mjs         re-copies css/ and fonts/ from the upstream checkout
+Path                          What it is
+---------------------------   -------------------------------------------------
+packages/kanon/css/           the stylesheet, copied verbatim from upstream
+packages/kanon/fonts/         Geist Sans and Geist Mono variable, 140 KB
+packages/kanon/src/index.ts   theme helpers for code that needs literal values
+scripts/sync-kanon.mjs        re-copies css/ and fonts/ from the upstream checkout
 ```
 
 `css/` and `fonts/` are never edited here. A change to the system is a change
 upstream, and it reaches the app through the sync:
 
 ```bash
-node scripts/sync-ui.mjs
+node scripts/sync-kanon.mjs
 ```
 
 **The sync runs itself.** `predev`, `prebuild` and `prepackage` invoke it with
@@ -52,13 +50,13 @@ carries on. It prints what it changed, or that the copy already matched.
 
 Vendoring is deliberate: the packaged app and a fresh clone must build with no
 sibling repository present. The cost is drift, and the automatic sync is what
-pays it. Running the script by hand was not enough — a token fix sat unnoticed
-in the app for a day because nobody remembered the step.
+pays it. A manual step in a two-repo flow is a step that gets skipped, so it is
+not a manual step.
 
-The upstream checkout is located by walking up from the repository looking for
-a folder named `dyarchia-kanon`, then `dyarchia-ui`; `DYARCHIA_KANON` overrides,
-with `DYARCHIA_UI` still honoured. CSS is normalised to LF on the way in, so the
-vendored copy does not churn against whatever line endings upstream carries.
+The upstream checkout is found by walking up from the repository looking for a
+`dyarchia-kanon` folder; `DYARCHIA_KANON` overrides. CSS is normalised to LF on
+the way in, so the vendored copy does not churn against whatever line endings
+upstream carries.
 
 
 ## 2. The ambient contract
@@ -69,7 +67,7 @@ render into that same document, so:
 
 - **Tokens are ambient.** Every `--dya-*` custom property is already resolvable
   from any node a plugin creates. A plugin never imports CSS from
-  `@dyarchia/ui` and never ships fonts.
+  `@dyarchia/kanon` and never ships fonts.
 - **The reset already applied.** `box-sizing`, margin zeroing, focus ring,
   scrollbars and the reduced-motion block are in force before the plugin runs.
 - **The theme is an attribute on the root**, `data-dya-theme`. The shell owns
@@ -78,7 +76,7 @@ render into that same document, so:
 
 ```mermaid
 flowchart TD
-    A[main.tsx imports @dyarchia/ui/css/dyarchia.css] --> B[tokens on :root]
+    A[main.tsx imports @dyarchia/kanon/css/dyarchia.css] --> B[tokens on :root]
     B --> C[bootstrapTheme sets data-dya-theme]
     C --> D[shell chrome and dockview read var --dya-*]
     C --> E[plugin activate]
@@ -193,7 +191,7 @@ token lands at 1.1:1 on white. Any plugin that draws text outside the DOM owes
 the same check.
 
 Plugins built outside this workspace need no dependency for any of it:
-`ctx.theme` is passed in by the shell. `@dyarchia/ui` exports the same three
+`ctx.theme` is passed in by the shell. `@dyarchia/kanon` exports the same three
 operations for code that runs before a context exists, such as the shell itself.
 
 
@@ -296,9 +294,9 @@ Token               Use
 --shell-control     side of a square top bar control
 ```
 
-No colour lives here. The status hues that used to be shell-local are upstream
-now as `--dya-danger`, `--dya-success` and `--dya-warning`, so a red in a plugin
-and a red in the web product are the same red.
+No colour lives here. Status is `--dya-danger`, `--dya-success` and
+`--dya-warning`, upstream like everything else, so a red in a plugin and a red
+in the web product are the same red.
 
 The `--dya-` namespace belongs upstream. A plugin that needs a colour the system
 does not have declares it under its own prefix and says so in its README, or
@@ -332,13 +330,9 @@ Before a panel is considered done:
   it. xterm's `minimumContrastRatio` is set to 4.5 as the backstop, which lifts
   any foreground the palette cannot reach. A plugin that renders text it does
   not control needs an equivalent guard.
-- **The dark ramp has a narrow middle.** `--dya-text-3` was raised upstream to
-  `#8b8e93` so the third level clears AA at 12px, which is the size this app
-  writes at. It costs separation: `--dya-text-2` and `--dya-text-3` now sit 1.30
-  apart instead of 2.11, so the second and third levels take a moment to tell
-  apart. Whether `--dya-text-2` moves up to reopen the gap is undecided
-  upstream. `--dya-text-4` stays out of text entirely — at 2.20:1 it is
-  decorative.
+- **`--dya-text-4` is not text.** At 2.20:1 against `--dya-surface-1` in dark it
+  is decorative and nothing readable may use it. The three levels above it all
+  clear AA at 12px, which is the size this app writes at.
 - **The two themes have opposite neutral temperature** — warm in light, cold in
   dark. Switching reads as a change of temperature, not only of luminance.
   Upstream is still deciding whether to unify.

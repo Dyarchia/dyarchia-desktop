@@ -407,10 +407,24 @@ Two details worth keeping in mind for anything else built in this shell:
   can still serve the previous renderer bundle. Reload ignoring cache after every install,
   or spend an hour convinced your changes are not compiling.
 
-The writer's output is rendered through a small markdown subset — paragraphs, headings,
-lists, bold, inline code. Models reach for markdown whether or not you ask them to, and
-rendering it is less work than fighting it. The streaming path stays plain text and the
-markup is applied once, on completion.
+Every model returns markdown whether or not you ask it to, so every prose card renders it
+through a small subset — paragraphs, headings, lists, bold, inline code. Member cards used to
+show the source instead, asterisks and all; they now render like the answer. The streaming
+path stays plain text and the markup is applied once, on completion.
+
+```text
+Card       Model returns      Displayed as          Copy button yields
+--------   ----------------   -------------------   ------------------------
+Answer     markdown           rendered prose        the markdown source
+Member     markdown           rendered prose        the markdown source
+Analysis   JSON               structured sections   a plain-text outline
+```
+
+Every card carries a copy button in its header. It copies the source rather than the render,
+because that is what survives being pasted somewhere else — except the analysis, which has no
+source worth pasting, so it yields the outline as text with the member tags kept as bare
+numbers. The button sits beside the collapse toggle rather than inside it: a button nested in
+a button is invalid, so the header is a row holding two of them.
 
 
 ## 12. Deliberate omissions

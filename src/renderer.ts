@@ -8,6 +8,12 @@ import type { Analysis, Catalog, CatalogEntry, MemberResult, Mode, RunEvent, Sea
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/></svg>'
 
+const COPY_ICON =
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>'
+
+const DONE_ICON =
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>'
+
 const SEATS_KEY = 'eforoi:seats'
 const LATENCY_KEY = 'eforoi:latency'
 const MIN_PANEL = 2
@@ -29,6 +35,7 @@ interface Card {
     note: HTMLElement
     body: HTMLElement
     chevron: HTMLElement
+    raw: string
     open(next: boolean): void
 }
 
@@ -114,6 +121,21 @@ function write(key: string, value: unknown): void {
         localStorage.setItem(key, JSON.stringify(value))
     } catch {
         /* a full quota is not worth failing a run over */
+    }
+}
+
+async function toClipboard(text: string): Promise<void> {
+    try {
+        await navigator.clipboard.writeText(text)
+        return
+    } catch {
+        const holder = document.createElement('textarea')
+        holder.value = text
+        holder.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
+        document.body.appendChild(holder)
+        holder.select()
+        document.execCommand('copy')
+        holder.remove()
     }
 }
 
@@ -366,13 +388,19 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         const wrapper = el('div', 'eforoi-card')
         wrapper.dataset.role = role
 
-        const header = el('button', 'eforoi-card-head')
+        const header = el('div', 'eforoi-card-head')
+        const toggle = el('button', 'eforoi-card-toggle')
         const chevron = el('span', 'eforoi-chevron', expanded ? '▾' : '▸')
         const dot = el('span', 'eforoi-dot')
         const label = el('span', 'eforoi-card-title', title)
         const note = el('span', 'eforoi-card-note')
+        const copy = el('button', 'eforoi-copy')
         const body = el('div', 'eforoi-body')
+
         body.hidden = !expanded
+        copy.innerHTML = COPY_ICON
+        copy.title = 'copy to the clipboard'
+        copy.setAttribute('aria-label', 'copy')
 
         const card: Card = {
             root: wrapper,
@@ -381,14 +409,30 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             note,
             body,
             chevron,
+            raw: '',
             open(next) {
                 body.hidden = !next
                 chevron.textContent = next ? '▾' : '▸'
             }
         }
 
-        header.append(chevron, dot, label, note)
-        header.addEventListener('click', () => card.open(body.hidden))
+        copy.addEventListener('click', (event) => {
+            event.stopPropagation()
+            const text = card.raw || card.body.innerText
+            if (!text.trim()) return
+            void toClipboard(text).then(() => {
+                copy.innerHTML = DONE_ICON
+                copy.dataset.done = 'true'
+                window.setTimeout(() => {
+                    copy.innerHTML = COPY_ICON
+                    delete copy.dataset.done
+                }, 1200)
+            })
+        })
+
+        toggle.append(chevron, dot, label, note)
+        toggle.addEventListener('click', () => card.open(body.hidden))
+        header.append(toggle, copy)
         wrapper.append(header, body)
         grid.appendChild(wrapper)
         cards.set(id, card)
@@ -426,12 +470,19 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         card.body.replaceChildren()
         card.body.dataset.structured = 'true'
 
+        const plain: string[] = []
+
         const escape = (text: string): string =>
             text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         const tag = (label: string): string => `<span class="eforoi-tag">${label}</span>`
 
         const section = (heading: string, items: string[]): void => {
             if (!items.length) return
+            plain.push(
+                heading.toUpperCase(),
+                ...items.map((item) => `- ${item.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}`),
+                ''
+            )
             const block = el('div', 'eforoi-section')
             block.appendChild(el('h4', undefined, heading))
             const list = el('ul')
@@ -472,7 +523,10 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             const block = el('div', 'eforoi-section')
             block.appendChild(el('h4', undefined, 'Nothing separated them'))
             card.body.appendChild(block)
+            plain.push('Nothing separated them')
         }
+
+        card.raw = plain.join('\n').trim()
     }
 
     const memberNote = (result: MemberResult): string => {
@@ -510,9 +564,12 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             card.dot.dataset.state = event.result.error ? 'error' : 'done'
             card.note.textContent = event.result.error ?? memberNote(event.result)
             if (event.result.error) {
+                card.raw = event.result.error
                 card.body.replaceChildren(el('div', 'eforoi-error', event.result.error))
             } else {
-                if (!card.body.textContent) card.body.textContent = event.result.text
+                card.raw = event.result.text
+                card.body.dataset.prose = 'true'
+                card.body.innerHTML = renderMarkdown(event.result.text)
                 remember(event.result.seat.key, event.result.ms)
             }
             return
@@ -542,8 +599,9 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             if (card) {
                 card.dot.dataset.state = 'done'
                 card.note.textContent = `written by ${labelOf(state.analyst)}`
+                card.raw = answerText || event.answer
                 card.body.dataset.prose = 'true'
-                card.body.innerHTML = renderMarkdown(answerText || event.answer)
+                card.body.innerHTML = renderMarkdown(card.raw)
             }
             const spend =
                 event.summary.meteredCostUsd > 0

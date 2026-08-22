@@ -211,19 +211,47 @@ export const STYLES = `
 .eforoi-card-head {
     display: flex;
     align-items: center;
+    gap: 4px;
+    padding-right: 6px;
+}
+
+.eforoi-card-head:hover { background: var(--e-surface-2); }
+
+.eforoi-card-toggle {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
     gap: 8px;
-    padding: 6px 10px;
+    padding: 6px 4px 6px 10px;
     cursor: pointer;
     user-select: none;
     background: transparent;
     border: none;
-    width: 100%;
     color: inherit;
     font: inherit;
     text-align: left;
 }
 
-.eforoi-card-head:hover { background: var(--e-surface-2); }
+.eforoi-copy {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: var(--e-radius);
+    background: transparent;
+    color: var(--e-text-3);
+    cursor: pointer;
+    transition: transform var(--dya-dur-press, 90ms) var(--dya-ease-press, ease);
+}
+
+.eforoi-copy:hover { background: var(--e-surface-2); color: var(--e-text); }
+.eforoi-copy:active { transform: translateY(1px); }
+.eforoi-copy[data-done='true'] { color: var(--e-success); }
 
 .eforoi-chevron {
     flex: none;

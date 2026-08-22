@@ -299,7 +299,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     output/<group>/<name>.jsonl     no                Run output for a grouped target
     output/watch-<name>.log         no                One line per sweep of that task
     output/watch-<name>.week        no                The last ISO week that task swept
-    storage/                        no                Crawlee's own working directory
+    storage/run-<pid>/              no                Crawlee's working directory, one per run
 
 `data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has
 nothing to record. Remove the entry from `.gitignore` to keep a dated history instead.

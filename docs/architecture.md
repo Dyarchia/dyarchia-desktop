@@ -35,7 +35,7 @@ rewriting; both landed in the engine and both are now available to every target.
     urls                    Suffix rewriting, snapshot path derivation      nothing
     patterns                URL matching for link following                 nothing
     registry                Discovery of YAML and Python profiles           profiles, sites
-    runtime                 Resetting Crawlee state between runs            nothing
+    runtime                 Crawlee state and working directory per run    nothing
     recon                   Target reconnaissance for the inspect command   extraction
     watch                   Sweeping every tracked target unattended        registry, engine
     inventory               Reading a manifest back as a per-section        config,
@@ -236,7 +236,17 @@ Crawlee caches storage instances, and the locks guarding them, in a process-glob
 Those locks bind to the event loop that created them, so a second run in the same process fails.
 `runtime.reset_storage_state` is called when a run starts, which makes the engine usable from a test
 suite or a scheduler and not only from a CLI that exits afterwards. It also implies runs are
-sequential; concurrent crawls in one process were never safe under a global service locator.
+sequential within a process; concurrent crawls in one process were never safe under a global service
+locator.
+
+Two processes are the other half of that, and the half that does not announce itself. Crawlee keeps
+its request queue on disk under one directory for the whole checkout, so a crawl started while
+another is running takes requests from the other's queue and hands over its own. Neither run errors,
+neither reports anything unusual, and both write a corpus: one of them holding pages that belong to
+somebody else's target while its own are recorded as removed. `runtime.use_private_storage` names
+that directory after the process, which makes the collision impossible rather than unlikely. It was
+written after a ten-page test crawl of one site emptied 236 pages out of another site's corpus and
+left ten of its own behind.
 
 ## 8. Running unattended
 

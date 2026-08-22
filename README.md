@@ -170,27 +170,42 @@ files untouched.
 Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
 lives on the machine that crawls it; the package ships `claude-docs` under `src/crawlee_lab/sites/`
 as the worked example, and `docs/profiles.md` documents the format. The nine this toolkit was built
-against:
+against, in the group `docs-labs`:
 
     Profile                Target                       Pages
     -------------------    -------------------------    -----
-    claude-docs            claude.com/docs                184
-    claude-code-docs       code.claude.com, English       168
-    claude-code-docs-es    code.claude.com, Spanish       150
-    claude-api-docs        platform.claude.com, English   563
-    claude-api-docs-es     platform.claude.com, Spanish   203
-    openai-docs            developers.openai.com          532
-    chatgpt-docs           learn.chatgpt.com, Codex       246
+    claude-docs            claude.com/docs                187
+    claude-code-docs       code.claude.com, English       170
+    claude-code-docs-es    code.claude.com, Spanish       149
+    claude-api-docs        platform.claude.com, English   581
+    claude-api-docs-es     platform.claude.com, Spanish   206
+    openai-docs            developers.openai.com          538
+    chatgpt-docs           learn.chatgpt.com, Codex       248
     gemini-docs            ai.google.dev, HTML            219
-    xai-docs               docs.x.ai, Grok                157
+    xai-docs               docs.x.ai, Grok                158
 
 All but one fetch the markdown variant the site publishes, so the snapshot is the document rather
 than an extractor's reading of it. `ai.google.dev` publishes none, so `gemini-docs` is extracted
 from HTML instead. Page counts are from the last run of each.
 
-All nine declare `group: docs-labs`, so they share `data/docs-labs/`, `output/docs-labs/` and one
-weekly round. A corpus on another subject gets its own group, and with it its own folder and its
-own schedule, rather than joining this one by having asked for snapshots.
+A second group, `salesforce-ai`, tracks what Salesforce publishes about Agentforce and Data 360:
+
+    Profile                Target                             Pages
+    -------------------    -------------------------------    -----
+    agentforce-docs        Agentforce, MCP, Lightning Types     448
+    data-cloud-docs        Data 360, English                  4,033
+    einstein-apis          Einstein Vision, Language, Bots       85
+
+`developer.salesforce.com` announces an `llms.txt` in its robots.txt and publishes a markdown twin
+of every documentation page, indexed per product. Its sitemaps name pages as `.html` and the twin
+lives at `.md`, which is why `fetch_suffix` replaces a page extension rather than only appending
+one. The set of twins matches the set of sitemap entries exactly, so nothing is sampled or guessed;
+the exception was sixteen localised copies of one guide that publish no markdown, and they are
+excluded by locale.
+
+Each group is a folder and a round: its profiles share `data/<group>/`, `output/<group>/` and one
+weekly sweep. A corpus on another subject gets its own group, and with it its own folder and its
+own schedule, rather than joining an existing one by having asked for snapshots.
 
 ## Running unattended
 

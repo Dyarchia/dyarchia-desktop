@@ -9,6 +9,7 @@ from urllib.parse import urlparse, urlunparse
 _UNSAFE_SEGMENT = re.compile(r'[^A-Za-z0-9._-]+')
 _REPEATED_SLASHES = re.compile(r'/{2,}')
 _RESERVED_STEMS = frozenset({'', '.', '..'})
+_PAGE_EXTENSIONS = ('.html', '.htm')
 INDEX_STEM = 'index'
 CANONICAL_URL_KEY = 'canonical_url'
 
@@ -37,6 +38,12 @@ def suffix_candidates(url: str, suffix: str | None) -> list[str]:
     The order matters only for how many 404s a run spends finding out. A trailing slash that the
     site itself redirects away is a hint that the unslashed form is canonical, so that one goes
     first.
+
+    A URL that already names a page file is the other disagreement. developer.salesforce.com lists
+    `guide/get-started.html` in its sitemap and serves the markdown at `guide/get-started.md`, so
+    the extension is replaced rather than appended: appending would ask for `get-started.html.md`,
+    which no publisher serves. The appended form is still offered second, because a site that keeps
+    `page.html.md` costs one 404 to find out and nothing else.
     """
     if not suffix:
         return [url]
@@ -54,6 +61,9 @@ def suffix_candidates(url: str, suffix: str | None) -> list[str]:
         return [at(f'{path}{INDEX_STEM}{suffix}')]
     if path.endswith('/'):
         return [at(f'{path[:-1]}{suffix}'), at(f'{path}{INDEX_STEM}{suffix}')]
+    for extension in _PAGE_EXTENSIONS:
+        if path.endswith(extension):
+            return [at(f'{path[: -len(extension)]}{suffix}'), at(f'{path}{suffix}')]
     return [at(f'{path}{suffix}'), at(f'{path}/{INDEX_STEM}{suffix}')]
 
 

@@ -81,7 +81,16 @@ Sources. At least one of `start_urls` or `sitemap_urls` is required.
     description     string          none       Shown when listing profiles
     start_urls      list            empty      URLs the crawl begins from
     sitemap_urls    list            empty      Sitemaps to seed requests from
-    fetch_suffix    string          none       Appended to each URL path before fetching
+    fetch_suffix    string          none       The markdown twin of a page: appended to the path,
+                                               or swapped for an extension the path already has
+
+`fetch_suffix` asks for the variant of a page rather than the page. Where it goes depends on the
+publisher, so more than one place is tried and the fetch decides: `page` is looked for at `page.md`
+and then at `page/index.md`, and `page.html` at `page.md` first, because a site that names the
+extension is saying the twin replaces it rather than follows it. developer.salesforce.com lists
+`guide/get-started.html` in its sitemap and serves `guide/get-started.md`; asking for
+`get-started.html.md` would find nothing there. The manifest still records the page by the URL the
+sitemap gave, so a corpus points at pages that exist.
 
 A group is a folder and a round in one. `group: docs-labs` puts this target's snapshots under
 `data/docs-labs/<name>/` and its output under `output/docs-labs/<name>.jsonl`, and makes it part of

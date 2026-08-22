@@ -113,3 +113,26 @@ def test_a_clean_url_is_returned_untouched() -> None:
 
 def test_the_scheme_keeps_its_own_slashes() -> None:
     assert collapse_slashes('https://site.example/a//b?q=x//y') == 'https://site.example/a/b?q=x//y'
+
+
+def test_a_page_that_names_its_extension_swaps_it_for_the_suffix() -> None:
+    """developer.salesforce.com lists guide/get-started.html and serves guide/get-started.md."""
+    page = 'https://developer.salesforce.com/docs/ai/agentforce/guide/get-started.html'
+
+    assert suffix_candidates(page, '.md') == [
+        'https://developer.salesforce.com/docs/ai/agentforce/guide/get-started.md',
+        'https://developer.salesforce.com/docs/ai/agentforce/guide/get-started.html.md',
+    ]
+
+
+def test_the_appended_form_is_still_offered_second() -> None:
+    """Swapping is the better guess, not the only one, so a site that appends still resolves."""
+    assert apply_suffix('https://site.example/docs/intro.htm', '.md') == 'https://site.example/docs/intro.md'
+
+
+def test_an_extensionless_page_is_untouched_by_the_swap() -> None:
+    """The nine corpora already tracked have no extension anywhere, and must keep behaving alike."""
+    assert suffix_candidates(PAGE, '.md') == [
+        'https://site.example/docs/intro.md',
+        'https://site.example/docs/intro/index.md',
+    ]

@@ -194,6 +194,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const root = el('div', 'eforoi')
     const head = el('div', 'eforoi-head')
     const results = el('div', 'eforoi-results')
+    const grid = el('div', 'eforoi-grid')
+    results.appendChild(grid)
     root.append(head, results)
     container.appendChild(root)
 
@@ -302,31 +304,31 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
         if (lead.role) {
             row.dataset.role = 'analyst'
-            row.append(el('span', 'eforoi-role', lead.role))
+            row.append(el('span', 'eforoi-role eforoi-cell', lead.role))
         } else {
-            row.append(el('span', 'eforoi-ordinal', lead.ordinal ?? ''))
+            row.append(el('span', 'eforoi-ordinal eforoi-cell', lead.ordinal ?? ''))
         }
 
-        const model = el('button', 'eforoi-pick eforoi-model', labelOf(seat))
+        const model = el('button', 'eforoi-pick eforoi-model eforoi-cell', labelOf(seat))
         model.dataset.empty = String(!seat)
         model.addEventListener('click', () => pickSeat(model, seat, set))
 
-        const mode = el('button', 'eforoi-pick eforoi-mode')
+        const mode = el('button', 'eforoi-pick eforoi-mode eforoi-cell')
         mode.textContent = seat ? `${seat.mode === 'api' ? 'API' : 'Subscription'} ›` : '—'
         mode.dataset.empty = String(!seat)
         mode.dataset.broken = String(Boolean(seat) && !offer?.available)
         if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
         mode.addEventListener('click', () => pickSeat(mode, seat, set))
 
-        row.append(model, mode)
+        const route = el('span', 'eforoi-route eforoi-cell', offer?.available ? offer.route : '')
 
-        if (offer?.available) row.append(el('span', 'eforoi-route', offer.route))
+        const tierCell = el('span', 'eforoi-cell')
         const tier = seat ? tierOf(seat.key) : undefined
-        if (tier) row.append(el('span', 'eforoi-tier', tier))
-        if (seat && latency[seat.key]) {
-            row.append(el('span', 'eforoi-route', `~${seconds(latency[seat.key])}`))
-        }
+        if (tier) tierCell.append(el('span', 'eforoi-tier', tier))
 
+        const elapsed = seat && latency[seat.key] ? `~${seconds(latency[seat.key])}` : ''
+
+        row.append(model, mode, route, tierCell, el('span', 'eforoi-route eforoi-cell', elapsed))
         return row
     }
 
@@ -377,14 +379,14 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         header.append(chevron, dot, label, note)
         header.addEventListener('click', () => card.open(body.hidden))
         wrapper.append(header, body)
-        results.appendChild(wrapper)
+        grid.appendChild(wrapper)
         cards.set(id, card)
         return card
     }
 
     const prepare = (): void => {
         cards.clear()
-        results.replaceChildren()
+        grid.replaceChildren()
 
         const analyst = labelOf(state.analyst)
         const answer = makeCard('answer', 'Answer', 'answer', true)
@@ -549,6 +551,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
             if (card) {
                 card.dot.dataset.state = 'error'
                 card.body.replaceChildren(el('div', 'eforoi-error', event.message))
+            } else {
+                grid.appendChild(el('div', 'eforoi-error', event.message))
             }
             runId = null
             runButton.textContent = 'Run'

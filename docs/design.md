@@ -263,9 +263,21 @@ never fills and never carries text, and `box-shadow` never appears in a transiti
 
 ## 9. Reading order and the shape of the panel
 
-The panel splits into a fixed head and a scrolling result region. The head is two columns:
-the prompt on the left, the seats and the preset control on the right. Results run the full
-width underneath.
+The panel is laid out on a twelve-column grid so that nothing is allocated width it does not
+use.
+
+```text
+Zone         Split                             Fills
+----------   -------------------------------   ----------------------------------
+head         prompt 5/12, panel 7/12           both reach the right edge
+seat row     64 / 1fr / 124 / 76 / 46 / 54px   columns line up across rows
+results      answer 6/12, analysis 6/12        text spans its assigned column
+members      12/12 below                       collapsed strips
+```
+
+The grid is a container query grid, not a media query one: a panel docked narrow inside a
+wide window collapses to a single column, which is what its own width calls for and what the
+window's width would get wrong.
 
 Cards are created up front, in a fixed order, the moment a run starts — answer, analysis,
 then one per member in seat order. An earlier version created each card when its first token
@@ -279,10 +291,14 @@ spans the window, but a line of text that spans 1900 pixels is not read, it is s
 
 Two details worth keeping in mind for anything else built in this shell:
 
-- **`overflow: hidden` inside a column flex container is a trap.** Cards clip their corners
-  with `overflow: hidden`, which per the flexbox spec sets their automatic minimum size to
-  zero. Once the results outgrew the region, every collapsed card was squashed from 31px to
-  15px and read as a row of stray horizontal lines. `flex: none` on the card is the fix.
+- **`overflow: hidden` on a card is a trap, and it bites twice.** Clipping the corners makes
+  the card a scroll container, which sets its automatic minimum size to zero. Inside a column
+  flex container that squashed every collapsed card from 31px to 15px, so they read as a row
+  of stray horizontal lines. Converted to a grid, the same rule let a 510px analysis card sit
+  in a 416px row and overlap the cards beneath it. Neither is fixed by patching the card: the
+  fix is to stop asking one element to both scroll and lay out. The scroll container now holds
+  a grid child, so the grid's height is indefinite, rows size to content, and the container
+  scrolls.
 - **The `dyarchia-plugin://` protocol response is cached, and the main module is only read
   at startup.** Reinstalling a build and restarting the shell updates the main module but
   can still serve the previous renderer bundle. Reload ignoring cache after every install,

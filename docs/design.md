@@ -341,14 +341,38 @@ fixed overhead rather than work.
 ```text
 Route          Context prefix   Notional cost   Actually billed
 ------------   --------------   -------------   ----------------------
-claude -p      ~47,400 tokens   $0.29           plan quota
-codex exec     ~15,600 tokens   not reported    plan quota
-opencode run   ~8,100 tokens    $0.025          plan quota
+claude -p         1,348 tokens   $0.0025        plan quota
+codex exec      ~15,600 tokens   not reported   plan quota
+opencode run     ~8,100 tokens   $0.025         plan quota
 ```
 
-Driving an agent CLI as an inference endpoint means paying for the agent's system prompt and
-tool definitions on every call. Replacing the system prompt with `--system-prompt` barely
-moves it (47,473 against 48,631): the weight is the tools, not the prose.
+Driving an agent CLI as an inference endpoint means paying for whatever it puts in front of
+your prompt, and on the claude route that started at roughly 48,600 tokens a call. Replacing
+the system prompt with `--system-prompt` barely dented it — 47,473 against 48,631 — because
+the weight is tool definitions, not prose.
+
+Denying the tools is what removes them. `--allowed-tools` governs what may be *executed*;
+a denied tool is dropped from the context altogether, and the difference is not marginal:
+
+```text
+Denied on the claude route                    Prefix   Cost per call
+-------------------------------------------   ------   -------------
+nothing (allowed-tools alone)                 48,600   $0.2900
+Agent, Task, ToolSearch                       36,819   $0.0098
+the whole editing and orchestration surface    1,348   $0.0025
+```
+
+Thirty-six times less context for the same answer. It matters beyond the arithmetic: a member
+carrying thirty-two tool definitions behaves like the agent those tools belong to, which is
+how one came to announce it had delegated the question to a subagent. With the surface denied
+it reports exactly two tools, WebSearch and WebFetch, and answers.
+
+What cannot be removed is the identity. Asked directly, a member still says it is "a Claude
+agent, built on Anthropic's Claude Agent SDK" — `--system-prompt` replaces the instructions
+layered on top, not the harness underneath. A Subscription seat is therefore the model inside
+its CLI, not the bare model; the API route is the bare model. They are close enough to compare
+and not identical, and that is worth knowing before reading too much into a disagreement
+between the same model on two routes.
 
 On a subscription this is quota rather than money, which is why a Subscription seat shows
 `plan` where an API seat shows a figure. The notional cost is still displayed when the route

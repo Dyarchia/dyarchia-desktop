@@ -18,6 +18,42 @@ const CLAUDE_MODELS: ModelInfo[] = [
 
 const KEY_VARS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'OPENAI_API_KEY']
 
+const CLAUDE_DENY = [
+    'Agent',
+    'Artifact',
+    'Bash',
+    'CronCreate',
+    'CronDelete',
+    'CronList',
+    'DesignSync',
+    'Edit',
+    'EnterWorktree',
+    'ExitWorktree',
+    'Glob',
+    'Grep',
+    'ListAgents',
+    'Monitor',
+    'NotebookEdit',
+    'PowerShell',
+    'PushNotification',
+    'Read',
+    'RemoteTrigger',
+    'ReportFindings',
+    'ScheduleWakeup',
+    'SendMessage',
+    'Skill',
+    'Task',
+    'TaskCreate',
+    'TaskGet',
+    'TaskList',
+    'TaskOutput',
+    'TaskStop',
+    'TaskUpdate',
+    'ToolSearch',
+    'Workflow',
+    'Write'
+].join(' ')
+
 interface Sink {
     delta(text: string): void
     replace(id: string, text: string): void
@@ -64,7 +100,7 @@ const claude: CliSpec = {
             '--allowed-tools',
             'WebSearch WebFetch',
             '--disallowed-tools',
-            'Agent Task ToolSearch',
+            CLAUDE_DENY,
             '--permission-mode',
             'dontAsk',
             '--system-prompt',

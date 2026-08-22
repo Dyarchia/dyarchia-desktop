@@ -32,12 +32,14 @@ depend on this package.
 
 ## Provenance and sync
 
-Upstream is the `dyarchia-ui` repository. `css/` and `fonts/` are copied
+Upstream is the `dyarchia-kanon` repository. `css/` and `fonts/` are copied
 verbatim and must never be edited here — fix them upstream and re-sync:
 
 ```bash
 node scripts/sync-kanon.mjs
 ```
 
-The script reads `DYARCHIA_UI` for the upstream checkout, falling back to
-`../dyarchia-ui` next to this repository.
+`predev`, `prebuild` and `prepackage` already run it, so this is only needed to
+refresh an app that is already running. The upstream checkout is found by
+walking up from the repository looking for a `dyarchia-kanon` folder;
+`DYARCHIA_KANON` overrides.

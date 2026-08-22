@@ -1,8 +1,9 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const userData = mkdtempSync(join(tmpdir(), 'eforoi-'))
+const userData = join(tmpdir(), 'eforoi-probe')
+mkdirSync(userData, { recursive: true })
 
 export const app = { getPath: () => userData }
 

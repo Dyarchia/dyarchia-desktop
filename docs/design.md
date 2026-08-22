@@ -99,10 +99,29 @@ Claude Code carries a ~47k token prefix per call; resuming its session means pay
 read rather than cache write for it. A measured second turn cost $0.0376 against $0.0493 for
 the first.
 
-Two consequences worth knowing. Codex cannot resume a session it never wrote, so
-`--ephemeral` is used only on the first turn of a thread; sessions do reach disk. And a
-thread is keyed by seat index plus model and mode, so changing a seat's model mid-conversation
-starts that seat afresh rather than handing a claude session id to codex.
+Two consequences worth knowing.
+
+**Sessions reach disk, in each CLI's own store.** `--ephemeral` was dropped from the codex
+invocation entirely, because it suppresses the very session file `exec resume` needs. So a
+panel turn leaves state where that CLI normally keeps it:
+
+```text
+Route       Written to                                Shows up in
+---------   ---------------------------------------   -------------------------
+codex       ~/.codex/sessions/<date>/rollout-*.jsonl   codex resume
+claude      ~/.claude/projects/<scratch-slug>/         claude --resume
+opencode    ~/.local/share/opencode/storage            opencode session
+```
+
+Claude's are at least segregated: sessions are keyed by working directory and every member
+runs in the plugin's own scratch directory, so they land under one obviously-named project.
+Codex offers no equivalent — `CODEX_HOME` would move the sessions but `auth.json` lives there
+too, so redirecting it would break the subscription login that Subscription mode exists to
+use. Panel turns are therefore visible in the operator's own codex history, and that is the
+price of native resume.
+
+**A thread is keyed by seat index plus model and mode**, so changing a seat's model
+mid-conversation starts that seat afresh rather than handing a claude session id to codex.
 
 Conversations are capped at ten turns. On the eleventh the run is refused with a message
 rather than silently dropping the oldest exchange: with CLI session resume the history lives
@@ -228,9 +247,11 @@ Route       Flag                                  What it drops
 ---------   -----------------------------------   -------------------------------------
 claude      --safe-mode --setting-sources ""      CLAUDE.md, skills, plugins, hooks, MCP
 codex       --ignore-user-config --ignore-rules   config.toml, execpolicy rules
-codex       --ephemeral                           session files on disk
 opencode    --pure                                external plugins
 ```
+
+Session files are the one thing deliberately *not* dropped — conversation depends on them.
+See [2. Conversation](#2-conversation) for where each CLI writes them.
 
 `--safe-mode` is the right instrument because it keeps authentication working. The adjacent
 `--bare` also strips context but forces API-key auth, which would silently move a

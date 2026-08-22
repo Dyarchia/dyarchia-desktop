@@ -3,8 +3,9 @@ import { runFusion } from './fusion/run.js'
 import type { RunEvents, Threads } from './fusion/run.js'
 import { keyOrigin, writeKey } from './providers/keys.js'
 import type { KeyName } from './providers/keys.js'
+import { deletePanel, panels, savePanel } from './providers/panels.js'
 import { catalog, invalidate } from './providers/registry.js'
-import type { KeyState, RunConfig, RunEvent } from './types.js'
+import type { KeyState, RunConfig, RunEvent, SavedPanel } from './types.js'
 
 const MIN_PANEL = 2
 const MAX_PANEL = 5
@@ -49,6 +50,15 @@ export function activate(ctx: PluginMainContext): void {
         invalidate()
         return true
     })
+
+    ctx.handle('panels', () => panels())
+
+    ctx.handle('savePanel', (raw) => {
+        const entry = raw as Omit<SavedPanel, 'saved'>
+        return savePanel({ ...entry, saved: new Date().toISOString() })
+    })
+
+    ctx.handle('deletePanel', (name) => deletePanel(String(name)))
 
     ctx.handle('reset', (id) => {
         conversations.delete(String(id))

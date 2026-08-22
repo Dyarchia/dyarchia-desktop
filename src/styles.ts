@@ -92,6 +92,24 @@ export const STYLES = `
     gap: 6px;
 }
 
+.eforoi-name {
+    flex: 1;
+    min-width: 0;
+    max-width: 260px;
+    height: 24px;
+    padding: 0 8px;
+    border: none;
+    border-radius: var(--e-radius);
+    background: var(--e-bg);
+    box-shadow: var(--e-pressed);
+    color: var(--e-text);
+    font-family: var(--e-mono);
+    font-size: 11px;
+}
+
+.eforoi-name:focus { outline: 2px solid var(--e-accent-soft); outline-offset: 1px; }
+.eforoi-name[hidden] { display: none; }
+
 .eforoi-prompt {
     width: 100%;
     flex: 1;

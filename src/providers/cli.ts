@@ -3,14 +3,17 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { RouteId, Usage } from '../types.js'
-import type { CompletionRequest, CompletionResult, Route, RouteStatus } from './adapter.js'
+import type { CompletionRequest, CompletionResult, ModelInfo, Route, RouteStatus } from './adapter.js'
 import { which } from './which.js'
 
-const CLAUDE_MODELS = [
-    { id: 'fable', label: 'Claude Fable 5' },
-    { id: 'opus', label: 'Claude Opus 5' },
-    { id: 'sonnet', label: 'Claude Sonnet 5' },
-    { id: 'haiku', label: 'Claude Haiku 4.5' }
+const CLAUDE_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
+const OPENCODE_EFFORTS = ['minimal', 'low', 'medium', 'high', 'max']
+
+const CLAUDE_MODELS: ModelInfo[] = [
+    { id: 'fable', label: 'Claude Fable 5', efforts: CLAUDE_EFFORTS },
+    { id: 'opus', label: 'Claude Opus 5', efforts: CLAUDE_EFFORTS },
+    { id: 'sonnet', label: 'Claude Sonnet 5', efforts: CLAUDE_EFFORTS },
+    { id: 'haiku', label: 'Claude Haiku 4.5', efforts: [] }
 ]
 
 const KEY_VARS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'OPENAI_API_KEY']
@@ -57,6 +60,7 @@ const claude: CliSpec = {
             '--verbose',
             '--model',
             request.model,
+            ...(request.effort ? ['--effort', request.effort] : []),
             '--allowed-tools',
             'WebSearch WebFetch',
             '--permission-mode',
@@ -99,6 +103,7 @@ const codex: CliSpec = {
             '--ignore-rules',
             '-c',
             'tools.web_search=true',
+            ...(request.effort ? ['-c', `model_reasoning_effort=${request.effort}`] : []),
             '-m',
             request.model,
             '-'
@@ -143,6 +148,7 @@ const opencode: CliSpec = {
             request.model,
             '--dir',
             scratch,
+            ...(request.effort ? ['--variant', request.effort] : []),
             ...(request.session ? ['-s', request.session] : [])
         ]
     },
@@ -269,7 +275,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     return { text, usage, ms: Date.now() - started, session }
 }
 
-async function codexModels(): Promise<{ id: string; label: string }[]> {
+async function codexModels(): Promise<ModelInfo[]> {
     try {
         const raw = await readFile(join(homedir(), '.codex', 'models_cache.json'), 'utf-8')
         const parsed = asRecord(JSON.parse(raw))
@@ -278,34 +284,45 @@ async function codexModels(): Promise<{ id: string; label: string }[]> {
             .map((entry) => asRecord(entry))
             .map((entry) => ({
                 id: String(entry.slug ?? ''),
-                label: String(entry.display_name ?? entry.slug ?? '')
+                label: String(entry.display_name ?? entry.slug ?? ''),
+                efforts: (Array.isArray(entry.supported_reasoning_levels)
+                    ? entry.supported_reasoning_levels
+                    : []
+                )
+                    .map((level) => String(asRecord(level).effort ?? ''))
+                    .filter(Boolean)
             }))
             .filter((entry) => entry.id.startsWith('gpt-'))
     } catch {
         return [
-            { id: 'gpt-5.5', label: 'gpt-5.5' },
-            { id: 'gpt-5.4', label: 'gpt-5.4' }
+            { id: 'gpt-5.5', label: 'gpt-5.5', efforts: [] },
+            { id: 'gpt-5.4', label: 'gpt-5.4', efforts: [] }
         ]
     }
 }
 
-async function opencodeModels(bin: string): Promise<{ id: string; label: string }[]> {
-    const stdout = await new Promise<string>((resolve) => {
+async function opencodeListing(bin: string): Promise<string | null> {
+    return new Promise<string | null>((resolve) => {
         const child = spawn(bin, ['models'], { env: childEnv(), windowsHide: true })
         let out = ''
         child.stdout.setEncoding('utf-8')
         child.stdout.on('data', (chunk: string) => {
             out += chunk
         })
-        child.on('error', () => resolve(''))
-        child.on('close', () => resolve(out))
+        child.on('error', () => resolve(null))
+        child.on('close', (code) => resolve(code === 0 && out.trim() ? out : null))
     })
+}
+
+async function opencodeModels(bin: string): Promise<ModelInfo[]> {
+    const stdout = (await opencodeListing(bin)) ?? (await opencodeListing(bin))
+    if (!stdout) throw new Error('opencode models returned nothing')
 
     return stdout
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line.includes('/') && !line.includes(' '))
-        .map((id) => ({ id, label: id.split('/').slice(1).join('/') }))
+        .map((id) => ({ id, label: id.split('/').slice(1).join('/'), efforts: OPENCODE_EFFORTS }))
 }
 
 export function cliRoute(id: 'claude' | 'codex' | 'opencode', scratch: () => Promise<string>): Route {

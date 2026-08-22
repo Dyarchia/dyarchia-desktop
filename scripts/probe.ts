@@ -6,8 +6,12 @@ import type { RunConfig, Seat } from '../src/types.js'
 const [, , command, ...rest] = process.argv
 
 function parseSeat(raw: string): Seat {
-    const [key, mode] = raw.split('@')
-    return { key, mode: mode === 'api' ? 'api' : 'subscription' }
+    const [key, mode, effort] = raw.split('@')
+    return {
+        key,
+        mode: mode === 'api' ? 'api' : 'subscription',
+        ...(effort ? { effort } : {})
+    }
 }
 
 if (command === 'catalog') {

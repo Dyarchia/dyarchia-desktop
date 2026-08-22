@@ -57,20 +57,35 @@ member's answers, which is what keeps the panel worth polling. Ten turns per con
 `New` starts over.
 
 
-## Presets
+## Saved panels and effort
 
-The panel can be seated one model at a time, or in one click:
+A seat is a model, a route, and an effort level. The model button opens the catalogue; the
+route button opens both the route and the effort levels that route actually offers for that
+model — codex publishes them per model, so `gpt-5.6-sol` shows an `ultra` that `gpt-5.5` does
+not.
 
 ```text
-Preset     Panel                                        Analyst
---------   ------------------------------------------   ------------------
-Frontier   the strongest available, capability first    the strongest
-Diverse    one model per vendor, for real disagreement   the strongest
-Budget     the light tiers                              the light tier
+Route       Effort reaches the model as
+---------   ---------------------------------------
+claude      --effort <level>
+codex       -c model_reasoning_effort=<level>
+opencode    --variant <level>
+anthropic   output_config.effort
+openai      reasoning.effort
 ```
 
-Presets resolve against whatever is actually installed and signed in, so they name an intent
-rather than a fixed list of models.
+`Save` names the current arrangement and keeps it; `Panels` loads or deletes one, and offers
+`New panel` for a fresh arrangement of one model per vendor. Effort is saved with the seat.
+
+Saved panels live in a JSON file next to the plugin's other state, outside the repository:
+
+```text
+Windows   %APPDATA%\dyarchia\eforoi\panels.json
+macOS     ~/Library/Application Support/dyarchia/eforoi/panels.json
+Linux     ~/.config/dyarchia/eforoi/panels.json
+```
+
+The `Save` button's tooltip shows the resolved path on the machine it is running on.
 
 
 ## Install

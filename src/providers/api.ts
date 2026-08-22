@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 import type { Usage } from '../types.js'
-import type { CompletionRequest, CompletionResult, Route, RouteStatus } from './adapter.js'
+import type { CompletionRequest, CompletionResult, ModelInfo, Route, RouteStatus } from './adapter.js'
 
 interface Price {
     input: number
@@ -43,6 +43,11 @@ function cost(table: Record<string, Price>, model: string, usage: Usage): number
 
 const MAX_WEB_USES = 4
 const LEGACY_TOOLS = /haiku|-4-5/
+type AnthropicEffort = NonNullable<Anthropic.Messages.OutputConfig['effort']>
+type OpenAIEffort = NonNullable<OpenAI.ReasoningEffort>
+
+const ANTHROPIC_EFFORTS: AnthropicEffort[] = ['low', 'medium', 'high', 'xhigh', 'max']
+const OPENAI_EFFORTS: OpenAIEffort[] = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max']
 
 function anthropicTools(model: string): Anthropic.ToolUnion[] {
     const legacy = LEGACY_TOOLS.test(model)
@@ -88,6 +93,9 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
                 max_tokens: request.maxTokens,
                 system: request.system,
                 tools: anthropicTools(request.model),
+                ...(request.effort
+                    ? { output_config: { effort: request.effort as AnthropicEffort } }
+                    : {}),
                 messages
             },
             { signal: request.signal }
@@ -131,6 +139,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
             ],
             max_output_tokens: request.maxTokens,
             tools: [{ type: 'web_search' }],
+            ...(request.effort ? { reasoning: { effort: request.effort as OpenAIEffort } } : {}),
             stream: true
         },
         { signal: request.signal }
@@ -179,9 +188,21 @@ export function anthropicRoute(key: () => Promise<string | null>): Route {
             if (!apiKey) return []
             try {
                 const page = await new Anthropic({ apiKey }).models.list({ limit: 50 })
-                return page.data.map((model) => ({ id: model.id, label: model.display_name ?? model.id }))
+                return page.data.map(
+                    (model): ModelInfo => ({
+                        id: model.id,
+                        label: model.display_name ?? model.id,
+                        efforts: LEGACY_TOOLS.test(model.id) ? [] : ANTHROPIC_EFFORTS
+                    })
+                )
             } catch {
-                return Object.keys(ANTHROPIC_PRICES).map((id) => ({ id, label: id }))
+                return Object.keys(ANTHROPIC_PRICES).map(
+                    (id): ModelInfo => ({
+                        id,
+                        label: id,
+                        efforts: LEGACY_TOOLS.test(id) ? [] : ANTHROPIC_EFFORTS
+                    })
+                )
             }
         },
         async complete(request) {
@@ -208,7 +229,7 @@ export function openaiRoute(key: () => Promise<string | null>): Route {
                     .map((model) => model.id)
                     .filter((id) => id.startsWith('gpt-') || id.startsWith('o'))
                     .sort()
-                    .map((id) => ({ id, label: id }))
+                    .map((id): ModelInfo => ({ id, label: id, efforts: OPENAI_EFFORTS }))
             } catch {
                 return []
             }

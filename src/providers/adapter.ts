@@ -15,6 +15,7 @@ export interface CompletionRequest {
     signal: AbortSignal
     history: Turn[]
     session: string | null
+    effort: string | null
     onDelta(text: string): void
 }
 
@@ -23,6 +24,12 @@ export interface CompletionResult {
     usage: Usage
     ms: number
     session: string | null
+}
+
+export interface ModelInfo {
+    id: string
+    label: string
+    efforts?: string[]
 }
 
 export interface RouteStatus {
@@ -34,7 +41,7 @@ export interface Route {
     id: RouteId
     label: string
     status(): Promise<RouteStatus>
-    models(): Promise<{ id: string; label: string }[]>
+    models(): Promise<ModelInfo[]>
     complete(request: CompletionRequest): Promise<CompletionResult>
 }
 

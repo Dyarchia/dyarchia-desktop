@@ -3,7 +3,17 @@ import { renderMarkdown } from './markdown.js'
 import { openMenu } from './menu.js'
 import type { MenuLeaf, MenuRow } from './menu.js'
 import { STYLES, STYLE_ID } from './styles.js'
-import type { Analysis, Catalog, CatalogEntry, MemberResult, Mode, RunEvent, Seat } from './types.js'
+import type {
+    Analysis,
+    Catalog,
+    CatalogEntry,
+    MemberResult,
+    Mode,
+    PanelStore,
+    RunEvent,
+    SavedPanel,
+    Seat
+} from './types.js'
 
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.3" r="3.5"/><circle cx="12" cy="4.8" r="2" fill="currentColor" stroke="none"/><circle cx="19.4" cy="17.6" r="2" fill="currentColor" stroke="none"/><circle cx="4.6" cy="17.6" r="2" fill="currentColor" stroke="none"/></svg>'
@@ -41,43 +51,11 @@ interface Card {
 
 type Family = (entry: CatalogEntry) => boolean
 
-interface Preset {
-    label: string
-    hint: string
-    panel: { family: Family; cheap?: boolean }[]
-    analyst: { family: Family; cheap?: boolean }
-}
-
 const ANTHROPIC: Family = (entry) => entry.group === 'Anthropic'
 const OPENAI: Family = (entry) => entry.group === 'OpenAI'
-const OPENCODE: Family = (entry) => entry.group.startsWith('opencode')
-const OPENCODE_NATIVE: Family = (entry) => OPENCODE(entry) && !entry.key.includes('/gpt-')
+const OPENCODE_NATIVE: Family = (entry) =>
+    entry.group.startsWith('opencode') && !entry.key.includes('/gpt-')
 const ANY: Family = () => true
-
-const PRESETS: Record<string, Preset> = {
-    Frontier: {
-        label: 'Frontier',
-        hint: 'the strongest models available, capability over variety',
-        panel: [{ family: ANTHROPIC }, { family: OPENAI }, { family: ANTHROPIC }],
-        analyst: { family: ANTHROPIC }
-    },
-    Diverse: {
-        label: 'Diverse',
-        hint: 'one model per vendor, so the analyst has real disagreement to compare',
-        panel: [{ family: ANTHROPIC }, { family: OPENAI }, { family: OPENCODE_NATIVE }],
-        analyst: { family: ANTHROPIC }
-    },
-    Budget: {
-        label: 'Budget',
-        hint: 'the light tiers, for questions that do not need the frontier',
-        panel: [
-            { family: ANTHROPIC, cheap: true },
-            { family: OPENAI, cheap: true },
-            { family: OPENCODE, cheap: true }
-        ],
-        analyst: { family: ANTHROPIC, cheap: true }
-    }
-}
 
 function el<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -186,13 +164,11 @@ function toSeat(entry: CatalogEntry | null): Seat | null {
     return entry && mode ? { key: entry.key, mode } : null
 }
 
-function apply(catalog: Catalog, preset: Preset): Stored {
+function defaultPanel(catalog: Catalog): Stored {
     const chosen: CatalogEntry[] = []
-
-    for (const slot of preset.panel) {
-        const pick =
-            best(catalog, slot.family, chosen, slot.cheap === true) ??
-            best(catalog, ANY, chosen, slot.cheap === true)
+    for (const family of [ANTHROPIC, OPENAI, OPENCODE_NATIVE, ANY]) {
+        if (chosen.length >= 3) break
+        const pick = best(catalog, family, chosen)
         if (pick) chosen.push(pick)
     }
 
@@ -202,14 +178,11 @@ function apply(catalog: Catalog, preset: Preset): Stored {
         chosen.push(spare)
     }
 
-    const analyst =
-        best(catalog, preset.analyst.family, [], preset.analyst.cheap === true) ??
-        best(catalog, ANY, [], preset.analyst.cheap === true)
+    const picks = chosen
+        .map(toSeat)
+        .filter((seat): seat is Seat => seat !== null)
 
-    return {
-        panel: chosen.map(toSeat).filter((seat): seat is Seat => seat !== null),
-        analyst: toSeat(analyst)
-    }
+    return { panel: picks, analyst: picks[0] ?? null }
 }
 
 function mount(ctx: PluginContext, container: HTMLElement, conversation: string): () => void {
@@ -224,6 +197,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     let catalog: Catalog | null = null
     let state: Stored = read<Stored>(SEATS_KEY, { panel: [], analyst: null })
     let latency = read<Record<string, number>>(LATENCY_KEY, {})
+    let store: PanelStore = { path: '', items: [] }
     let runId: string | null = null
     let answerText = ''
 
@@ -237,7 +211,9 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const runButton = el('button', 'eforoi-button', 'Run')
     const addButton = el('button', 'eforoi-button eforoi-icon', '+')
     const removeButton = el('button', 'eforoi-button eforoi-icon', '−')
-    const presetButton = el('button', 'eforoi-button', 'Preset')
+    const panelsButton = el('button', 'eforoi-button', 'Panels')
+    const saveButton = el('button', 'eforoi-button', 'Save')
+    const nameInput = el('input', 'eforoi-name')
     const refreshButton = el('button', 'eforoi-button', 'Refresh')
     const newButton = el('button', 'eforoi-button', 'New')
     const turnLabel = el('span', 'eforoi-meta')
@@ -247,12 +223,17 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
     addButton.title = 'add a panel member'
     removeButton.title = 'remove the last panel member'
-    presetButton.title = 'seat the whole panel at once'
+    panelsButton.title = 'load or delete a saved panel'
+    saveButton.title = 'save this panel'
+    nameInput.type = 'text'
+    nameInput.placeholder = 'name this panel, enter to save'
+    nameInput.spellcheck = false
+    nameInput.hidden = true
     refreshButton.title = 'rediscover installed CLIs, plans and API models'
 
     const panelLegend = el('div', 'eforoi-legend')
     const legendActions = el('div', 'eforoi-legend-actions')
-    legendActions.append(presetButton, addButton, removeButton)
+    legendActions.append(panelsButton, saveButton, addButton, removeButton, nameInput)
     panelLegend.append(el('span', 'eforoi-label', 'Panel'), legendActions)
 
     bar.append(
@@ -323,6 +304,53 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         })
     }
 
+    const pickMode = (anchor: HTMLElement, seat: Seat | null, set: (next: Seat) => void): void => {
+        const entry = seat ? entryOf(seat.key) : undefined
+        if (!seat || !entry) return
+
+        const current = entry.modes.find((mode) => mode.mode === seat.mode)
+        const modeRows: MenuRow[] = entry.modes.map((mode) => ({
+            key: `mode:${mode.mode}`,
+            label: mode.mode === 'subscription' ? 'Subscription' : 'API',
+            group: 'Route',
+            selected: mode.mode === seat.mode,
+            note: mode.available ? mode.route : undefined,
+            direct: true,
+            leaves: [
+                {
+                    label: 'Use',
+                    value: `mode:${mode.mode}`,
+                    disabled: !mode.available,
+                    reason: mode.reason
+                }
+            ]
+        }))
+
+        const effortRows: MenuRow[] = ['', ...(current?.efforts ?? [])].map((level) => ({
+            key: `effort:${level}`,
+            label: level || 'default',
+            group: 'Effort',
+            selected: (seat.effort ?? '') === level,
+            direct: true,
+            leaves: [{ label: 'Use', value: `effort:${level}` }]
+        }))
+
+        openMenu({
+            anchor,
+            rows: [...modeRows, ...(effortRows.length > 1 ? effortRows : [])],
+            filter: 'filter',
+            onPick: (_row, leaf) => {
+                const [kind, value] = leaf.value.split(':')
+                if (kind === 'mode') {
+                    set({ ...seat, mode: value as Mode })
+                } else {
+                    set({ ...seat, effort: value || undefined })
+                }
+                commit()
+            }
+        })
+    }
+
     const seatRow = (
         seat: Seat | null,
         lead: { ordinal?: string; role?: string },
@@ -343,11 +371,15 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         model.addEventListener('click', () => pickSeat(model, seat, set))
 
         const mode = el('button', 'eforoi-pick eforoi-mode eforoi-cell')
-        mode.textContent = seat ? `${seat.mode === 'api' ? 'API' : 'Subscription'} ›` : '—'
+        const modeName = seat?.mode === 'api' ? 'API' : 'Subscription'
+        mode.textContent = seat ? `${modeName}${seat.effort ? ` · ${seat.effort}` : ''} ›` : '—'
         mode.dataset.empty = String(!seat)
         mode.dataset.broken = String(Boolean(seat) && !offer?.available)
         if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
-        mode.addEventListener('click', () => pickSeat(mode, seat, set))
+        mode.addEventListener('click', () => {
+            if (seat) pickMode(mode, seat, set)
+            else pickSeat(mode, seat, set)
+        })
 
         const route = el('span', 'eforoi-route eforoi-cell', offer?.available ? offer.route : '')
 
@@ -673,7 +705,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         if (state.analyst && !known.has(state.analyst.key)) state.analyst = null
 
         if (state.panel.length < MIN_PANEL || !state.analyst) {
-            const seeded = apply(catalog, PRESETS.Diverse)
+            const seeded = defaultPanel(catalog)
             if (state.panel.length < MIN_PANEL) state.panel = seeded.panel
             state.analyst = state.analyst ?? seeded.analyst
         }
@@ -683,26 +715,85 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         status.textContent = live.length ? '' : 'no route available'
     }
 
-    presetButton.addEventListener('click', () => {
-        if (!catalog) return
+    const applyPanel = (entry: SavedPanel): void => {
+        state = { panel: entry.panel.map((seat) => ({ ...seat })), analyst: entry.analyst }
+        commit()
+        status.textContent = `loaded ${entry.name}`
+    }
+
+    panelsButton.addEventListener('click', () => {
+        const saved: MenuRow[] = store.items.map((item) => ({
+            key: item.name,
+            label: item.name,
+            group: 'Saved panels',
+            note: `${item.panel.length} seats`,
+            leaves: [
+                { label: 'Load', value: 'load' },
+                { label: 'Delete', value: 'delete' }
+            ]
+        }))
+
         openMenu({
-            anchor: presetButton,
-            filter: 'filter presets',
-            rows: Object.entries(PRESETS).map(([key, preset]) => ({
-                key,
-                label: preset.label,
-                group: 'Seat the whole panel',
-                note: preset.hint.slice(0, 46),
-                direct: true,
-                leaves: [{ label: 'Apply', value: key }]
-            })),
-            onPick: (row) => {
-                const preset = PRESETS[row.key]
-                if (!preset || !catalog) return
-                state = apply(catalog, preset)
-                commit()
+            anchor: panelsButton,
+            filter: 'filter saved panels',
+            rows: [
+                ...saved,
+                {
+                    key: '',
+                    label: 'New panel',
+                    group: 'Start over',
+                    note: 'a fresh arrangement, one model per vendor',
+                    direct: true,
+                    leaves: [{ label: 'New', value: 'new' }]
+                }
+            ],
+            onPick: (row, leaf) => {
+                if (leaf.value === 'new') {
+                    if (!catalog) return
+                    state = defaultPanel(catalog)
+                    commit()
+                    status.textContent = 'new panel'
+                    return
+                }
+                const entry = store.items.find((item) => item.name === row.key)
+                if (!entry) return
+                if (leaf.value === 'load') {
+                    applyPanel(entry)
+                    return
+                }
+                void ctx.invoke('deletePanel', entry.name).then((raw) => {
+                    store = raw as PanelStore
+                    status.textContent = `deleted ${entry.name}`
+                })
             }
         })
+    })
+
+    const commitName = (): void => {
+        const name = nameInput.value.trim()
+        nameInput.hidden = true
+        if (!name) return
+        void ctx
+            .invoke('savePanel', { name, panel: state.panel, analyst: state.analyst })
+            .then((raw) => {
+                store = raw as PanelStore
+                status.textContent = `saved ${name}`
+            })
+            .catch((error: unknown) => {
+                status.textContent = error instanceof Error ? error.message : String(error)
+            })
+    }
+
+    saveButton.addEventListener('click', () => {
+        nameInput.hidden = !nameInput.hidden
+        if (nameInput.hidden) return
+        nameInput.value = ''
+        nameInput.focus()
+    })
+
+    nameInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') commitName()
+        if (event.key === 'Escape') nameInput.hidden = true
     })
 
     addButton.addEventListener('click', () => {
@@ -738,6 +829,10 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     })
 
     const unsubscribe = ctx.on('event', onEvent)
+    void ctx.invoke('panels').then((raw) => {
+        store = raw as PanelStore
+        saveButton.title = `save this panel to ${store.path}`
+    })
     void refresh(false)
     void ctx.invoke('turns', conversation).then((raw) => {
         const state = raw as { turn: number; maxTurns: number }

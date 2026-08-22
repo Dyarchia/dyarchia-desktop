@@ -11,14 +11,15 @@ reasoning underneath it.
 - [2. Conversation](#2-conversation)
 - [3. Routes and adapters](#3-routes-and-adapters)
 - [4. The catalogue is discovered, not declared](#4-the-catalogue-is-discovered-not-declared)
-- [5. Web search and fetch](#5-web-search-and-fetch)
-- [6. Isolation from your own configuration](#6-isolation-from-your-own-configuration)
-- [7. What each route costs](#7-what-each-route-costs)
-- [8. The IPC contract](#8-the-ipc-contract)
-- [9. The nested menu](#9-the-nested-menu)
-- [10. Styling without a dependency](#10-styling-without-a-dependency)
-- [11. Reading order and the shape of the panel](#11-reading-order-and-the-shape-of-the-panel)
-- [12. Deliberate omissions](#12-deliberate-omissions)
+- [5. Effort and saved panels](#5-effort-and-saved-panels)
+- [6. Web search and fetch](#6-web-search-and-fetch)
+- [7. Isolation from your own configuration](#7-isolation-from-your-own-configuration)
+- [8. What each route costs](#8-what-each-route-costs)
+- [9. The IPC contract](#9-the-ipc-contract)
+- [10. The nested menu](#10-the-nested-menu)
+- [11. Styling without a dependency](#11-styling-without-a-dependency)
+- [12. Reading order and the shape of the panel](#12-reading-order-and-the-shape-of-the-panel)
+- [13. Deliberate omissions](#13-deliberate-omissions)
 
 
 ## 1. The pipeline
@@ -180,14 +181,14 @@ A model that exists on both a CLI and an API becomes one catalogue entry with tw
 Anthropic needs an explicit pairing because the CLI takes aliases (`opus`) and the API takes
 identifiers (`claude-opus-5`); OpenAI pairs on the identifier directly.
 
-Catalogue order is provenance order, and it carries a `rank` that the presets use to pick
-seats. This matters more than it sounds. Two scoring schemes were tried and thrown away
-before the current one:
+Catalogue order is provenance order, and it carries a `rank` used to seat a fresh panel. This
+matters more than it sounds. Two scoring schemes were tried and thrown away before the current
+one:
 
 - Parsing version numbers out of model names ranked "Claude Haiku 4.5" above "Claude Opus 5",
   because the latter has no decimal point.
 - Treating "the name announces a lesser tier" as the definition of cheap, then inverting it
-  for the budget preset, seated **Claude Fable 5** — the most expensive model on offer —
+  as a way to pick cheap seats, seated **Claude Fable 5** — the most expensive model on offer —
   because Haiku's name contains none of `mini`, `flash` or `free`, so nothing in the family
   matched and rank 0 won by default.
 
@@ -195,15 +196,52 @@ Vendors already order their own models best first; Codex's cache opens with the 
 its latest frontier model. So rank carries the ordering, and only two regexes adjust it:
 `EXCLUDE` removes pools that should never be auto-seated (`free`, `preview`, `contributor`,
 and `reserve`, which is a fallback model rather than a cheap one), and `LIGHT` marks the
-small tiers. A preset asking for capability walks rank forwards and skips `LIGHT`; a preset
-asking for economy walks rank backwards and prefers it. Budget therefore lands on Haiku 4.5
-even though nothing in its name says so.
+small tiers. Seating for capability walks rank forwards and skips `LIGHT`; seating for economy
+walks rank backwards and prefers it.
 
-No preset seats the same model twice through two routes. A panel of one model reached three
+A fresh panel never seats the same model twice through two routes. A panel of one model reached three
 ways agrees with itself, which is the failure mode this whole design exists to avoid.
 
 
-## 5. Web search and fetch
+## 5. Effort and saved panels
+
+A seat is three things: a model, a route, and an effort level. Effort turned out to be
+available on every route, with a different spelling on each:
+
+```text
+Route       Passed as                            Levels come from
+---------   ----------------------------------   -------------------------------------
+claude      --effort <level>                     the CLI's own list, five levels
+codex       -c model_reasoning_effort=<level>    models_cache.json, per model
+opencode    --variant <level>                    provider-specific, a common set
+anthropic   output_config.effort                 the SDK's own union type
+openai      reasoning.effort                     the SDK's own union type
+```
+
+Levels are discovered rather than assumed wherever a source exists. Codex publishes
+`supported_reasoning_levels` per model, so `gpt-5.6-sol` offers an `ultra` that `gpt-5.5` does
+not, and the menu shows exactly that. Both SDKs export the effort union as a type, which
+caught a guess: the OpenAI set is `minimal` through `max`, not the three levels first written.
+Haiku 4.5 is given no levels at all, because effort errors on it.
+
+An effort the selected route does not list is dropped before the call rather than passed and
+rejected, so changing a seat's route cannot silently send a level that route never offered.
+
+Panels are saved by name to a JSON file beside the encrypted key store:
+
+```text
+Windows   %APPDATA%\dyarchia\eforoi\panels.json
+macOS     ~/Library/Application Support/dyarchia/eforoi/panels.json
+Linux     ~/.config/dyarchia/eforoi/panels.json
+```
+
+It holds the seats, their routes and their efforts, plus a save timestamp, and it is written
+by the main process — the renderer never touches the path. Forty entries are kept, newest
+first, and saving under an existing name replaces it. The `Save` tooltip shows the resolved
+path, so the answer to "where is this stored" is in the interface and not only in this file.
+
+
+## 6. Web search and fetch
 
 Every member and the analyst can search and fetch, always, with no toggle. This mirrors
 Fusion, where the panel answers with both tools enabled and the analyst gets them too.
@@ -236,7 +274,7 @@ they will search, land on different pages, and return different answers — that
 is data, and it is exactly what the comparison stage is for.
 
 
-## 6. Isolation from your own configuration
+## 7. Isolation from your own configuration
 
 A CLI agent invoked as an inference endpoint still loads everything it normally loads: your
 memory files, your skills, your MCP servers, your hooks. The first working run of this
@@ -270,7 +308,7 @@ The isolation is measurable, not just theoretical: it cut Claude Code's context 
 roughly halved the notional cost of a one-word reply.
 
 
-## 7. What each route costs
+## 8. What each route costs
 
 Measured with a prompt that asks for a single word, so the numbers are almost entirely
 fixed overhead rather than work.
@@ -300,7 +338,7 @@ in; OpenAI's are left empty on purpose, because a wrong price displayed with con
 worse than no price. An empty table yields token counts and no dollar figure.
 
 
-## 8. The IPC contract
+## 9. The IPC contract
 
 Channel names are short; the shell prefixes them with `plugin:eforoi:`.
 
@@ -314,6 +352,9 @@ invoke      run         start a run, returns a run id
 invoke      cancel      abort a run in flight
 invoke      reset       forget every thread of one conversation
 invoke      turns       how many turns a conversation has spent
+invoke      panels      the saved panels and the path they live at
+invoke      savePanel   store the current arrangement under a name
+invoke      deletePanel forget one saved panel
 broadcast   event       every run event, tagged with its run id
 ```
 
@@ -327,7 +368,7 @@ They are never placed in `localStorage`, never sent to the renderer, and never l
 renderer can learn that a key exists and where it came from; it cannot read it.
 
 
-## 9. The nested menu
+## 10. The nested menu
 
 Each seat has two controls that open the same menu: the model, and the mode. Choosing a
 model opens a side panel with `Subscription` and `API`, each enabled only if that route can
@@ -346,7 +387,7 @@ The catalogue runs to nearly forty models once three plans are signed in, so the
 with a focused filter box that matches on both model name and group.
 
 
-## 10. Styling without a dependency
+## 11. Styling without a dependency
 
 The plugin imports nothing from `dyarchia-ui` and nothing from `dyarchia-desktop`. It does
 not need to: the panel mounts into the shell's own document, so every `--dya-*` custom
@@ -368,7 +409,7 @@ are recessed, rows are flat and express selection with a two-pixel accent edge, 
 never fills and never carries text, and `box-shadow` never appears in a transition.
 
 
-## 11. Reading order and the shape of the panel
+## 12. Reading order and the shape of the panel
 
 The panel is laid out on a twelve-column grid so that nothing is allocated width it does not
 use.
@@ -436,7 +477,7 @@ numbers. The button sits beside the collapse toggle rather than inside it: a but
 a button is invalid, so the header is a row holding two of them.
 
 
-## 12. Deliberate omissions
+## 13. Deliberate omissions
 
 ```text
 Absent               Why

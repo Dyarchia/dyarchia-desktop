@@ -8,6 +8,7 @@ export interface ModeOffer {
     mode: Mode
     route: RouteId
     model: string
+    efforts: string[]
     available: boolean
     reason?: string
 }
@@ -28,6 +29,19 @@ export interface Catalog {
 export interface Seat {
     key: string
     mode: Mode
+    effort?: string
+}
+
+export interface SavedPanel {
+    name: string
+    panel: Seat[]
+    analyst: Seat | null
+    saved: string
+}
+
+export interface PanelStore {
+    path: string
+    items: SavedPanel[]
 }
 
 export interface RunConfig {

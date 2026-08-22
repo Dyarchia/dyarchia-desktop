@@ -251,13 +251,9 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     refreshButton.title = 'rediscover installed CLIs, plans and API models'
 
     const panelLegend = el('div', 'eforoi-legend')
-    panelLegend.append(el('span', 'eforoi-label', 'Panel'), presetButton, addButton, removeButton)
-
-    const analystLegend = el('div', 'eforoi-legend')
-    analystLegend.append(
-        el('span', 'eforoi-label', 'Analyst'),
-        el('span', 'eforoi-meta', 'compares the panel, then writes the answer')
-    )
+    const legendActions = el('div', 'eforoi-legend-actions')
+    legendActions.append(presetButton, addButton, removeButton)
+    panelLegend.append(el('span', 'eforoi-label', 'Panel'), legendActions)
 
     bar.append(
         refreshButton,
@@ -274,7 +270,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
     const panelColumn = el('div', 'eforoi-column')
     panelColumn.dataset.side = 'panel'
-    panelColumn.append(panelLegend, seats, analystLegend, analystSeat)
+    panelColumn.append(panelLegend, seats, analystSeat)
 
     const columns = el('div', 'eforoi-columns')
     columns.append(promptColumn, panelColumn)
@@ -374,7 +370,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             )
         )
         analystSeat.replaceChildren(
-            seatRow(state.analyst, { role: 'analyst' }, (next) => {
+            seatRow(state.analyst, { role: 'apartia' }, (next) => {
                 state.analyst = next
             })
         )

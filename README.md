@@ -50,8 +50,8 @@ the model not offered on that route.
 
 ## Conversation
 
-Runs are not one-shot. Each panel member keeps a thread of its own and the analyst keeps
-its own, so a follow-up like "which of the three you just named is hardest?" works — and no
+Runs are not one-shot. Each panel member keeps a thread of its own and the analyst — the seat
+the panel labels **Apartia**, απαρτία, quorum — keeps its own, so a follow-up like "which of the three you just named is hardest?" works — and no
 member ever sees another member's answers, which is what keeps the panel worth polling.
 Ten turns per conversation; `New` starts over.
 

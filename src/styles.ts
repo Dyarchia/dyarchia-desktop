@@ -77,10 +77,19 @@ export const STYLES = `
 }
 
 .eforoi-legend {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    padding: 0 8px 0 6px;
+    border-left: 2px solid transparent;
+}
+
+.eforoi-legend-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 2px;
+    gap: 6px;
 }
 
 .eforoi-prompt {
@@ -102,6 +111,7 @@ export const STYLES = `
 .eforoi-prompt:focus { outline: 2px solid var(--e-accent-soft); outline-offset: 1px; }
 
 .eforoi-seats { display: flex; flex-direction: column; gap: 2px; }
+.eforoi-seats + .eforoi-seats { margin-top: 6px; }
 
 .eforoi-seat {
     display: grid;

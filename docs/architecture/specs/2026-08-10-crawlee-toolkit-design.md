@@ -78,7 +78,7 @@ crawlee/
         architecture.md
         profiles.md
         reference/crawlee.md
-        superpowers/specs/
+        architecture/specs/
     profiles/
         books-toscrape.yaml
         quotes-js.yaml

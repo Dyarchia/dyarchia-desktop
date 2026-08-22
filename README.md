@@ -279,7 +279,7 @@ mark left is `browser`, for the tests that need Playwright's Chromium installed.
 - `docs/cheatsheet.md` — every command and every option, on one page
 - `docs/architecture.md` — how the pieces fit together and why
 - `docs/profiles.md` — the profile file format, selector and pattern syntax
-- `docs/superpowers/specs/` — the approved design
+- `docs/architecture/specs/` — the approved design
 
 ## Cost
 

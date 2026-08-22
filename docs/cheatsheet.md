@@ -182,8 +182,19 @@ Start-ScheduledTask -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 ```
 
+    Parametro       Vale para              Que hace                              Por defecto
+    -------------   --------------------   -----------------------------------   -----------
+    -Name           ambos scripts          nombra la tarea, el log y la marca     labs-docs
+    -Group          ambos scripts          barre solo ese grupo                   ninguno
+    -Profiles       ambos scripts          barre solo esos perfiles               todos
+    -Commit         ambos scripts          commitea cada snapshot que se movio    no
+    -OncePerWeek    watch.ps1              no barre si la semana ya se barrio     no
+    -Delay          register-...ps1        espera tras el inicio de sesion        PT2M
+    -Unregister     register-...ps1        borra la tarea de ese nombre           no
+
 The task fires at every logon; the wrapper sweeps only if the current ISO week has not been swept
-yet, and exits 20 without sweeping if it has. `-Group` is what the round covers, `-Profiles` names
+yet, and exits 20 without sweeping if it has. The task passes `-OncePerWeek`; running the wrapper by
+hand does not, so a manual sweep always sweeps. `-Group` is what the round covers, `-Profiles` names
 targets instead, and neither means every profile that asks for snapshots. The task's name keys
 `output/watch-<name>.log` and `output/watch-<name>.week`, the record of the last week swept, so
 rounds must not share one.

@@ -98,22 +98,23 @@ Three hues, one role each, and unlike the accent they are meant to be read.
 ```text
 Token             Light      Dark       Use
 ---------------   --------   --------   ---------------------------------
---dya-danger      #a8271c    #f59790    error text, a negative delta,
+--dya-danger      #9a2419    #f59790    error text, a negative delta,
                                         the hover of a destructive control
---dya-success     #1c6b39    #63cf95    confirmation, a positive delta
---dya-warning     #7d5100    #d6a95c    caution that is not yet a failure
+--dya-success     #186034    #63cf95    confirmation, a positive delta
+--dya-warning     #714900    #d6a95c    caution that is not yet a failure
 --dya-on-danger   #ffffff    #08090b    text or icon on a --dya-danger fill
 ```
 
-Each has a `-soft` companion — the same hex over the surface, at 10% in dark and
-15% in light — for the background of a badge or a row. The proportion is not
-shared because the surfaces are not: the higher the surface sits, the closer a
-thick tint drifts to the colour of the text it carries, and the badge stops
-holding AA on a row under hover.
+Each has a `-soft` companion — the same hex over the surface at 10% — for the
+background of a badge or a row. Ten is the ceiling, not a preference: a tint drags
+the surface toward the colour of the text it carries, and past that proportion the
+pill stops holding AA on a row under hover. It is the pill, not the hue on a plain
+surface, that sets the floor for the whole scale.
 
-Measured against `--dya-surface-1`, every hue lands between 6.5:1 and 8.4:1. The
-margin over the 4.5:1 line is deliberate: these appear at label sizes, and a thin
-stem at 12px loses to antialiasing what the number says it has.
+Measured against `--dya-surface-1`, every hue lands between 7.4:1 and 8.4:1 as
+text, and no pill falls below 4.9:1 on any surface in either theme. The margin
+over the 4.5:1 line is deliberate: these appear at label sizes, and a thin stem at
+12px loses to antialiasing what the number says it has.
 
 Rules:
 
@@ -161,14 +162,6 @@ raycast.com. The relief and the accent are dyarchia's own and apply to both.
   high: widening it means moving `--dya-text-2` up, which brings it within
   confusing distance of `--dya-text`, and of the two distances that is the one
   that cannot be lost.
-- **The light badge is short of AA on the lower surfaces.** A `-soft` pill in
-  light gives 4.07:1 for `--dya-success`, 4.27:1 for `--dya-danger` and 4.28:1
-  for `--dya-warning` against `--dya-surface-3`, the hover of a row. The hue as
-  plain text on a surface clears AA everywhere; it is the tinted pill under it
-  that closes the gap. Dark does not share the shortfall, because its tint runs
-  at 10%. Whether light follows to 10%, which lifts the worst case to 4.37:1 and
-  still leaves `--dya-success` short, or whether the pill hues move instead, is
-  not decided.
 - The two themes have opposite neutral temperature. Each is internally coherent,
   but switching reads as a change of temperature and not only of luminance.
   Whether to unify them is still open.

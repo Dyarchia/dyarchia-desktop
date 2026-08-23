@@ -9,6 +9,7 @@ coverage/
 # Agent and session tooling
 .superpowers/
 .claude/
+CLAUDE.md
 .cursor/
 .aider*
 
@@ -40,6 +41,5 @@ yarn-error.log*
 scratch/
 tmp/
 
-# Not shipped: visual reference and design rationale, kept on disk only
-demo/
+# Not shipped: design rationale, kept on disk only
 docs/

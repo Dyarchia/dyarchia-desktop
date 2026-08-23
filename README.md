@@ -98,20 +98,22 @@ Three hues, one role each, and unlike the accent they are meant to be read.
 ```text
 Token             Light      Dark       Use
 ---------------   --------   --------   ---------------------------------
---dya-danger      #a8271c    #f0857c    error text, a negative delta,
+--dya-danger      #a8271c    #f59790    error text, a negative delta,
                                         the hover of a destructive control
 --dya-success     #1c6b39    #63cf95    confirmation, a positive delta
 --dya-warning     #7d5100    #d6a95c    caution that is not yet a failure
---dya-on-danger   #ffffff    #07080a    text or icon on a --dya-danger fill
+--dya-on-danger   #ffffff    #08090b    text or icon on a --dya-danger fill
 ```
 
-Each has a `-soft` companion — the same hex at 15% — for the background of a
-badge or a row.
+Each has a `-soft` companion — the same hex over the surface, at 10% in dark and
+15% in light — for the background of a badge or a row. The proportion is not
+shared because the surfaces are not: the higher the surface sits, the closer a
+thick tint drifts to the colour of the text it carries, and the badge stops
+holding AA on a row under hover.
 
-Measured against `--dya-surface-1`, the tightest surface in each theme, every
-hue lands between 6.5:1 and 9.9:1. The margin over the 4.5:1 line is deliberate:
-these appear at label sizes, and a thin stem at 12px loses to antialiasing what
-the number says it has.
+Measured against `--dya-surface-1`, every hue lands between 6.5:1 and 8.4:1. The
+margin over the 4.5:1 line is deliberate: these appear at label sizes, and a thin
+stem at 12px loses to antialiasing what the number says it has.
 
 Rules:
 
@@ -127,11 +129,16 @@ Rules:
 
 ```text
                      light                     dark
-background           #f5f5f5                   #07080a
-raised surface       #ffffff                   #0e0f11
+background           #f5f5f5                   #08090b
+raised surface       #ffffff                   #1f2126
 text                 #020202                   #f4f4f6
 neutrals             warm, brown-tinted        cold, blue-biased
 accent               #ee6018                   #ee6018   same in both
+
+In dark, the raised surface carries the interface and the background frames it.
+The tone under a reader's eyes for hours is `--dya-surface-1`, which is why it
+sits at L* 12.7 rather than in the near-black band; `--dya-bg` shows in the gaps
+and around the edges, and near-black is right there because it is a minority.
 ```
 
 The two themes do not share shadow geometry. In light, relief is a 1px edge plus
@@ -147,12 +154,21 @@ raycast.com. The relief and the accent are dyarchia's own and apply to both.
 
 ## Known limits
 
-- **The dark ramp has a narrow middle.** `--dya-text-3` was raised to `#8b8e93`
-  so that the third level clears AA at any size — it gives 6.09:1 against the
-  background, where it used to give 3.75:1 and was legal only at 18px and above.
-  The cost is that `--dya-text-2` and `--dya-text-3` now sit 1.30 apart, down
-  from 2.11: they are still two levels, but a reader has to look. Opening that
-  gap again means moving `--dya-text-2` up too, which is not decided.
+- **The dark ramp has a narrow middle.** `--dya-text-2` and `--dya-text-3` sit
+  1.48 apart, against 1.60 in light. Both clear AA on every surface — 11.63:1 and
+  7.87:1 against the background — but they are two levels a reader has to look
+  for rather than two a reader sees. The gap is narrow because the dark floor is
+  high: widening it means moving `--dya-text-2` up, which brings it within
+  confusing distance of `--dya-text`, and of the two distances that is the one
+  that cannot be lost.
+- **The light badge is short of AA on the lower surfaces.** A `-soft` pill in
+  light gives 4.07:1 for `--dya-success`, 4.27:1 for `--dya-danger` and 4.28:1
+  for `--dya-warning` against `--dya-surface-3`, the hover of a row. The hue as
+  plain text on a surface clears AA everywhere; it is the tinted pill under it
+  that closes the gap. Dark does not share the shortfall, because its tint runs
+  at 10%. Whether light follows to 10%, which lifts the worst case to 4.37:1 and
+  still leaves `--dya-success` short, or whether the pill hues move instead, is
+  not decided.
 - The two themes have opposite neutral temperature. Each is internally coherent,
   but switching reads as a change of temperature and not only of luminance.
   Whether to unify them is still open.

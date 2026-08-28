@@ -9,12 +9,22 @@
 
     Exit codes are passed through unchanged, so the Task Scheduler history shows the same verdict:
     0 nothing changed, 10 something did, 1 a target failed. The wrapper adds 20 for a run that
-    decided the week was already swept and did nothing.
+    decided the week was already swept, or had already spent its attempts on it, and did nothing.
 
-    With -OncePerWeek the wrapper keeps a record of the last ISO week it swept and refuses to sweep
-    that week twice, which is what turns a trigger that fires on every logon into one sweep a week.
-    The record is written only after a sweep that finished, so a week whose sweep failed is still
-    owed one and the next logon takes it.
+    The sweep's own output is streamed to `watch-<name>.out` as it arrives rather than collected and
+    written at the end, because the interesting run is the one that never reaches the end. A sweep
+    the scheduler kills used to leave a log saying it had started and nothing else.
+
+    With -OncePerWeek the wrapper keeps a record of the current ISO week and refuses to sweep that
+    week twice, which is what turns a trigger that fires on every logon into one sweep a week. The
+    record counts attempts as well as completion: a week whose sweep did not finish is still owed
+    one and the next logon takes it, but only up to -MaxAttempts, because a sweep that cannot
+    finish would otherwise start again at every logon for the rest of the week. That is not a
+    hypothetical. A run killed by the scheduler's execution time limit leaves exactly that state,
+    and seven consecutive logons each spent an hour crawling before this was written.
+
+    Giving up is announced once, on the desktop, rather than quietly. A monitor that stops trying
+    and says nothing is worse than one that never ran.
 
     The log and that record are named after -Name, so several scheduled sweeps can run side by side
     without overwriting each other's turn.
@@ -33,7 +43,12 @@
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
 .PARAMETER OncePerWeek
-    Do nothing if this name has already swept the current ISO week.
+    Do nothing if this name has already swept the current ISO week, or has already spent its
+    attempts on it.
+
+.PARAMETER MaxAttempts
+    How many times a single week may be attempted before the wrapper stops trying until the next
+    one. Defaults to 2. Only counts under -OncePerWeek; a sweep run by hand never spends an attempt.
 
 .EXAMPLE
     .\scripts\watch.ps1
@@ -48,7 +63,9 @@ param(
     [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
     [string]$Group = '',
     [switch]$Commit,
-    [switch]$OncePerWeek
+    [switch]$OncePerWeek,
+    [ValidateRange(1, 10)]
+    [int]$MaxAttempts = 2
 )
 
 $ErrorActionPreference = 'Stop'
@@ -71,6 +88,7 @@ else {
 }
 $logFile = Join-Path $logDirectory "watch-$Name.log"
 $weekFile = Join-Path $logDirectory "watch-$Name.week"
+$outputFile = Join-Path $logDirectory "watch-$Name.out"
 
 function Write-Log {
     param([string]$Message)
@@ -80,6 +98,39 @@ function Write-Log {
     }
     $stamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
     Add-Content -Path $logFile -Value "$stamp  $Message" -Encoding utf8
+}
+
+function Read-SweepState {
+    param([string]$Path)
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+    $raw = (Get-Content -Path $Path -Raw).Trim()
+    if (-not $raw) {
+        return $null
+    }
+    if (-not $raw.StartsWith('{')) {
+        # The record used to be the bare week that had been swept, which means one that finished.
+        return [pscustomobject]@{ week = $raw; attempts = 1; completed = $true; notified = $false }
+    }
+    return $raw | ConvertFrom-Json
+}
+
+function Write-SweepState {
+    param(
+        [string]$Path,
+        [string]$Week,
+        [int]$Attempts,
+        [bool]$Completed,
+        [bool]$Notified
+    )
+
+    if (-not (Test-Path $logDirectory)) {
+        New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+    }
+    $state = [pscustomobject]@{ week = $Week; attempts = $Attempts; completed = $Completed; notified = $Notified }
+    $state | ConvertTo-Json -Compress | Set-Content -Path $Path -Encoding utf8
 }
 
 function Get-WeekKey {
@@ -113,10 +164,28 @@ function Show-Notification {
 }
 
 $week = Get-WeekKey
+$state = Read-SweepState $weekFile
+$attempts = if ($state -and $state.week -eq $week) { [int]$state.attempts } else { 0 }
 
-if ($OncePerWeek -and (Test-Path $weekFile) -and (Get-Content -Path $weekFile -Raw).Trim() -eq $week) {
-    Write-Log "skipped: $week has already been swept"
-    exit 20
+if ($OncePerWeek -and $state -and $state.week -eq $week) {
+    if ($state.completed) {
+        Write-Log "skipped: $week has already been swept"
+        exit 20
+    }
+    if ($attempts -ge $MaxAttempts) {
+        Write-Log "skipped: $week has had $attempts attempts that did not finish, and is given up on"
+        if (-not $state.notified) {
+            Show-Notification -Title 'crawlee-lab: the week could not be swept' `
+                -Message "$Name gave up on $week after $attempts attempts that did not finish"
+            Write-SweepState $weekFile $week $attempts $false $true
+        }
+        exit 20
+    }
+}
+
+if ($OncePerWeek) {
+    $attempts = $attempts + 1
+    Write-SweepState $weekFile $week $attempts $false $false
 }
 
 Set-Location $projectRoot
@@ -128,7 +197,8 @@ if ($Commit) { $arguments += '--commit' }
 
 Write-Log "sweep started ($week): uv $($arguments -join ' ')"
 
-$transcript = & uv @arguments 2>&1 | Out-String
+# Streamed rather than collected, so a run the scheduler kills still says how far it got.
+$transcript = & uv @arguments 2>&1 | Tee-Object -FilePath $outputFile | Out-String
 $code = $LASTEXITCODE
 
 $headline = ($transcript -split "`n" | Where-Object { $_ -match 'targets (changed|failed)|no change across' } | Select-Object -Last 1).Trim()
@@ -137,10 +207,7 @@ if (-not $headline) { $headline = "watch exited with $code" }
 Write-Log "sweep finished ($code): $headline"
 
 if ($code -eq 0 -or $code -eq 10) {
-    if (-not (Test-Path $logDirectory)) {
-        New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
-    }
-    Set-Content -Path $weekFile -Value $week -Encoding utf8
+    Write-SweepState $weekFile $week ([Math]::Max($attempts, 1)) $true $false
 }
 
 switch ($code) {

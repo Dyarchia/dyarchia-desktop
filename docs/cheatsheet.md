@@ -189,11 +189,15 @@ Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
     -Profiles       ambos scripts          barre solo esos perfiles               todos
     -Commit         ambos scripts          commitea cada snapshot que se movio    no
     -OncePerWeek    watch.ps1              no barre si la semana ya se barrio     no
+    -MaxAttempts    watch.ps1              intentos por semana antes de rendirse   2
+    -Hours          register-...ps1        limite de ejecucion de la tarea         3
     -Delay          register-...ps1        espera tras el inicio de sesion        PT2M
     -Unregister     register-...ps1        borra la tarea de ese nombre           no
 
 The task fires at every logon; the wrapper sweeps only if the current ISO week has not been swept
-yet, and exits 20 without sweeping if it has. The task passes `-OncePerWeek`; running the wrapper by
+yet, and exits 20 without sweeping if it has. A week that is attempted and does not finish is
+attempted again, up to `-MaxAttempts`, and then given up on with one desktop notification: without
+that bound, a sweep that cannot finish starts again at every logon for the rest of the week. The task passes `-OncePerWeek`; running the wrapper by
 hand does not, so a manual sweep always sweeps. `-Group` is what the round covers, `-Profiles` names
 targets instead, and neither means every profile that asks for snapshots. The task's name keys
 `output/watch-<name>.log` and `output/watch-<name>.week`, the record of the last week swept, so
@@ -309,7 +313,8 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     data/<group>/**                 no                The same, for a target that names a group
     output/<group>/<name>.jsonl     no                Run output for a grouped target
     output/watch-<name>.log         no                One line per sweep of that task
-    output/watch-<name>.week        no                The last ISO week that task swept
+    output/watch-<name>.out         no                That sweep's own output, as it arrives
+    output/watch-<name>.week        no                The week, its attempts and whether it finished
     storage/run-<pid>/              no                Crawlee's working directory, one per run
 
 `data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has

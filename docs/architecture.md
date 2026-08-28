@@ -285,6 +285,16 @@ written only after a sweep that finished, so a week whose sweep failed is still 
 next logon takes it. The wrapper reports a skipped run as 20, which no sweep returns, so the task
 history distinguishes a week that was quiet from a week that was already done.
 
+Owing a week has to be bounded, and learning that cost five days of a working laptop. A run the
+scheduler kills leaves the week unmarked exactly as a failed run does, so the next logon attempts it
+again, and the one after that too. The execution time limit had been set to an hour by guess rather
+than by measurement; every sweep reached it and was killed; and the retry meant to rescue an unlucky
+week became an hour of crawling at every logon for a working week, with a console window opening
+each time to announce it. The record therefore counts attempts as well as completion, and a week is
+given up on after two of them, with one notification rather than none, because a monitor that
+quietly stops trying is a different failure rather than a fix. The limit is three hours against a
+sweep measured at twenty-five minutes.
+
 The record and the log are keyed by the task's name rather than fixed, because one machine may
 watch several sets of profiles on different schedules. Two tasks sharing a name would share the
 record, and the second would spend the week believing the first had been its own run.

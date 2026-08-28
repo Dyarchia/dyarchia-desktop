@@ -8,8 +8,15 @@
     you log on that week: Monday if you turn the machine on that day, the first day you do if you
     do not. No week is skipped for the machine having been asleep at some fixed hour.
 
-    The task runs only while the current user is logged on, because the notification needs a
-    desktop to appear on.
+    The task runs only while the current user is logged on, because the notification needs a desktop
+    to appear on, and with its window hidden, because a console that opens by itself at every logon
+    reads as something having gone wrong.
+
+    The execution time limit is generous on purpose. A sweep that the scheduler kills leaves the
+    week unfinished, and an unfinished week is attempted again; a limit set below what a sweep
+    actually takes therefore turns one weekly round into one round per logon. Measured on this
+    corpus: nine targets and about 2,550 pages take some 25 minutes, and the largest group about
+    40. Three hours is that with room, not a guess.
 
     Each sweep gets its own name under the `\crawlee-lab\` folder of the Task Scheduler, so several
     sweeps over different profiles can coexist. The name also keys the wrapper's log and its record
@@ -34,6 +41,9 @@
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
+.PARAMETER Hours
+    How long the task may run before the scheduler kills it. Defaults to 3.
+
 .PARAMETER Delay
     How long to wait after logon before sweeping, as an ISO 8601 duration. Defaults to PT2M, which
     keeps the crawl out of the way of everything else that starts with the session.
@@ -56,6 +66,8 @@ param(
     [switch]$Commit,
     [ValidatePattern('^P(T(\d+H)?(\d+M)?(\d+S)?)$')]
     [string]$Delay = 'PT2M',
+    [ValidateRange(1, 24)]
+    [int]$Hours = 3,
     [switch]$Unregister
 )
 
@@ -81,6 +93,7 @@ if ($Group -and $Profiles.Count -gt 0) {
 }
 
 $arguments = @(
+    '-WindowStyle', 'Hidden'
     '-NoProfile'
     '-NonInteractive'
     '-ExecutionPolicy', 'Bypass'
@@ -104,7 +117,7 @@ $action = New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument ($arguments -joi
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
 $trigger.Delay = $Delay
 $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 1)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours $Hours)
 
 Register-ScheduledTask -TaskName $Name -TaskPath $taskPath -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
@@ -119,6 +132,6 @@ else {
     Write-Warning "this task sweeps $covers, including any added after today. Name a group to keep it over one corpus."
 }
 
-Write-Output "registered '$Name', at logon, sweeping $covers once per week"
+Write-Output "registered '$Name', at logon, sweeping $covers once per week, $Hours h at most"
 Write-Output "run it now with: Start-ScheduledTask -TaskName '$Name' -TaskPath '$taskPath'"
 Write-Output "remove it with:  .\scripts\register-watch-task.ps1 -Name $Name -Unregister"

@@ -78,7 +78,7 @@ crawlee/
         architecture.md
         profiles.md
         reference/crawlee.md
-        architecture/specs/
+        design/specs/
     profiles/
         books-toscrape.yaml
         quotes-js.yaml

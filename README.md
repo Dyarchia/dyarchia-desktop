@@ -174,14 +174,14 @@ against, in the group `docs-labs`:
 
     Profile                Target                       Pages
     -------------------    -------------------------    -----
-    claude-docs            claude.com/docs                187
+    claude-docs            claude.com/docs                188
     claude-code-docs       code.claude.com, English       170
     claude-code-docs-es    code.claude.com, Spanish       149
-    claude-api-docs        platform.claude.com, English   581
-    claude-api-docs-es     platform.claude.com, Spanish   206
-    openai-docs            developers.openai.com          538
-    chatgpt-docs           learn.chatgpt.com, Codex       248
-    gemini-docs            ai.google.dev, HTML            219
+    claude-api-docs        platform.claude.com, English   668
+    claude-api-docs-es     platform.claude.com, Spanish   203
+    openai-docs            developers.openai.com          535
+    chatgpt-docs           learn.chatgpt.com, Codex       252
+    gemini-docs            ai.google.dev, HTML            223
     xai-docs               docs.x.ai, Grok                158
 
 All but one fetch the markdown variant the site publishes, so the snapshot is the document rather

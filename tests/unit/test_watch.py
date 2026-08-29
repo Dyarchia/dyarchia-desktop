@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from crawlee_lab.config import Settings
@@ -9,6 +10,7 @@ from crawlee_lab.watch import (
     EXIT_CHANGES,
     EXIT_FAILED,
     EXIT_NO_CHANGES,
+    WATCH_RESULT,
     WatchEntry,
     WatchResult,
     render_markdown,
@@ -119,3 +121,45 @@ def test_a_profile_that_does_not_ask_for_snapshots_is_not_swept_by_its_group(set
     watched_profile(settings, 'untracked', group='docs-labs', snapshot=False)
 
     assert watchable(settings, 'docs-labs') == ['tracked']
+
+
+def shuffled(name: str) -> WatchEntry:
+    """A target whose only modification was a page reordering itself."""
+    return WatchEntry(
+        name=name,
+        summary='0 added, 0 removed, 0 modified, 3 reordered, 155 unchanged',
+        pages=158,
+        reordered=3,
+    )
+
+
+def test_a_reordering_is_not_a_change() -> None:
+    """Three shuffled tables woke a desktop notification and told nobody anything."""
+    result = WatchResult(entries=[quiet('a'), shuffled('b')])
+
+    assert not shuffled('b').changed
+    assert result.exit_code == EXIT_NO_CHANGES
+    assert result.headline == 'no change across 2 targets'
+
+
+def test_the_sweep_serialises_what_comes_after_it() -> None:
+    """A step that has to parse the markdown report to find the verdict is built on prose."""
+    result = WatchResult(entries=[quiet('a'), moved('b'), shuffled('c')])
+    data = result.to_dict()
+
+    assert data['exit_code'] == EXIT_CHANGES
+    assert data['changed'] == ['b']
+    assert data['failed'] == []
+    assert [target['name'] for target in data['targets']] == ['a', 'b', 'c']
+    assert data['targets'][2]['reordered'] == 3
+    assert data['targets'][2]['changed'] is False
+
+
+def test_the_sweep_writes_its_result_beside_the_report(tmp_path: Path) -> None:
+    settings = Settings(data_dir=tmp_path)
+    result = WatchResult(entries=[moved('b')])
+    save_report(result, settings)
+
+    written = json.loads((tmp_path / WATCH_RESULT).read_text(encoding='utf-8'))
+    assert written['changed'] == ['b']
+    assert written['exit_code'] == EXIT_CHANGES

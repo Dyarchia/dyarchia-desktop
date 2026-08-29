@@ -61,6 +61,7 @@ uv run crawlee-lab diff claude-docs --unified
     crawl        Scrape URLs directly, or run a saved profile
     inspect      Probe a target: robots, sitemaps, markdown variants, rendering, advice
     diff         Show what changed on a target the last time it was snapshotted
+    digest       Bundle those changes into something a later step can read
     watch        Sweep every tracked target once and report whether anything moved
     urls         Report which URLs a snapshotted target is holding, broken down by section
     profiles     List the profiles this project knows about
@@ -150,16 +151,18 @@ group nests one level deeper, at `data/<group>/<name>/`, and its output goes to
 
 Detection does not depend on git. The manifest holds the previous hash of every page and the stored
 pages hold the previous text, so every run reports what was added, removed and modified against what
-is on disk. In this repository `data/` is ignored entirely, which keeps the scraped corpus out of
-the history and costs only the long-term record: what survives is the state of the target and the
-report of the last run, not a dated trail of every change.
+is on disk, committed or not.
 
-Track that trail by removing `data/` from `.gitignore` and passing `--commit`, which stages a
-snapshot when, and only when, its content fingerprint moved. It is never implicit.
+Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
+and every run's output sit in their own checkout alongside it, which `CRAWLEE_LAB_DATA_DIR`,
+`CRAWLEE_LAB_PROFILES_DIR` and `CRAWLEE_LAB_OUTPUT_DIR` point at; Crawlee's working directory is
+scratch and goes to a temporary path through `CRAWLEE_LAB_STORAGE_DIR`. All four accept absolute
+paths. The matching entries in `.gitignore` are guards rather than homes: they catch a run started
+without a `.env`, which would otherwise drop a corpus back into the tool's tree. See `.env.example`.
 
-Nothing in the toolkit depends on that directory existing or on where it is. `CRAWLEE_LAB_DATA_DIR`
-accepts an absolute path, so the corpus can live anywhere, and deleting it costs the comparison
-baseline rather than the ability to run. See `.env.example`.
+`--commit` stages a snapshot when, and only when, its content fingerprint moved, and it writes to
+whichever repository owns the data directory rather than to this one. It is never implicit.
+Deleting the corpus costs the comparison baseline rather than the ability to run.
 
 A run that failed too often writes nothing, because half a snapshot would read as a mass deletion on
 the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves its
@@ -210,8 +213,8 @@ own schedule, rather than joining an existing one by having asked for snapshots.
 ## Running unattended
 
 `watch` is the command a scheduler calls. It sweeps every profile that asks for snapshots, lets one
-failing target cost only its own target, writes `data/WATCH.md` describing the sweep, and answers
-through its exit code:
+failing target cost only its own target, writes `WATCH.md` and `WATCH.json` describing the sweep,
+and answers through its exit code:
 
     Code    Meaning
     ----    ----------------------------------------------------------------
@@ -221,6 +224,12 @@ through its exit code:
 
 A first snapshot is deliberately not a change. There is nothing yet for it to differ from, and a
 monitor that cries on its own first run teaches you to ignore it.
+
+Neither is a reordering. A page whose lines are the same as before in a different order — a pricing
+table that shuffled its rows — is classified as `reordered`, listed everywhere it would have been
+listed anyway, and left out of the verdict. It rewrites the stored page, because the page did
+change; it does not raise the exit code, because nothing it says did. Three of them woke a
+notification on one real sweep and told nobody anything.
 
 ```bash
 uv run crawlee-lab watch
@@ -259,6 +268,38 @@ added after it was registered, and says so when you register it.
 
 Nothing registers itself. Run that when you want a monitor to start, and
 `.\scripts\register-watch-task.ps1 -Name labs-docs -Unregister` when you want it to stop.
+
+## The step after the sweep
+
+A sweep that finds a change is only useful if something reads it. Two artefacts exist for that, and
+neither is prose:
+
+- `WATCH.json`, beside `WATCH.md`, holding the same verdict the exit code carries plus, per target,
+  its counts and the path to its change report.
+- `crawlee-lab digest`, which bundles the last snapshot's changes into one document: what changed,
+  the diff, and the file holding each page's current text. The diff says what moved; the file says
+  what the page now claims, and a step that only sees the diff writes a changelog instead of an
+  answer.
+
+```bash
+uv run crawlee-lab digest --changed --group docs-labs --out digest.md
+uv run crawlee-lab digest xai-docs --json
+```
+
+`scripts/watch.ps1 -OnChange <script>` closes the loop: on exit 10, and only then, it writes the
+digest and hands the path to whatever you name. The follow-up takes a path rather than a command
+line because what to do with a change is an editorial decision. Nothing in this toolkit calls a
+model, holds a key or knows a provider exists; `scripts/on-change.example.ps1` is where that
+begins, and it is yours to edit.
+
+```powershell
+.\scripts\watch.ps1 -Group docs-labs -OncePerWeek -Commit -OnChange .\scripts\on-change.ps1
+```
+
+The digest reads the change reports the sweep just wrote, and the next sweep overwrites them. That
+is why it runs inside the same wrapper invocation rather than on a schedule of its own, and why
+`-Commit` is worth adding to a round whose history matters: git is the only copy of last week's
+diff.
 
 ## Politeness
 

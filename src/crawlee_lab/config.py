@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     data_dir: Path = Path('data')
     output_dir: Path = Path('output')
     profiles_dir: Path = Path('profiles')
+    storage_dir: Path = Path('storage')
 
     @property
     def project_root(self) -> Path:
@@ -63,6 +64,15 @@ class Settings(BaseSettings):
         """Where a run's output files land, grouped the way its snapshots are."""
         root = self.resolve(self.output_dir)
         return root / group if group else root
+
+    def storage_root(self) -> Path:
+        """Where Crawlee's per-run working directory goes.
+
+        Scratch, not output: every run purges what it is given and the directory is removed when
+        the process exits. It is configurable so it can be kept out of the checkout entirely, since
+        a run killed mid-flight leaves its working directory behind.
+        """
+        return self.resolve(self.storage_dir)
 
 
 @lru_cache(maxsize=1)

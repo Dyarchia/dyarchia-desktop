@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from crawlee_lab import __version__, inventory, registry
+from crawlee_lab import __version__, digest, inventory, registry
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
 from crawlee_lab.errors import ConfigurationError, CrawleeLabError
@@ -262,7 +262,7 @@ def crawl(
         for warning in result.snapshot.warnings:
             error_console.print(f'[bold yellow]{warning}[/bold yellow]')
         if commit and result.snapshot.persisted:
-            _commit_snapshot(result.snapshot, settings)
+            _commit_snapshot(result.snapshot)
         elif commit:
             console.print('  nothing to commit, the target has not changed')
     elif commit:
@@ -272,10 +272,10 @@ def crawl(
         raise typer.Exit(code=1)
 
 
-def _commit_snapshot(snapshot: SnapshotResult, settings: Settings) -> None:
+def _commit_snapshot(snapshot: SnapshotResult) -> None:
     message = f'snapshot({snapshot.manifest.name}): {summary_line(snapshot.report)}'
     try:
-        revision = commit_snapshot(snapshot.directory, message, settings.project_root)
+        revision = commit_snapshot(snapshot.directory, message)
     except CrawleeLabError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         return
@@ -400,6 +400,58 @@ def diff_command(
     console.print(f'\nfull history: git log -- {directory}')
 
 
+@app.command(name='digest')
+def digest_command(
+    names: Annotated[
+        list[str] | None,
+        typer.Argument(help='Targets to digest. Defaults to every snapshotted target.'),
+    ] = None,
+    group: Annotated[
+        str | None, typer.Option('--group', help='Digest only the targets in this group.')
+    ] = None,
+    changed: Annotated[
+        bool, typer.Option('--changed', help='Leave out the targets that did not change.')
+    ] = False,
+    as_json: Annotated[
+        bool, typer.Option('--json', help='Emit the digest as JSON instead of markdown.')
+    ] = False,
+    diffs: Annotated[
+        bool, typer.Option('--diffs/--no-diffs', help='Include the diff of every changed page.')
+    ] = True,
+    limit: Annotated[int, typer.Option('--limit', min=1, help='Maximum pages listed per section.')] = 50,
+    out: Annotated[
+        Path | None, typer.Option('--out', help='Write to this file instead of standard output.')
+    ] = None,
+) -> None:
+    """Bundle the last snapshot's changes into something a later step can read.
+
+    What changed, what the change was, and which file holds the page now. Reorderings are listed
+    but never counted, so a table that shuffled its rows does not read as news.
+    """
+    settings = get_settings()
+    try:
+        bundle = digest.build(list(names) if names else None, settings, group)
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
+
+    if changed:
+        bundle.targets = bundle.changed
+
+    rendered = (
+        digest.render_json(bundle) if as_json else digest.render_markdown(bundle, diffs=diffs, limit=limit)
+    )
+
+    if out is None:
+        print(rendered)
+        return
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(rendered, encoding='utf-8', newline='\n')
+    console.print(f'{bundle.headline}')
+    console.print(f'written to {out}', style='dim')
+
+
 @app.command(name='profiles')
 def profiles_command() -> None:
     """List the saved profiles this project knows about."""
@@ -521,7 +573,7 @@ def _commit_sweep(result: WatchResult, settings: Settings) -> None:
     directory = settings.resolve(settings.data_dir)
     message = f'watch: {result.headline}'
     try:
-        revision = commit_snapshot(directory, message, settings.project_root)
+        revision = commit_snapshot(directory, message)
     except CrawleeLabError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         return

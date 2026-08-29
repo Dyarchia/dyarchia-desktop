@@ -8,18 +8,22 @@ through its exit code whether a human needs to look. The scheduler needs nothing
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from crawlee_lab import registry
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import execute
 from crawlee_lab.errors import CrawleeLabError
 from crawlee_lab.models import utcnow
+from crawlee_lab.versioning.diffing import CHANGES_FILENAME
 from crawlee_lab.versioning.report import summary_line
 
 WATCH_DOCUMENT = 'WATCH.md'
+WATCH_RESULT = 'WATCH.json'
 
 EXIT_NO_CHANGES = 0
 EXIT_FAILED = 1
@@ -37,9 +41,11 @@ class WatchEntry:
     added: int = 0
     removed: int = 0
     modified: int = 0
+    reordered: int = 0
     first_run: bool = False
     error: str | None = None
     warnings: list[str] = field(default_factory=list)
+    directory: Path | None = None
 
     @property
     def failed(self) -> bool:
@@ -47,8 +53,31 @@ class WatchEntry:
 
     @property
     def changed(self) -> bool:
-        """A first snapshot is not a change; there is nothing yet for it to differ from."""
+        """A first snapshot is not a change; there is nothing yet for it to differ from.
+
+        Neither is a reordering. `modified` counts the pages that say something different, which is
+        what a notification, an exit code and whatever reads this next are all asking about.
+        """
         return not self.first_run and bool(self.added or self.removed or self.modified)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            'name': self.name,
+            'group': self.group,
+            'summary': self.summary,
+            'pages': self.pages,
+            'added': self.added,
+            'removed': self.removed,
+            'modified': self.modified,
+            'reordered': self.reordered,
+            'first_run': self.first_run,
+            'changed': self.changed,
+            'failed': self.failed,
+            'error': self.error,
+            'warnings': self.warnings,
+            'directory': str(self.directory) if self.directory else None,
+            'changes': str(self.directory / CHANGES_FILENAME) if self.directory else None,
+        }
 
 
 @dataclass(slots=True)
@@ -83,6 +112,24 @@ class WatchResult:
             names = ', '.join(entry.name for entry in self.changed)
             return f'{len(self.changed)} of {len(self.entries)} targets changed: {names}'
         return f'no change across {len(self.entries)} targets'
+
+    def to_dict(self) -> dict[str, Any]:
+        """The sweep as data, for whatever runs after it.
+
+        A scheduled step that has to parse the markdown report to find out whether anything moved
+        is a step built on prose. This is the contract instead: the same verdict the exit code
+        carries, plus where each target's changes were written.
+        """
+        finished = self.finished_at or utcnow()
+        return {
+            'started_at': self.started_at.isoformat(),
+            'finished_at': finished.isoformat(),
+            'headline': self.headline,
+            'exit_code': self.exit_code,
+            'changed': [entry.name for entry in self.changed],
+            'failed': [entry.name for entry in self.failed],
+            'targets': [entry.to_dict() for entry in self.entries],
+        }
 
 
 def watchable(settings: Settings | None = None, group: str | None = None) -> list[str]:
@@ -124,7 +171,9 @@ async def sweep(names: list[str], settings: Settings | None = None) -> WatchResu
                 entry.first_run = report.is_first_run
                 entry.added = len(report.added)
                 entry.removed = len(report.removed)
-                entry.modified = len(report.modified)
+                entry.modified = len([change for change in report.modified if not change.reordered])
+                entry.reordered = len(report.reordered)
+                entry.directory = run.snapshot.directory
                 entry.warnings = list(run.snapshot.warnings)
         result.entries.append(entry)
 
@@ -174,6 +223,9 @@ def save_report(result: WatchResult, settings: Settings | None = None) -> Path:
     A sweep of one group lands inside that group, or two scheduled rounds would each overwrite the
     other's account of a week. A sweep that crossed groups lands at the root, because no one group
     holds all of what it found.
+
+    Both forms are written every time. The markdown is for whoever opens it; the JSON is for
+    whatever runs next, which should not have to read prose to find out whether anything moved.
     """
     settings = settings or get_settings()
     directory = settings.data_root(_covered_group(result))
@@ -181,5 +233,11 @@ def save_report(result: WatchResult, settings: Settings | None = None) -> Path:
 
     target = directory / WATCH_DOCUMENT
     target.write_text(render_markdown(result), encoding='utf-8', newline='\n')
+
+    machine = directory / WATCH_RESULT
+    machine.write_text(
+        json.dumps(result.to_dict(), indent=2, ensure_ascii=False), encoding='utf-8', newline='\n'
+    )
+
     result.document = target
     return target

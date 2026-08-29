@@ -251,7 +251,7 @@ def _translate_browser_error(error: Exception) -> Exception:
 async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     """Run one crawl end to end and write its output."""
     settings = settings or get_settings()
-    use_private_storage(settings.project_root / 'storage')
+    use_private_storage(settings.storage_root())
     reset_storage_state()
     failures: list[FailureRecord] = []
 

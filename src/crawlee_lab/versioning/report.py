@@ -14,10 +14,17 @@ _SECTION_TITLES = {
 def summary_line(report: ChangeReport) -> str:
     if report.is_first_run:
         return f'first snapshot: {len(report.added)} pages stored'
-    return (
-        f'{len(report.added)} added, {len(report.removed)} removed, '
-        f'{len(report.modified)} modified, {report.unchanged} unchanged'
-    )
+
+    substantive_modified = [change for change in report.modified if not change.reordered]
+    parts = [
+        f'{len(report.added)} added',
+        f'{len(report.removed)} removed',
+        f'{len(substantive_modified)} modified',
+    ]
+    if report.reordered:
+        parts.append(f'{len(report.reordered)} reordered')
+    parts.append(f'{report.unchanged} unchanged')
+    return ', '.join(parts)
 
 
 def render_markdown(report: ChangeReport) -> str:
@@ -39,6 +46,8 @@ def render_markdown(report: ChangeReport) -> str:
         lines.extend([f'## {_SECTION_TITLES[kind]} ({len(entries)})', ''])
         for change in entries:
             label = f'{change.title} — {change.url}' if change.title else change.url
+            if change.reordered:
+                label += ' (reordered only)'
             lines.append(f'- {label}')
             if change.diff:
                 lines.extend(['', '```diff', change.diff, '```', ''])

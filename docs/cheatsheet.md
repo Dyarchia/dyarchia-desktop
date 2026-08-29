@@ -10,16 +10,17 @@ from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
 - [3. crawl](#3-crawl)
 - [4. inspect](#4-inspect)
 - [5. diff](#5-diff)
-- [6. watch](#6-watch)
-- [7. profiles](#7-profiles)
-- [8. urls](#8-urls)
-- [9. version](#9-version)
-- [10. Selector syntax](#10-selector-syntax)
-- [11. URL pattern syntax](#11-url-pattern-syntax)
-- [12. Environment variables](#12-environment-variables)
-- [13. Where files land](#13-where-files-land)
-- [14. Recipes](#14-recipes)
-- [15. Development commands](#15-development-commands)
+- [6. digest](#6-digest)
+- [7. watch](#7-watch)
+- [8. profiles](#8-profiles)
+- [9. urls](#9-urls)
+- [10. version](#10-version)
+- [11. Selector syntax](#11-selector-syntax)
+- [12. URL pattern syntax](#12-url-pattern-syntax)
+- [13. Environment variables](#13-environment-variables)
+- [14. Where files land](#14-where-files-land)
+- [15. Recipes](#15-recipes)
+- [16. Development commands](#16-development-commands)
 
 ## 1. Setup
 
@@ -31,7 +32,7 @@ uv run playwright install chromium
 Everything below assumes the `uv run` prefix. Drop it inside an activated virtual environment.
 
 There are no commit hooks. The checks run when you ask for them, in
-[section 15](#15-development-commands), and on every push in CI.
+[section 16](#16-development-commands), and on every push in CI.
 
 ## 2. Commands at a glance
 
@@ -40,6 +41,7 @@ There are no commit hooks. The checks run when you ask for them, in
     crawl       Scrape URLs directly, or run a saved profile
     inspect     Probe a target before committing to a crawl
     diff        Show what changed the last time a target was snapshotted
+    digest      Bundle those changes for whatever step runs after the sweep
     watch       Sweep every tracked target once, for a scheduler to call
     profiles    List the profiles this project knows about
     urls        Report what a snapshotted target is holding, by section
@@ -143,15 +145,44 @@ crawlee-lab diff [OPTIONS] NAME
     --unified, -u    flag       off        Show the unified diff for modified pages
     --limit          integer    20         Maximum entries per section
 
-`NAME` is the profile or run name that was snapshotted. For the history beyond the last run, use
-git directly:
+`NAME` is the profile or run name that was snapshotted. `changes.json` and `CHANGES.md` hold the
+last run and nothing before it, because every run overwrites them. For anything earlier, use git in
+the repository that holds the corpora:
 
 ```bash
-git log -- data/claude-docs
-git diff HEAD~1 -- data/claude-docs/CHANGES.md
+git -C ../crawlee-lab-data log -- data/docs-labs/claude-docs
+git -C ../crawlee-lab-data diff HEAD~1 -- data/docs-labs/claude-docs/CHANGES.md
 ```
 
-## 6. watch
+## 6. digest
+
+```text
+crawlee-lab digest [OPTIONS] [NAMES...]
+```
+
+    Option        Value    Default   Meaning
+    -----------   ------   -------   ---------------------------------------------------
+    --group       str      none      Digest only the targets in this group
+    --changed     flag     off       Leave out the targets that did not change
+    --json        flag     off       Emit JSON instead of markdown
+    --no-diffs    flag     on        Leave the per-page diffs out
+    --limit       int      50        Maximum pages listed per section
+    --out         path     stdout    Write to this file instead of standard output
+
+`NAMES` defaults to every profile with `snapshot: true`. Each changed page is listed with its URL,
+its diff and the path to the file holding its current text, so a step that reads this can read the
+page in full instead of inferring it from the diff.
+
+Pages that only reordered are listed under their own heading and never counted as a change, so a
+digest of a sweep that found nothing but shuffled table rows says "no change".
+
+```bash
+crawlee-lab digest --changed --group docs-labs --out digest.md
+crawlee-lab digest xai-docs --json
+crawlee-lab digest --no-diffs --limit 10
+```
+
+## 7. watch
 
 ```text
 crawlee-lab watch [OPTIONS] [NAMES...]
@@ -162,7 +193,8 @@ crawlee-lab watch [OPTIONS] [NAMES...]
     --commit    flag     off        Commit the sweep, when data/ is versioned
 
 `NAMES` defaults to every profile with `snapshot: true`, or to the ones in `--group GROUP`. One failing target costs only itself; the
-rest of the sweep still runs. A summary lands in `data/WATCH.md`.
+rest of the sweep still runs. A summary lands in `WATCH.md`, and the same verdict as data in
+`WATCH.json`, which is what a step after the sweep should read.
 
     Exit code   Meaning
     ---------   ----------------------------------------------------------------
@@ -170,7 +202,8 @@ rest of the sweep still runs. A summary lands in `data/WATCH.md`.
     10          at least one target changed
     1           at least one target failed, so the sweep cannot vouch for itself
 
-A first snapshot exits 0, not 10. There is nothing yet for it to differ from.
+A first snapshot exits 0, not 10. There is nothing yet for it to differ from. Neither is a page
+that only reordered: it is stored, listed and labelled, and left out of the verdict.
 
 On Windows:
 
@@ -182,17 +215,18 @@ Start-ScheduledTask -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
 ```
 
-    Parametro       Vale para              Que hace                              Por defecto
-    -------------   --------------------   -----------------------------------   -----------
-    -Name           ambos scripts          nombra la tarea, el log y la marca     labs-docs
-    -Group          ambos scripts          barre solo ese grupo                   ninguno
-    -Profiles       ambos scripts          barre solo esos perfiles               todos
-    -Commit         ambos scripts          commitea cada snapshot que se movio    no
-    -OncePerWeek    watch.ps1              no barre si la semana ya se barrio     no
-    -MaxAttempts    watch.ps1              intentos por semana antes de rendirse   2
-    -Hours          register-...ps1        limite de ejecucion de la tarea         3
-    -Delay          register-...ps1        espera tras el inicio de sesion        PT2M
-    -Unregister     register-...ps1        borra la tarea de ese nombre           no
+    Parameter       Applies to             Meaning                                 Default
+    -------------   --------------------   -------------------------------------   ---------
+    -Name           both scripts           names the task, the log and the record   labs-docs
+    -Group          both scripts           sweep only that group                    none
+    -Profiles       both scripts           sweep only those profiles                all
+    -Commit         both scripts           commit every snapshot that moved         no
+    -OnChange       both scripts           script to run when something changed     none
+    -OncePerWeek    watch.ps1              skip a week already swept                no
+    -MaxAttempts    watch.ps1              attempts per week before giving up       2
+    -Hours          register-...ps1        the task's execution time limit          3
+    -Delay          register-...ps1        wait after logon before firing           PT2M
+    -Unregister     register-...ps1        delete the task of that name             no
 
 The task fires at every logon; the wrapper sweeps only if the current ISO week has not been swept
 yet, and exits 20 without sweeping if it has. A week that is attempted and does not finish is
@@ -203,7 +237,16 @@ targets instead, and neither means every profile that asks for snapshots. The ta
 `output/watch-<name>.log` and `output/watch-<name>.week`, the record of the last week swept, so
 rounds must not share one.
 
-## 7. profiles
+`-OnChange` runs only on exit 10. The wrapper writes `<output>/digest-<name>.md` first and hands
+that path to the script as its one argument; a follow-up that fails is logged and announced rather
+than swallowed. It takes a path and not a command line because what to do with a change belongs
+outside this toolkit. See `scripts/on-change.example.ps1`.
+
+```powershell
+.\scripts\watch.ps1 -Group docs-labs -OncePerWeek -Commit -OnChange .\scripts\on-change.ps1
+```
+
+## 8. profiles
 
 ```text
 crawlee-lab profiles
@@ -213,7 +256,7 @@ Lists every profile, from `profiles/*.yaml` and from `src/crawlee_lab/sites/*.py
 target and description. The target is the profile's first start URL, or its first sitemap when it is
 sitemap-driven.
 
-## 8. urls
+## 9. urls
 
 ```text
 crawlee-lab urls [NAMES...] [OPTIONS]
@@ -241,13 +284,13 @@ The section is the level an `include` or `exclude` rule is written against, whic
 report actionable: narrow the profile, re-run the crawl, and the pages drop out of the corpus. A
 target that has never been snapshotted exits 1 and says so.
 
-## 9. version
+## 10. version
 
 ```text
 crawlee-lab version
 ```
 
-## 10. Selector syntax
+## 11. Selector syntax
 
     Expression            Result
     ------------------    -------------------------------------------
@@ -260,7 +303,7 @@ Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action
 resolved against the page they were found on. A selector that matches nothing yields null, or an
 empty list with `all:`.
 
-## 11. URL pattern syntax
+## 12. URL pattern syntax
 
 Applies to `--follow` and `--exclude`.
 
@@ -277,7 +320,7 @@ Windows path before the command sees it: `--follow /docs/` arrives as `--follow 
 Files/Git/docs/` and quietly matches nothing. Prefix the run with `MSYS2_ARG_CONV_EXCL='*'`, or use
 PowerShell, where the pattern is passed through untouched. Quoting the pattern does not help.
 
-## 12. Environment variables
+## 13. Environment variables
 
 Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.
 
@@ -298,29 +341,34 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     CRAWLEE_LAB_OUTPUT_DIR                  output
     CRAWLEE_LAB_PROFILES_DIR                profiles
 
-## 13. Where files land
+## 14. Where files land
 
-    Path                            Tracked by git    Contents
-    ----------------------------    --------------    ----------------------------------
-    output/<name>.json              no                Run output in the chosen formats
-    output/<name>/*.md              no                One file per page, markdown format
-    profiles/<name>.yaml            no                Saved profiles
-    data/<name>/pages/**            no                Snapshot payloads
-    data/<name>/manifest.json       no                Every URL with its status and hash
-    data/<name>/changes.json        no                Last change report, machine readable
-    data/<name>/CHANGES.md          no                Last change report, with diffs
-    data/WATCH.md                   no                Last sweep across every tracked target
-    data/<group>/**                 no                The same, for a target that names a group
-    output/<group>/<name>.jsonl     no                Run output for a grouped target
-    output/watch-<name>.log         no                One line per sweep of that task
-    output/watch-<name>.out         no                That sweep's own output, as it arrives
-    output/watch-<name>.week        no                The week, its attempts and whether it finished
-    storage/run-<pid>/              no                Crawlee's working directory, one per run
+    Path                            Root                        Contents
+    ----------------------------    ------------------------    ----------------------------------
+    <profiles>/<name>.yaml          CRAWLEE_LAB_PROFILES_DIR    Saved profiles
+    <data>/<name>/pages/**          CRAWLEE_LAB_DATA_DIR        Snapshot payloads
+    <data>/<name>/manifest.json     CRAWLEE_LAB_DATA_DIR        Every URL with its status and hash
+    <data>/<name>/changes.json      CRAWLEE_LAB_DATA_DIR        Last change report, machine readable
+    <data>/<name>/CHANGES.md        CRAWLEE_LAB_DATA_DIR        Last change report, with diffs
+    <data>/WATCH.md                 CRAWLEE_LAB_DATA_DIR        Last sweep across every target
+    <data>/WATCH.json               CRAWLEE_LAB_DATA_DIR        The same sweep, as data
+    <data>/<group>/**               CRAWLEE_LAB_DATA_DIR        The same, for a grouped target
+    <output>/<name>.json            CRAWLEE_LAB_OUTPUT_DIR      Run output in the chosen formats
+    <output>/<name>/*.md            CRAWLEE_LAB_OUTPUT_DIR      One file per page, markdown format
+    <output>/<group>/<name>.jsonl   CRAWLEE_LAB_OUTPUT_DIR      Run output for a grouped target
+    <output>/watch-<name>.log       CRAWLEE_LAB_OUTPUT_DIR      One line per sweep of that task
+    <output>/watch-<name>.out       CRAWLEE_LAB_OUTPUT_DIR      That sweep's own output, as it arrives
+    <output>/watch-<name>.week      CRAWLEE_LAB_OUTPUT_DIR      The week, attempts, whether it finished
+    <output>/digest-<name>.md       CRAWLEE_LAB_OUTPUT_DIR      What -OnChange is handed, when it runs
+    <storage>/run-<pid>/            CRAWLEE_LAB_STORAGE_DIR     Crawlee's working directory, per run
 
-`data/` is ignored in full, so change detection runs entirely off the local files and `--commit` has
-nothing to record. Remove the entry from `.gitignore` to keep a dated history instead.
+None of those roots is this checkout. The corpora, the profiles and the output live in a sibling
+repository, where the first two are tracked and the third is deliberately not; the working directory
+is scratch and goes to a temporary path. Each root defaults to a folder of that name under the
+project root, which is what a fresh clone with no `.env` gets. `--commit` writes to whichever
+repository owns the data directory.
 
-## 14. Recipes
+## 15. Recipes
 
 Scout a target before writing anything:
 
@@ -404,7 +452,7 @@ uv run crawlee-lab urls my-site --list | grep /blog/
 Remove the section from the profile's `include`, or add it to `exclude`, then re-run the crawl. The
 next snapshot reports the pages as removed and the corpus loses them.
 
-## 15. Development commands
+## 16. Development commands
 
 ```bash
 uv run ruff check .

@@ -27,7 +27,8 @@
     and says nothing is worse than one that never ran.
 
     The log and that record are named after -Name, so several scheduled sweeps can run side by side
-    without overwriting each other's turn.
+    without overwriting each other's turn. They land wherever the run's own output goes, which is
+    read from the environment and then from .env, the way the toolkit itself resolves it.
 
 .PARAMETER Name
     Names this sweep's log and its record of the last week swept. Defaults to 'labs-docs'.
@@ -42,6 +43,18 @@
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
+.PARAMETER OnChange
+    Script or executable to run when, and only when, the sweep found a real change. It is handed
+    one argument: the path to a markdown digest of what moved, which the wrapper writes first.
+
+    It takes a path rather than a command line on purpose. Whatever reads the digest — a model, a
+    document generator, a webhook — stays outside this toolkit, which is what keeps the toolkit
+    from acquiring a provider and a key. A follow-up that needs arguments of its own is a two-line
+    script.
+
+    A reordered page is not a change. A sweep that found nothing but shuffled table rows exits 0
+    and never reaches here.
+
 .PARAMETER OncePerWeek
     Do nothing if this name has already swept the current ISO week, or has already spent its
     attempts on it.
@@ -54,6 +67,7 @@
     .\scripts\watch.ps1
     .\scripts\watch.ps1 -Profiles claude-docs, claude-code-docs
     .\scripts\watch.ps1 -Name labs-docs -Group docs-labs -OncePerWeek
+    .\scripts\watch.ps1 -Group docs-labs -Commit -OnChange .\scripts\on-change.ps1
 #>
 [CmdletBinding()]
 param(
@@ -63,6 +77,7 @@ param(
     [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
     [string]$Group = '',
     [switch]$Commit,
+    [string]$OnChange = '',
     [switch]$OncePerWeek,
     [ValidateRange(1, 10)]
     [int]$MaxAttempts = 2
@@ -75,8 +90,35 @@ $Profiles = @($Profiles | ForEach-Object { $_ -split ',' } | ForEach-Object { $_
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 
+function Get-DotEnvValue {
+    param(
+        [string]$Path,
+        [string]$Key
+    )
+
+    # The toolkit resolves its settings from the environment first and .env second. This reads the
+    # same file the same way round, because a wrapper that guessed 'output' would write the log to
+    # a directory the run itself had been told to abandon.
+    if (-not (Test-Path $Path)) {
+        return ''
+    }
+    foreach ($line in Get-Content -Path $Path) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith('#')) { continue }
+        $split = $trimmed.IndexOf('=')
+        if ($split -lt 1) { continue }
+        if ($trimmed.Substring(0, $split).Trim() -eq $Key) {
+            return $trimmed.Substring($split + 1).Trim().Trim('"', "'")
+        }
+    }
+    return ''
+}
+
 # The log belongs wherever the run's other output goes, which the environment may have moved.
 $configuredOutput = $env:CRAWLEE_LAB_OUTPUT_DIR
+if ([string]::IsNullOrWhiteSpace($configuredOutput)) {
+    $configuredOutput = Get-DotEnvValue -Path (Join-Path $projectRoot '.env') -Key 'CRAWLEE_LAB_OUTPUT_DIR'
+}
 if ([string]::IsNullOrWhiteSpace($configuredOutput)) {
     $logDirectory = Join-Path $projectRoot 'output'
 }
@@ -208,6 +250,43 @@ Write-Log "sweep finished ($code): $headline"
 
 if ($code -eq 0 -or $code -eq 10) {
     Write-SweepState $weekFile $week ([Math]::Max($attempts, 1)) $true $false
+}
+
+# Exit 10 is the only code that means "something moved". The digest is built then and only then,
+# while the change reports it reads are still the ones this sweep wrote: the next sweep overwrites
+# them. Whatever -OnChange names is handed the file and left to decide what it is for.
+if ($code -eq 10) {
+    $digestFile = Join-Path $logDirectory "digest-$Name.md"
+    $digestArguments = @('run', 'crawlee-lab', 'digest', '--changed', '--out', $digestFile)
+    if ($Profiles.Count -gt 0) { $digestArguments += $Profiles }
+    elseif ($Group) { $digestArguments += @('--group', $Group) }
+
+    & uv @digestArguments 2>&1 | Out-String | ForEach-Object { Write-Log "digest: $($_.Trim())" }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "digest failed with $LASTEXITCODE"
+        $digestFile = ''
+    }
+
+    if ($OnChange -and $digestFile) {
+        Write-Log "on-change: $OnChange $digestFile"
+        try {
+            & $OnChange $digestFile
+            $followUp = $LASTEXITCODE
+        }
+        catch {
+            $followUp = 1
+            Write-Log "on-change could not be run: $($_.Exception.Message)"
+        }
+        if ($followUp -ne 0) {
+            # A follow-up that fails quietly is the failure mode this whole script exists to avoid.
+            Write-Log "on-change failed with $followUp"
+            Show-Notification -Title 'crawlee-lab: the follow-up failed' `
+                -Message "$OnChange exited with $followUp. The digest is at $digestFile"
+        }
+        else {
+            Write-Log 'on-change finished'
+        }
+    }
 }
 
 switch ($code) {

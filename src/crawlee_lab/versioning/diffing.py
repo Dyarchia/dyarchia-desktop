@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from crawlee_lab.models import PageStatus, utcnow
+from crawlee_lab.versioning.hashing import normalise
 from crawlee_lab.versioning.manifest import RunManifest
 
 CHANGES_FILENAME = 'changes.json'
@@ -32,6 +33,8 @@ class PageChange:
     kind: ChangeKind
     title: str | None = None
     diff: str | None = None
+    reordered: bool = False
+    """The page holds the same lines as before, in a different order, and nothing else moved."""
 
 
 @dataclass(slots=True)
@@ -61,8 +64,26 @@ class ChangeReport:
         return self.of_kind(ChangeKind.MODIFIED)
 
     @property
+    def reordered(self) -> list[PageChange]:
+        return [change for change in self.changes if change.reordered]
+
+    @property
+    def substantive(self) -> list[PageChange]:
+        """Every change that says something, which is every change that is not a reordering.
+
+        A documentation site that shuffles the rows of a pricing table rewrites the page without
+        changing a word of it. Counting that as a change wakes a notification, spends a run of
+        whatever reads these reports, and tells nobody anything.
+        """
+        return [change for change in self.changes if not change.reordered]
+
+    @property
     def has_changes(self) -> bool:
         return bool(self.changes)
+
+    @property
+    def has_substantive_changes(self) -> bool:
+        return bool(self.substantive)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -72,7 +93,13 @@ class ChangeReport:
             'unchanged': self.unchanged,
             'failed': self.failed,
             'changes': [
-                {'url': change.url, 'kind': change.kind.value, 'title': change.title, 'diff': change.diff}
+                {
+                    'url': change.url,
+                    'kind': change.kind.value,
+                    'title': change.title,
+                    'diff': change.diff,
+                    'reordered': change.reordered,
+                }
                 for change in self.changes
             ],
         }
@@ -96,6 +123,20 @@ def unified_diff(before: str, after: str, url: str) -> str:
     return '\n'.join(lines)
 
 
+def is_reordering(before: str, after: str) -> bool:
+    """Whether the text only moved: the same lines as before, in a different order.
+
+    Compared after the same normalisation the hash uses, so this asks about content rather than
+    about whitespace. Two texts that normalise identically are not a change at all and never reach
+    here; two that hold different lines are a real one.
+    """
+    old = normalise(before).splitlines()
+    new = normalise(after).splitlines()
+    if old == new:
+        return False
+    return sorted(old) == sorted(new)
+
+
 def compare(
     previous: RunManifest | None,
     current: RunManifest,
@@ -117,12 +158,15 @@ def compare(
         if old.sha256 == record.sha256:
             report.unchanged += 1
             continue
+        before = texts_before.get(url, '')
+        after = texts_after.get(url, '')
         report.changes.append(
             PageChange(
                 url=url,
                 kind=ChangeKind.MODIFIED,
                 title=record.title,
-                diff=unified_diff(texts_before.get(url, ''), texts_after.get(url, ''), url),
+                diff=unified_diff(before, after, url),
+                reordered=is_reordering(before, after),
             )
         )
 
@@ -168,6 +212,7 @@ def load_report(directory: Path) -> ChangeReport | None:
             kind=ChangeKind(item['kind']),
             title=item.get('title'),
             diff=item.get('diff'),
+            reordered=bool(item.get('reordered', False)),
         )
         for item in raw.get('changes', [])
     ]

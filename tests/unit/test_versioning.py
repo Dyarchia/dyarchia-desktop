@@ -2,13 +2,25 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
+import pytest
+
+from crawlee_lab.errors import CrawleeLabError
 from crawlee_lab.models import PageStatus
-from crawlee_lab.versioning.diffing import ChangeKind, compare, load_report, save_report
+from crawlee_lab.versioning.diffing import (
+    ChangeKind,
+    compare,
+    is_reordering,
+    load_report,
+    save_report,
+)
 from crawlee_lab.versioning.hashing import content_hash, normalise
 from crawlee_lab.versioning.manifest import PageRecord, RunManifest, load_manifest, save_manifest
 from crawlee_lab.versioning.report import render_markdown, summary_line
+from crawlee_lab.versioning.vcs import commit_snapshot, repository_root
 
 
 def record(url: str, sha: str, status: PageStatus = PageStatus.OK) -> PageRecord:
@@ -117,3 +129,120 @@ def test_markdown_report_names_every_section() -> None:
 
     assert '## Added (1)' in document
     assert '## Removed (1)' in document
+
+
+def git(repo: Path, *args: str) -> None:
+    subprocess.run(['git', *args], cwd=repo, check=True, capture_output=True)
+
+
+def repository(path: Path) -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    git(path, 'init', '-q')
+    git(path, 'config', 'user.email', 'test@example.invalid')
+    git(path, 'config', 'user.name', 'Test')
+    return path
+
+
+def test_repository_root_finds_the_repository_that_owns_the_data() -> None:
+    with TemporaryDirectory() as tmp:
+        root = repository(Path(tmp).resolve() / 'data-repo')
+        corpus = root / 'data' / 'group' / 'lab'
+        corpus.mkdir(parents=True)
+        assert repository_root(corpus) == root
+
+
+def test_repository_root_is_none_outside_any_repository() -> None:
+    with TemporaryDirectory() as tmp:
+        loose = Path(tmp).resolve() / 'loose'
+        loose.mkdir()
+        assert repository_root(loose) in (None, repository_root(Path(tmp).resolve()))
+
+
+def test_commit_snapshot_writes_to_the_data_repository_not_the_tool() -> None:
+    with TemporaryDirectory() as tmp:
+        tool = repository(Path(tmp).resolve() / 'tool')
+        data = repository(Path(tmp).resolve() / 'data-repo')
+        corpus = data / 'data' / 'group' / 'lab'
+        corpus.mkdir(parents=True)
+        (corpus / 'manifest.json').write_text('{}', encoding='utf-8')
+
+        revision = commit_snapshot(corpus, 'snapshot(lab): 1 page stored')
+        assert revision is not None
+
+        logged = subprocess.run(
+            ['git', 'log', '--oneline'], cwd=data, capture_output=True, text=True, check=True
+        )
+        assert 'snapshot(lab)' in logged.stdout
+
+        untouched = subprocess.run(
+            ['git', 'log', '--oneline'], cwd=tool, capture_output=True, text=True, check=False
+        )
+        assert 'snapshot(lab)' not in untouched.stdout
+
+
+def test_commit_snapshot_returns_none_when_nothing_moved() -> None:
+    with TemporaryDirectory() as tmp:
+        data = repository(Path(tmp).resolve() / 'data-repo')
+        corpus = data / 'data' / 'group' / 'lab'
+        corpus.mkdir(parents=True)
+        (corpus / 'manifest.json').write_text('{}', encoding='utf-8')
+        commit_snapshot(corpus, 'first')
+        assert commit_snapshot(corpus, 'second') is None
+
+
+def test_commit_snapshot_refuses_outside_a_repository() -> None:
+    with TemporaryDirectory() as tmp:
+        loose = Path(tmp).resolve() / 'loose'
+        loose.mkdir()
+        if repository_root(loose) is not None:
+            return
+        with pytest.raises(CrawleeLabError, match='not inside a git repository'):
+            commit_snapshot(loose, 'nowhere to write')
+
+
+def test_a_shuffled_table_is_a_reordering_not_a_change() -> None:
+    """A pricing table that shuffles its rows rewrites the page without saying anything."""
+    before = '| a | $1 |\n| b | $2 |\n| c | $3 |\n'
+    after = '| b | $2 |\n| c | $3 |\n| a | $1 |\n'
+    assert is_reordering(before, after)
+
+
+def test_an_edited_line_is_not_a_reordering() -> None:
+    before = '| a | $1 |\n| b | $2 |\n'
+    after = '| a | $9 |\n| b | $2 |\n'
+    assert not is_reordering(before, after)
+
+
+def test_identical_text_is_not_a_reordering() -> None:
+    assert not is_reordering('a\nb\n', 'a\r\nb\n')
+
+
+def test_compare_marks_a_reordering_and_keeps_it_out_of_the_verdict() -> None:
+    previous = manifest(one=record('https://s/one', 'aaa'))
+    current = manifest(one=record('https://s/one', 'bbb'))
+    report = compare(
+        previous,
+        current,
+        {'https://s/one': 'x\ny\n'},
+        {'https://s/one': 'y\nx\n'},
+    )
+
+    assert len(report.modified) == 1
+    assert report.modified[0].reordered
+    assert report.reordered == report.modified
+    assert report.substantive == []
+    assert report.has_changes
+    assert not report.has_substantive_changes
+    assert summary_line(report) == '0 added, 0 removed, 0 modified, 1 reordered, 0 unchanged'
+
+
+def test_a_reordering_survives_a_round_trip_through_the_report(tmp_path: Path) -> None:
+    """Whatever reads the report next has to see the classification, not re-derive it."""
+    previous = manifest(one=record('https://s/one', 'aaa'))
+    current = manifest(one=record('https://s/one', 'bbb'))
+    report = compare(previous, current, {'https://s/one': 'x\ny\n'}, {'https://s/one': 'y\nx\n'})
+    save_report(report, tmp_path)
+
+    reloaded = load_report(tmp_path)
+    assert reloaded is not None
+    assert reloaded.reordered and not reloaded.substantive

@@ -41,6 +41,11 @@
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
+.PARAMETER OnChange
+    Script or executable the sweep runs when it found a real change, handed the path to a markdown
+    digest of what moved. The path is resolved when the task is registered, not when it fires, so a
+    typo is an error here rather than a silent weekly failure at logon.
+
 .PARAMETER Hours
     How long the task may run before the scheduler kills it. Defaults to 3.
 
@@ -64,6 +69,7 @@ param(
     [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
     [string]$Group = '',
     [switch]$Commit,
+    [string]$OnChange = '',
     [ValidatePattern('^P(T(\d+H)?(\d+M)?(\d+S)?)$')]
     [string]$Delay = 'PT2M',
     [ValidateRange(1, 24)]
@@ -111,6 +117,13 @@ elseif ($Group) {
 }
 if ($Commit) {
     $arguments += '-Commit'
+}
+if ($OnChange) {
+    # Resolved now rather than at fire time: a task registered against a path that does not exist
+    # fails once a week, in the background, at logon, which is the worst place to learn about a typo.
+    $followUp = (Resolve-Path -Path $OnChange).Path
+    $arguments += '-OnChange'
+    $arguments += "`"$followUp`""
 }
 
 $action = New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument ($arguments -join ' ') -WorkingDirectory $projectRoot

@@ -34,8 +34,20 @@ def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         raise CrawleeLabError(f'git {args[0]} could not be run: {error}') from error
 
 
-def is_repository(root: Path) -> bool:
-    return _git(['rev-parse', '--git-dir'], root).returncode == 0
+def repository_root(directory: Path) -> Path | None:
+    """The top of the working tree that holds `directory`, or None when it holds no repository.
+
+    The corpora do not have to live inside the tool's own checkout, and since they were split out
+    they no longer do. Asking git which repository owns the data directory is the only way to reach
+    the right one; deriving it from where pyproject.toml sits only ever finds the tool.
+    """
+    if not directory.exists():
+        return None
+    found = _git(['rev-parse', '--show-toplevel'], directory)
+    if found.returncode != 0:
+        return None
+    top = found.stdout.strip()
+    return Path(top) if top else None
 
 
 def is_ignored(directory: Path, root: Path) -> bool:
@@ -43,14 +55,18 @@ def is_ignored(directory: Path, root: Path) -> bool:
     return _git(['check-ignore', '-q', '--', str(directory)], root).returncode == 0
 
 
-def commit_snapshot(directory: Path, message: str, root: Path) -> str | None:
+def commit_snapshot(directory: Path, message: str) -> str | None:
     """Stage and commit one snapshot directory, returning the new commit hash.
 
-    Returns None when the snapshot produced no change, which is the normal outcome for a target
-    that has not been edited since the previous run.
+    The repository is the one that owns `directory`, whichever that is. Returns None when the
+    snapshot produced no change, which is the normal outcome for a target that has not been edited
+    since the previous run.
     """
-    if not is_repository(root):
-        raise CrawleeLabError(f'{root} is not a git repository, so --commit has nothing to write to')
+    root = repository_root(directory)
+    if root is None:
+        raise CrawleeLabError(
+            f'{directory} is not inside a git repository, so --commit has nothing to write to'
+        )
 
     if is_ignored(directory, root):
         raise CrawleeLabError(

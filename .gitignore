@@ -1,27 +1,22 @@
-# Crawlee working directory (request queues, datasets, key-value stores)
-storage/
-
-# Ad-hoc run output
-output/
-
-# Scraped sites, in full: payloads, manifests and change reports alike.
-# Change detection does not depend on git. The manifest on disk holds the
-# previous hash of every page and the stored pages hold the previous text,
-# which is what a run compares against. Keeping data/ out of the repository
-# costs the long-term history, not the detection.
+# Nothing this toolkit produces belongs in this checkout. The corpora, the profiles that define
+# them, every run's output and the scraped reference material live in the sibling crawlee-lab-data
+# repository, and Crawlee's working directory is scratch that goes to a temporary path. See .env.
+#
+# The entries below are guards, not homes: they catch a run started without a .env, which would
+# otherwise drop a corpus back into the tool's tree.
 data/
+output/
+profiles/*.yaml
+profiles/*.yml
+storage/
+docs/reference/
+
+# The follow-up this machine actually runs, which holds its own paths and its own prompt. The
+# example beside it is the tracked one; what a given machine does with a change is not the tool's.
+scripts/on-change.ps1
 
 # Spanish-language tutorial, kept locally
 docs/tutorial.md
-
-# Scraped reference material, kept locally alongside the corpora it belongs with
-docs/reference/
-
-# Target definitions, which describe somebody's corpus rather than the tool.
-# The package still ships one profile under src/crawlee_lab/sites/ as the worked
-# example; everything a given machine tracks lives here, untracked.
-profiles/*.yaml
-profiles/*.yml
 
 # Python
 __pycache__/

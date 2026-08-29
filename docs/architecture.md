@@ -38,6 +38,8 @@ rewriting; both landed in the engine and both are now available to every target.
     runtime                 Crawlee state and working directory per run    nothing
     recon                   Target reconnaissance for the inspect command   extraction
     watch                   Sweeping every tracked target unattended        registry, engine
+    digest                  Bundling a sweep's changes for the step         inventory, registry,
+                            that runs after it                              versioning
     inventory               Reading a manifest back as a per-section        config,
                             report of what a target is holding              versioning.manifest
     engine                  Running a crawl end to end                      almost everything
@@ -200,16 +202,23 @@ then any group folder that actually holds the manifest. Half a move therefore re
 disk instead of declaring the corpus missing and crawling it again from nothing. The tolerance
 belongs on the reading side only: a write that guessed would scatter one target across two folders.
 
-Git is optional, and in this repository it is declined: `data/` is ignored in full. That is worth
-being precise about, because it sounds like it should break change tracking and does not. Detection
-compares the incoming run against the manifest and pages already on disk, so it works identically
-whether or not anything is committed. What git adds is duration. Without it, a target keeps its
-current state and the report of the most recent run; with it, every change acquires a date and an
-author trail.
+Git is optional, and it is worth being precise about why, because declining it sounds like it
+should break change tracking and does not. Detection compares the incoming run against the manifest
+and pages already on disk, so it works identically whether or not anything is committed. What git
+adds is duration. Without it, a target keeps its current state and the report of the most recent
+run; with it, every change acquires a date and an author trail.
 
-Removing `data/` from `.gitignore` restores that. `--commit` then stages a snapshot only when its
-content fingerprint moved, and `versioning.vcs` refuses with an explanation rather than a git error
-when the directory it was asked to commit is ignored.
+The corpora are versioned, but not here. They live in their own repository alongside this one, which
+is what `CRAWLEE_LAB_DATA_DIR` and `CRAWLEE_LAB_PROFILES_DIR` point at, and the tool's own history
+stays a history of the tool. The two sides share no import: one names a directory, the other holds
+it.
+
+That split is why `versioning.vcs` asks git which repository owns the data directory instead of
+deriving one from where `pyproject.toml` sits. Deriving it only ever finds the tool, and `git add`
+on a path outside the repository is a fatal error, so a corpus that moved out would have made
+`--commit` fail rather than commit elsewhere. `--commit` stages a snapshot only when its content
+fingerprint moved, and refuses with an explanation rather than a git error when the directory it
+was asked to commit is ignored or sits in no repository at all.
 
 Manifest timestamps move on every run, so comparing manifests directly would produce a commit per
 run and turn the history into a record of how often the scraper ran. Snapshots are therefore
@@ -248,6 +257,11 @@ that directory after the process, which makes the collision impossible rather th
 written after a ten-page test crawl of one site emptied 236 pages out of another site's corpus and
 left ten of its own behind.
 
+Where that directory goes is `settings.storage_root`, which is configurable for the same reason the
+data root is: it is not the tool. Scratch is purged at the start of every run and removed when the
+process exits, so nothing of value is kept there, but a run the scheduler kills leaves its folder
+behind, and a checkout that collects those is a checkout collecting somebody's abandoned crawls.
+
 ## 8. Running unattended
 
 A change detector that only detects when somebody remembers to launch it is a script rather than a
@@ -270,6 +284,18 @@ A failure outranks a change deliberately. A target that did not answer may be si
 nobody can see, so the sweep must not report success. A first snapshot deliberately does not count
 as a change: there is nothing yet for it to differ from, and a monitor that fires on its own first
 run teaches its reader to ignore it.
+
+Neither does a reordering. `diffing.is_reordering` asks whether a page holds the same lines as
+before in a different order, after the same normalisation the hash uses, and marks the change if it
+does. The page is still stored and still rewrites its hash, because the file did change; it is just
+not counted, and so raises nothing. The distinction is not academic. One real sweep of xai-docs
+reported three modified pages, all three of them pricing tables that had shuffled their rows, and
+every one of them raised a desktop notification that said nothing.
+
+The classification is computed once, at comparison time, from the text on both sides, and stored in
+the report. Deriving it later from the diff would be cheaper and wrong: the diff is trimmed at two
+hundred lines, so a large genuine change can look balanced, and the error would fall in the
+direction of hiding a change rather than reporting a false one.
 
 Everything Windows-specific lives in `scripts/`, outside the package: `watch.ps1` adds the log and
 the desktop notification, and `register-watch-task.ps1` registers the weekly task. Neither runs
@@ -298,6 +324,28 @@ sweep measured at twenty-five minutes.
 The record and the log are keyed by the task's name rather than fixed, because one machine may
 watch several sets of profiles on different schedules. Two tasks sharing a name would share the
 record, and the second would spend the week believing the first had been its own run.
+
+### 8.1 The step after the sweep
+
+An exit code is enough for a scheduler and not enough for anything that has to decide what a change
+means. The sweep therefore writes `WATCH.json` beside `WATCH.md`, carrying the same verdict as
+data, and `digest` assembles the rest: every changed page with its diff and the path to the file
+holding its current text. The path is the part that matters. A step given only diffs writes a
+changelog; a step that can open the page writes an answer.
+
+Reorderings travel through the digest labelled and uncounted, so a bundle of nothing but shuffled
+tables reports no change while still showing what moved, for anyone who wonders.
+
+The wrapper's `-OnChange` runs that step, on exit 10 and only then, and hands it the digest's path.
+It takes a path rather than a command line on purpose: what to do with a change is an editorial
+decision, and the moment the toolkit holds one it also holds a provider, a key and a prompt. The
+seam is the file. `scripts/on-change.example.ps1` is an example of crossing it, not part of the
+crossing.
+
+It runs inside the same invocation because the change reports it reads are the ones that sweep just
+wrote, and the next sweep overwrites them. A follow-up on its own schedule would be reading last
+week's diff or none at all, which is also the argument for `--commit`: once the corpora moved to
+their own repository, git is the only copy of what a previous week found.
 
 ## 9. Testing strategy
 

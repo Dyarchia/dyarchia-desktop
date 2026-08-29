@@ -67,7 +67,10 @@ rewriting; both landed in the engine and both are now available to every target.
     versioning.report       Rendering a change report                       diffing
     versioning.vcs          Committing a snapshot                           errors
     sites.claude_docs       The one profile the package ships, and the      profiles.schema
-                            worked example of a Python definition
+                            worked example of a Python definition. It does
+                            not ask to be snapshotted: it is present in
+                            every corpus repository, and one that asked
+                            would join every unattended round on the machine
 
 Dependencies point towards `models` and `config`, never towards `cli`.
 

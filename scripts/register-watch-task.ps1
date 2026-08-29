@@ -41,6 +41,11 @@
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
+.PARAMETER Repository
+    The corpus repository this task covers: a directory holding data/, profiles/ and output/. A
+    machine that watches two unrelated corpora registers one task per repository, because the
+    toolkit resolves a single data root and a round can only see the profiles in its own.
+
 .PARAMETER OnChange
     Script or executable the sweep runs when it found a real change, handed the path to a markdown
     digest of what moved. The path is resolved when the task is registered, not when it fires, so a
@@ -59,6 +64,7 @@
 .EXAMPLE
     .\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs
     .\scripts\register-watch-task.ps1 -Name claude-only -Profiles claude-docs, claude-code-docs
+    .\scripts\register-watch-task.ps1 -Name salesforce -Group salesforce-ai -Repository ..\crawlee-salesforce-data
     .\scripts\register-watch-task.ps1 -Name labs-docs -Unregister
 #>
 [CmdletBinding()]
@@ -69,6 +75,7 @@ param(
     [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
     [string]$Group = '',
     [switch]$Commit,
+    [string]$Repository = '',
     [string]$OnChange = '',
     [ValidatePattern('^P(T(\d+H)?(\d+M)?(\d+S)?)$')]
     [string]$Delay = 'PT2M',
@@ -117,6 +124,11 @@ elseif ($Group) {
 }
 if ($Commit) {
     $arguments += '-Commit'
+}
+if ($Repository) {
+    $corpus = (Resolve-Path -Path $Repository).Path
+    $arguments += '-Repository'
+    $arguments += "`"$corpus`""
 }
 if ($OnChange) {
     # Resolved now rather than at fire time: a task registered against a path that does not exist

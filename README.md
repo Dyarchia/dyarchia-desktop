@@ -172,8 +172,10 @@ files untouched.
 
 Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
 lives on the machine that crawls it; the package ships `claude-docs` under `src/crawlee_lab/sites/`
-as the worked example, and `docs/profiles.md` documents the format. The nine this toolkit was built
-against, in the group `docs-labs`:
+as the worked example, and `docs/profiles.md` documents the format. The example does not ask to be
+snapshotted: it is present in every corpus repository, so one that asked would enrol itself in
+every unattended round on the machine. The nine this toolkit was built against, in the group
+`docs-labs`:
 
     Profile                Target                       Pages
     -------------------    -------------------------    -----
@@ -191,24 +193,17 @@ All but one fetch the markdown variant the site publishes, so the snapshot is th
 than an extractor's reading of it. `ai.google.dev` publishes none, so `gemini-docs` is extracted
 from HTML instead. Page counts are from the last run of each.
 
-A second group, `salesforce-ai`, tracks what Salesforce publishes about Agentforce and Data 360:
+Each group is a folder and a round: its profiles share `<data>/<group>/`, `<output>/<group>/` and
+one weekly sweep. A corpus on a neighbouring topic gets its own group, and with it its own folder
+and its own schedule, rather than joining an existing one by having asked for snapshots.
 
-    Profile                Target                             Pages
-    -------------------    -------------------------------    -----
-    agentforce-docs        Agentforce, MCP, Lightning Types     448
-    data-cloud-docs        Data 360, English                  4,033
-    einstein-apis          Einstein Vision, Language, Bots       85
-
-`developer.salesforce.com` announces an `llms.txt` in its robots.txt and publishes a markdown twin
-of every documentation page, indexed per product. Its sitemaps name pages as `.html` and the twin
-lives at `.md`, which is why `fetch_suffix` replaces a page extension rather than only appending
-one. The set of twins matches the set of sitemap entries exactly, so nothing is sampled or guessed;
-the exception was sixteen localised copies of one guide that publish no markdown, and they are
-excluded by locale.
-
-Each group is a folder and a round: its profiles share `data/<group>/`, `output/<group>/` and one
-weekly sweep. A corpus on another subject gets its own group, and with it its own folder and its
-own schedule, rather than joining an existing one by having asked for snapshots.
+Groups divide one repository, and some things should not be in one repository at all. Two bodies of
+work that share nothing but a scraper get two, because the toolkit resolves a single data root and
+a round can only see the profiles in its own. `developer.salesforce.com` is tracked that way, in
+`crawlee-salesforce-data`, and reached with `-Repository` rather than filed alongside the labs: one
+is a lab over what the AI providers publish, the other is the platform the work is done on. The
+separation is also what stops a Salesforce round from noticing a Claude profile and quietly
+building a corpus nobody asked for.
 
 ## Running unattended
 
@@ -234,6 +229,14 @@ notification on one real sweep and told nobody anything.
 ```bash
 uv run crawlee-lab watch
 uv run crawlee-lab watch claude-docs claude-code-docs
+```
+
+A run covers one corpus repository. `--group` narrows it further, to the profiles inside that
+repository that belong to a group; `-Repository` on the wrapper chooses the repository itself, for
+a machine that watches more than one:
+
+```powershell
+.\scripts\watch.ps1 -Group salesforce-ai -Repository ..\crawlee-salesforce-data
 ```
 
 On Windows, `scripts/watch.ps1` wraps that in a log and a desktop notification raised only when the

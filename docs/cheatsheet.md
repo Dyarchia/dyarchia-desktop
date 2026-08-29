@@ -221,6 +221,7 @@ Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
     -Group          both scripts           sweep only that group                    none
     -Profiles       both scripts           sweep only those profiles                all
     -Commit         both scripts           commit every snapshot that moved         no
+    -Repository     both scripts           the corpus repository this round covers  from .env
     -OnChange       both scripts           script to run when something changed     none
     -OncePerWeek    watch.ps1              skip a week already swept                no
     -MaxAttempts    watch.ps1              attempts per week before giving up       2

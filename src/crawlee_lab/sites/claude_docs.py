@@ -10,6 +10,12 @@ documentation exactly and never wanders into the rest of the site.
 The documentation index needs no special handling here even though its variant lives at
 `docs/index.md` rather than at `docs.md`. Falling back to the index form is the engine's job, and it
 applies to any target whose sections are directories.
+
+It does not ask to be snapshotted. An example that ships with the package is present in every
+corpus repository, and one that asked would enrol itself in every unattended round on the machine:
+a repository tracking Salesforce documentation would find this in its weekly sweep and start
+building a Claude corpus it never asked for. Naming it on a crawl, with --snapshot, still does
+everything it documents.
 """
 
 from crawlee_lab.models import CrawlerKind, ExtractionMode, OutputFormat
@@ -25,6 +31,6 @@ PROFILE = ProfileSpec(
     formats=[OutputFormat.JSONL],
     max_concurrency=4,
     max_requests_per_minute=120,
-    snapshot=True,
+    snapshot=False,
     min_success_rate=0.95,
 )

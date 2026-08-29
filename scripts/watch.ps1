@@ -43,6 +43,15 @@
 .PARAMETER Commit
     Commit each snapshot that moved, when the data directory is inside a git repository.
 
+.PARAMETER Repository
+    The corpus repository this round covers: a directory holding data/, profiles/ and output/.
+    Given, it points the run at that corpus instead of whatever .env names.
+
+    The toolkit resolves one data root and treats groups as folders inside it, so two corpora that
+    have nothing to do with each other are two repositories and two rounds, not two groups. The
+    profiles a round can even see are the ones in its own repository, which is what keeps a round
+    from sweeping somebody else's targets by accident.
+
 .PARAMETER OnChange
     Script or executable to run when, and only when, the sweep found a real change. It is handed
     one argument: the path to a markdown digest of what moved, which the wrapper writes first.
@@ -77,6 +86,7 @@ param(
     [ValidatePattern('^$|^[a-z0-9][a-z0-9-]*$')]
     [string]$Group = '',
     [switch]$Commit,
+    [string]$Repository = '',
     [string]$OnChange = '',
     [switch]$OncePerWeek,
     [ValidateRange(1, 10)]
@@ -112,6 +122,22 @@ function Get-DotEnvValue {
         }
     }
     return ''
+}
+
+if ($Repository) {
+    # One round, one corpus repository. The toolkit resolves a single data root, so a machine that
+    # watches two unrelated corpora points each round at its own rather than filing them together.
+    # Set in the environment rather than written to .env, because the environment outranks it and a
+    # round must not edit the configuration of the round that runs next.
+    $corpus = (Resolve-Path -Path $Repository -ErrorAction Stop).Path
+    foreach ($required in 'data', 'profiles') {
+        if (-not (Test-Path (Join-Path $corpus $required))) {
+            throw "$corpus does not look like a corpus repository: no $required directory"
+        }
+    }
+    $env:CRAWLEE_LAB_DATA_DIR = Join-Path $corpus 'data'
+    $env:CRAWLEE_LAB_PROFILES_DIR = Join-Path $corpus 'profiles'
+    $env:CRAWLEE_LAB_OUTPUT_DIR = Join-Path $corpus 'output'
 }
 
 # The log belongs wherever the run's other output goes, which the environment may have moved.

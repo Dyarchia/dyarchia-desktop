@@ -251,10 +251,15 @@ PROFILE = ProfileSpec(
     formats=[OutputFormat.JSONL],
     max_concurrency=4,
     max_requests_per_minute=120,
-    snapshot=True,
+    snapshot=False,
     min_success_rate=0.95,
 )
 ```
+
+`snapshot=False` is the one line to change when copying it. A profile shipped inside the package is
+present in every corpus repository, and `watch` sweeps every profile that asks to be snapshotted,
+so an example that asked would join every unattended round on the machine. A profile of your own,
+in `profiles/`, is only ever in the repository you put it in and should say `snapshot: true`.
 
 Three decisions in that profile are worth copying for any documentation site. Seeding from the
 sitemap covers the target exactly instead of wandering through link discovery. `fetch_suffix` turns

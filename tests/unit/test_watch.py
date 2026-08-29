@@ -163,3 +163,17 @@ def test_the_sweep_writes_its_result_beside_the_report(tmp_path: Path) -> None:
     written = json.loads((tmp_path / WATCH_RESULT).read_text(encoding='utf-8'))
     assert written['changed'] == ['b']
     assert written['exit_code'] == EXIT_CHANGES
+
+
+def test_the_packaged_example_does_not_enrol_itself(tmp_path: Path) -> None:
+    """It ships with the package, so it is present in every corpus repository.
+
+    One that asked to be snapshotted would join every unattended round on the machine: a repository
+    tracking Salesforce documentation would find it in its weekly sweep and start building a Claude
+    corpus nobody asked for.
+    """
+    empty = tmp_path / 'profiles'
+    empty.mkdir()
+    settings = Settings(data_dir=tmp_path / 'data', profiles_dir=empty)
+
+    assert watchable(settings) == []

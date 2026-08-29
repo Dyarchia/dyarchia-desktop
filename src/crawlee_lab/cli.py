@@ -24,7 +24,7 @@ from crawlee_lab.storage.exporters import slugify_url
 from crawlee_lab.storage.snapshots import SnapshotResult
 from crawlee_lab.versioning.diffing import ChangeKind, load_report
 from crawlee_lab.versioning.report import summary_line
-from crawlee_lab.versioning.vcs import commit_snapshot
+from crawlee_lab.versioning.vcs import commit_snapshot, repository_root
 from crawlee_lab.watch import (
     WatchResult,
     save_report,
@@ -397,7 +397,24 @@ def diff_command(
         for url in report.failed[:limit]:
             console.print(f'  {url}')
 
-    console.print(f'\nfull history: git log -- {directory}')
+    console.print(f'\n{history_hint(directory)}', style='dim')
+
+
+def history_hint(directory: Path) -> str:
+    """How to read this corpus's history, in a form that works from where the user is standing.
+
+    The corpora live in their own repository, so `git log -- <absolute path>` run from the tool's
+    checkout is refused for naming a path outside it. The command has to enter the repository that
+    owns the corpus and address it from there.
+    """
+    root = repository_root(directory)
+    if root is None:
+        return 'no git history: this corpus is not inside a repository'
+    try:
+        relative = directory.relative_to(root)
+    except ValueError:
+        return f'full history: git -C {root} log'
+    return f'full history: git -C {root} log -- {relative.as_posix()}'
 
 
 @app.command(name='digest')

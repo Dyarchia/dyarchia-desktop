@@ -18,7 +18,8 @@
     Path to the digest the sweep wrote. Passed positionally by watch.ps1.
 
 .PARAMETER OutputDirectory
-    Where to leave whatever this produces. Defaults to the digest's own directory.
+    Where to leave whatever this produces. Derived from the digest when not given: the digest lands
+    in the corpus repository's output/, so this defaults to that repository's reviews/.
 
 .EXAMPLE
     .\scripts\watch.ps1 -Group docs-labs -OncePerWeek -Commit -OnChange .\scripts\on-change.ps1
@@ -33,32 +34,51 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Get-ReviewDirectory {
+    param([string]$DigestPath)
+
+    # The digest is written to <repository>/output/, so the repository is two levels up and its
+    # reviews/ sits beside the corpus the review is about. Deriving it rather than naming it is
+    # what lets one follow-up serve every corpus repository: a hardcoded path would file one
+    # round's notes with another's.
+    $output = Split-Path -Parent $DigestPath
+    $repository = Split-Path -Parent $output
+    if ((Split-Path -Leaf $output) -eq 'output' -and (Test-Path (Join-Path $repository 'data'))) {
+        return Join-Path $repository 'reviews'
+    }
+    return $output
+}
+
 if (-not (Test-Path $Digest)) {
     throw "no digest at $Digest"
 }
 if (-not $OutputDirectory) {
-    $OutputDirectory = Split-Path -Parent $Digest
+    $OutputDirectory = Get-ReviewDirectory -DigestPath $Digest
+}
+if (-not (Test-Path $OutputDirectory)) {
+    New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 }
 
 $stamp = (Get-Date).ToString('yyyy-MM-dd')
-$answer = Join-Path $OutputDirectory "review-$stamp.md"
+$review = Join-Path $OutputDirectory "review-$stamp.md"
 
 # Replace this with whatever should read the change. The digest is plain markdown on disk, so any
 # model, script or webhook can take it; what matters is that it runs only when something moved.
 $prompt = @"
 Read the change digest at $Digest.
 
-It lists every documentation page that changed since the last weekly sweep, with the diff and the
-path to the page's current text. Pages marked as reordered only are noise; ignore them.
+It lists every documentation page that changed since the last sweep, with the diff and the path to
+the page's current text. Pages listed under "Reordered only" are noise; ignore them.
 
 Decide whether any change is worth acting on. If none is, say so in one line and stop. If some is,
 write a short note saying what changed, for whom it matters, and which of our documents needs
-revisiting. Read the full page files before claiming what they now say.
+revisiting. Read the full page files before claiming what they now say; the diff shows what moved,
+not what the page means.
 "@
 
-claude -p $prompt | Out-File -FilePath $answer -Encoding utf8
+claude -p $prompt | Out-File -FilePath $review -Encoding utf8
 if ($LASTEXITCODE -ne 0) {
     throw "the model step exited with $LASTEXITCODE"
 }
 
-Write-Output "wrote $answer"
+Write-Output "wrote $review"

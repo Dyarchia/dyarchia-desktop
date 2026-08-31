@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 from crawlee_lab.config import Settings
@@ -11,6 +12,7 @@ from crawlee_lab.models import PageStatus
 from crawlee_lab.versioning.diffing import ChangeKind, ChangeReport, PageChange
 from crawlee_lab.versioning.diffing import save_report as save_changes
 from crawlee_lab.versioning.manifest import PageRecord, RunManifest, save_manifest
+from crawlee_lab.watch import WATCH_RESULT
 
 
 def corpus(settings: Settings, name: str, changes: list[PageChange], unchanged: int = 0) -> Path:
@@ -117,3 +119,63 @@ def test_the_markdown_form_lists_reorderings_without_counting_them() -> None:
 
     assert 'no change across 1 targets' in rendered
     assert 'Reordered only (1)' in rendered
+
+
+def sweep(settings: Settings, started: str, names: list[str], group: str | None = None) -> Path:
+    """Leave the sweep report a run writes beside the corpora it covered."""
+    directory = settings.data_root(group)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / WATCH_RESULT
+    path.write_text(
+        json.dumps({'started_at': started, 'targets': [{'name': n} for n in names]}),
+        encoding='utf-8',
+    )
+    return path
+
+
+def test_a_report_older_than_the_sweep_is_not_this_week_s_news(tmp_path: Path) -> None:
+    """A run that finds nothing writes nothing, so the report on disk can be weeks old.
+
+    Reading it back as the latest run is how a target that did not change reaches the next step as
+    if it had. It happened: claude-api-docs-es was handed to the follow-up with 105 pages from a
+    sweep three days earlier.
+    """
+    settings = Settings(data_dir=tmp_path)
+    directory = corpus(settings, 'quiet', [edited('https://s/one', 'One')])
+    old = ChangeReport(name='quiet', generated_at=datetime(2026, 8, 28, tzinfo=UTC))
+    old.changes = [edited('https://s/one', 'One')]
+    save_changes(old, directory)
+    sweep(settings, '2026-08-30T22:58:26+00:00', ['quiet'])
+
+    target = build(['quiet'], settings).targets[0]
+
+    assert target.stale
+    assert not target.changed
+    assert target.pages == []
+    assert 'no change in the sweep of' in target.summary
+
+
+def test_a_report_written_by_the_sweep_is_current(tmp_path: Path) -> None:
+    settings = Settings(data_dir=tmp_path)
+    directory = corpus(settings, 'mover', [])
+    fresh = ChangeReport(name='mover', generated_at=datetime(2026, 8, 30, 23, 6, tzinfo=UTC))
+    fresh.changes = [edited('https://s/one', 'One')]
+    save_changes(fresh, directory)
+    sweep(settings, '2026-08-30T22:58:26+00:00', ['mover'])
+
+    target = build(['mover'], settings).targets[0]
+
+    assert not target.stale
+    assert target.changed
+    assert len(target.pages) == 1
+
+
+def test_without_a_sweep_report_nothing_is_called_stale(tmp_path: Path) -> None:
+    """`digest` is usable on a corpus no sweep ever covered; it just cannot check currency."""
+    settings = Settings(data_dir=tmp_path)
+    corpus(settings, 'lonely', [edited('https://s/one', 'One')])
+
+    target = build(['lonely'], settings).targets[0]
+
+    assert not target.stale
+    assert target.changed

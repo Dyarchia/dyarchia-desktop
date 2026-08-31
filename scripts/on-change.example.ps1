@@ -34,6 +34,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# claude writes UTF-8 to stdout; PowerShell decodes it with the console codepage, which under the
+# scheduled task is the OEM one. Without this the review is captured double-encoded and lands on
+# disk as valid UTF-8 holding the wrong characters -- it wrote "S..." for "Si" on the first real run.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 function Get-ReviewDirectory {
     param([string]$DigestPath)
 

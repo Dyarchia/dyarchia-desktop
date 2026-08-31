@@ -8,6 +8,11 @@ way, which is what keeps the toolkit from acquiring a provider, a key and an opi
 
 Reorderings are carried but never counted. A page whose lines only moved is listed so nobody has to
 wonder where it went, and excluded from the verdict so it wakes nothing.
+
+Neither is a change report older than the sweep that just ran. A run that finds nothing rewrites
+nothing, by design, so the report left on disk is the last one that found something -- which may be
+weeks old. Reading it back as if it described the latest run is how a target that did not change
+gets handed to the next step as if it had.
 """
 
 from __future__ import annotations
@@ -24,7 +29,7 @@ from crawlee_lab.errors import CrawleeLabError
 from crawlee_lab.models import utcnow
 from crawlee_lab.versioning.diffing import ChangeKind, load_report
 from crawlee_lab.versioning.manifest import load_manifest
-from crawlee_lab.watch import watchable
+from crawlee_lab.watch import WATCH_RESULT, watchable
 
 
 @dataclass(slots=True)
@@ -63,6 +68,9 @@ class DigestTarget:
     pages: list[DigestPage] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
     error: str | None = None
+    swept_at: datetime | None = None
+    stale: bool = False
+    """The change report predates the last sweep, so it describes an older run than this one."""
 
     @property
     def substantive(self) -> list[DigestPage]:
@@ -74,7 +82,7 @@ class DigestTarget:
 
     @property
     def changed(self) -> bool:
-        return not self.first_run and bool(self.substantive)
+        return not self.first_run and not self.stale and bool(self.substantive)
 
     def of_kind(self, kind: ChangeKind) -> list[DigestPage]:
         return [page for page in self.substantive if page.kind == kind.value]
@@ -83,6 +91,10 @@ class DigestTarget:
     def summary(self) -> str:
         if self.error:
             return self.error
+        if self.stale:
+            swept = self.swept_at.isoformat() if self.swept_at else 'the last sweep'
+            seen = self.generated_at.isoformat() if self.generated_at else 'an earlier run'
+            return f'no change in the sweep of {swept}; its last change report is from {seen}'
         if self.first_run:
             return f'first snapshot: {len(self.pages)} pages stored'
         parts = [
@@ -102,6 +114,8 @@ class DigestTarget:
             'description': self.description,
             'directory': str(self.directory),
             'generated_at': self.generated_at.isoformat() if self.generated_at else None,
+            'swept_at': self.swept_at.isoformat() if self.swept_at else None,
+            'stale': self.stale,
             'first_run': self.first_run,
             'changed': self.changed,
             'summary': self.summary,
@@ -141,6 +155,33 @@ class Digest:
         }
 
 
+def _last_sweep(directory: Path, name: str) -> datetime | None:
+    """When the last sweep that covered this corpus started, from the report written beside it.
+
+    A grouped corpus sits at `<data>/<group>/<name>`, so its sweep report is one level up; a sweep
+    that crossed groups files at the data root, two levels up. Both are considered and the most
+    recent one that names this target wins.
+
+    This is the only authority on whether a change report is current. The corpus itself cannot say:
+    a run that finds nothing writes nothing, so its manifest and its change report are both left at
+    whatever the last run that did find something wrote.
+    """
+    latest: datetime | None = None
+    for candidate in (directory.parent / WATCH_RESULT, directory.parent.parent / WATCH_RESULT):
+        if not candidate.is_file():
+            continue
+        try:
+            raw = json.loads(candidate.read_text(encoding='utf-8'))
+            started = datetime.fromisoformat(raw['started_at'])
+        except (ValueError, KeyError, OSError):
+            continue
+        if not any(entry.get('name') == name for entry in raw.get('targets', [])):
+            continue
+        if latest is None or started > latest:
+            latest = started
+    return latest
+
+
 def _target(name: str, settings: Settings) -> DigestTarget:
     directory = inventory.directory_for(name, settings)
     target = DigestTarget(name=name, directory=directory)
@@ -158,10 +199,18 @@ def _target(name: str, settings: Settings) -> DigestTarget:
         target.error = f'no change report in {directory}'
         return target
 
+    target.generated_at = report.generated_at
+    target.swept_at = _last_sweep(directory, name)
+    if target.swept_at is not None and report.generated_at < target.swept_at:
+        # The sweep ran and this corpus wrote nothing, so the report on disk describes an older run.
+        # Carrying its pages forward is how a target that did not change reaches the next step as if
+        # it had, which is worse than saying nothing: it is a wrong answer nobody can see is wrong.
+        target.stale = True
+        return target
+
     manifest = load_manifest(directory)
     paths = {url: record.path for url, record in manifest.pages.items()} if manifest else {}
 
-    target.generated_at = report.generated_at
     target.first_run = report.is_first_run
     target.unchanged = report.unchanged
     target.failed = list(report.failed)

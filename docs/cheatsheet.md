@@ -176,6 +176,10 @@ page in full instead of inferring it from the diff.
 Pages that only reordered are listed under their own heading and never counted as a change, so a
 digest of a sweep that found nothing but shuffled table rows says "no change".
 
+Neither is a change report older than the last sweep. A run that finds nothing rewrites nothing, so
+the report left on disk can be weeks old; when `WATCH.json` shows a sweep newer than the report, the
+target is reported as unchanged and its stale pages are not carried forward.
+
 ```bash
 crawlee-lab digest --changed --group docs-labs --out digest.md
 crawlee-lab digest xai-docs --json

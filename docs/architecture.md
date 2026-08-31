@@ -339,6 +339,14 @@ changelog; a step that can open the page writes an answer.
 Reorderings travel through the digest labelled and uncounted, so a bundle of nothing but shuffled
 tables reports no change while still showing what moved, for anyone who wonders.
 
+So does currency, and that one had to be learned. A run that finds nothing rewrites nothing, which
+is the right behaviour and means the report left beside a quiet corpus describes whatever the last
+run that did find something wrote. `digest` read that back as the latest word, and on the first
+real sweep it handed the follow-up 105 pages of a corpus that had not changed in three days. The
+corpus cannot answer the question itself; only the sweep can, which is what `WATCH.json` is for.
+A report older than the sweep that covered it is reported as no change, and its pages are dropped
+rather than passed on.
+
 The wrapper's `-OnChange` runs that step, on exit 10 and only then, and hands it the digest's path.
 It takes a path rather than a command line on purpose: what to do with a change is an editorial
 decision, and the moment the toolkit holds one it also holds a provider, a key and a prompt. The

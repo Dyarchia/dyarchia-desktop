@@ -17,14 +17,14 @@ from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
 from crawlee_lab.errors import ConfigurationError, CrawleeLabError
 from crawlee_lab.models import CrawlerKind, ExtractionMode, LinkStrategy, OutputFormat, RunSpec
-from crawlee_lab.profiles.loader import save_profile_file
+from crawlee_lab.profiles import loader as profile_loader
 from crawlee_lab.profiles.schema import ProfileSpec
 from crawlee_lab.recon import Recon, inspect_url
 from crawlee_lab.storage.exporters import slugify_url
 from crawlee_lab.storage.snapshots import SnapshotResult
 from crawlee_lab.versioning.diffing import ChangeKind, load_report
 from crawlee_lab.versioning.report import summary_line
-from crawlee_lab.versioning.vcs import commit_snapshot, repository_root
+from crawlee_lab.versioning.vcs import commit_path, repository_root
 from crawlee_lab.watch import (
     EXIT_BUSY,
     WatchResult,
@@ -240,11 +240,20 @@ def crawl(
         error_console.print('[bold yellow]robots.txt is being ignored for this run[/bold yellow]')
 
     if save_profile is not None:
-        saved = save_profile_file(
-            ProfileSpec.model_validate({**spec.model_dump(), 'name': save_profile}),
-            settings.resolve(settings.profiles_dir),
-        )
-        console.print(f'saved profile [bold]{save_profile}[/bold] to {saved}')
+        try:
+            saved = profile_loader.save_profile(
+                ProfileSpec.model_validate({**spec.model_dump(), 'name': save_profile}),
+                settings.resolve(settings.profiles_dir),
+            )
+        except CrawleeLabError as error:
+            error_console.print(f'[bold red]{error}[/bold red]')
+            raise typer.Exit(code=1) from error
+
+        console.print(f'profile [bold]{save_profile}[/bold]: {saved}')
+        if not saved.versioned:
+            error_console.print(
+                '[yellow]this profile is not versioned, so an edit to it leaves no trace[/yellow]'
+            )
 
     if output_dir is not None:
         settings = settings.model_copy(update={'output_dir': output_dir})
@@ -263,7 +272,7 @@ def crawl(
         for warning in result.snapshot.warnings:
             error_console.print(f'[bold yellow]{warning}[/bold yellow]')
         if commit and result.snapshot.persisted:
-            _commit_snapshot(result.snapshot)
+            _commit_path(result.snapshot)
         elif commit:
             console.print('  nothing to commit, the target has not changed')
     elif commit:
@@ -273,10 +282,10 @@ def crawl(
         raise typer.Exit(code=1)
 
 
-def _commit_snapshot(snapshot: SnapshotResult) -> None:
+def _commit_path(snapshot: SnapshotResult) -> None:
     message = f'snapshot({snapshot.manifest.name}): {summary_line(snapshot.report)}'
     try:
-        revision = commit_snapshot(snapshot.directory, message)
+        revision = commit_path(snapshot.directory, message)
     except CrawleeLabError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         return
@@ -676,7 +685,7 @@ def _commit_sweep(result: WatchResult, settings: Settings) -> None:
     directory = settings.resolve(settings.data_dir)
     message = f'watch: {result.headline}'
     try:
-        revision = commit_snapshot(directory, message)
+        revision = commit_path(directory, message)
     except CrawleeLabError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         return

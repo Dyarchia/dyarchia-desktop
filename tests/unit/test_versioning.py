@@ -20,7 +20,7 @@ from crawlee_lab.versioning.diffing import (
 from crawlee_lab.versioning.hashing import content_hash, normalise
 from crawlee_lab.versioning.manifest import PageRecord, RunManifest, load_manifest, save_manifest
 from crawlee_lab.versioning.report import render_markdown, summary_line
-from crawlee_lab.versioning.vcs import commit_snapshot, repository_root
+from crawlee_lab.versioning.vcs import commit_path, repository_root
 
 
 def record(url: str, sha: str, status: PageStatus = PageStatus.OK) -> PageRecord:
@@ -158,7 +158,7 @@ def test_repository_root_is_none_outside_any_repository() -> None:
         assert repository_root(loose) in (None, repository_root(Path(tmp).resolve()))
 
 
-def test_commit_snapshot_writes_to_the_data_repository_not_the_tool() -> None:
+def test_commit_path_writes_to_the_data_repository_not_the_tool() -> None:
     with TemporaryDirectory() as tmp:
         tool = repository(Path(tmp).resolve() / 'tool')
         data = repository(Path(tmp).resolve() / 'data-repo')
@@ -166,7 +166,7 @@ def test_commit_snapshot_writes_to_the_data_repository_not_the_tool() -> None:
         corpus.mkdir(parents=True)
         (corpus / 'manifest.json').write_text('{}', encoding='utf-8')
 
-        revision = commit_snapshot(corpus, 'snapshot(lab): 1 page stored')
+        revision = commit_path(corpus, 'snapshot(lab): 1 page stored')
         assert revision is not None
 
         logged = subprocess.run(
@@ -180,24 +180,24 @@ def test_commit_snapshot_writes_to_the_data_repository_not_the_tool() -> None:
         assert 'snapshot(lab)' not in untouched.stdout
 
 
-def test_commit_snapshot_returns_none_when_nothing_moved() -> None:
+def test_commit_path_returns_none_when_nothing_moved() -> None:
     with TemporaryDirectory() as tmp:
         data = repository(Path(tmp).resolve() / 'data-repo')
         corpus = data / 'data' / 'group' / 'lab'
         corpus.mkdir(parents=True)
         (corpus / 'manifest.json').write_text('{}', encoding='utf-8')
-        commit_snapshot(corpus, 'first')
-        assert commit_snapshot(corpus, 'second') is None
+        commit_path(corpus, 'first')
+        assert commit_path(corpus, 'second') is None
 
 
-def test_commit_snapshot_refuses_outside_a_repository() -> None:
+def test_commit_path_refuses_outside_a_repository() -> None:
     with TemporaryDirectory() as tmp:
         loose = Path(tmp).resolve() / 'loose'
         loose.mkdir()
         if repository_root(loose) is not None:
             return
         with pytest.raises(CrawleeLabError, match='not inside a git repository'):
-            commit_snapshot(loose, 'nowhere to write')
+            commit_path(loose, 'nowhere to write')
 
 
 def test_a_shuffled_table_is_a_reordering_not_a_change() -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,12 @@ from crawlee_lab.config import Settings
 from crawlee_lab.crawlers.factory import build_crawler
 from crawlee_lab.errors import ConfigurationError, ProfileError
 from crawlee_lab.models import CrawlerKind, ExtractionMode, RunSpec
-from crawlee_lab.profiles.loader import load_profile_file, save_profile_file
+from crawlee_lab.profiles.loader import (
+    load_profile_file,
+    save_profile,
+    save_profile_file,
+    save_profile_text,
+)
 from crawlee_lab.profiles.schema import ProfileSpec
 
 MINIMAL = """
@@ -141,3 +147,165 @@ def test_a_group_that_could_escape_its_folder_is_refused() -> None:
     for escape in ('../elsewhere', 'labs/docs', 'C:'):
         with pytest.raises(ValidationError):
             RunSpec(name='demo', start_urls=['https://site.example/'], group=escape)
+
+
+def git(path: Path, *args: str) -> None:
+    subprocess.run(['git', *args], cwd=path, check=True, capture_output=True)
+
+
+def versioned_profiles(root: Path) -> Path:
+    """A corpus repository the way the split left one, with profiles/ tracked."""
+    root.mkdir(parents=True, exist_ok=True)
+    git(root, 'init', '-q')
+    git(root, 'config', 'user.email', 'test@example.invalid')
+    git(root, 'config', 'user.name', 'Test')
+    (root / '.gitignore').write_text('output/\n', encoding='utf-8')
+    git(root, 'add', '-A')
+    git(root, 'commit', '-qm', 'start')
+    directory = root / 'profiles'
+    directory.mkdir()
+    return directory
+
+
+def demo(name: str = 'demo', description: str | None = None) -> ProfileSpec:
+    return ProfileSpec(name=name, description=description, start_urls=['https://s/one'])
+
+
+def test_saving_a_tracked_profile_commits_it(tmp_path: Path) -> None:
+    """The profile lives beside the corpus it describes, and that corpus is versioned."""
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+
+    saved = save_profile(demo(), directory)
+
+    assert saved.versioned
+    assert saved.revision is not None
+    logged = subprocess.run(
+        ['git', 'log', '--oneline'], cwd=tmp_path / 'corpus-repo', capture_output=True, text=True, check=True
+    )
+    assert 'profile(demo): added' in logged.stdout
+
+
+def test_saving_the_same_profile_twice_commits_once(tmp_path: Path) -> None:
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+    save_profile(demo(), directory)
+
+    again = save_profile(demo(), directory)
+
+    assert again.versioned
+    assert again.revision is None
+    assert 'nothing to commit' in str(again)
+
+
+def test_an_edit_is_committed_as_an_update(tmp_path: Path) -> None:
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+    save_profile(demo(), directory)
+
+    saved = save_profile(demo(description='now with a description'), directory)
+
+    assert saved.revision is not None
+    logged = subprocess.run(
+        ['git', 'log', '--oneline'], cwd=tmp_path / 'corpus-repo', capture_output=True, text=True, check=True
+    )
+    assert 'profile(demo): updated' in logged.stdout
+
+
+def test_an_unversioned_profile_still_saves_but_says_so(tmp_path: Path) -> None:
+    """A fresh clone writes profiles into a directory git was told to ignore. That must still work."""
+    directory = tmp_path / 'loose'
+
+    saved = save_profile(demo(), directory)
+
+    assert saved.path.is_file()
+    assert not saved.versioned
+    assert saved.unversioned_because is not None
+
+
+def test_a_caller_that_requires_a_commit_is_refused_before_anything_is_written(tmp_path: Path) -> None:
+    """What a save button needs: offering an edit that cannot be recorded is worse than not offering it."""
+    directory = tmp_path / 'loose'
+
+    with pytest.raises(ProfileError, match='refusing to save'):
+        save_profile(demo(), directory, require_commit=True)
+
+    assert not (directory / 'demo.yaml').exists()
+
+
+def test_an_ignored_profile_is_refused_even_inside_a_repository(tmp_path: Path) -> None:
+    """The dangerous middle case: it looks versioned and is not."""
+    root = tmp_path / 'corpus-repo'
+    directory = versioned_profiles(root)
+    (root / '.gitignore').write_text('output/\nprofiles/*.yaml\n', encoding='utf-8')
+
+    with pytest.raises(ProfileError, match=r'ignored by \.gitignore'):
+        save_profile(demo(), directory, require_commit=True)
+
+    assert not (directory / 'demo.yaml').exists()
+
+
+def test_an_edited_profile_keeps_its_comments(tmp_path: Path) -> None:
+    """The comments are the measurements that justify the rules. The model does not hold them."""
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+    text = (
+        'name: measured\n'
+        '# 45 of the 46 pages publish a usable twin, measured 2026-09-04\n'
+        'start_urls:\n'
+        '  - https://s/one  # the one that mattered\n'
+        'snapshot: true\n'
+    )
+
+    saved = save_profile_text('measured', text, directory)
+
+    assert saved.versioned
+    assert saved.path.read_text(encoding='utf-8') == text
+    assert saved.path.read_text(encoding='utf-8').count('#') == 2
+
+
+def test_a_broken_edit_never_reaches_the_file(tmp_path: Path) -> None:
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+    save_profile_text('demo', 'name: demo\nstart_urls:\n  - https://s/one\n', directory)
+    before = (directory / 'demo.yaml').read_text(encoding='utf-8')
+
+    with pytest.raises(ProfileError, match='not a valid profile'):
+        save_profile_text('demo', 'name: demo\nmax_depth: not a number\n', directory)
+
+    assert (directory / 'demo.yaml').read_text(encoding='utf-8') == before
+
+
+def test_an_edit_that_renames_the_profile_is_refused(tmp_path: Path) -> None:
+    """A file whose name and declared name disagree is a profile nothing can look up."""
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+
+    with pytest.raises(ProfileError, match='would not be found'):
+        save_profile_text('demo', 'name: somethingelse\nstart_urls:\n  - https://s/one\n', directory)
+
+
+def test_a_failed_commit_puts_the_previous_text_back(tmp_path: Path) -> None:
+    """Half a saved profile is a profile that no longer describes the corpus beside it."""
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+    original = 'name: demo\nstart_urls:\n  - https://s/one\n'
+    save_profile_text('demo', original, directory)
+
+    # A pre-commit hook that refuses, which is the failure vcs was built to survive.
+    hooks = tmp_path / 'hooks'
+    hooks.mkdir()
+    hook = hooks / 'pre-commit'
+    hook.write_text('#!/bin/sh\nexit 1\n', encoding='utf-8', newline='\n')
+    hook.chmod(0o755)
+    git(tmp_path / 'corpus-repo', 'config', 'core.hooksPath', str(hooks))
+    with pytest.raises(ProfileError, match='was not saved'):
+        save_profile_text('demo', original + 'max_depth: 2\n', directory)
+
+    assert (directory / 'demo.yaml').read_text(encoding='utf-8') == original
+
+
+def test_saving_a_profile_back_unchanged_changes_nothing(tmp_path: Path) -> None:
+    """On Windows a plain write_text would rewrite every line, and `* -text` records that."""
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+    text = 'name: demo\n# a measurement worth keeping\nstart_urls:\n  - https://s/one\n'
+    save_profile_text('demo', text, directory)
+    before = (directory / 'demo.yaml').read_bytes()
+
+    again = save_profile_text('demo', text, directory)
+
+    assert (directory / 'demo.yaml').read_bytes() == before
+    assert again.revision is None

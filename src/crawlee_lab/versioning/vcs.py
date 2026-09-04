@@ -34,14 +34,18 @@ def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         raise CrawleeLabError(f'git {args[0]} could not be run: {error}') from error
 
 
-def repository_root(directory: Path) -> Path | None:
-    """The top of the working tree that holds `directory`, or None when it holds no repository.
+def repository_root(path: Path) -> Path | None:
+    """The top of the working tree that holds `path`, or None when it is in no repository.
 
     The corpora do not have to live inside the tool's own checkout, and since they were split out
     they no longer do. Asking git which repository owns the data directory is the only way to reach
     the right one; deriving it from where pyproject.toml sits only ever finds the tool.
+
+    A file is asked about from the directory holding it: git runs somewhere, and a file is not a
+    somewhere. Profiles are single files, so this is reached with one every time one is saved.
     """
-    if not directory.exists():
+    directory = path if path.is_dir() else path.parent
+    if not directory.is_dir():
         return None
     found = _git(['rev-parse', '--show-toplevel'], directory)
     if found.returncode != 0:
@@ -67,35 +71,33 @@ def is_ignored(directory: Path, root: Path) -> bool:
     return _git(['check-ignore', '-q', '--', str(directory)], root).returncode == 0
 
 
-def commit_snapshot(directory: Path, message: str) -> str | None:
-    """Stage and commit one snapshot directory, returning the new commit hash.
+def commit_path(target: Path, message: str) -> str | None:
+    """Stage and commit one path, a corpus directory or a single file, returning the new hash.
 
-    The repository is the one that owns `directory`, whichever that is. Returns None when the
-    snapshot produced no change, which is the normal outcome for a target that has not been edited
-    since the previous run.
+    The repository is the one that owns `target`, whichever that is. Returns None when the path
+    produced no change, which is the normal outcome for a corpus nothing edited since the previous
+    run, and for a profile saved with the same content it already had.
     """
-    root = repository_root(directory)
+    root = repository_root(target)
     if root is None:
-        raise CrawleeLabError(
-            f'{directory} is not inside a git repository, so --commit has nothing to write to'
-        )
+        raise CrawleeLabError(f'{target} is not inside a git repository, so there is nothing to write to')
 
-    if is_ignored(directory, root):
+    if is_ignored(target, root):
         raise CrawleeLabError(
-            f'{directory} is ignored by .gitignore, so --commit cannot record anything. '
+            f'{target} is ignored by .gitignore, so the commit cannot record anything. '
             f'Change detection does not need git and keeps working; only the long-term history '
             f'is lost. Remove the entry from .gitignore if you want the history back.'
         )
 
-    staged = _git(['add', '--', str(directory)], root)
+    staged = _git(['add', '--', str(target)], root)
     if staged.returncode != 0:
         raise CrawleeLabError(f'git add failed: {staged.stderr.strip()}')
 
-    pending = _git(['diff', '--cached', '--quiet', '--', str(directory)], root)
+    pending = _git(['diff', '--cached', '--quiet', '--', str(target)], root)
     if pending.returncode == 0:
         return None
 
-    committed = _git(['commit', '-m', message, '--', str(directory)], root)
+    committed = _git(['commit', '-m', message, '--', str(target)], root)
     if committed.returncode != 0:
         detail = committed.stderr.strip() or committed.stdout.strip()
         raise CrawleeLabError(f'git commit failed: {detail}')

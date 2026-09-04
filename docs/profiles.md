@@ -273,3 +273,31 @@ opening two hundred pages out of two hundred is chrome whatever it says.
 
 Run `crawlee-lab inspect` against a new documentation site before writing a profile for it. It
 reports whether a markdown variant exists and which sitemaps are published.
+
+
+## Saving a profile is a commit
+
+A profile lives with the corpus it describes, and in a corpus repository it is tracked. Editing one
+is therefore a change to a versioned file, so `save_profile` and `save_profile_text` commit it.
+
+    Where the profile lives                         What happens
+    -----------------------------------------       ----------------------------------------
+    a repository that tracks it                     written and committed
+    a repository that ignores it                    written, and told it is not versioned
+    no repository at all                            written, and told it is not versioned
+
+Nothing is silent, and nothing is refused that would otherwise work: a fresh clone writes profiles
+into the tool's own `profiles/`, which its `.gitignore` guards, and `--save-profile` has to keep
+working there.
+
+A caller may pass `require_commit=True`, and then a profile that cannot be committed is refused
+**before anything is written**. That is what a save button needs. Offering an edit that leaves no
+trace is worse than not offering it, and a half-written profile no longer describes the corpus
+beside it, which is why a commit that fails puts the previous text back.
+
+`save_profile` renders from the model and is for a profile a run produced. **An edit goes through
+`save_profile_text`, which writes the text exactly as given**, because the model does not hold
+comments and the comments are the measurements that justify the rules. Round-tripping the
+Agentforce Vibes profile through `ProfileSpec` takes it from 24 lines and 8 comments to 17 and
+none: which sitemap set it narrows, what markdown coverage was measured and when, all gone. The
+text is the document; it is parsed only to refuse a broken one.

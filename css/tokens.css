@@ -15,8 +15,8 @@
     --dya-space-16: 96px;
     --dya-space-24: 160px;
 
-    --dya-font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --dya-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --dya-font-sans: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
+    --dya-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
     --dya-size-display: 64px;
     --dya-size-h1: 48px;

@@ -47,6 +47,17 @@ class Settings(BaseSettings):
     profiles_dir: Path = Path('profiles')
     storage_dir: Path = Path('storage')
 
+    @classmethod
+    def for_repository(cls, root: Path) -> Settings:
+        """Settings pointing at one corpus repository: a directory holding data, profiles, output.
+
+        The same convention `scripts/watch.ps1 -Repository` sets in the environment, expressed once
+        on this side too. A machine watching several unrelated corpora keeps them in separate
+        repositories, so anything that reads more than one has to be able to name them.
+        """
+        root = root.resolve()
+        return cls(data_dir=root / 'data', profiles_dir=root / 'profiles', output_dir=root / 'output')
+
     @property
     def project_root(self) -> Path:
         return find_project_root()

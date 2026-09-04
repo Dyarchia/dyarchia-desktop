@@ -14,13 +14,14 @@ from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
 - [7. watch](#7-watch)
 - [8. profiles](#8-profiles)
 - [9. urls](#9-urls)
-- [10. version](#10-version)
-- [11. Selector syntax](#11-selector-syntax)
-- [12. URL pattern syntax](#12-url-pattern-syntax)
-- [13. Environment variables](#13-environment-variables)
-- [14. Where files land](#14-where-files-land)
-- [15. Recipes](#15-recipes)
-- [16. Development commands](#16-development-commands)
+- [10. state](#10-state)
+- [11. version](#11-version)
+- [12. Selector syntax](#12-selector-syntax)
+- [13. URL pattern syntax](#13-url-pattern-syntax)
+- [14. Environment variables](#14-environment-variables)
+- [15. Where files land](#15-where-files-land)
+- [16. Recipes](#16-recipes)
+- [17. Development commands](#17-development-commands)
 
 ## 1. Setup
 
@@ -32,7 +33,7 @@ uv run playwright install chromium
 Everything below assumes the `uv run` prefix. Drop it inside an activated virtual environment.
 
 There are no commit hooks. The checks run when you ask for them, in
-[section 16](#16-development-commands), and on every push in CI.
+[section 17](#17-development-commands), and on every push in CI.
 
 ## 2. Commands at a glance
 
@@ -45,6 +46,7 @@ There are no commit hooks. The checks run when you ask for them, in
     watch       Sweep every tracked target once, for a scheduler to call
     profiles    List the profiles this project knows about
     urls        Report what a snapshotted target is holding, by section
+    state       Report every corpus across every repository, in one answer
     version     Print the installed version
 
 ## 3. crawl
@@ -289,13 +291,39 @@ The section is the level an `include` or `exclude` rule is written against, whic
 report actionable: narrow the profile, re-run the crawl, and the pages drop out of the corpus. A
 target that has never been snapshotted exits 1 and says so.
 
-## 10. version
+## 10. state
+
+```text
+crawlee-lab state [OPTIONS]
+```
+
+    Option         Value   Default        Meaning
+    ------------   -----   ------------   ---------------------------------------------
+    --repository   path    from .env      A corpus repository to read. Repeatable.
+    --json         flag    off            Emit JSON instead of a table
+
+One answer for every repository asked about: each corpus with its group, pages, size, when its last
+change report was written, and whether that report is current, stale, quiet or unreadable. Each
+repository also reports its git head and whether it has uncommitted work.
+
+It exists so that whatever reads it next -- a panel, a script, another tool -- does not have to walk
+the manifests, rediscover where a grouped corpus lives, or decide for itself whether a change report
+describes the latest sweep. The JSON names every root, so nothing has to derive them from the
+convention either.
+
+```bash
+crawlee-lab state
+crawlee-lab state --repository ../crawlee-lab-data --repository ../crawlee-salesforce-data
+crawlee-lab state --json
+```
+
+## 11. version
 
 ```text
 crawlee-lab version
 ```
 
-## 11. Selector syntax
+## 12. Selector syntax
 
     Expression            Result
     ------------------    -------------------------------------------
@@ -308,7 +336,7 @@ Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action
 resolved against the page they were found on. A selector that matches nothing yields null, or an
 empty list with `all:`.
 
-## 12. URL pattern syntax
+## 13. URL pattern syntax
 
 Applies to `--follow` and `--exclude`.
 
@@ -325,7 +353,7 @@ Windows path before the command sees it: `--follow /docs/` arrives as `--follow 
 Files/Git/docs/` and quietly matches nothing. Prefix the run with `MSYS2_ARG_CONV_EXCL='*'`, or use
 PowerShell, where the pattern is passed through untouched. Quoting the pattern does not help.
 
-## 13. Environment variables
+## 14. Environment variables
 
 Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.
 
@@ -346,7 +374,7 @@ Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`
     CRAWLEE_LAB_OUTPUT_DIR                  output
     CRAWLEE_LAB_PROFILES_DIR                profiles
 
-## 14. Where files land
+## 15. Where files land
 
     Path                            Root                        Contents
     ----------------------------    ------------------------    ----------------------------------
@@ -373,7 +401,7 @@ is scratch and goes to a temporary path. Each root defaults to a folder of that 
 project root, which is what a fresh clone with no `.env` gets. `--commit` writes to whichever
 repository owns the data directory.
 
-## 15. Recipes
+## 16. Recipes
 
 Scout a target before writing anything:
 
@@ -457,7 +485,7 @@ uv run crawlee-lab urls my-site --list | grep /blog/
 Remove the section from the profile's `include`, or add it to `exclude`, then re-run the crawl. The
 next snapshot reports the pages as removed and the corpus loses them.
 
-## 16. Development commands
+## 17. Development commands
 
 ```bash
 uv run ruff check .

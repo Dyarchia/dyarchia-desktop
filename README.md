@@ -64,6 +64,7 @@ uv run crawlee-lab diff claude-docs --unified
     digest       Bundle those changes into something a later step can read
     watch        Sweep every tracked target once and report whether anything moved
     urls         Report which URLs a snapshotted target is holding, broken down by section
+    state        Report every corpus across every repository, in one answer
     profiles     List the profiles this project knows about
     version      Print the installed version
 

@@ -40,6 +40,8 @@ rewriting; both landed in the engine and both are now available to every target.
     watch                   Sweeping every tracked target unattended        registry, engine
     digest                  Bundling a sweep's changes for the step         inventory, registry,
                             that runs after it                              versioning
+    state                   Every corpus in every repository, as one        digest, inventory,
+                            answer for whatever reads it next               versioning.vcs
     inventory               Reading a manifest back as a per-section        config,
                             report of what a target is holding              versioning.manifest
     engine                  Running a crawl end to end                      almost everything

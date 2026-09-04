@@ -50,6 +50,18 @@ def repository_root(directory: Path) -> Path | None:
     return Path(top) if top else None
 
 
+def head(root: Path) -> str | None:
+    """The short hash at the tip of this repository, or None when there is no commit yet."""
+    found = _git(['rev-parse', '--short', 'HEAD'], root)
+    return found.stdout.strip() or None if found.returncode == 0 else None
+
+
+def is_dirty(root: Path) -> bool:
+    """Whether this repository has uncommitted changes, staged or not."""
+    status = _git(['status', '--porcelain'], root)
+    return bool(status.stdout.strip()) if status.returncode == 0 else False
+
+
 def is_ignored(directory: Path, root: Path) -> bool:
     """Whether git has been told to ignore this snapshot directory."""
     return _git(['check-ignore', '-q', '--', str(directory)], root).returncode == 0

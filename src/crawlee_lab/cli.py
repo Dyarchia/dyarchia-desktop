@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from crawlee_lab import __version__, digest, inventory, registry
+from crawlee_lab import __version__, digest, inventory, registry, state
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
 from crawlee_lab.errors import ConfigurationError, CrawleeLabError
@@ -467,6 +467,81 @@ def digest_command(
     out.write_text(rendered, encoding='utf-8', newline='\n')
     console.print(f'{bundle.headline}')
     console.print(f'written to {out}', style='dim')
+
+
+def render_state(snapshot: state.State) -> None:
+    for repository in snapshot.repositories:
+        # Printed above the table rather than as its title: rich clips a title to the table's own
+        # width, and the table is only as wide as its narrowest content allows.
+        console.print(f'[bold]{repository.root}[/bold]')
+        if repository.versioned:
+            dirty = ' [bold yellow]dirty[/bold yellow]' if repository.dirty else ''
+            console.print(f'{repository.head}{dirty}', style='dim')
+        else:
+            console.print('not versioned', style='dim')
+
+        table = Table()
+        table.add_column('corpus', style='bold', overflow='fold')
+        table.add_column('group', overflow='fold')
+        table.add_column('pages', justify='right')
+        table.add_column('size', justify='right')
+        table.add_column('last change')
+        table.add_column('state')
+
+        for corpus in repository.corpora:
+            if corpus.error:
+                outcome = f'[bold red]{corpus.error}[/bold red]'
+            elif corpus.stale:
+                outcome = '[dim]no change last sweep[/dim]'
+            elif corpus.changed:
+                moved = f'{corpus.added}+ {corpus.removed}- {corpus.modified}~'
+                outcome = f'[bold yellow]{moved}[/bold yellow]'
+            elif corpus.reordered:
+                outcome = f'[dim]{corpus.reordered} reordered only[/dim]'
+            else:
+                outcome = '[dim]quiet[/dim]'
+            seen = corpus.generated_at.date().isoformat() if corpus.generated_at else '-'
+            table.add_row(
+                corpus.name,
+                corpus.group or '-',
+                f'{corpus.pages:,}',
+                inventory.human_bytes(corpus.bytes),
+                seen,
+                outcome,
+            )
+        console.print(table)
+        console.print()
+
+    console.print(snapshot.headline)
+
+
+@app.command(name='state')
+def state_command(
+    repository: Annotated[
+        list[Path] | None,
+        typer.Option('--repository', help='A corpus repository to read. Repeatable.'),
+    ] = None,
+    as_json: Annotated[
+        bool, typer.Option('--json', help='Emit the state as JSON instead of a table.')
+    ] = False,
+) -> None:
+    """Report what every corpus is holding and when it last moved.
+
+    One answer for every repository asked about, so whatever reads it next does not have to walk the
+    manifests, rediscover the group convention, or decide for itself whether a change report is
+    current. Defaults to the repository this machine's settings name.
+    """
+    settings = get_settings()
+    try:
+        snapshot = state.build(list(repository) if repository else None, settings)
+    except CrawleeLabError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
+
+    if as_json:
+        print(state.render_json(snapshot))
+        return
+    render_state(snapshot)
 
 
 @app.command(name='profiles')

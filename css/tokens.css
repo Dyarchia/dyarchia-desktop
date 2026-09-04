@@ -1,6 +1,9 @@
 :root {
-    --dya-radius: 3px;
-    --dya-radius-media: 4px;
+    --dya-radius: 6px;
+    --dya-radius-sm: 3px;
+    --dya-radius-media: 6px;
+    --dya-radius-chassis: 9px;
+    --dya-radius-tag: 14px;
     --dya-radius-full: 999px;
     --dya-border-width: 1px;
 
@@ -18,78 +21,120 @@
     --dya-font-sans: "IBM Plex Sans Condensed", ui-sans-serif, system-ui, sans-serif;
     --dya-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-    --dya-size-display: 64px;
-    --dya-size-h1: 48px;
-    --dya-size-h2: 36px;
-    --dya-size-h3: 24px;
-    --dya-size-body: 18px;
-    --dya-size-body-sm: 16px;
-    --dya-size-label: 14px;
-    --dya-size-label-sm: 12px;
+    --dya-weight-light: 300;
+    --dya-weight: 400;
+    --dya-weight-medium: 500;
 
-    --dya-tracking-display: -0.04em;
-    --dya-tracking-h1: -0.035em;
-    --dya-tracking-h2: -0.031em;
-    --dya-tracking-h3: -0.02em;
-    --dya-tracking-mono: -0.02em;
+    --dya-size-display: 44px;
+    --dya-size-metric: 34px;
+    --dya-size-h2: 26px;
+    --dya-size-body: 13.5px;
+    --dya-size-body-sm: 12.5px;
+    --dya-size-body-xs: 11.5px;
+    --dya-size-mono: 14px;
+    --dya-size-mono-sm: 12px;
+    --dya-size-mono-xs: 11px;
+    --dya-size-label: 10px;
+    --dya-size-label-sm: 9.5px;
+    --dya-size-label-xs: 9px;
+
+    --dya-tracking-display: -0.035em;
+    --dya-tracking-metric: -0.03em;
+    --dya-tracking-h2: -0.02em;
+    --dya-tracking-mono: 0.02em;
+    --dya-tracking-data: 0.14em;
+    --dya-tracking-label: 0.2em;
+    --dya-tracking-brand: 0.26em;
 
     --dya-leading-tight: 100%;
     --dya-leading-heading: 110%;
-    --dya-leading-body: 120%;
+    --dya-leading-body: 145%;
+    --dya-leading-loose: 165%;
+
+    --dya-bg: #000000;
+    --dya-chassis: #0a0b0f;
+    --dya-surface-1: #0d0f15;
+    --dya-surface-2: #12141b;
+    --dya-raised: #1b1e29;
+    --dya-raised-hover: #22262f;
+    --dya-overlay: #1f2126;
+    --dya-sunken: #08090b;
+    --dya-selected: #2b3140;
+    --dya-flat-hover: #161922;
+
+    --dya-grad-bar: linear-gradient(#14161f, #0e1016);
+    --dya-grad-dock: linear-gradient(#0e1016, #14161f);
+    --dya-grad-header: linear-gradient(#13151d, #0d0f15);
+
+    --dya-text: #e3e3e4;
+    --dya-text-2: #c3c6cb;
+    --dya-text-3: #9d9ea4;
+    --dya-text-4: #83858d;
+
+    --dya-border: #262a36;
+    --dya-border-strong: #33384a;
+    --dya-hairline: #1b1e29;
+    --dya-rule: #14171f;
+    --dya-dashed: #232734;
+    --dya-faint: #ffffff3b;
 
     --dya-accent: #ee6018;
-    --dya-accent-soft: #ee601826;
+    --dya-accent-soft: #ee60181f;
+    --dya-accent-faint: #ee60180f;
+    --dya-on-accent: #08090b;
 
-    --dya-danger: #9a2419;
-    --dya-danger-soft: #9a24191a;
-    --dya-on-danger: #ffffff;
-    --dya-success: #186034;
-    --dya-success-soft: #1860341a;
-    --dya-warning: #714900;
-    --dya-warning-soft: #7149001a;
+    --dya-tag-bg: #e3e3e412;
+    --dya-tag-border: #e3e3e42b;
+
+    --dya-success: #63cf95;
+    --dya-success-soft: #63cf951a;
+    --dya-warning: #d6a95c;
+    --dya-warning-soft: #d6a95c1a;
+    --dya-danger: #f59790;
+    --dya-danger-soft: #f597901a;
+    --dya-on-status: #08090b;
+    --dya-idle: #2b3140;
+    --dya-on-idle: #c3c6cb;
 
     --dya-glass: none;
     --dya-glass-bg: transparent;
 
-    --dya-bg: #f5f5f5;
-    --dya-surface-1: #ffffff;
-    --dya-surface-2: #ebebeb;
-    --dya-surface-3: #e1e1e1;
-    --dya-surface-inverse: #101010;
-    --dya-surface-inverse-hover: #2e2c2b;
-    --dya-on-inverse: #f5f5f5;
-    --dya-text: #020202;
-    --dya-text-2: #3d3a39;
-    --dya-text-3: #5c5855;
-    --dya-text-4: #8a8380;
-    --dya-border: #b8b3b0;
-    --dya-border-control: #a49d9a;
-    --dya-border-card: #e0dedc;
-    --dya-line: #0000000f;
-    --dya-faint: #201e1e3b;
-
     --dya-elev-flat: none;
 
-    --dya-elev-raised:
-        0 0 0 1px #0000001a,
-        0 1px 2px #0000001f,
-        0 4px 8px -2px #00000014;
+    --dya-elev-chassis: inset 0 1px 0 #ffffff0a;
 
-    --dya-elev-raised-hover:
-        0 0 0 1px #00000026,
-        0 2px 4px #00000026,
-        0 6px 12px -2px #0000001f;
+    --dya-elev-raised:
+        inset 0 1px 0 #ffffff14,
+        0 0 0 1px #000000,
+        0 1px 2px #00000099;
 
     --dya-elev-pressed:
-        inset 0 2px 4px #0000001f,
-        0 0 0 1px #00000026;
+        inset 0 2px 4px #000000cc,
+        0 0 0 1px #000000;
+
+    --dya-elev-sunken:
+        inset 0 2px 4px #000000cc,
+        0 0 0 1px #000000;
+
+    --dya-elev-focus:
+        inset 0 2px 4px #000000cc,
+        0 0 0 1px #ee6018;
+
+    --dya-elev-popover:
+        inset 0 1px 0 #ffffff26,
+        0 0 0 1px #000000,
+        0 2px 4px #00000099;
 
     --dya-elev-overlay:
-        0 0 0 1px #0000001a,
-        0 2px 4px #0000001f,
-        0 16px 32px -8px #00000029;
+        inset 0 1px 0 #ffffff26,
+        0 0 0 1px #000000,
+        0 24px 48px -12px #000000e6;
 
-    --dya-focus: #00000066;
+    --dya-focus: #ee6018;
+
+    --dya-press-y: 1px;
+    --dya-press-y-key: 2px;
+    --dya-press-scale: 0.98;
 
     --dya-ease: ease-in-out;
     --dya-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -100,54 +145,4 @@
     --dya-dur-fast: 160ms;
     --dya-dur: 220ms;
     --dya-dur-slow: 320ms;
-}
-
-:root[data-dya-theme="dark"] {
-    --dya-bg: #08090b;
-    --dya-surface-1: #1f2126;
-    --dya-surface-2: #272a30;
-    --dya-surface-3: #2f323a;
-    --dya-surface-inverse: #e6e6e6;
-    --dya-surface-inverse-hover: #ffffff;
-    --dya-on-inverse: #08090b;
-    --dya-text: #f4f4f6;
-    --dya-text-2: #c3c6cb;
-    --dya-text-3: #a0a3a8;
-    --dya-text-4: #75777d;
-    --dya-border: #383b43;
-    --dya-border-control: #52565f;
-    --dya-border-card: #41454e;
-    --dya-line: #2b2e34;
-    --dya-faint: #ffffff3b;
-
-    --dya-danger: #f59790;
-    --dya-danger-soft: #f597901a;
-    --dya-on-danger: #08090b;
-    --dya-success: #63cf95;
-    --dya-success-soft: #63cf951a;
-    --dya-warning: #d6a95c;
-    --dya-warning-soft: #d6a95c1a;
-
-    --dya-elev-raised:
-        inset 0 1px 0 #ffffff26,
-        0 0 0 1px #000000,
-        0 2px 4px #00000099,
-        0 8px 16px -4px #000000b3;
-
-    --dya-elev-raised-hover:
-        inset 0 1px 0 #ffffff40,
-        0 0 0 1px #000000,
-        0 3px 6px #000000b3,
-        0 10px 20px -4px #000000cc;
-
-    --dya-elev-pressed:
-        inset 0 2px 4px #000000cc,
-        0 0 0 1px #000000;
-
-    --dya-elev-overlay:
-        inset 0 1px 0 #ffffff26,
-        0 0 0 1px #000000,
-        0 24px 48px -12px #000000e6;
-
-    --dya-focus: #ffffff80;
 }

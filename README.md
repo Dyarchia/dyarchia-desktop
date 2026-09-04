@@ -186,7 +186,7 @@ every unattended round on the machine. The nine this toolkit was built against, 
     claude-api-docs        platform.claude.com, English   668
     claude-api-docs-es     platform.claude.com, Spanish   203
     openai-docs            developers.openai.com          535
-    chatgpt-docs           learn.chatgpt.com, Codex       252
+    chatgpt-docs           learn.chatgpt.com, Codex       256
     gemini-docs            ai.google.dev, HTML            223
     xai-docs               docs.x.ai, Grok                158
 

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import httpx
+
 from crawlee_lab.models import CrawlerKind
-from crawlee_lab.recon import Recon
+from crawlee_lab.recon import Recon, _check_markdown_variant
 
 URL = 'https://site.example/page'
 
@@ -47,3 +49,53 @@ def test_a_render_probe_beats_the_guess() -> None:
     """Once both numbers are known, guessing from markup stops being necessary."""
     recon = Recon(url=URL, static_content_chars=50, rendered_content_chars=4_000, runs_scripts=False)
     assert recon.needs_browser is True
+
+
+def _serving_markdown_at(*urls: str) -> httpx.MockTransport:
+    published = set(urls)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url) in published:
+            return httpx.Response(200, text='# Page', headers={'content-type': 'text/markdown'})
+        return httpx.Response(404)
+
+    return httpx.MockTransport(handler)
+
+
+async def _variant_of(url: str, transport: httpx.MockTransport) -> str | None:
+    recon = Recon(url=url)
+    async with httpx.AsyncClient(transport=transport) as client:
+        await _check_markdown_variant(client, url, recon)
+    return recon.markdown_url
+
+
+async def test_a_twin_is_found_where_the_extension_is_replaced() -> None:
+    """The probe has to offer what the crawler fetches, or inspect contradicts the run it advises.
+
+    developer.salesforce.com lists `guide/page.html` and serves the twin at `guide/page.md`.
+    Appending alone asks for `page.html.md`, which answers 404, so every page of that site was
+    reported as having no markdown variant and recommended a browser-free HTML crawler instead.
+    """
+    served = _serving_markdown_at('https://site.example/guide/page.md')
+    assert await _variant_of('https://site.example/guide/page.html', served) == (
+        'https://site.example/guide/page.md'
+    )
+
+
+async def test_a_twin_is_still_found_where_the_suffix_is_appended() -> None:
+    served = _serving_markdown_at('https://site.example/page.md')
+    assert await _variant_of('https://site.example/page', served) == 'https://site.example/page.md'
+
+
+async def test_a_section_root_is_probed_rather_than_skipped() -> None:
+    served = _serving_markdown_at('https://site.example/guide/index.md')
+    assert await _variant_of('https://site.example/guide/', served) == ('https://site.example/guide/index.md')
+
+
+async def test_a_page_without_a_twin_reports_none() -> None:
+    assert await _variant_of('https://site.example/page.html', _serving_markdown_at()) is None
+
+
+async def test_a_page_that_is_already_markdown_is_not_probed() -> None:
+    served = _serving_markdown_at('https://site.example/page.md')
+    assert await _variant_of('https://site.example/page.md', served) is None

@@ -136,6 +136,11 @@ Reports HTTP status and content type, page title, HTML size, link count, whether
 the URL, any declared crawl delay, discovered sitemaps, whether a markdown variant of the page
 exists, how much content survives static extraction, and which crawler that implies.
 
+The variant probe offers the same places a run would fetch from, `fetch_suffix` included: the
+extension replaced, then the suffix appended, and both forms of a section root. A site that
+serves `guide/page.md` for `guide/page.html` is therefore reported as having one, where asking
+only for `guide/page.html.md` would have said it has none.
+
 ## 5. diff
 
 ```text

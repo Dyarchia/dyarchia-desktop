@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import dataclass, field
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
 import httpx
@@ -19,6 +19,7 @@ from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.extraction.dom import SoupAdapter
 from crawlee_lab.extraction.strategies import main_content
 from crawlee_lab.models import CrawlerKind
+from crawlee_lab.urls import suffix_candidates
 
 MARKDOWN_SUFFIX = '.md'
 _TIMEOUT = 20.0
@@ -115,16 +116,16 @@ async def _check_sitemap_fallback(client: httpx.AsyncClient, url: str, recon: Re
 
 
 async def _check_markdown_variant(client: httpx.AsyncClient, url: str, recon: Recon) -> None:
-    path = urlparse(url).path
-    if not path or path.endswith('/') or path.endswith(MARKDOWN_SUFFIX):
+    if urlparse(url).path.endswith(MARKDOWN_SUFFIX):
         return
 
-    candidate = urljoin(url, path + MARKDOWN_SUFFIX)
-    response = await _fetch(client, candidate)
-    if response is None or response.status_code >= 400:
-        return
-    if 'markdown' in _content_type(response) or 'text/plain' in _content_type(response):
-        recon.markdown_url = candidate
+    for candidate in suffix_candidates(url, MARKDOWN_SUFFIX):
+        response = await _fetch(client, candidate)
+        if response is None or response.status_code >= 400:
+            continue
+        if 'markdown' in _content_type(response) or 'text/plain' in _content_type(response):
+            recon.markdown_url = candidate
+            return
 
 
 def _content_type(response: httpx.Response) -> str:

@@ -55,7 +55,7 @@ const ANSI_DARK: ITheme = {
     magenta: '#c493dd',
     cyan: '#6dc3cf',
     white: '#a0a3a8',
-    brightBlack: '#6a6b6c',
+    brightBlack: '#909398',
     brightRed: '#f09a9a',
     brightGreen: '#9bdcb2',
     brightYellow: '#e8c98a',

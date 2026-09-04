@@ -42,6 +42,7 @@ rewriting; both landed in the engine and both are now available to every target.
                             that runs after it                              versioning
     state                   Every corpus in every repository, as one        digest, inventory,
                             answer for whatever reads it next               versioning.vcs
+    locking                 One round over a corpus at a time               config, errors
     inventory               Reading a manifest back as a per-section        config,
                             report of what a target is holding              versioning.manifest
     engine                  Running a crawl end to end                      almost everything
@@ -329,6 +330,19 @@ sweep measured at twenty-five minutes.
 The record and the log are keyed by the task's name rather than fixed, because one machine may
 watch several sets of profiles on different schedules. Two tasks sharing a name would share the
 record, and the second would spend the week believing the first had been its own run.
+
+The scheduler is not the only thing that can start a round. A person at a prompt can, and a panel
+with a button will, so `watch` takes a lock on the group before it crawls and exits 30 without
+crawling if another round has it. The lock lives in the toolkit rather than in whatever calls it,
+because a lock only one caller respects is not a lock: the scheduled task has to obey the same one
+the button does.
+
+It is an operating system lock held for the life of the process, not a witness file, and that
+choice is the same lesson as the attempt counter. A witness has to be reaped when its owner dies,
+and a run the scheduler kills gets no chance to reap anything; the file would survive and block
+every round after it. The kernel releases this one however the holder ends -- promptly rather than
+instantly, measured at 56 ms after a kill on this machine, so a caller retrying in the same breath
+may still be refused once.
 
 ### 8.1 The step after the sweep
 

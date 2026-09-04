@@ -8,8 +8,12 @@
     A quiet sweep stays quiet: a monitor that speaks every day stops being read.
 
     Exit codes are passed through unchanged, so the Task Scheduler history shows the same verdict:
-    0 nothing changed, 10 something did, 1 a target failed. The wrapper adds 20 for a run that
-    decided the week was already swept, or had already spent its attempts on it, and did nothing.
+    0 nothing changed, 10 something did, 1 a target failed, 30 another round already held this
+    group. The wrapper adds 20 for a run that decided the week was already swept, or had already
+    spent its attempts on it, and did nothing.
+
+    A 30 is silent and costs nothing: the round never crawled, so it raises no notification and the
+    attempt it had already counted is refunded. The week stays owed and the next logon takes it.
 
     The sweep's own output is streamed to `watch-<name>.out` as it arrives rather than collected and
     written at the end, because the interesting run is the one that never reaches the end. A sweep
@@ -277,6 +281,13 @@ Write-Log "sweep finished ($code): $headline"
 if ($code -eq 0 -or $code -eq 10) {
     Write-SweepState $weekFile $week ([Math]::Max($attempts, 1)) $true $false
 }
+elseif ($code -eq 30 -and $OncePerWeek) {
+    # 30 means another round held the group, so this one never crawled. An attempt was counted
+    # before the sweep started, and a round that did not happen must not spend one: two collisions
+    # with a manual sweep would otherwise make the week give up on itself.
+    Write-SweepState $weekFile $week ([Math]::Max($attempts - 1, 0)) $false $false
+    Write-Log "attempt refunded: the round never started"
+}
 
 # Exit 10 is the only code that means "something moved". The digest is built then and only then,
 # while the change reports it reads are still the ones this sweep wrote: the next sweep overwrites
@@ -318,6 +329,8 @@ if ($code -eq 10) {
 switch ($code) {
     10 { Show-Notification -Title 'crawlee-lab: a tracked site changed' -Message $headline }
     0 { }
+    # Another round held the group. Nothing failed and nothing is owed a human, so it stays quiet.
+    30 { }
     default { Show-Notification -Title 'crawlee-lab: the sweep failed' -Message $headline }
 }
 

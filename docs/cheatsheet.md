@@ -207,9 +207,15 @@ rest of the sweep still runs. A summary lands in `WATCH.md`, and the same verdic
     0           nothing changed
     10          at least one target changed
     1           at least one target failed, so the sweep cannot vouch for itself
+    30          another round over this group is running, so this one did nothing
 
 A first snapshot exits 0, not 10. There is nothing yet for it to differ from. Neither is a page
 that only reordered: it is stored, listed and labelled, and left out of the verdict.
+
+One round over a group at a time. The lock is held by the operating system for the life of the
+process, in `<output>/locks/`, so a round the scheduler kills leaves nothing to clean up. A refused
+round says who holds it, raises no notification, and under `-OncePerWeek` is refunded the attempt
+it had counted, because a round that never crawled must not spend one of the week's two.
 
 On Windows:
 

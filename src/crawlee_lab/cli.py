@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from crawlee_lab import __version__, digest, inventory, registry, state
+from crawlee_lab import __version__, digest, inventory, locking, registry, state
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.engine import RunResult, execute
 from crawlee_lab.errors import ConfigurationError, CrawleeLabError
@@ -26,6 +26,7 @@ from crawlee_lab.versioning.diffing import ChangeKind, load_report
 from crawlee_lab.versioning.report import summary_line
 from crawlee_lab.versioning.vcs import commit_snapshot, repository_root
 from crawlee_lab.watch import (
+    EXIT_BUSY,
     WatchResult,
     save_report,
     sweep,
@@ -632,6 +633,10 @@ def watch_command(
     changed, 10 means something did, 1 means a target failed and the sweep cannot vouch for itself.
     A group narrows the sweep to its own corpus, so one scheduled round does not quietly adopt
     every target added since.
+
+    One round over a group at a time. A second one exits 30 without crawling and says who holds it,
+    because the scheduled task, a button and a person at a prompt can all fire at once and the only
+    thing two concurrent rounds achieve is doing the same forty minutes twice.
     """
     settings = get_settings()
 
@@ -651,8 +656,14 @@ def watch_command(
         error_console.print(f'[bold red]{whose}, so there is nothing to watch[/bold red]')
         raise typer.Exit(code=1)
 
-    result = asyncio.run(sweep(selected, settings))
-    document = save_report(result, settings)
+    key = group or locking.EVERYTHING
+    try:
+        with locking.hold(key, f'watch {" ".join(selected)}'[:120], settings):
+            result = asyncio.run(sweep(selected, settings))
+            document = save_report(result, settings)
+    except locking.RoundInProgressError as busy:
+        error_console.print(f'[bold yellow]{busy}[/bold yellow]')
+        raise typer.Exit(code=EXIT_BUSY) from busy
 
     if commit:
         _commit_sweep(result, settings)

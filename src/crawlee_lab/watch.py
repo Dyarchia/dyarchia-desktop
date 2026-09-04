@@ -28,6 +28,8 @@ WATCH_RESULT = 'WATCH.json'
 EXIT_NO_CHANGES = 0
 EXIT_FAILED = 1
 EXIT_CHANGES = 10
+EXIT_BUSY = 30
+"""Another round over the same group holds the lock, so this one did nothing."""
 
 
 @dataclass(slots=True)

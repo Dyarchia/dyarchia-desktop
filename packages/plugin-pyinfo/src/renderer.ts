@@ -9,28 +9,10 @@ const STYLE = `
 .pyinfo-root {
     height: 100%;
     overflow: auto;
-    padding: var(--dya-space-5) var(--dya-space-5);
-    color: var(--dya-text-2);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    line-height: 1.7;
+    padding: var(--dya-space-5);
 }
 .pyinfo-title {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
     margin-bottom: var(--dya-space-4);
-    color: var(--dya-text-3);
-    text-transform: uppercase;
-}
-.pyinfo-title::before {
-    content: '';
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-accent);
 }
 .pyinfo-row {
     display: flex;
@@ -38,28 +20,14 @@ const STYLE = `
     padding: 2px 0;
 }
 .pyinfo-key {
+    flex: none;
     min-width: 130px;
-    color: var(--dya-text-3);
-    text-transform: uppercase;
 }
 .pyinfo-value {
-    color: var(--dya-text);
     word-break: break-all;
 }
 .pyinfo-section {
     margin-top: var(--dya-space-5);
-}
-.pyinfo-tick {
-    align-items: center;
-    color: var(--dya-text-2);
-}
-.pyinfo-tick::before {
-    content: '';
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-accent);
 }
 .pyinfo-error {
     color: var(--dya-danger);
@@ -70,41 +38,8 @@ const STYLE = `
     max-width: 520px;
     margin-top: var(--dya-space-3);
 }
-.pyinfo-echo input {
+.pyinfo-input {
     flex: 1;
-    height: 28px;
-    padding: 0 var(--dya-space-3);
-    border: none;
-    border-radius: var(--dya-radius);
-    color: var(--dya-text);
-    background: var(--dya-bg);
-    box-shadow: var(--dya-elev-pressed);
-    font: inherit;
-    letter-spacing: inherit;
-}
-.pyinfo-echo input::placeholder {
-    color: var(--dya-text-3);
-}
-.pyinfo-echo button {
-    height: 28px;
-    padding: 0 var(--dya-space-4);
-    border: none;
-    border-radius: var(--dya-radius);
-    color: var(--dya-text);
-    background: var(--dya-surface-1);
-    box-shadow: var(--dya-elev-raised);
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: transform var(--dya-dur-press) var(--dya-ease-press);
-}
-.pyinfo-echo button:hover {
-    box-shadow: var(--dya-elev-raised-hover);
-}
-.pyinfo-echo button:active {
-    box-shadow: var(--dya-elev-pressed);
-    transform: translateY(1px);
 }
 `
 
@@ -120,10 +55,10 @@ function row(key: string, value: string): HTMLElement {
     const el = document.createElement('div')
     el.className = 'pyinfo-row'
     const k = document.createElement('span')
-    k.className = 'pyinfo-key'
+    k.className = 'dya-key-label pyinfo-key'
     k.textContent = key
     const v = document.createElement('span')
-    v.className = 'pyinfo-value'
+    v.className = 'dya-mono pyinfo-value'
     v.textContent = value
     el.append(k, v)
     return el
@@ -138,7 +73,7 @@ export function activate(ctx: PluginContext): void {
             root.className = 'pyinfo-root'
 
             const title = document.createElement('div')
-            title.className = 'pyinfo-title'
+            title.className = 'dya-eyebrow pyinfo-title'
             title.textContent = 'python plugin'
 
             const facts = document.createElement('div')
@@ -146,17 +81,19 @@ export function activate(ctx: PluginContext): void {
             events.className = 'pyinfo-section'
 
             const tick = document.createElement('div')
-            tick.className = 'pyinfo-row pyinfo-tick'
+            tick.className = 'dya-value pyinfo-row'
             tick.textContent = 'waiting for broadcast…'
 
             const echoBox = document.createElement('div')
             echoBox.className = 'pyinfo-echo'
             const input = document.createElement('input')
+            input.className = 'dya-field pyinfo-input'
             input.value = 'hello from the renderer'
             const button = document.createElement('button')
+            button.className = 'dya-button'
             button.textContent = 'echo'
             const echoOut = document.createElement('div')
-            echoOut.className = 'pyinfo-row'
+            echoOut.className = 'dya-mono pyinfo-row'
             echoBox.append(input, button)
 
             const runEcho = async (): Promise<void> => {
@@ -164,7 +101,7 @@ export function activate(ctx: PluginContext): void {
                     const reply = await ctx.invoke('echo', input.value)
                     echoOut.textContent = String(reply)
                 } catch (error) {
-                    echoOut.className = 'pyinfo-row pyinfo-error'
+                    echoOut.className = 'dya-mono pyinfo-row pyinfo-error'
                     echoOut.textContent = String(error)
                 }
             }
@@ -186,7 +123,7 @@ export function activate(ctx: PluginContext): void {
                     )
                 })
                 .catch((error: unknown) => {
-                    facts.className = 'pyinfo-error'
+                    facts.className = 'dya-mono pyinfo-error'
                     facts.textContent = `python host unreachable: ${String(error)}`
                 })
 

@@ -13,8 +13,9 @@ own panels — draggable, resizable, and persistent across sessions.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
 - The look is not the shell's: it is dyarchia-kanon, the shared design system, vendored
-  into packages/kanon and linked once. Plugins inherit its tokens and are expected to use
-  them. The vendored copy is re-synced automatically before dev, build and package.
+  into packages/kanon and linked once. Plugins inherit its dya-* component classes and its
+  tokens, and are expected to reference them rather than reimplement them. The vendored
+  copy is re-synced automatically before dev, build and package.
 
 ```mermaid
 flowchart LR
@@ -35,7 +36,7 @@ The pieces:
     Piece                       Location                     Responsibility
     -----------------------     -------------------------    ----------------------------------------
     Shell (Electron app)        apps/shell                   window, layout, toggles, persistence
-    Design system               packages/kanon               tokens, fonts, reset, theme helpers
+    Design system               packages/kanon               tokens, components, fonts, reset
     SDK                         packages/sdk                 TypeScript plugin contract
     Python SDK                  packages/pysdk               Python plugin contract and stdio host
     Discovery + protocol        apps/shell/src/main          manifest scanning, bundle serving
@@ -49,12 +50,12 @@ The pieces:
         apps/
             shell/               Electron app (main, preload, renderer)
         packages/
-            kanon/               @dyarchia/kanon - vendored design system and theme helpers
+            kanon/               @dyarchia/kanon - vendored design system and token lookup
             sdk/                 @dyarchia/sdk - contract types
             pysdk/               dyarchia_sdk - python plugin runtime
             plugin-sample/       minimal reference plugin
             plugin-terminal/     embedded terminal (xterm.js + node-pty)
-            plugin-docviewer/    file tree + markdown rendering
+            plugin-docviewer/    native file picker + markdown, with mermaid diagrams
             plugin-player/       audio/video player (dyarchia-media://)
             plugin-pyinfo/       reference plugin with a python main module
         scripts/
@@ -63,7 +64,7 @@ The pieces:
             sync-kanon.mjs       re-copies the design system from the dyarchia-kanon checkout
         docs/
             plugins.md           how to write a plugin
-            ui.md                the UI contract: tokens, rules, recipes
+            ui.md                the UI contract: components, tokens, rules
 
 
 ## 3. Commands
@@ -95,7 +96,7 @@ node scripts/install-plugins.mjs
 ```
 
 Re-sync the design system by hand. predev, prebuild and prepackage already run it, so
-this is only needed to pull a token change into an app that is already running:
+this is only needed to pull an upstream change into an app that is already running:
 
 ```bash
 node scripts/sync-kanon.mjs
@@ -116,7 +117,6 @@ npx tsc -p apps/shell
     Layout (dev)          %APPDATA%/@dyarchia/shell/layout.json
     Layout (portable)     %APPDATA%/dyarchia/layout.json
     Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
-    Theme choice          renderer localStorage, key dyarchia:theme
 
 
 ## 5. Debugging

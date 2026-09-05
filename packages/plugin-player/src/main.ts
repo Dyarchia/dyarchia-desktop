@@ -1,8 +1,7 @@
-import { protocol } from 'electron'
+import { BrowserWindow, dialog, protocol } from 'electron'
 import { createReadStream } from 'node:fs'
-import { readdir, stat } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { stat } from 'node:fs/promises'
+import { basename, extname } from 'node:path'
 import { Readable } from 'node:stream'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
@@ -20,6 +19,8 @@ const MIME_TYPES: Record<string, string> = {
     '.mkv': 'video/x-matroska',
     '.mov': 'video/quicktime'
 }
+
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mkv', '.mov'])
 
 function mimeOf(filePath: string): string {
     const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase()
@@ -79,20 +80,25 @@ async function serveMedia(request: Request): Promise<Response> {
 export function activate(ctx: PluginMainContext): void {
     protocol.handle(MEDIA_SCHEME, serveMedia)
 
-    ctx.handle('home', () => homedir())
-
-    ctx.handle('list', async (...args: unknown[]) => {
-        const [dirPath] = args as [string]
-        const names = await readdir(dirPath, { withFileTypes: true })
-        return names
-            .filter((entry) => !entry.name.startsWith('.'))
-            .map((entry) => ({
-                name: entry.name,
-                isDir: entry.isDirectory(),
-                path: join(dirPath, entry.name)
-            }))
-            .sort((a, b) =>
-                a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1
-            )
+    ctx.handle('open', async () => {
+        const options = {
+            title: 'Open media',
+            properties: ['openFile' as const],
+            filters: [
+                { name: 'Media', extensions: Object.keys(MIME_TYPES).map((ext) => ext.slice(1)) },
+                { name: 'All files', extensions: ['*'] }
+            ]
+        }
+        const parent = BrowserWindow.getFocusedWindow()
+        const result = parent
+            ? await dialog.showOpenDialog(parent, options)
+            : await dialog.showOpenDialog(options)
+        const filePath = result.canceled ? undefined : result.filePaths[0]
+        if (!filePath) return { canceled: true }
+        return {
+            name: basename(filePath),
+            kind: VIDEO_EXTENSIONS.has(extname(filePath).toLowerCase()) ? 'video' : 'audio',
+            src: `${MEDIA_SCHEME}://local/${encodeURIComponent(filePath)}`
+        }
     })
 }

@@ -49,7 +49,7 @@ An ESM module exporting activate(ctx). The context offers:
     registerPanel(desc, mount)    registers a panel with the shell
     invoke(channel, ...args)      calls a handler in the plugin's main module
     on(channel, listener)         subscribes to broadcasts from the main module
-    theme                         current theme, token lookup, change subscription
+    token(name)                   resolves a --dya-* custom property to its value
 
 The mount receives the panel's DOM container and optionally returns a cleanup function:
 
@@ -76,14 +76,15 @@ Notes:
 - duplicable: true allows several instances of the panel, through a + button in the group
   header. Each instance gets its own mount/dispose; the internal instance id is <id>#<n>,
   but the plugin never needs to handle it.
-- Styles are injected by the plugin itself, using a style tag with its own id to avoid
-  duplicates. What goes inside that tag is not free: the shell links the shared design
-  system once, so every --dya-* token is already resolvable and a plugin must never write
-  a literal colour, font or radius. See docs/ui.md for the rules, the token list and the
-  recipes.
-- ctx.theme covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
-  resolved string. token('accent') returns the value, onChange(listener) fires on every
-  theme flip and returns its own unsubscribe, which the panel's dispose must call.
+- Markup reaches for the system's classes first. The shell links the shared design system
+  once, so every dya-* component class is already in the document: a panel writes
+  class="dya-button" rather than declaring a button. A plugin style tag is for what the
+  system has no class for, and what goes inside it is not free either — every --dya-*
+  token is resolvable and a plugin must never write a literal colour, font or radius, nor
+  restyle a dya-* selector. See docs/ui.md for the order, the class list and the rules.
+- ctx.token covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
+  resolved string. token('accent') and token('--dya-accent') both return the value. There
+  is one theme and nothing to subscribe to.
 
 
 ## 3. The main module (optional)
@@ -157,6 +158,12 @@ Build rules:
   inside the installed plugin folder; everything else is bundled.
 - Library CSS is imported as text (--loader:.css=text) and injected into a style tag.
 - The Python module is not bundled: main.py is copied as-is next to the manifest.
+- A heavy dependency that only some documents need goes behind a dynamic import(), and
+  the renderer is then built with --splitting --outdir=dist instead of --outfile.
+  esbuild emits the entry plus its chunks, the dyarchia-plugin:// protocol serves them
+  relative to the entry, and install-plugins.mjs already copies dist/ recursively.
+  docviewer does this for mermaid: the entry is 8 kB and the diagram engine is only
+  fetched when a document actually carries a diagram.
 
 Where a plugin lives, by mode:
 
@@ -193,9 +200,11 @@ flowchart TD
 2. renderer.ts with an activate that registers at least one panel.
 3. A build script with esbuild, producing dist/.
 4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
-   console errors.
-5. Flip the theme with the top bar toggle and walk every state of the panel. Nothing keeps
-   the previous theme's colours or relief. The rest of the gate is in docs/ui.md.
+   console errors. Rebuild the plugin after every edit: a renderer change needs a window
+   reload, a main module change needs the app restarted, because main modules are
+   imported once at startup and their ipcMain handlers are registered there.
+5. Walk every state of the panel: idle, hover, pressed, selected, empty, error. Nothing
+   declares what a dya-* class already declares. The rest of the gate is in docs/ui.md.
 6. If there is a main module, whether Node or Python: test invoke and broadcast from the
    panel.
 7. node scripts/install-plugins.mjs, then test in the packaged app too.

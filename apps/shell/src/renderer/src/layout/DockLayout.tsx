@@ -32,7 +32,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     }, [props.api])
 
     return (
-        <div className={active ? 'panel-tab panel-tab-active' : 'panel-tab'}>
+        <div className="dya-tab panel-tab" role="tab" aria-selected={active}>
             {props.api.title}
         </div>
     )
@@ -59,7 +59,7 @@ function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {
         <div className="group-actions">
             {descriptor?.duplicable && (
                 <button
-                    className="group-action-btn"
+                    className="dya-key"
                     title={`New ${descriptor.title}`}
                     onClick={duplicate}
                     dangerouslySetInnerHTML={{ __html: DUPLICATE_ICON }}
@@ -67,7 +67,7 @@ function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {
             )}
             {active && (
                 <button
-                    className="group-action-btn"
+                    className="dya-key"
                     title="Close panel"
                     onClick={() => active.api.close()}
                     dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}

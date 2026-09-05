@@ -70,9 +70,9 @@ export function App(): React.JSX.Element {
                 {pluginsReady ? (
                     <DockLayout onReady={handleReady} />
                 ) : (
-                    <div className="shell-empty">
-                        <p className="shell-empty-brand">dyarchia</p>
-                        <p className="shell-empty-hint">Loading plugins…</p>
+                    <div className="dya-loading shell-loading">
+                        <span className="dya-brand">dyarchia</span>
+                        <span>Loading plugins…</span>
                     </div>
                 )}
             </div>

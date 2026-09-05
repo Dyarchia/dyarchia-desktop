@@ -5,6 +5,7 @@ import { dirname, extname, join, relative, resolve } from 'node:path'
 const repoRoot = resolve(import.meta.dirname, '..')
 const target = join(repoRoot, 'packages', 'kanon')
 const FOLDERS = ['css', 'fonts']
+const FILES = ['README.md']
 const CHECKOUT_NAME = 'dyarchia-kanon'
 const optional = process.argv.includes('--if-present')
 
@@ -84,6 +85,17 @@ for (const folder of FOLDERS) {
         await rm(join(targetDir, name))
         changed.push(`removed ${folder}/${name}`)
     }
+}
+
+for (const name of FILES) {
+    const from = join(source, name)
+    if (!existsSync(from)) continue
+    const to = join(target, name)
+    const next = Buffer.from((await readFile(from, 'utf-8')).replace(/\r\n/g, '\n'), 'utf-8')
+    const current = existsSync(to) ? await readFile(to) : null
+    if (current && current.equals(next)) continue
+    await writeFile(to, next)
+    changed.push(`${current ? 'updated' : 'added  '} ${name}`)
 }
 
 if (changed.length === 0) {

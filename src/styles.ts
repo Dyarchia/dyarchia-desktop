@@ -91,7 +91,17 @@ export const STYLES = `
     border-radius: var(--dya-radius);
 }
 
-.eforoi-seat[data-role='analyst'] { box-shadow: inset 2px 0 0 var(--dya-accent); }
+.eforoi-seat[data-role='analyst'] { position: relative; }
+
+.eforoi-seat[data-role='analyst']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--dya-accent);
+}
 
 .eforoi-role { color: var(--dya-accent); }
 

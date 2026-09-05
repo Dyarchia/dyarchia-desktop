@@ -3,13 +3,16 @@
 # repository, and Crawlee's working directory is scratch that goes to a temporary path. See .env.
 #
 # The entries below are guards, not homes: they catch a run started without a .env, which would
-# otherwise drop a corpus back into the tool's tree.
-data/
-output/
-profiles/*.yaml
-profiles/*.yml
-storage/
-docs/reference/
+# otherwise drop a corpus back into the tool's tree. They are anchored to the root with a leading
+# slash because they name directories the toolkit writes, not names it may not use: unanchored,
+# `storage/` also swallowed the package at src/crawlee_lab/storage, so a module added there was
+# invisible to git.
+/data/
+/output/
+/profiles/*.yaml
+/profiles/*.yml
+/storage/
+/docs/reference/
 
 # The follow-up this machine actually runs, which holds its own paths and its own prompt. The
 # example beside it is the tracked one; what a given machine does with a change is not the tool's.

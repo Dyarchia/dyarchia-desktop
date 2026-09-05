@@ -201,23 +201,23 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     let runId: string | null = null
     let answerText = ''
 
-    const promptBox = el('textarea', 'eforoi-prompt')
+    const promptBox = el('textarea', 'dya-field eforoi-prompt')
     promptBox.placeholder = 'Ask the panel — ctrl+enter to run'
 
     const seats = el('div', 'eforoi-seats')
     const analystSeat = el('div', 'eforoi-seats')
     const bar = el('div', 'eforoi-bar')
 
-    const runButton = el('button', 'eforoi-button', 'Run')
-    const addButton = el('button', 'eforoi-button eforoi-icon', '+')
-    const removeButton = el('button', 'eforoi-button eforoi-icon', '−')
-    const panelsButton = el('button', 'eforoi-button', 'Presets')
-    const saveButton = el('button', 'eforoi-button', 'Save')
-    const nameInput = el('input', 'eforoi-name')
-    const refreshButton = el('button', 'eforoi-button', 'Refresh')
-    const newButton = el('button', 'eforoi-button', 'New')
-    const turnLabel = el('span', 'eforoi-meta')
-    const status = el('span', 'eforoi-meta')
+    const runButton = el('button', 'dya-button', 'Run')
+    const addButton = el('button', 'dya-key', '+')
+    const removeButton = el('button', 'dya-key', '−')
+    const panelsButton = el('button', 'dya-button', 'Presets')
+    const saveButton = el('button', 'dya-button', 'Save')
+    const nameInput = el('input', 'dya-field dya-field--sm eforoi-name')
+    const refreshButton = el('button', 'dya-button', 'Refresh')
+    const newButton = el('button', 'dya-button', 'New')
+    const turnLabel = el('span', 'dya-value eforoi-meta')
+    const status = el('span', 'dya-value eforoi-meta')
 
     newButton.title = 'forget the conversation and start over'
 
@@ -234,7 +234,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const panelLegend = el('div', 'eforoi-legend')
     const legendActions = el('div', 'eforoi-legend-actions')
     legendActions.append(panelsButton, saveButton, addButton, removeButton, nameInput)
-    panelLegend.append(el('span', 'eforoi-label', 'Panel'), legendActions)
+    panelLegend.append(el('span', 'dya-label', 'Panel'), legendActions)
 
     bar.append(
         runButton,
@@ -247,7 +247,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
     const promptColumn = el('div', 'eforoi-column')
     promptColumn.dataset.side = 'prompt'
-    promptColumn.append(el('span', 'eforoi-label', 'Prompt'), promptBox)
+    promptColumn.append(el('span', 'dya-label', 'Prompt'), promptBox)
 
     const panelColumn = el('div', 'eforoi-column')
     panelColumn.dataset.side = 'panel'
@@ -356,23 +356,27 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         lead: { ordinal?: string; role?: string },
         set: (next: Seat) => void
     ): HTMLElement => {
-        const row = el('div', 'eforoi-seat')
+        const row = el('div', 'dya-row eforoi-seat')
         const offer = offerOf(seat)
 
         if (lead.role) {
             row.dataset.role = 'analyst'
-            row.append(el('span', 'eforoi-role eforoi-cell', lead.role))
+            row.append(el('span', 'dya-label eforoi-role eforoi-cell', lead.role))
         } else {
-            row.append(el('span', 'eforoi-ordinal eforoi-cell', lead.ordinal ?? ''))
+            row.append(el('span', 'dya-value eforoi-cell', lead.ordinal ?? ''))
         }
 
-        const model = el('button', 'eforoi-pick eforoi-model eforoi-cell', labelOf(seat))
+        const model = el('button', 'dya-item eforoi-pick eforoi-cell')
+        model.append(el('span', 'eforoi-pick-label', labelOf(seat)))
         model.dataset.empty = String(!seat)
         model.addEventListener('click', () => pickSeat(model, seat, set))
 
-        const mode = el('button', 'eforoi-pick eforoi-mode eforoi-cell')
+        const mode = el('button', 'dya-item eforoi-pick eforoi-cell')
         const modeName = seat?.mode === 'api' ? 'API' : 'Subscription'
-        mode.textContent = seat ? `${modeName}${seat.effort ? ` · ${seat.effort}` : ''} ›` : '—'
+        mode.append(
+            el('span', 'eforoi-pick-label', seat ? `${modeName}${seat.effort ? ` · ${seat.effort}` : ''}` : '—'),
+            el('span', 'eforoi-menu-arrow', seat ? '›' : '')
+        )
         mode.dataset.empty = String(!seat)
         mode.dataset.broken = String(Boolean(seat) && !offer?.available)
         if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
@@ -381,15 +385,15 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
             else pickSeat(mode, seat, set)
         })
 
-        const route = el('span', 'eforoi-route eforoi-cell', offer?.available ? offer.route : '')
+        const route = el('span', 'dya-value eforoi-route eforoi-cell', offer?.available ? offer.route : '')
 
         const tierCell = el('span', 'eforoi-cell')
         const tier = seat ? tierOf(seat.key) : undefined
-        if (tier) tierCell.append(el('span', 'eforoi-tier', tier))
+        if (tier) tierCell.append(el('span', 'dya-badge dya-badge--soft eforoi-tier', tier))
 
         const elapsed = seat && latency[seat.key] ? `~${seconds(latency[seat.key])}` : ''
 
-        row.append(model, mode, route, tierCell, el('span', 'eforoi-route eforoi-cell', elapsed))
+        row.append(model, mode, route, tierCell, el('span', 'dya-value eforoi-route eforoi-cell', elapsed))
         return row
     }
 
@@ -413,16 +417,16 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const cards = new Map<string, Card>()
 
     const makeCard = (id: string, title: string, role: string, expanded: boolean): Card => {
-        const wrapper = el('div', 'eforoi-card')
+        const wrapper = el('div', 'dya-card eforoi-card')
         wrapper.dataset.role = role
 
-        const header = el('div', 'eforoi-card-head')
+        const header = el('div', 'dya-card__header eforoi-card-head')
         const toggle = el('button', 'eforoi-card-toggle')
         const chevron = el('span', 'eforoi-chevron', expanded ? '▾' : '▸')
         const dot = el('span', 'eforoi-dot')
-        const label = el('span', 'eforoi-card-title', title)
+        const label = el('span', 'dya-value eforoi-card-title', title)
         const note = el('span', 'eforoi-card-note')
-        const copy = el('button', 'eforoi-copy')
+        const copy = el('button', 'dya-key eforoi-copy')
         const body = el('div', 'eforoi-body')
 
         body.hidden = !expanded
@@ -474,11 +478,11 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         const analyst = labelOf(state.analyst)
         const answer = makeCard('answer', 'Answer', 'answer', true)
         answer.note.textContent = `written by ${analyst}`
-        answer.body.append(el('span', 'eforoi-pending', 'waiting for the panel'))
+        answer.body.append(el('span', 'dya-empty', 'waiting for the panel'))
 
         const analysis = makeCard('analysis', 'Analysis', 'analysis', true)
         analysis.note.textContent = `compared by ${analyst}`
-        analysis.body.append(el('span', 'eforoi-pending', 'waiting for the panel'))
+        analysis.body.append(el('span', 'dya-empty', 'waiting for the panel'))
 
         state.panel.forEach((seat, index) => {
             const card = makeCard(`member-${index + 1}`, `${index + 1}. ${labelOf(seat)}`, 'member', false)
@@ -502,7 +506,8 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
         const escape = (text: string): string =>
             text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        const tag = (label: string): string => `<span class="eforoi-tag">${label}</span>`
+        const tag = (label: string): string =>
+            `<span class="dya-badge dya-badge--soft eforoi-tag">${label}</span>`
 
         const section = (heading: string, items: string[]): void => {
             if (!items.length) return
@@ -512,7 +517,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
                 ''
             )
             const block = el('div', 'eforoi-section')
-            block.appendChild(el('h4', undefined, heading))
+            block.appendChild(el('h4', 'dya-label', heading))
             const list = el('ul')
             for (const item of items) {
                 const entry = el('li')
@@ -549,7 +554,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
         if (!card.body.childElementCount) {
             const block = el('div', 'eforoi-section')
-            block.appendChild(el('h4', undefined, 'Nothing separated them'))
+            block.appendChild(el('h4', 'dya-label', 'Nothing separated them'))
             card.body.appendChild(block)
             plain.push('Nothing separated them')
         }

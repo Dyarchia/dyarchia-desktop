@@ -17,7 +17,7 @@ reasoning underneath it.
 - [8. What each route costs](#8-what-each-route-costs)
 - [9. The IPC contract](#9-the-ipc-contract)
 - [10. The nested menu](#10-the-nested-menu)
-- [11. Styling without a dependency](#11-styling-without-a-dependency)
+- [11. Styling by reference, not by copy](#11-styling-by-reference-not-by-copy)
 - [12. Reading order and the shape of the panel](#12-reading-order-and-the-shape-of-the-panel)
 - [13. Deliberate omissions](#13-deliberate-omissions)
 
@@ -436,26 +436,64 @@ The catalogue runs to nearly forty models once three plans are signed in, so the
 with a focused filter box that matches on both model name and group.
 
 
-## 11. Styling without a dependency
+## 11. Styling by reference, not by copy
 
-The plugin imports nothing from `dyarchia-ui` and nothing from `dyarchia-desktop`. It does
-not need to: the panel mounts into the shell's own document, so every `--dya-*` custom
-property on that document's root is inherited for free.
+The plugin imports nothing from `dyarchia-kanon` and nothing from `dyarchia-desktop`. It
+does not need to: the panel mounts into the shell's own document, and the shell links kanon
+there. Both halves of that system are inherited for free — the `--dya-*` custom properties
+on the root, and the `dya-*` component classes.
 
-Where the shell has not yet adopted the design system, each token falls back to its dark
-theme literal:
+So the plugin declares classes where it used to declare rules:
 
-```css
-color: var(--dya-text, #f4f4f6);
+```text
+Element                  Class it carries
+----------------------   ------------------------------------------------
+buttons                  dya-button
+icon buttons, copy       dya-key
+seat pickers             dya-item
+prompt, name, filter     dya-field, dya-field--sm
+model menu               dya-menu, dya-menu__item, dya-menu__shortcut
+cards                    dya-card, dya-card__header
+seat rows                dya-row
+tiers, member tags       dya-badge, dya-badge--soft
+section labels           dya-label
+values, routes, meta     dya-value
+empty and pending state  dya-empty
 ```
 
-The plugin also never touches `ctx.theme`. That API resolves tokens to literal strings for
-code that draws outside the DOM — canvas, WebGL, a terminal emulator. Eforoi is plain DOM,
-so `var()` covers every case and the plugin has no reason to know which theme is active.
+What `styles.ts` still holds is what kanon has no opinion about: the twelve-column grid, the
+seat row template, the container queries, the card spans, the analysis sections, the prose
+block and the menu's fixed positioning. It carries no colour, no radius and no duration that
+is not a token.
 
-The system's rules are respected as stated: what can be pressed is raised, only text inputs
-are recessed, rows are flat and express selection with a two-pixel accent edge, the orange
-never fills and never carries text, and `box-shadow` never appears in a transition.
+There are no literal fallbacks. An earlier version mirrored every token into an `--e-*` of
+its own with a dark-theme literal behind it, which survived a shell without the design system
+at the cost of silently rendering a different one: the literals were still Geist at a 3px
+radius long after kanon had moved to IBM Plex at 6px, and they named `--dya-line` and
+`--dya-elev-raised-hover`, neither of which exists any more. A missing stylesheet should look
+missing.
+
+Two properties are overridden per instance, both on the system's own authority rather than
+against it:
+
+- The prompt box is a `dya-field` in the sans family, because what the operator writes is
+  content, and the type rule puts content in IBM Plex Sans Condensed.
+- Model names and route labels carry `--dya-tracking-mono` rather than the 0.2em their
+  component declares. Tracking follows the role, and a model name is an identifier, not a
+  section label.
+
+The plugin never touches `ctx.theme`. That API resolves tokens to literal strings for code
+that draws outside the DOM — canvas, WebGL, a terminal emulator. Eforoi is plain DOM, so
+`var()` and a class name cover every case.
+
+The system's rules are respected as stated, and two of them cost the panel something it had:
+
+- **Hover changes the background, never the shadow.** Buttons and seat pickers used to lift
+  on hover by swapping in a heavier `box-shadow`. They now change background, which is what
+  `dya-button` and `dya-row` do.
+- **Nothing animates forever.** The status dot pulsed while a member was running. It is now
+  static, and the running state reads from its colour together with the note beside it —
+  which the system asks for anyway: colour states the outcome, a word says what it is.
 
 
 ## 12. Reading order and the shape of the panel
@@ -467,7 +505,7 @@ use.
 Zone         Split                             Fills
 ----------   -------------------------------   ----------------------------------
 head         prompt 5/12, panel 7/12           both reach the right edge
-seat row     64 / 1fr / 124 / 76 / 46 / 54px   columns line up across rows
+seat row     64 / 1fr / 168 / 76 / 46 / 54px   columns line up across rows
 results      answer 6/12, analysis 6/12        text spans its assigned column
 members      12/12 below                       collapsed strips
 ```

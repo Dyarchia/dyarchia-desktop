@@ -40,7 +40,7 @@ export function renderMarkdown(source: string): string {
         if (heading) {
             flush()
             flushParagraph()
-            out.push(`<h4>${inline(heading[2])}</h4>`)
+            out.push(`<h4 class="dya-label">${inline(heading[2])}</h4>`)
             continue
         }
 

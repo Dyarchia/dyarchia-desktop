@@ -68,11 +68,11 @@ function matches(row: MenuRow, needle: string): boolean {
 
 export function openMenu(options: MenuOptions): () => void {
     const root = document.createElement('div')
-    root.className = 'eforoi-menu'
+    root.className = 'dya-menu eforoi-menu'
     root.setAttribute('role', 'menu')
 
     const search = document.createElement('input')
-    search.className = 'eforoi-menu-search'
+    search.className = 'dya-field dya-field--sm eforoi-menu-search'
     search.type = 'text'
     search.placeholder = options.filter ?? 'filter'
     search.spellcheck = false
@@ -112,21 +112,22 @@ export function openMenu(options: MenuOptions): () => void {
         if (!entry) return
 
         const panel = document.createElement('div')
-        panel.className = 'eforoi-menu eforoi-submenu'
+        panel.className = 'dya-menu eforoi-menu eforoi-submenu'
         panel.setAttribute('role', 'menu')
 
         for (const leaf of entry.row.leaves) {
             const item = document.createElement('button')
             item.type = 'button'
-            item.className = 'eforoi-menu-item'
+            item.className = 'dya-menu__item eforoi-menu-item'
             item.disabled = leaf.disabled === true
-            item.dataset.selected = String(leaf.selected === true)
+            item.classList.toggle('dya-menu__item--selected', leaf.selected === true)
             item.title = leaf.reason ?? ''
 
             const label = document.createElement('span')
+            label.className = 'eforoi-menu-label'
             label.textContent = leaf.label
             const hint = document.createElement('span')
-            hint.className = 'eforoi-menu-hint'
+            hint.className = 'dya-menu__shortcut eforoi-menu-hint'
             hint.textContent = leaf.disabled ? 'unavailable' : ''
             item.append(label, hint)
 
@@ -165,7 +166,7 @@ export function openMenu(options: MenuOptions): () => void {
                 group = row.group
                 if (group) {
                     const heading = document.createElement('div')
-                    heading.className = 'eforoi-menu-group'
+                    heading.className = 'dya-label eforoi-menu-group'
                     heading.textContent = group
                     list.appendChild(heading)
                 }
@@ -173,23 +174,24 @@ export function openMenu(options: MenuOptions): () => void {
 
             const item = document.createElement('button')
             item.type = 'button'
-            item.className = 'eforoi-menu-item'
-            item.dataset.selected = String(row.selected === true)
+            item.className = 'dya-menu__item eforoi-menu-item'
+            item.classList.toggle('dya-menu__item--selected', row.selected === true)
 
             const label = document.createElement('span')
+            label.className = 'eforoi-menu-label'
             label.textContent = row.label
             item.appendChild(label)
 
             if (row.tier) {
                 const tier = document.createElement('span')
-                tier.className = 'eforoi-tier'
+                tier.className = 'dya-badge dya-badge--soft eforoi-tier'
                 tier.textContent = row.tier
                 item.appendChild(tier)
             }
 
             if (row.note) {
                 const note = document.createElement('span')
-                note.className = 'eforoi-menu-hint'
+                note.className = 'dya-menu__shortcut eforoi-menu-hint'
                 note.textContent = row.note
                 item.appendChild(note)
             }
@@ -218,7 +220,7 @@ export function openMenu(options: MenuOptions): () => void {
 
         if (!rendered.length) {
             const empty = document.createElement('div')
-            empty.className = 'eforoi-menu-empty'
+            empty.className = 'dya-empty eforoi-menu-empty'
             empty.textContent = 'no match'
             list.appendChild(empty)
         }

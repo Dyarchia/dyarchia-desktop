@@ -115,6 +115,10 @@
     border-top: var(--dya-border-width) solid var(--dya-hairline);
 }
 
+.dya-bar--flush {
+    padding-right: 0;
+}
+
 .dya-card {
     background: var(--dya-surface-1);
     border: var(--dya-border-width) solid var(--dya-border);
@@ -324,6 +328,45 @@
     transform: scale(var(--dya-press-scale));
 }
 
+.dya-entry {
+    display: block;
+    width: 100%;
+    padding: 3px var(--dya-space-3);
+    border: none;
+    background: transparent;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-3);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition:
+        transform var(--dya-dur-press) var(--dya-ease-press),
+        background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-entry:hover {
+    background-color: var(--dya-flat-hover);
+    color: var(--dya-text);
+}
+
+.dya-entry:active {
+    transform: scale(var(--dya-press-scale));
+}
+
+.dya-entry--strong {
+    color: var(--dya-text-2);
+}
+
+.dya-entry--active {
+    background-color: var(--dya-selected);
+    box-shadow: inset 2px 0 0 var(--dya-accent);
+    color: var(--dya-text);
+}
+
 .dya-field {
     height: 30px;
     width: 100%;
@@ -407,7 +450,6 @@ textarea.dya-field {
     border-radius: var(--dya-radius-sm);
     background: var(--dya-sunken);
     cursor: pointer;
-    transition: border-color var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-radio {
@@ -666,7 +708,6 @@ textarea.dya-field {
     text-transform: uppercase;
     color: var(--dya-text-4);
     cursor: pointer;
-    transition: color var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-tab:hover {

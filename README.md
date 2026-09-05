@@ -33,9 +33,10 @@ Reference the classes; do not redefine them. A product that restyles `.dya-butto
 has forked the system.
 
 ```text
-Structure    dya-panel  dya-bar  dya-dock  dya-card  dya-card__header
+Structure    dya-panel  dya-bar (--flush)  dya-dock  dya-card  dya-card__header
              dya-card__body  dya-rule  dya-brand
 Pressable    dya-button (--quiet --sm --danger)  dya-key  dya-chip  dya-item
+             dya-entry (--strong --active)
 Input        dya-field  dya-toggle  dya-checkbox  dya-radio  dya-slider
 Content      dya-tag  dya-badge (--success --warning --danger --soft)
              dya-table  dya-row (--selected)  dya-metric  dya-display
@@ -201,3 +202,9 @@ instead of as depth. No shadow uses positive spread.
   is an open question, as it was for the typeface before.
 - **Products that start in light have nowhere to go.** The light theme and
   `data-dya-theme` no longer exist.
+- **The prose scale has one step.** `.dya-heading` is the only heading, at
+  `--dya-size-h2`, and there is nothing between `--dya-size-metric` and
+  `--dya-size-body`. A product that renders arbitrary documents has three heading
+  levels and one size to spend on them; the standing answer is to drop the lower
+  two into the mono label idiom, which reads as a section label and stays inside
+  the grammar. Whether the system should carry a real prose scale is open.

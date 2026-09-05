@@ -1,8 +1,8 @@
 # The dyarchia-desktop UI contract
 
-Every dyarchia product renders against the same design system: one dark theme, one pair
-of typefaces, one grammar of relief, and a layer of `dya-*` component classes the
-products consume without redefining them. This document is the desktop side of that
+Every dyarchia product renders against the same design system: two dark themes over one
+token contract, one pair of typefaces, one grammar of relief, and a layer of `dya-*`
+component classes the products consume without redefining them. This document is the desktop side of that
 contract — what the shell provides, and what a plugin must respect to look like it
 belongs.
 
@@ -70,8 +70,11 @@ into that same document, so:
   plugin creates.
 - **The reset already applied.** `box-sizing`, margin zeroing, focus ring, scrollbars
   and the reduced-motion block are in force before the plugin runs.
-- **There is no theme to read or switch.** One dark theme, no root attribute, no
-  `prefers-color-scheme`. Nothing subscribes to a theme change because there is none.
+- **The theme is an attribute, and the shell owns it.** The system carries two dark
+  themes: `Gi` on `:root` and `Oneiro` under `[data-theme="oneiro"]`. A theme redefines
+  colour tokens and nothing else, so a plugin never reads it, never branches on it and
+  never subscribes to it — it writes `var(--dya-surface-1)` and gets whichever theme is
+  mounted. The CSS never consults `prefers-color-scheme` and there is no light theme.
 
 ```mermaid
 flowchart TD
@@ -152,18 +155,23 @@ The full mandate lives upstream. These are the ones a panel breaks first.
 4. **`box-shadow` is never in a `transition`.** It is the most expensive property to
    animate and it interpolates badly against a list of shadows. Animate `transform`,
    `opacity` and `background-color`.
-5. **The orange is never a fill and never a button.** `--dya-accent` marks what is
-   active — a tab underline, a selected row's edge, a status dot, `::selection`. It is
-   text only on its own tint, where it measures 4.75 to 5.30.
-6. **A label never sits on `--dya-overlay`, `--dya-raised-hover` or `--dya-selected`.**
-   `--dya-text-4` measures 4.38, 4.12 and 3.53 there. On those three, use
-   `--dya-text-3`.
-7. **Interface text is IBM Plex Mono, uppercase, with tracking chosen by role.** Content
+5. **An ink under 4.50 against what it sits on is not text.** Above 3.00 it can still
+   be a graphical object: a tab underline, a selected row's edge, a status dot,
+   `::selection`. In Gi that catches `--dya-accent` on `--dya-raised-hover` and
+   `--dya-selected` at 4.42 and 3.99, and `--dya-accent-3` on everything above
+   `--dya-surface-1`.
+6. **`--dya-field` is a surface, not an ink.** It is the one token meant to be flooded
+   across a whole region, and it carries `--dya-on-field`. In Oneiro it measures 2.12 as
+   text and 9.20 as a ground, which is the entire point. Never set `color:
+   var(--dya-field)`.
+7. **A label never sits on `--dya-selected` in Gi or `--dya-raised-hover` in Oneiro.**
+   `--dya-text-4` measures 4.43 and 4.27 there. On those, use `--dya-text-3`.
+8. **Interface text is IBM Plex Mono, uppercase, with tracking chosen by role.** Content
    prose is IBM Plex Sans Condensed. File names and paths are the exception — they are
    data, so mono in normal case at `--dya-tracking-mono`.
-8. **Five radii, and 8px is not one of them.** Something asking for 8px gets
+9. **Five radii, and 8px is not one of them.** Something asking for 8px gets
    `--dya-radius`, 6px.
-9. **Nothing animates forever.** No shimmer on a skeleton, no pulse on a status dot.
+10. **Nothing animates forever.** No shimmer on a skeleton, no pulse on a status dot.
 
 
 ## 5. Tokens a plugin reaches for
@@ -181,6 +189,8 @@ Relief      --dya-elev-flat  --dya-elev-chassis  --dya-elev-raised
 Line        --dya-border  --dya-border-strong  --dya-hairline  --dya-rule
             --dya-dashed  --dya-faint
 Accent      --dya-accent  --dya-accent-soft  --dya-accent-faint  --dya-on-accent
+            --dya-accent-2 (--soft)  --dya-accent-3 (--soft)
+Field       --dya-field  --dya-on-field
 Status      --dya-success  --dya-warning  --dya-danger  --dya-*-soft for each
             --dya-on-status  --dya-idle  --dya-on-idle
 Shape       --dya-radius-sm  --dya-radius  --dya-radius-media
@@ -220,12 +230,14 @@ The terminal plugin is the worked example: it builds xterm's `ITheme` from
 `token('surface-1')`, `token('text')` and `token('accent-soft')` over a fixed 16-colour
 ANSI palette — [renderer.ts](packages/plugin-terminal/src/renderer.ts).
 
-Colour a plugin paints itself is colour the system cannot check. The terminal's palette
-is measured against the surface it sits on: every entry but the `black` slot clears
-6.21:1 against `--dya-surface-1`, because thin monospace stems lose contrast to
-antialiasing and a nominal 4.5:1 reads thinner than it measures. The `black` slot is
-1.76:1 by definition and `minimumContrastRatio: 4.5` lifts it at render time. Any plugin
-that draws text outside the DOM owes the same check.
+Colour a plugin paints itself is colour the system cannot check, and a theme cannot
+reach it either — a fixed palette has to clear every ground the product can mount. The
+terminal's sixteen slots are measured against `--dya-surface-1` in both themes: every
+entry but `black` clears 5.92:1 in Gi and 6.06:1 in Oneiro, the floor being
+`brightBlack`. The margin over AA is deliberate, because thin monospace stems lose
+contrast to antialiasing and a nominal 4.5:1 reads thinner than it measures. The `black`
+slot is 1.67:1 by definition and `minimumContrastRatio: 4.5` lifts it at render time.
+Any plugin that draws text outside the DOM owes the same check, in both themes.
 
 Plugins built outside this workspace need no dependency for any of it: `ctx.token` is
 passed in by the shell. `@dyarchia/kanon` exports the same function for code that runs
@@ -288,5 +300,10 @@ Before a panel is considered done:
   `--dya-size-h2` and drops `h2` and `h3` into the mono label idiom. Upstream carries
   this as an open question and the mono idiom as its standing answer, so the viewer is
   aligned with the system rather than working around it.
-- **`--dya-text-4` is the floor.** It measures 5.20 against `--dya-surface-1` and clears
-  AA there, but 3.53 on `--dya-selected`. Check the surface before reaching for it.
+- **`--dya-text-4` is the floor.** It measures 6.50 against `--dya-surface-1` in Gi and
+  6.45 in Oneiro, and clears AA on every surface but one per theme — 4.43 on
+  `--dya-selected` in Gi, 4.27 on `--dya-raised-hover` in Oneiro. Check the surface
+  before reaching for it.
+- **Six of Oneiro's ten surfaces are interpolated.** They follow the mandate but have not
+  been seen against real content, so a panel that looks wrong in Oneiro and right in Gi
+  is a report worth filing upstream rather than a local fix.

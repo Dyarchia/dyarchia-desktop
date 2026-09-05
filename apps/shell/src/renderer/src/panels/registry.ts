@@ -19,14 +19,6 @@ export interface PanelHandle {
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
 
-export type ThemeName = 'light' | 'dark'
-
-export interface ThemeApi {
-    readonly current: ThemeName
-    token(name: string): string
-    onChange(listener: (theme: ThemeName) => void): () => void
-}
-
 export interface RegisteredPanel {
     descriptor: PanelDescriptor
     mount: PanelMount

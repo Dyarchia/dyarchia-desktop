@@ -7,15 +7,7 @@ const STYLE_ID = 'dyarchia-sample-styles'
 
 const STYLES = `
 .sample {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     height: 100%;
-    color: var(--dya-text-3);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    text-transform: uppercase;
 }
 `
 
@@ -31,7 +23,7 @@ export function activate(ctx: PluginContext): void {
     ensureStyles()
     ctx.registerPanel({ id: 'sample', title: 'Sample', icon: SAMPLE_ICON }, (container) => {
         const el = document.createElement('div')
-        el.className = 'sample'
+        el.className = 'dya-empty sample'
         el.textContent = `sample panel — plugin id ${ctx.pluginId}`
         container.appendChild(el)
         return () => el.remove()

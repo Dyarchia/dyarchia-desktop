@@ -13,20 +13,20 @@ body {
     background: var(--dya-bg);
     color: var(--dya-text);
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-sm);
-    font-weight: 400;
+    font-size: var(--dya-size-body);
+    font-weight: var(--dya-weight);
     line-height: var(--dya-leading-body);
     -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
     background: var(--dya-accent);
-    color: var(--dya-on-inverse);
+    color: var(--dya-on-accent);
 }
 
 :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--dya-focus);
+    box-shadow: 0 0 0 1px var(--dya-focus);
 }
 
 ::-webkit-scrollbar {

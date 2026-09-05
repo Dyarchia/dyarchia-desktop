@@ -23,30 +23,11 @@ function ensureStyles(): void {
         '\n.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {' +
         ' background-color: var(--dya-border); }' +
         '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {' +
-        ' background-color: var(--dya-border-control); }'
+        ' background-color: var(--dya-border-strong); }'
     document.head.appendChild(style)
 }
 
-const ANSI_LIGHT: ITheme = {
-    black: '#141312',
-    red: '#8f1414',
-    green: '#175226',
-    yellow: '#6b4400',
-    blue: '#173c80',
-    magenta: '#6d2478',
-    cyan: '#0b515b',
-    white: '#4a4643',
-    brightBlack: '#5c5855',
-    brightRed: '#a81f1f',
-    brightGreen: '#1d6a34',
-    brightYellow: '#7d5100',
-    brightBlue: '#1f4c9c',
-    brightMagenta: '#832d92',
-    brightCyan: '#0d626e',
-    brightWhite: '#020202'
-}
-
-const ANSI_DARK: ITheme = {
+const ANSI: ITheme = {
     black: '#3a3d42',
     red: '#e07b7b',
     green: '#7fc99a',
@@ -85,25 +66,22 @@ export function activate(ctx: PluginContext): void {
         container.classList.add('dyarchia-terminal')
 
         const terminalTheme = (): ITheme => ({
-            ...(ctx.theme.current === 'dark' ? ANSI_DARK : ANSI_LIGHT),
-            background: ctx.theme.token('surface-1'),
-            foreground: ctx.theme.token('text'),
-            cursor: ctx.theme.token('text'),
-            cursorAccent: ctx.theme.token('surface-1'),
-            selectionBackground: ctx.theme.token('accent-soft')
+            ...ANSI,
+            background: ctx.token('surface-1'),
+            foreground: ctx.token('text'),
+            cursor: ctx.token('text'),
+            cursorAccent: ctx.token('surface-1'),
+            selectionBackground: ctx.token('accent-soft')
         })
 
         const terminal = new Terminal({
-            fontFamily: "'Geist Mono', 'Cascadia Mono', Consolas, monospace",
+            fontFamily: ctx.token('font-mono'),
             fontSize: 13,
             cursorBlink: true,
             allowProposedApi: true,
             minimumContrastRatio: 4.5,
             scrollback: 10000,
             theme: terminalTheme()
-        })
-        const unwatchTheme = ctx.theme.onChange(() => {
-            terminal.options.theme = terminalTheme()
         })
         const fit = new FitAddon()
         terminal.loadAddon(fit)
@@ -212,7 +190,6 @@ export function activate(ctx: PluginContext): void {
 
         return () => {
             disposed = true
-            unwatchTheme()
             observer.disconnect()
             window.removeEventListener('message', onPortAnnouncement)
             container.removeEventListener('mouseup', onMouseUp)

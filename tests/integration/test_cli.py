@@ -145,6 +145,18 @@ def test_inspect_finds_the_markdown_variant(workspace: Path, site: str) -> None:
     assert '--crawler http' in output(result)
 
 
+def test_inspect_finds_the_twin_that_replaced_the_extension(workspace: Path, site: str) -> None:
+    """The form developer.salesforce.com serves, where appending would ask for a page that is 404.
+
+    The fixture publishes handbook.md and no handbook.html.md, so this passes only while the probe
+    offers the same candidates a run with fetch_suffix would fetch.
+    """
+    result = runner.invoke(app, ['inspect', f'{site}handbook.html'])
+    assert result.exit_code == 0
+    assert 'handbook.md' in output(result)
+    assert '--crawler http' in output(result)
+
+
 def test_a_run_can_be_saved_as_a_profile_and_replayed(workspace: Path, site: str) -> None:
     saved = runner.invoke(
         app,

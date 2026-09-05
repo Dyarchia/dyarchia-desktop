@@ -383,10 +383,16 @@ comparison, snapshot guards, profile loading.
 Integration tests drive the real command line entry point against a fixture site served from
 `tests/fixtures/site` on localhost for the duration of the session. It is deliberately small and
 deliberately awkward: static pages with selectable structure, a catalogue to follow links into, a
-page outside it that a filter must exclude, a page published twice so the markdown probe has
-something to find, and one page whose quotes only exist after JavaScript runs. That last one is the
-case that motivated the adaptive result checker, and it is asserted from both sides: the static
-crawler sees an empty shell where the browser-backed one sees ten quotes.
+page outside it that a filter must exclude, two pages published twice so the markdown probe has
+something to find, and one page whose quotes only exist after JavaScript runs. That last one is
+the case that motivated the adaptive result checker, and it is asserted from both sides: the
+static crawler sees an empty shell where the browser-backed one sees ten quotes.
+
+The two twins differ on purpose, because publishers disagree about where a twin goes:
+`guide.html` has `guide.html.md` beside it, the appended form, and `handbook.html` has
+`handbook.md`, the form that replaces the extension and the one developer.salesforce.com uses.
+Nothing serves `handbook.html.md`, so a probe that only appends passes the first and fails the
+second.
 
 Nothing in the suite leaves the machine. Tests needing Playwright carry the `browser` mark, which is
 the only reason to deselect anything. An earlier version pointed these tests at public scraping

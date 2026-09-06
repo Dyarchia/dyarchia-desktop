@@ -191,7 +191,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     let catalog: Catalog | null = null
     let state: Stored = read<Stored>(SEATS_KEY, { panel: [], analyst: null })
     let latency = read<Record<string, number>>(LATENCY_KEY, {})
-    let web = read<boolean>(WEB_KEY, false)
+    let web = read<boolean>(WEB_KEY, true)
     let store: PanelStore = { path: '', items: [] }
     let runId: string | null = null
     let answerText = ''
@@ -234,7 +234,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const renderWeb = (): void => {
         webButton.setAttribute('aria-pressed', String(web))
         webButton.title = web
-            ? 'members may search the web: slower, and each search is billed'
+            ? 'members may search, at most three times each'
             : 'members answer from what they know, with no network round trips'
     }
 

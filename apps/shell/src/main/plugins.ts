@@ -85,7 +85,9 @@ export function registerPluginScheme(): void {
 function pluginRoots(): string[] {
     const roots: string[] = []
     if (!app.isPackaged) {
-        roots.push(resolve(import.meta.dirname, '../../../..', 'packages'))
+        const workspace = resolve(import.meta.dirname, '../../../..')
+        roots.push(join(workspace, 'packages'))
+        if (process.env['DYARCHIA_EXAMPLES']) roots.push(join(workspace, 'examples'))
     }
     roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))
     return roots

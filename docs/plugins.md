@@ -229,7 +229,21 @@ Where a plugin lives, by mode:
     Mode         Location                                   How it gets there
     ---------    ---------------------------------------    ---------------------------------
     dev          packages/<folder>/                         the shell scans the workspace
+    example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
+
+examples/ holds the reference plugins: sample, the smallest activate that registers a
+panel, and pyinfo, the only exercise of the Python main module and of broadcast. They are
+not discovered by default, because a reference does not need to run to be read, and a
+shell that ships an empty demo panel is worse than one that does not. To run them:
+
+```bash
+DYARCHIA_EXAMPLES=1 pnpm dev
+```
+
+install-plugins.mjs never copies them, so they cannot reach the packaged app. If one was
+installed before it moved, the installed copy is still discovered and now wins, since
+nothing in packages/ shadows it any more; delete it from %APPDATA%/dyarchia/plugins/.
 
 In dev the workspace takes priority over installed plugins, so an installed copy never
 shadows the version under development.

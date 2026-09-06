@@ -32,6 +32,22 @@ body,
     -webkit-app-region: no-drag;
 }
 
+.topbar-themes {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-1);
+    padding-right: var(--dya-space-3);
+    -webkit-app-region: no-drag;
+}
+
+.topbar-themes::before {
+    content: '';
+    width: var(--dya-border-width);
+    height: 14px;
+    background: var(--dya-border);
+    margin-right: var(--dya-space-3);
+}
+
 .topbar-icon,
 .topbar-icon svg {
     display: block;

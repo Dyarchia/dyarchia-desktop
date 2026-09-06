@@ -1,9 +1,12 @@
 import type { PanelDescriptor } from '../panels/registry'
+import { THEMES } from '../theme'
 
 interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
     onToggle: (id: string) => void
+    theme: string
+    onThemeChange: (id: string) => void
 }
 
 const MINIMIZE_ICON =
@@ -24,7 +27,13 @@ function windowAction(action: string): void {
     void window.dyarchia?.invoke(`shell:window:${action}`)
 }
 
-export function TopBar({ panels, openPanelIds, onToggle }: TopBarProps): React.JSX.Element {
+export function TopBar({
+    panels,
+    openPanelIds,
+    onToggle,
+    theme,
+    onThemeChange
+}: TopBarProps): React.JSX.Element {
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <span className="dya-brand">dyarchia</span>
@@ -40,6 +49,24 @@ export function TopBar({ panels, openPanelIds, onToggle }: TopBarProps): React.J
                             onClick={() => onToggle(panel.id)}
                         >
                             <PanelIcon icon={panel.icon} />
+                        </button>
+                    ))}
+                </div>
+                <div className="topbar-themes" role="group" aria-label="Theme">
+                    {THEMES.map((entry) => (
+                        <button
+                            key={entry.id}
+                            className={
+                                entry.id === theme ? 'dya-key dya-key--active' : 'dya-key'
+                            }
+                            title={entry.label}
+                            aria-pressed={entry.id === theme}
+                            onClick={() => onThemeChange(entry.id)}
+                        >
+                            <span
+                                className="topbar-icon"
+                                dangerouslySetInnerHTML={{ __html: entry.icon }}
+                            />
                         </button>
                     ))}
                 </div>

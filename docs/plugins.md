@@ -83,8 +83,9 @@ Notes:
   token is resolvable and a plugin must never write a literal colour, font or radius, nor
   restyle a dya-* selector. See docs/ui.md for the order, the class list and the rules.
 - ctx.token covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
-  resolved string. token('accent') and token('--dya-accent') both return the value. There
-  is one theme and nothing to subscribe to.
+  resolved string. token('accent') and token('--dya-accent') both return the value. A
+  theme redefines colour tokens and never rules, so there is nothing to branch on and
+  nothing to subscribe to.
 
 
 ## 3. The main module (optional)

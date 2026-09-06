@@ -63,7 +63,10 @@ export function TopBar({
                             aria-pressed={entry.id === theme}
                             onClick={() => onThemeChange(entry.id)}
                         >
-                            <span className="topbar-glyph">{entry.glyph}</span>
+                            <span
+                                className="topbar-icon"
+                                dangerouslySetInnerHTML={{ __html: entry.icon }}
+                            />
                         </button>
                     ))}
                 </div>

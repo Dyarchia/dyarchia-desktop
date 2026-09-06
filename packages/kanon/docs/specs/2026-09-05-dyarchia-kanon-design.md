@@ -285,6 +285,13 @@ to hierarchy coming from size and tracking: six levels do not fit in four sizes.
 Prose is content, so it is sans and it keeps its case. The one uppercase element inside
 `.dya-prose` is a table head, which is a label.
 
+`.dya-math` is the exception inside the exception: notation is data, not prose, so it is
+mono at `0.94em` of whatever surrounds it and carries `--dya-text-2` — 11.23 on Gi's
+`--dya-surface-1`, 10.71 on `--dya-surface-2`, 15.37 and 14.46 on Oneiro's. The em-relative
+size is deliberate: an expression inside a heading has to scale with the heading, and no
+step in the type scale can do that. `.dya-math--block` is the display form, centred with an
+accent rule down its left edge and its own horizontal scroll.
+
 ## 8. Shape and spacing
 
 ```text
@@ -330,6 +337,7 @@ Content      tag badge (--success --warning --danger --soft) table row (--select
              metric display heading text label eyebrow value mono caret
 Documents    prose (styles by element) prose__scroll
              code (__kw __str __num __com __fn __pun)
+             math (--block)
 Layers       menu menu__item tooltip
 Navigation   tabs tab pagination
 Absence      empty loading skeleton

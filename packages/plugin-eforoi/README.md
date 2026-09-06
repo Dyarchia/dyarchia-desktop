@@ -59,33 +59,39 @@ The analyst does both in a single call, emitting the comparison as JSON, a marke
 answer. It used to be two calls, which made it the slower half of a run and left the writer
 working from the JSON alone, having never read a word any member wrote.
 
+It reads every surviving answer, so it is routinely the slowest seat even on a fast model —
+three members producing 4891, 427 and 3849 tokens hand it over nine thousand tokens of input.
+It carries its own 300 second deadline covering both attempts, the card counts seconds while
+it runs, and a reply that had to be retried says `attempt 2`.
+
 Follow-up turns existed and were removed. A panel is not a chat: a follow-up is a new
 question, and a new question deserves a fresh panel. `Clear` empties the board.
 
 
-## Web access
+## Web search
 
-`Web` in the action bar lets the panel search and fetch. It is **on by default** and applies
-to the members only — the analyst compares what it is given and never goes looking.
+Every member searches, always. The analyst never does — it compares what it is given.
 
-What is capped is how much they search, not whether they can. Three identical Haiku seats
-answering the same question took 53.8s, 67.5s and 107.3s, having searched 6, 8 and 15 times:
-nothing bounded the agent loop, so a run lasted as long as whichever seat was most curious.
-The panel prompt now states a budget of three searches, and each member carries a 120 second
-deadline as a backstop — a seat that overruns reports that it did not answer in time and
-does not vote.
+What is capped is how much they search. Three identical Haiku seats answering the same
+question took 53.8s, 67.5s and 107.3s, having searched 6, 8 and 15 times: nothing bounded
+the agent loop, so a run lasted as long as whichever seat was most curious. The panel prompt
+now states a budget of three searches, and each member carries a 120 second deadline as a
+backstop — a seat that overruns reports that it did not answer in time and does not vote.
 
 ```text
                   before             after
 --------------   ----------------   ----------------
 searches         6 / 8 / 15         3 / 3 / 3
 members          53.8/67.5/107.3s   38.7/42.2/33.6s
-whole run        152.5s             108.2s
 shadow cost      $0.6657            $0.3099
 ```
 
-Each card reports its own search count beside its time. Turn the switch off for a question
-you know the models already know.
+There is no switch to turn searching off. There was one briefly; it reached four routes of
+five, because opencode has no flag for web access, and a panel that cannot look anything up
+is a panel of models guessing. Each card reports its own search count beside its time: `3 web` when the route reported
+three, `0 web` when it reported none, and `web ?` when the route does not report tool use at
+all. opencode is the one that cannot be counted, and it says so rather than showing a zero
+it cannot stand behind.
 
 
 ## Presets and effort

@@ -6,7 +6,6 @@ export interface CompletionRequest {
     prompt: string
     temperature: number
     maxTokens: number
-    web: boolean
     signal: AbortSignal
     effort: string | null
     onDelta(text: string): void
@@ -16,7 +15,7 @@ export interface CompletionResult {
     text: string
     usage: Usage
     ms: number
-    searches: number
+    searches: number | null
 }
 
 export interface ModelInfo {

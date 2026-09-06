@@ -74,28 +74,24 @@ Tres detalles que separan un script correcto de uno que miente:
 
 Fuente: [Manage costs](https://code.claude.com/docs/en/costs)`
 
-const ANSWER = `Sí se puede, con un matiz importante: lo que obtienes en suscripción es un
-**coste sombra**, no un cargo facturado.
+const ANSWER = `Respuesta: ningún entero. Conjunto solución $=\\emptyset$, no hay candidato.
 
-## Tres vías para conseguirlo
+## Por qué, capa por capa
 
-1. Lo que ya existe sin programar nada — \`/usage\` dentro de Claude Code
-2. Parsear el JSONL de sesión, que es la vía más directa
-3. Telemetría OpenTelemetry + hooks
+1. $n=BB(6)$. Es un entero finito bien definido, pero su valor exacto es desconocido:
+   $BB(5)=47.176.870$, probado en 2024.
+2. $d=$ $N$-ésimo dígito de $\\pi$. No se puede comprobar si $d\\in\\{2,3,5,7\\}$.
+3. Los ceros no triviales tienen $\\Im(s)=t\\approx 14.1347251417\\dots$, reales no enteros.
+4. Coincidir a 10 decimales exige $|p-t_1|<5\\times10^{-11}$ con $t_1,t_2$ consecutivos.
+5. El espaciamiento medio a altura $T$ es $2\\pi/\\log T\\to 0$, y el gap normalizado $\\sim \\log T/\\pi$.
+6. $N$ en base 20 tiene longitud $\\log_{20}N$ tetracional.
+7. Retícula $\\sqrt N\\times\\sqrt N$ son $\\sim BB(6)$ celdas, con $d\\le 9$ vivas.
 
-\`\`\`bash
-npx ccusage@latest --breakdown
-\`\`\`
+$$
+\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}
+$$
 
-### Qué métrica usar en suscripción
-
-Si estás en Pro/Max, el dólar sombra sirve para *comparar* tareas entre sí. Pero la
-métrica accionable es otra: **qué porcentaje de tu ventana de 5 horas consumió cada
-prompt.**
-
-- No uses un proxy tipo LiteLLM con credenciales OAuth: choca con los términos
-- Queda sin confirmar si el Agent SDK con credenciales de suscripción reporta
-  \`total_cost_usd\` fiable`
+El coste medido fue $0.0376 la primera vez y $0.0493 la segunda.`
 
 const ANALYSIS = {
     consensus: [

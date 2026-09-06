@@ -52,39 +52,46 @@
     --dya-leading-loose: 165%;
 
     --dya-bg: #000000;
-    --dya-chassis: #0a0b0f;
-    --dya-surface-1: #0d0f15;
-    --dya-surface-2: #12141b;
-    --dya-raised: #1b1e29;
-    --dya-raised-hover: #22262f;
-    --dya-overlay: #1f2126;
-    --dya-sunken: #08090b;
-    --dya-selected: #2b3140;
-    --dya-flat-hover: #161922;
+    --dya-sunken: #0d0d0d;
+    --dya-chassis: #111111;
+    --dya-surface-1: #151515;
+    --dya-surface-2: #1a1a19;
+    --dya-flat-hover: #1f1f1e;
+    --dya-raised: #232322;
+    --dya-overlay: #262625;
+    --dya-raised-hover: #2d2d2c;
+    --dya-selected: #343433;
 
-    --dya-grad-bar: linear-gradient(#14161f, #0e1016);
-    --dya-grad-dock: linear-gradient(#0e1016, #14161f);
-    --dya-grad-header: linear-gradient(#13151d, #0d0f15);
+    --dya-grad-bar: linear-gradient(#232322, #1a1a19);
+    --dya-grad-dock: linear-gradient(#1a1a19, #232322);
+    --dya-grad-header: linear-gradient(#232322, #151515);
 
-    --dya-text: #e3e3e4;
-    --dya-text-2: #c3c6cb;
-    --dya-text-3: #9d9ea4;
-    --dya-text-4: #83858d;
+    --dya-text: #d9d8d5;
+    --dya-text-2: #cbcbc8;
+    --dya-text-3: #b7b6b4;
+    --dya-text-4: #9b9a98;
 
-    --dya-border: #262a36;
-    --dya-border-strong: #33384a;
-    --dya-hairline: #1b1e29;
-    --dya-rule: #14171f;
-    --dya-dashed: #232734;
+    --dya-border: #2d2d2c;
+    --dya-border-strong: #3a3a38;
+    --dya-hairline: #232322;
+    --dya-rule: #1a1a19;
+    --dya-dashed: #2d2d2c;
     --dya-faint: #ffffff3b;
 
-    --dya-accent: #ee6018;
-    --dya-accent-soft: #ee60181f;
-    --dya-accent-faint: #ee60180f;
-    --dya-on-accent: #08090b;
+    --dya-accent: #d97757;
+    --dya-accent-soft: #d977571f;
+    --dya-accent-faint: #d977570f;
+    --dya-on-accent: #151515;
+    --dya-accent-2: #6a9bcc;
+    --dya-accent-2-soft: #6a9bcc1f;
+    --dya-accent-3: #788c5d;
+    --dya-accent-3-soft: #788c5d1f;
 
-    --dya-tag-bg: #e3e3e412;
-    --dya-tag-border: #e3e3e42b;
+    --dya-field: #d97757;
+    --dya-on-field: #151515;
+
+    --dya-tag-bg: #d9d8d512;
+    --dya-tag-border: #d9d8d52b;
 
     --dya-success: #63cf95;
     --dya-success-soft: #63cf951a;
@@ -92,9 +99,9 @@
     --dya-warning-soft: #d6a95c1a;
     --dya-danger: #f59790;
     --dya-danger-soft: #f597901a;
-    --dya-on-status: #08090b;
-    --dya-idle: #2b3140;
-    --dya-on-idle: #c3c6cb;
+    --dya-on-status: #151515;
+    --dya-idle: #343433;
+    --dya-on-idle: #cbcbc8;
 
     --dya-glass: none;
     --dya-glass-bg: transparent;
@@ -118,7 +125,7 @@
 
     --dya-elev-focus:
         inset 0 2px 4px #000000cc,
-        0 0 0 1px #ee6018;
+        0 0 0 1px #d97757;
 
     --dya-elev-popover:
         inset 0 1px 0 #ffffff26,
@@ -130,7 +137,7 @@
         0 0 0 1px #000000,
         0 24px 48px -12px #000000e6;
 
-    --dya-focus: #ee6018;
+    --dya-focus: #d97757;
 
     --dya-press-y: 1px;
     --dya-press-y-key: 2px;
@@ -145,4 +152,57 @@
     --dya-dur-fast: 160ms;
     --dya-dur: 220ms;
     --dya-dur-slow: 320ms;
+}
+
+[data-theme="oneiro"] {
+    --dya-bg: #04040e;
+    --dya-sunken: #070714;
+    --dya-chassis: #0a0a20;
+    --dya-surface-1: #101026;
+    --dya-surface-2: #17172c;
+    --dya-flat-hover: #1d1d33;
+    --dya-raised: #24243a;
+    --dya-overlay: #2a2a42;
+    --dya-raised-hover: #32324c;
+    --dya-selected: #08084a;
+
+    --dya-grad-bar: linear-gradient(#24243a, #17172c);
+    --dya-grad-dock: linear-gradient(#17172c, #24243a);
+    --dya-grad-header: linear-gradient(#24243a, #101026);
+
+    --dya-text: #ffffff;
+    --dya-text-2: #e8e8f4;
+    --dya-text-3: #cdcdf5;
+    --dya-text-4: #9797a0;
+
+    --dya-border: #32324c;
+    --dya-border-strong: #43436a;
+    --dya-hairline: #24243a;
+    --dya-rule: #17172c;
+    --dya-dashed: #32324c;
+
+    --dya-accent: #e0cbf8;
+    --dya-accent-soft: #e0cbf81f;
+    --dya-accent-faint: #e0cbf80f;
+    --dya-on-accent: #04040e;
+    --dya-accent-2: #cdcdf5;
+    --dya-accent-2-soft: #cdcdf51f;
+    --dya-accent-3: #9797a0;
+    --dya-accent-3-soft: #9797a01f;
+
+    --dya-field: #0000f2;
+    --dya-on-field: #ffffff;
+
+    --dya-tag-bg: #ffffff12;
+    --dya-tag-border: #ffffff2b;
+
+    --dya-on-status: #04040e;
+    --dya-idle: #32324c;
+    --dya-on-idle: #e8e8f4;
+
+    --dya-elev-focus:
+        inset 0 2px 4px #000000cc,
+        0 0 0 1px #e0cbf8;
+
+    --dya-focus: #e0cbf8;
 }

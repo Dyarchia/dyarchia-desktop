@@ -33,10 +33,32 @@ const STYLES = `
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.player-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    color: var(--dya-text-4);
+    cursor: pointer;
+    transition: transform var(--dya-dur-press) var(--dya-ease-press);
+}
+.player-open:hover {
+    color: var(--dya-text);
+}
+.player-open:active {
+    transform: scale(var(--dya-press-scale));
+}
 .player-open svg {
     display: block;
     width: 14px;
     height: 14px;
+}
+.player-open--lg svg {
+    width: 28px;
+    height: 28px;
 }
 .player-stage {
     flex: 1;
@@ -94,9 +116,11 @@ export function activate(ctx: PluginContext): void {
 
             let busy = false
 
-            function openButton(className: string): HTMLButtonElement {
+            function openButton(large = false): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = `${className} player-open`
+                button.className = large
+                    ? 'player-open player-open--lg'
+                    : 'player-open'
                 button.title = 'Open media'
                 button.setAttribute('aria-label', 'Open media')
                 button.innerHTML = PLAYER_ICON
@@ -108,7 +132,7 @@ export function activate(ctx: PluginContext): void {
                 header.hidden = true
                 const empty = document.createElement('div')
                 empty.className = 'dya-empty'
-                empty.append(openButton('dya-button'))
+                empty.append(openButton(true))
                 if (message) {
                     const label = document.createElement('span')
                     label.textContent = message
@@ -140,7 +164,7 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
-            header.append(openButton('dya-button dya-button--sm'))
+            header.append(openButton())
             showEmpty()
 
             return () => {

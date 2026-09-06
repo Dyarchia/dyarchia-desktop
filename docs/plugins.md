@@ -50,6 +50,7 @@ An ESM module exporting activate(ctx). The context offers:
     invoke(channel, ...args)      calls a handler in the plugin's main module
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
+    onThemeChange(listener)       fires when the theme changes; returns unsubscribe
 
 The SDK also exports one function, outside the context:
 
@@ -90,9 +91,11 @@ Notes:
   token is resolvable and a plugin must never write a literal colour, font or radius, nor
   restyle a dya-* selector. See docs/ui.md for the order, the class list and the rules.
 - ctx.token covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
-  resolved string. token('accent') and token('--dya-accent') both return the value. A
-  theme redefines colour tokens and never rules, so there is nothing to branch on and
-  nothing to subscribe to.
+  resolved string. token('accent') and token('--dya-accent') both return the value. What
+  it returns is a copy, so it goes stale when the theme changes: pair it with
+  ctx.onThemeChange and resolve again in the listener, unsubscribing from the dispose. A
+  panel drawn entirely with dya-* classes and var() needs neither, and must not branch on
+  which theme is mounted in any case.
 
 
 ### The framework rule
@@ -229,7 +232,21 @@ Where a plugin lives, by mode:
     Mode         Location                                   How it gets there
     ---------    ---------------------------------------    ---------------------------------
     dev          packages/<folder>/                         the shell scans the workspace
+    example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
+
+examples/ holds the reference plugins: sample, the smallest activate that registers a
+panel, and pyinfo, the only exercise of the Python main module and of broadcast. They are
+not discovered by default, because a reference does not need to run to be read, and a
+shell that ships an empty demo panel is worse than one that does not. To run them:
+
+```bash
+DYARCHIA_EXAMPLES=1 pnpm dev
+```
+
+install-plugins.mjs never copies them, so they cannot reach the packaged app. If one was
+installed before it moved, the installed copy is still discovered and now wins, since
+nothing in packages/ shadows it any more; delete it from %APPDATA%/dyarchia/plugins/.
 
 In dev the workspace takes priority over installed plugins, so an installed copy never
 shadows the version under development.

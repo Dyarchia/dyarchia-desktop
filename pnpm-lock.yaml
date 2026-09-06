@@ -54,6 +54,30 @@ importers:
         specifier: ^7.3.6
         version: 7.3.6(@types/node@26.2.0)(jiti@2.7.0)
 
+  examples/plugin-pyinfo:
+    devDependencies:
+      '@dyarchia/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  examples/plugin-sample:
+    devDependencies:
+      '@dyarchia/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
   packages/kanon: {}
 
   packages/plugin-docviewer:
@@ -85,30 +109,6 @@ importers:
       electron:
         specifier: ^43.3.0
         version: 43.3.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
-  packages/plugin-pyinfo:
-    devDependencies:
-      '@dyarchia/sdk':
-        specifier: workspace:*
-        version: link:../sdk
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
-  packages/plugin-sample:
-    devDependencies:
-      '@dyarchia/sdk':
-        specifier: workspace:*
-        version: link:../sdk
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2

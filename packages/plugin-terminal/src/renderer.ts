@@ -91,6 +91,10 @@ export function activate(ctx: PluginContext): void {
         } catch {}
         fit.fit()
 
+        const stopThemeWatch = ctx.onThemeChange(() => {
+            terminal.options.theme = terminalTheme()
+        })
+
         let port: MessagePort | null = null
         let disposed = false
         const attachId = crypto.randomUUID()
@@ -185,6 +189,7 @@ export function activate(ctx: PluginContext): void {
 
         return () => {
             disposed = true
+            stopThemeWatch()
             observer.disconnect()
             window.removeEventListener('message', onPortAnnouncement)
             container.removeEventListener('mouseup', onMouseUp)

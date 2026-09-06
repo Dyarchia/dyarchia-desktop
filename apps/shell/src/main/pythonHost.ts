@@ -126,6 +126,8 @@ class PythonPlugin {
 }
 
 const running = new Map<string, PythonPlugin>()
+const declared = new Map<string, { directory: string; channels: string[] }>()
+const starting = new Map<string, Promise<PythonPlugin | null>>()
 
 function sdkRoot(): string {
     return app.isPackaged
@@ -148,6 +150,14 @@ function parse(line: string): HostMessage | null {
     }
 }
 
+export function declarePythonPlugin(
+    pluginId: string,
+    directory: string,
+    channels: string[]
+): void {
+    declared.set(pluginId, { directory, channels })
+}
+
 export async function startPythonPlugin(
     pluginId: string,
     directory: string
@@ -162,17 +172,63 @@ export async function startPythonPlugin(
     return plugin.channels
 }
 
-export function invokePythonPlugin(
+async function ensureRunning(pluginId: string): Promise<PythonPlugin | null> {
+    const live = running.get(pluginId)
+    if (live) return live
+
+    const pending = starting.get(pluginId)
+    if (pending) return pending
+
+    const entry = declared.get(pluginId)
+    if (!entry) return null
+
+    const attempt = (async () => {
+        const plugin = new PythonPlugin(pluginId, entry.directory)
+        if (!(await plugin.start())) {
+            console.error(`[python] "${pluginId}" failed to report ready`)
+            plugin.stop()
+            return null
+        }
+        running.set(pluginId, plugin)
+        reportDrift(pluginId, entry.channels, plugin.channels)
+        return plugin
+    })()
+
+    starting.set(pluginId, attempt)
+    try {
+        return await attempt
+    } finally {
+        starting.delete(pluginId)
+    }
+}
+
+function reportDrift(pluginId: string, manifest: string[], reported: string[]): void {
+    const missing = manifest.filter((channel) => !reported.includes(channel))
+    const extra = reported.filter((channel) => !manifest.includes(channel))
+    if (missing.length > 0) {
+        console.error(
+            `[python] "${pluginId}" declares ${missing.join(', ')} in its manifest but does not handle it`
+        )
+    }
+    if (extra.length > 0) {
+        console.warn(
+            `[python] "${pluginId}" handles ${extra.join(', ')} but does not declare it; the renderer cannot reach it`
+        )
+    }
+}
+
+export async function invokePythonPlugin(
     pluginId: string,
     channel: string,
     args: unknown[]
 ): Promise<unknown> {
-    const plugin = running.get(pluginId)
-    if (!plugin) return Promise.reject(new Error(`python plugin "${pluginId}" is not running`))
+    const plugin = await ensureRunning(pluginId)
+    if (!plugin) throw new Error(`python plugin "${pluginId}" is not running`)
     return plugin.invoke(channel, args)
 }
 
 export function stopPythonPlugins(): void {
     for (const plugin of running.values()) plugin.stop()
     running.clear()
+    starting.clear()
 }

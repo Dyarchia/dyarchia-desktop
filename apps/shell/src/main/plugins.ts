@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { invokePythonPlugin, startPythonPlugin } from './pythonHost'
+import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
 
 export interface PluginManifest {
     id: string
@@ -12,6 +12,7 @@ export interface PluginManifest {
     renderer: string
     main?: string
     python?: string
+    channels?: string[]
     schemes?: string[]
 }
 
@@ -84,7 +85,9 @@ export function registerPluginScheme(): void {
 function pluginRoots(): string[] {
     const roots: string[] = []
     if (!app.isPackaged) {
-        roots.push(resolve(import.meta.dirname, '../../../..', 'packages'))
+        const workspace = resolve(import.meta.dirname, '../../../..')
+        roots.push(join(workspace, 'packages'))
+        if (process.env['DYARCHIA_EXAMPLES']) roots.push(join(workspace, 'examples'))
     }
     roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))
     return roots
@@ -176,14 +179,25 @@ async function activateMainModules(): Promise<void> {
 async function activatePythonModules(): Promise<void> {
     for (const { manifest, dir } of plugins.values()) {
         if (!manifest.python) continue
-        const channels = await startPythonPlugin(manifest.id, dir)
+
+        const channels = manifest.channels ?? (await startEagerly(manifest.id, dir))
         if (!channels) continue
+
+        if (manifest.channels) declarePythonPlugin(manifest.id, dir, manifest.channels)
+
         for (const channel of channels) {
             ipcMain.handle(`plugin:${manifest.id}:${channel}`, (_event, ...args) =>
                 invokePythonPlugin(manifest.id, channel, args)
             )
         }
     }
+}
+
+async function startEagerly(pluginId: string, dir: string): Promise<string[] | null> {
+    console.warn(
+        `[python] "${pluginId}" declares no channels in its manifest, so its interpreter starts at boot`
+    )
+    return startPythonPlugin(pluginId, dir)
 }
 
 export async function setupPlugins(): Promise<void> {

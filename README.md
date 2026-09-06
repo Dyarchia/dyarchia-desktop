@@ -53,12 +53,13 @@ The pieces:
             shell/               Electron app (main, preload, renderer)
         packages/
             kanon/               @dyarchia/kanon - vendored design system and token lookup
-            sdk/                 @dyarchia/sdk - contract types
+            sdk/                 @dyarchia/sdk - contract types and injectStyles
             pysdk/               dyarchia_sdk - python plugin runtime
-            plugin-sample/       minimal reference plugin
             plugin-terminal/     embedded terminal (xterm.js + node-pty)
             plugin-docviewer/    native file picker + markdown, mermaid, source toggle
             plugin-player/       audio/video player (dyarchia-media://)
+        examples/
+            plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes

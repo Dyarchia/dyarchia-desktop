@@ -20,6 +20,7 @@ export interface PluginContext {
     registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
+    onThemeChange(listener: () => void): () => void
 }
 
 export interface PluginMainContext {

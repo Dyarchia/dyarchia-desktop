@@ -1,8 +1,9 @@
+import { injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import { renderMarkdown } from './markdown.js'
 import { openMenu } from './menu.js'
 import type { MenuLeaf, MenuRow } from './menu.js'
-import { STYLES, STYLE_ID } from './styles.js'
+import { STYLES } from './styles.js'
 import type {
     Analysis,
     Catalog,
@@ -66,15 +67,6 @@ function el<K extends keyof HTMLElementTagNameMap>(
     if (className) node.className = className
     if (text !== undefined) node.textContent = text
     return node
-}
-
-function injectStyles(): void {
-    const existing = document.getElementById(STYLE_ID)
-    if (existing) existing.remove()
-    const style = el('style')
-    style.id = STYLE_ID
-    style.textContent = STYLES
-    document.head.appendChild(style)
 }
 
 function seconds(ms: number): string {
@@ -848,7 +840,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 }
 
 export function activate(ctx: PluginContext): void {
-    injectStyles()
+    injectStyles('eforoi', STYLES)
     ctx.registerPanel(
         { id: 'eforoi', title: 'Eforoi', icon: ICON, duplicable: true },
         (container, handle) => mount(ctx, container, handle.instanceId)

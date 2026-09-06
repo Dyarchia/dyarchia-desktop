@@ -1,28 +1,21 @@
 {
-    "name": "dyarchia-eforoi",
+    "name": "@dyarchia/plugin-eforoi",
     "version": "0.1.0",
     "private": true,
     "type": "module",
     "scripts": {
         "build": "pnpm build:renderer && pnpm build:main",
-        "build:renderer": "esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js",
-        "build:main": "esbuild src/main.ts --bundle --platform=node --format=esm --external:electron --outfile=dist/main.js",
-        "install:plugin": "node scripts/install.mjs",
-        "typecheck": "tsc --noEmit",
-        "release": "pnpm build && pnpm install:plugin",
+        "build:renderer": "node ../../scripts/build-plugin.mjs renderer",
+        "build:main": "node ../../scripts/build-plugin.mjs main",
         "probe": "esbuild scripts/probe.ts --bundle --platform=node --format=esm --alias:electron=./scripts/electron-stub.mjs --outfile=.probe/probe.mjs && node .probe/probe.mjs"
     },
     "devDependencies": {
         "@anthropic-ai/sdk": "^0.120.0",
+        "@dyarchia/sdk": "workspace:*",
         "@types/node": "^26.2.0",
         "electron": "^43.3.0",
         "esbuild": "^0.28.2",
         "openai": "^7.5.0",
         "typescript": "^5.9.3"
-    },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "esbuild"
-        ]
     }
 }

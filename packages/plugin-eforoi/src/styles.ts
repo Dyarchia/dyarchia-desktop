@@ -1,5 +1,3 @@
-export const STYLE_ID = 'eforoi-styles'
-
 export const STYLES = `
 .eforoi {
     container-type: inline-size;

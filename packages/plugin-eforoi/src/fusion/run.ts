@@ -13,6 +13,8 @@ export interface RunEvents {
     done(answer: string, summary: RunSummary): void
 }
 
+export const MEMBER_DEADLINE_MS = 120_000
+
 const RETRY_NUDGE = '\n\nYour previous reply was not valid JSON. Return only the JSON object.'
 
 interface SpeakOptions {
@@ -55,6 +57,11 @@ async function member(
     signal: AbortSignal
 ): Promise<MemberResult> {
     const started = Date.now()
+    const bounded = new AbortController()
+    const relay = (): void => bounded.abort()
+    signal.addEventListener('abort', relay, { once: true })
+    const deadline = setTimeout(() => bounded.abort(), MEMBER_DEADLINE_MS)
+
     try {
         const result = await speak(seat, {
             system: panelSystem(config.web),
@@ -62,7 +69,7 @@ async function member(
             json: false,
             web: config.web,
             config,
-            signal,
+            signal: bounded.signal,
             onDelta: (text) => events.memberDelta(index, text)
         })
         return {
@@ -74,6 +81,7 @@ async function member(
             searches: result.searches
         }
     } catch (error) {
+        const expired = bounded.signal.aborted && !signal.aborted
         return {
             index,
             seat,
@@ -81,8 +89,15 @@ async function member(
             usage: { inputTokens: 0, outputTokens: 0, cachedTokens: 0, costUsd: null, billing: 'plan' },
             ms: Date.now() - started,
             searches: 0,
-            error: error instanceof Error ? error.message : String(error)
+            error: expired
+                ? `no answer within ${MEMBER_DEADLINE_MS / 1000}s, so this seat does not vote`
+                : error instanceof Error
+                  ? error.message
+                  : String(error)
         }
+    } finally {
+        clearTimeout(deadline)
+        signal.removeEventListener('abort', relay)
     }
 }
 

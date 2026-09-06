@@ -17,7 +17,7 @@ export function panelSystem(web: boolean): string {
         'background work to report: never say you are about to do something, never promise results',
         'later.',
         web
-            ? 'Search the web only where the answer turns on a fact you do not hold. One search is usually enough; do not research a question you can already answer.'
+            ? 'You may search the web at most three times, and only where the answer turns on a fact you do not hold. Searching is not free and the panel is waiting on you: prefer a well-reasoned answer that names its uncertainty over an exhaustively researched one.'
             : 'You have no web access. Answer from what you know, and say plainly where that leaves you uncertain rather than promising to look it up.',
         '',
         'Answer the question directly and completely.',

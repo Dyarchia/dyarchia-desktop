@@ -232,42 +232,62 @@ is showing you everything.
 
 ## 6. Web search and fetch
 
-Web access is a switch in the action bar, off by default, and it applies to the panel
-only. The analyst never searches: it is given the members' answers and compares them, and
-a comparison that goes looking for a sixth opinion is not a comparison.
+Web access is a switch in the action bar, **on by default**, and it applies to the panel
+only. The analyst never searches: it is given the members' answers and compares them, and a
+comparison that goes looking for a sixth opinion is not a comparison.
 
-**It defaults to off because it was the single largest cost in the panel, in both senses.**
-Measured on one real question, `claude -p --model haiku`, same prompt, same flags:
+It is on by default because a panel that cannot look anything up is a panel of models
+guessing. The switch is there for a question you know they already know, not as the normal
+state.
+
+**What is bounded is the number of searches, not the ability to search.** Three identical
+Haiku seats, same question, same run, before any budget existed:
 
 ```text
-                    with web     without web
------------------   ----------   -----------
-wall clock          40s          16s
-agent turns         6            3
-web tool calls      5            0
-cost                $0.1057      $0.0112
-output tokens       1735         1276
+seat   time      searches   output
+----   -------   --------   ------
+1       53.8s     6         2184
+2       67.5s     8         2663
+3      107.3s    15         3707
 ```
 
-Three searches and two fetches were five network round trips, each followed by another
-model turn to read the result. That is where the time went, and it is why Haiku took as
-long as Sonnet: the bottleneck was the tools, not the model. The billing is worse than the
-clock — an order of magnitude, because a search is charged per call and the fetched pages
-arrive as input tokens.
+The same model, the same prompt, the same moment, and a two-fold spread in wall clock that
+is entirely a spread in how many times it decided to search. Nothing capped the agent loop:
+the API routes carried `max_uses: 4` from the start, the CLI routes carried nothing, and
+`claude -p` has no `--max-turns` to give them. So a run's duration was decided by whichever
+member happened to be most curious, and a panel is only as fast as its slowest seat.
 
-Off, the same question costs a tenth and answers in a third of the time, and the panel
-still differentiates: Sonnet took 38s against Haiku's 16s once the round trips were gone,
-which is the model difference the panel exists to show.
+Two things bound it now. The panel prompt states a budget in as many words — at most three
+searches, and that searching is not free because the panel is waiting. And because a prompt
+is a request rather than a guarantee, `MEMBER_DEADLINE_MS` gives each member 120 seconds on
+its own `AbortController`, after which that seat reports that it did not answer in time and
+does not vote. The pipeline already tolerated a failed member, so a seat that overruns costs
+the run nothing but its own opinion.
 
-The switch is not a quality judgement. A question that turns on a current fact needs it on;
-a question about something the models already know does not, and paying forty seconds to
-have three models search for what they could have answered is the case that motivated the
-default. Each member card reports its own search count next to its time, so the price of
-turning it on is legible rather than inferred.
+The budget held, measured the same way:
 
-An earlier version of this document claimed the opposite — that tools were switched off so
-members answered from their own knowledge. That was true of exactly one route. Checking the
-event streams rather than the prose showed what was really happening:
+```text
+                  before             after
+--------------   ----------------   ----------------
+searches         6 / 8 / 15         3 / 3 / 3
+members          53.8/67.5/107.3s   38.7/42.2/33.6s
+panel stage      107.3s             42.2s
+whole run        152.5s             108.2s
+shadow cost      $0.6657            $0.3099
+```
+
+Half the cost, and the tail is gone: the spread across three identical seats fell from
+two-fold to a quarter. Nothing was turned off to get it.
+
+**The analyst is now the larger half of a run.** Of those 108 seconds, 42 are the panel —
+three members in parallel — and 64 are the analyst, which runs twice in sequence after every
+member has finished: once for the comparison JSON, once to write the answer. A slow model in
+the Dogma seat is therefore paid for twice and overlaps with nothing. Collapsing the two
+calls into one would halve it and would cost the streamed answer, since a JSON call has
+nothing readable to stream; that trade has not been made.
+
+Each member card reports its own search count beside its time, so the budget is visible
+rather than asserted.
 
 ```text
 Route       Switch off                  Switch on
@@ -281,7 +301,7 @@ openai      no tools in the request      Responses API web_search tool
 
 `opencode` is the one route the switch does not reach: it has no flag for web access and
 `--pure` only drops external plugins. A member on that route may search whatever the
-switch says, and its card will report the searches it made.
+switch says, and its card will report the searches it made. The deadline still binds it.
 
 `--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
 plugins; neither touches web search. Both were searching all along.

@@ -131,24 +131,37 @@ const ctx = {
     async invoke(channel, payload) {
         if (channel === 'catalog') return CATALOG
         if (channel === 'panels') return { path: 'C:/probe/panels.json', items: [] }
-        if (channel === 'run') { setTimeout(() => drive(payload), 60); return 'run-1' }
+        if (channel === 'run') { setTimeout(() => void drive(payload), 60); return 'run-1' }
         return true
     }
 }
 
 function emit(event) { listener?.({ ...event, runId: 'run-1' }) }
 
-function drive(config) {
+const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+
+async function stream(type, index, text, chunk = 220) {
+    for (let at = 0; at < text.length; at += chunk) {
+        emit(index === null
+            ? { type: 'answer:delta', text: text.slice(at, at + chunk) }
+            : { type: 'member:delta', index, text: text.slice(at, at + chunk) })
+        await sleep(70)
+    }
+}
+
+async function drive(config) {
     emit({ type: 'stage', stage: 'panel' })
-    config.panel.forEach((seat, i) => {
+    for (const [i, seat] of config.panel.entries()) {
+        await stream('member', i + 1, MEMBER(i + 1))
         emit({ type: 'member:done', result: {
-            index: i + 1, seat, text: MEMBER(i + 1), ms: 12400 + i * 3000,
+            index: i + 1, seat, text: MEMBER(i + 1), ms: 12400 + i * 3000, searches: config.web ? 3 : 0,
             usage: { inputTokens: 4200, outputTokens: 1830, cachedTokens: 0, costUsd: 0.0412, billing: 'plan' }
         } })
-    })
+    }
     emit({ type: 'stage', stage: 'analysis' })
     emit({ type: 'analysis', analysis: ANALYSIS, ms: 18300, usage: {} })
     emit({ type: 'stage', stage: 'answer' })
+    await stream('answer', null, ANSWER)
     emit({ type: 'done', answer: ANSWER, summary: {
         ms: 220150, costUsd: 0.183, meteredCostUsd: 0, inputTokens: 41000, outputTokens: 19656
     } })

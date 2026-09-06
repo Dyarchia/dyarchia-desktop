@@ -58,6 +58,7 @@ interface Sink {
     delta(text: string): void
     replace(id: string, text: string): void
     usage(patch: Partial<Usage>): void
+    search(): void
 }
 
 interface CliSpec {
@@ -95,8 +96,7 @@ const claude: CliSpec = {
             '--model',
             request.model,
             ...(request.effort ? ['--effort', request.effort] : []),
-            '--allowed-tools',
-            'WebSearch WebFetch',
+            ...(request.web ? ['--allowed-tools', 'WebSearch WebFetch'] : []),
             '--disallowed-tools',
             CLAUDE_DENY,
             '--permission-mode',
@@ -108,6 +108,11 @@ const claude: CliSpec = {
     consume(event, sink) {
         if (event.type === 'stream_event') {
             const inner = asRecord(event.event)
+            if (inner.type === 'content_block_start') {
+                const block = asRecord(inner.content_block)
+                if (block.type === 'server_tool_use' || block.type === 'tool_use') sink.search()
+                return
+            }
             if (inner.type !== 'content_block_delta') return
             const delta = asRecord(inner.delta)
             if (delta.type === 'text_delta' && typeof delta.text === 'string') sink.delta(delta.text)
@@ -143,7 +148,7 @@ const codex: CliSpec = {
             '--ignore-user-config',
             '--ignore-rules',
             '-c',
-            'tools.web_search=true',
+            `tools.web_search=${request.web}`,
             ...(request.effort ? ['-c', `model_reasoning_effort=${request.effort}`] : []),
             '-m',
             request.model,
@@ -155,6 +160,8 @@ const codex: CliSpec = {
             const item = asRecord(event.item)
             if (item.type === 'agent_message' && typeof item.text === 'string') {
                 sink.replace(String(item.id ?? 'agent_message'), item.text)
+            } else if (item.type === 'web_search_call') {
+                sink.search()
             }
             return
         }
@@ -188,6 +195,10 @@ const opencode: CliSpec = {
     },
     consume(event, sink) {
         const part = asRecord(event.part)
+        if (event.type === 'tool' && part.state) {
+            if (asRecord(part.state).status === 'completed') sink.search()
+            return
+        }
         if (event.type === 'text' && typeof part.text === 'string') {
             sink.replace(String(part.id ?? 'text'), part.text)
             return
@@ -219,6 +230,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     const started = Date.now()
     const parts = new Map<string, string>()
     let streamed = ''
+    let searches = 0
     const usage: Usage = {
         inputTokens: 0,
         outputTokens: 0,
@@ -243,6 +255,9 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
         },
         usage(patch) {
             Object.assign(usage, patch)
+        },
+        search() {
+            searches += 1
         }
     }
 
@@ -301,7 +316,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     const text = streamed || [...parts.values()].join('')
     if (!text.trim()) throw new Error(stderr.trim().split('\n').pop() ?? `${spec.bin} returned no text`)
 
-    return { text, usage, ms: Date.now() - started }
+    return { text, usage, ms: Date.now() - started, searches }
 }
 
 async function codexModels(): Promise<ModelInfo[]> {

@@ -59,6 +59,21 @@ Follow-up turns existed and were removed. A panel is not a chat: a follow-up is 
 question, and a new question deserves a fresh panel. `Clear` empties the board.
 
 
+## Web access
+
+`Web` in the action bar lets the panel search and fetch. It is off by default, and it
+applies to the members only — the analyst compares what it is given and never goes looking.
+
+Off is the default because search was the dominant cost. On one real question, the same
+Haiku call took 40s and $0.1057 with web access and 16s and $0.0112 without: three searches
+and two fetches were five network round trips, each followed by another model turn. It is
+also why every member seemed to take the same time regardless of model — the bottleneck was
+the tools. Each card reports its own search count beside its time.
+
+Turn it on for a question that turns on a current fact. Leave it off for one the models
+already know.
+
+
 ## Presets and effort
 
 A seat is a model, a route, and an effort level. The model button opens the catalogue; the

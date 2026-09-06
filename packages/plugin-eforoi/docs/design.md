@@ -232,22 +232,56 @@ is showing you everything.
 
 ## 6. Web search and fetch
 
-Every member and the analyst can search and fetch, always, with no toggle. This mirrors
-Fusion, where the panel answers with both tools enabled and the analyst gets them too.
+Web access is a switch in the action bar, off by default, and it applies to the panel
+only. The analyst never searches: it is given the members' answers and compares them, and
+a comparison that goes looking for a sixth opinion is not a comparison.
+
+**It defaults to off because it was the single largest cost in the panel, in both senses.**
+Measured on one real question, `claude -p --model haiku`, same prompt, same flags:
+
+```text
+                    with web     without web
+-----------------   ----------   -----------
+wall clock          40s          16s
+agent turns         6            3
+web tool calls      5            0
+cost                $0.1057      $0.0112
+output tokens       1735         1276
+```
+
+Three searches and two fetches were five network round trips, each followed by another
+model turn to read the result. That is where the time went, and it is why Haiku took as
+long as Sonnet: the bottleneck was the tools, not the model. The billing is worse than the
+clock — an order of magnitude, because a search is charged per call and the fetched pages
+arrive as input tokens.
+
+Off, the same question costs a tenth and answers in a third of the time, and the panel
+still differentiates: Sonnet took 38s against Haiku's 16s once the round trips were gone,
+which is the model difference the panel exists to show.
+
+The switch is not a quality judgement. A question that turns on a current fact needs it on;
+a question about something the models already know does not, and paying forty seconds to
+have three models search for what they could have answered is the case that motivated the
+default. Each member card reports its own search count next to its time, so the price of
+turning it on is legible rather than inferred.
 
 An earlier version of this document claimed the opposite — that tools were switched off so
 members answered from their own knowledge. That was true of exactly one route. Checking the
 event streams rather than the prose showed what was really happening:
 
 ```text
-Route       Before            Now
----------   ---------------   ------------------------------------------------
-claude      off               --allowed-tools "WebSearch WebFetch", Agent denied
-codex       on, by default    -c tools.web_search=true, stated rather than assumed
-opencode    on, by default    unchanged; --pure only drops external plugins
-anthropic   n/a               web_search + web_fetch server tools, max_uses 4
-openai      n/a               Responses API with the web_search tool
+Route       Switch off                  Switch on
+---------   -------------------------   ------------------------------------
+claude      no --allowed-tools           --allowed-tools "WebSearch WebFetch"
+codex       -c tools.web_search=false    -c tools.web_search=true
+opencode    unchanged                    unchanged
+anthropic   no tools in the request      web_search + web_fetch, max_uses 4
+openai      no tools in the request      Responses API web_search tool
 ```
+
+`opencode` is the one route the switch does not reach: it has no flag for web access and
+`--pure` only drops external plugins. A member on that route may search whatever the
+switch says, and its card will report the searches it made.
 
 `--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
 plugins; neither touches web search. Both were searching all along.
@@ -546,6 +580,14 @@ Two details worth keeping in mind for anything else built in this shell:
   can still serve the previous renderer bundle. Reload ignoring cache after every install,
   or spend an hour convinced your changes are not compiling.
 
+Markdown is rendered **while the answer streams**, not once at the end. The first version
+appended plain text during the stream and applied the markup on completion, which meant a
+reader watched raw asterisks and fence markers for most of the run and then saw the card
+snap into shape. Each delta now appends to the card's source and schedules a repaint at
+most every 140ms; the repaint keeps the body pinned to the bottom if it was already there,
+so a streaming card follows itself. The final event cancels any pending repaint and draws
+once more from the completed text.
+
 Every model returns markdown whether or not you ask it to, so every prose card renders it
 through `renderMarkdown` from `@dyarchia/sdk` and carries `.dya-prose`. That covers fenced
 code with a language, thematic breaks, links, ordered and nested lists, blockquotes, pipe
@@ -577,6 +619,12 @@ a button is invalid, so the header is a row holding two of them.
 
 
 ## 13. Deliberate omissions
+
+A note on where the rest of the time goes. Members run in parallel, so the panel stage
+costs whatever the slowest member costs. The analyst then runs **twice, sequentially** —
+once for the comparison JSON and once to write the answer — after every member has
+finished. A slow model in the Dogma seat is therefore paid for twice and cannot overlap
+with anything, which is the usual reason a run takes far longer than its slowest member.
 
 ```text
 Absent               Why

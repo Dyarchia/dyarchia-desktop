@@ -127,10 +127,10 @@ Title bar                   dya-bar dya-bar--flush, dya-brand,
 Dock tab                    dya-tab, aria-selected drives the active state
 Group actions               dya-key
 Loading and empty states    dya-loading, dya-empty
-Docs and player, closed     dya-empty holding an icon-only dya-button that
-                            opens the native file dialog
-Docs and player, open       dya-mono file name, the same icon at
-                            dya-button--sm to change it
+Docs and player, closed     dya-empty holding a bare icon at 28px that opens
+                            the native file dialog, declared plugin-side
+Docs and player, open       dya-mono file name, the same icon at 14px to
+                            change it
 pyinfo field and button     dya-field, dya-button
 pyinfo key and value        dya-key-label, dya-mono
 player title                dya-mono

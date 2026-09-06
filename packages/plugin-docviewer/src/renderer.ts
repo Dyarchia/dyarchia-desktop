@@ -39,10 +39,32 @@ const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-5) var(--dya-space-6);
 }
+.docviewer-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    color: var(--dya-text-4);
+    cursor: pointer;
+    transition: transform var(--dya-dur-press) var(--dya-ease-press);
+}
+.docviewer-open:hover {
+    color: var(--dya-text);
+}
+.docviewer-open:active {
+    transform: scale(var(--dya-press-scale));
+}
 .docviewer-open svg {
     display: block;
     width: 14px;
     height: 14px;
+}
+.docviewer-open--lg svg {
+    width: 28px;
+    height: 28px;
 }
 .docviewer-content--empty {
     display: flex;
@@ -171,7 +193,7 @@ export function activate(ctx: PluginContext): void {
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
                 const empty = document.createElement('div')
                 empty.className = 'dya-empty'
-                empty.append(openButton('dya-button'))
+                empty.append(openButton(true))
                 if (message) {
                     const label = document.createElement('span')
                     label.textContent = message
@@ -180,9 +202,11 @@ export function activate(ctx: PluginContext): void {
                 content.replaceChildren(empty)
             }
 
-            function openButton(className: string): HTMLButtonElement {
+            function openButton(large = false): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = `${className} docviewer-open`
+                button.className = large
+                    ? 'docviewer-open docviewer-open--lg'
+                    : 'docviewer-open'
                 button.title = 'Open document'
                 button.setAttribute('aria-label', 'Open document')
                 button.innerHTML = DOCS_ICON
@@ -272,7 +296,7 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
-            header.append(openButton('dya-button dya-button--sm'))
+            header.append(openButton())
             showEmpty()
 
             return () => {

@@ -32,6 +32,26 @@ body,
     -webkit-app-region: no-drag;
 }
 
+.topbar-overflow {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.topbar-menu {
+    position: absolute;
+    top: calc(100% + var(--dya-space-2));
+    right: 0;
+    z-index: 20;
+    min-width: 168px;
+}
+
+.topbar-menu .topbar-icon,
+.topbar-menu .topbar-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
 .topbar-themes {
     display: flex;
     align-items: center;

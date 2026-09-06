@@ -1,9 +1,9 @@
+import { injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 
 const PYINFO_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>'
 
-const STYLE_ID = 'dyarchia-pyinfo-style'
 
 const STYLE = `
 .pyinfo-root {
@@ -43,13 +43,6 @@ const STYLE = `
 }
 `
 
-function ensureStyle(): void {
-    if (document.getElementById(STYLE_ID)) return
-    const style = document.createElement('style')
-    style.id = STYLE_ID
-    style.textContent = STYLE
-    document.head.appendChild(style)
-}
 
 function row(key: string, value: string): HTMLElement {
     const el = document.createElement('div')
@@ -65,7 +58,7 @@ function row(key: string, value: string): HTMLElement {
 }
 
 export function activate(ctx: PluginContext): void {
-    ensureStyle()
+    injectStyles(ctx.pluginId, STYLE)
     ctx.registerPanel(
         { id: 'pyinfo', title: 'Python', icon: PYINFO_ICON, duplicable: true },
         (container) => {

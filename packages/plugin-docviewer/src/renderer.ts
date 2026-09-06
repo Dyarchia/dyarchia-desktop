@@ -1,4 +1,5 @@
 import { marked } from 'marked'
+import { injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
@@ -181,19 +182,12 @@ const MODES = [
 
 type Mode = (typeof MODES)[number]['id']
 
-function ensureStyles(): void {
-    if (document.getElementById('dyarchia-docviewer-styles')) return
-    const style = document.createElement('style')
-    style.id = 'dyarchia-docviewer-styles'
-    style.textContent = STYLES
-    document.head.appendChild(style)
-}
 
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
         { id: 'docviewer', title: 'Docs', icon: DOCS_ICON, duplicable: true },
         (container) => {
-            ensureStyles()
+            injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'docviewer'

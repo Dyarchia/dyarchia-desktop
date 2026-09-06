@@ -1,3 +1,4 @@
+import { injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
@@ -85,19 +86,12 @@ const STYLES = `
 }
 `
 
-function ensureStyles(): void {
-    if (document.getElementById('dyarchia-player-styles')) return
-    const style = document.createElement('style')
-    style.id = 'dyarchia-player-styles'
-    style.textContent = STYLES
-    document.head.appendChild(style)
-}
 
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
         { id: 'player', title: 'Player', icon: PLAYER_ICON, duplicable: true },
         (container) => {
-            ensureStyles()
+            injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'player'

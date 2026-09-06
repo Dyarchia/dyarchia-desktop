@@ -50,6 +50,15 @@ An ESM module exporting activate(ctx). The context offers:
     invoke(channel, ...args)      calls a handler in the plugin's main module
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
+    onThemeChange(listener)       fires when the theme changes; returns unsubscribe
+
+The SDK also exports one function, outside the context:
+
+    injectStyles(pluginId, css)   adds the plugin's style tag once, id
+                                  dyarchia-<pluginId>-styles, ignored on later calls
+
+Call it at the top of the mount rather than at module scope, so a plugin that is never
+opened never touches the document.
 
 The mount receives the panel's DOM container and optionally returns a cleanup function:
 
@@ -68,8 +77,7 @@ export function activate(ctx: PluginContext): void {
 
 Notes:
 
-- The shell imposes no framework: the mount can host React, a canvas, or plain DOM. Each
-  plugin bundles its own UI dependencies.
+- The renderer is plain DOM. This is a rule, not an observation; see below.
 - icon is the content of the toggle button in the top bar: inline SVG markup, recommended,
   such as a Lucide icon with stroke="currentColor"; or, as a fallback, a short
   one-character string.
@@ -83,10 +91,47 @@ Notes:
   token is resolvable and a plugin must never write a literal colour, font or radius, nor
   restyle a dya-* selector. See docs/ui.md for the order, the class list and the rules.
 - ctx.token covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
-  resolved string. token('accent') and token('--dya-accent') both return the value. A
-  theme redefines colour tokens and never rules, so there is nothing to branch on and
-  nothing to subscribe to.
+  resolved string. token('accent') and token('--dya-accent') both return the value. What
+  it returns is a copy, so it goes stale when the theme changes: pair it with
+  ctx.onThemeChange and resolve again in the listener, unsubscribing from the dispose. A
+  panel drawn entirely with dya-* classes and var() needs neither, and must not branch on
+  which theme is mounted in any case.
 
+
+### The framework rule
+
+**A renderer is written in plain DOM. The shell's own framework is not available to it and
+must not be assumed.**
+
+The shell is React and dockview. That is an implementation detail of the shell, it is not
+exported, and no version of it is part of the contract. What a plugin gets is
+`mount(container, handle)`: a DOM node, and a function to call when the panel goes away.
+
+The contract is that small deliberately, and it buys three things:
+
+- **A main module can be written in any language.** The renderer cannot tell whether the
+  other side is Node or Python, because the boundary is `invoke`/`on` and not a framework's
+  data flow. Widen the contract to include a component model and that stops being true.
+- **The shell can change without breaking plugins.** React, dockview and the panel host can
+  be replaced wholesale as long as a DOM node still arrives. Export React and every plugin
+  is married to the shell's React version for as long as the product lives.
+- **Nothing owns a plugin's lifecycle but the plugin.** `mount` returns its own teardown.
+  There is no reconciler above it deciding when its subtree exists.
+
+A plugin may still bundle a framework — nothing prevents it, and for a genuinely stateful
+panel it can be the right call. It is not free, and the cost is the plugin's to carry:
+
+- A second copy of that framework in the bundle, on top of the shell's. Two React instances
+  in one document is a supported but real cost, in bytes and in memory.
+- The plugin owns unmounting it inside the `dispose` it returns. The shell calls `dispose`
+  and nothing else.
+- The plugin owns its own build complexity. The shared build script targets plain DOM.
+
+Before reaching for one, note what the plain path already gives. The design system is
+linked once into the document, so every `dya-*` class is available with no import: the work
+a component library would do for a button, a field, a table or a menu is already done, and
+`docs/ui.md` lists what exists. Four of the five plugins in this workspace render real UI
+with `document.createElement` and no framework, and the largest of them is a terminal.
 
 ## 3. The main module (optional)
 
@@ -148,16 +193,32 @@ Bundles are built with esbuild, ESM format. The renderer is served over the
 dyarchia-plugin:// protocol and the main module is imported as a Node module from the
 plugin folder.
 
-```bash
-esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js
-esbuild src/main.ts --bundle --platform=node --format=esm --external:node-pty --outfile=dist/main.js
+```json
+"scripts": {
+    "build": "pnpm build:renderer && pnpm build:main",
+    "build:renderer": "node ../../scripts/build-plugin.mjs renderer",
+    "build:main": "node ../../scripts/build-plugin.mjs main"
+}
 ```
+
+[scripts/build-plugin.mjs](scripts/build-plugin.mjs) holds the esbuild invocation for every
+plugin, so format, externals and output paths are decided once. It takes the entry to
+build and two optional flags:
+
+    Flag           Effect
+    -----------    ----------------------------------------------------------
+    --splitting    emits the entry plus chunks into dist/, for dynamic import()
+    --css-text     loads .css imports as text, for a library stylesheet
+
+A plugin with a need outside those two writes its own esbuild line rather than growing a
+third flag. The terminal does exactly that for its pty host, which is CJS and has a native
+external, and it is the only such case.
 
 Build rules:
 
 - Native dependencies such as node-pty are marked external and copied into node_modules/
   inside the installed plugin folder; everything else is bundled.
-- Library CSS is imported as text (--loader:.css=text) and injected into a style tag.
+- Library CSS is imported as text (--css-text) and handed to injectStyles.
 - The Python module is not bundled: main.py is copied as-is next to the manifest.
 - A heavy dependency that only some documents need goes behind a dynamic import(), and
   the renderer is then built with --splitting --outdir=dist instead of --outfile.
@@ -171,7 +232,21 @@ Where a plugin lives, by mode:
     Mode         Location                                   How it gets there
     ---------    ---------------------------------------    ---------------------------------
     dev          packages/<folder>/                         the shell scans the workspace
+    example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
+
+examples/ holds the reference plugins: sample, the smallest activate that registers a
+panel, and pyinfo, the only exercise of the Python main module and of broadcast. They are
+not discovered by default, because a reference does not need to run to be read, and a
+shell that ships an empty demo panel is worse than one that does not. To run them:
+
+```bash
+DYARCHIA_EXAMPLES=1 pnpm dev
+```
+
+install-plugins.mjs never copies them, so they cannot reach the packaged app. If one was
+installed before it moved, the installed copy is still discovered and now wins, since
+nothing in packages/ shadows it any more; delete it from %APPDATA%/dyarchia/plugins/.
 
 In dev the workspace takes priority over installed plugins, so an installed copy never
 shadows the version under development.
@@ -198,8 +273,10 @@ flowchart TD
 ## 7. Checklist for a new plugin
 
 1. A folder under packages/ with a valid dyarchia-plugin.json.
-2. renderer.ts with an activate that registers at least one panel.
-3. A build script with esbuild, producing dist/.
+2. renderer.ts with an activate that registers at least one panel, in plain DOM. If it
+   bundles a framework instead, the dispose it returns unmounts that framework, and the
+   reason it was needed is written in the plugin's README.
+3. Build scripts that call scripts/build-plugin.mjs, producing dist/.
 4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
    console errors. Rebuild the plugin after every edit: a renderer change needs a window
    reload, a main module change needs the app restarted, because main modules are

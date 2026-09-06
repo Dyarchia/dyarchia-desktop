@@ -5,8 +5,8 @@
     "type": "module",
     "scripts": {
         "build": "pnpm build:renderer && pnpm build:main",
-        "build:renderer": "esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js",
-        "build:main": "esbuild src/main.ts --bundle --platform=node --format=esm --external:electron --outfile=dist/main.js"
+        "build:renderer": "node ../../scripts/build-plugin.mjs renderer",
+        "build:main": "node ../../scripts/build-plugin.mjs main"
     },
     "devDependencies": {
         "@dyarchia/sdk": "workspace:*",

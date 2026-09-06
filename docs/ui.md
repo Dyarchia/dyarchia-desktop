@@ -133,6 +133,8 @@ Surface                     Class
 -------------------------   ---------------------------------------------------
 Title bar                   dya-bar dya-bar--flush, dya-brand,
                             dya-key / dya-key--active
+Panel overflow              dya-key with a three-dot glyph opening a dya-menu of
+                            dya-menu__item; only past the third plugin
 Theme toggle                dya-key, two SVG glyphs at currentColor, separated
                             from the panel toggles by a 1px rule
 Dock tab                    dya-tab, aria-selected drives the active state

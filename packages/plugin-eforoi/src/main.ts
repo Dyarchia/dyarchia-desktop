@@ -58,7 +58,8 @@ export function activate(ctx: PluginMainContext): void {
             stage: (stage) => emit({ runId, type: 'stage', stage }),
             memberDelta: (index, text) => emit({ runId, type: 'member:delta', index, text }),
             memberDone: (result) => emit({ runId, type: 'member:done', result }),
-            analysis: (analysis, usage, ms) => emit({ runId, type: 'analysis', analysis, usage, ms }),
+            analysis: (analysis, usage, ms, attempt) =>
+                emit({ runId, type: 'analysis', analysis, usage, ms, attempt }),
             answerDelta: (text) => emit({ runId, type: 'answer:delta', text }),
             done: (answer, summary) => emit({ runId, type: 'done', answer, summary })
         }

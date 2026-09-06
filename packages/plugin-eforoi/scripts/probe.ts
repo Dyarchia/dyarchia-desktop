@@ -26,21 +26,18 @@ if (command === 'catalog') {
         console.log(`${entry.key.padEnd(34)} ${modes}  ${entry.label}`)
     }
 } else if (command === 'run') {
-    const web = rest.includes('--web')
-    const args = rest.filter((part) => part !== '--web')
-    const prompt = args.pop() ?? 'Say hello.'
-    const seats = args.map(parseSeat)
+    const prompt = rest.pop() ?? 'Say hello.'
+    const seats = rest.map(parseSeat)
     if (seats.length < 3) throw new Error('usage: probe run <panel@mode> <panel@mode> <analyst@mode> "prompt"')
 
-    await runOnce(prompt, seats, web)
+    await runOnce(prompt, seats)
 } else {
-    console.log('usage: pnpm probe catalog | pnpm probe run [--web] <seat> <seat> <analyst> "prompt"')
+    console.log('usage: pnpm probe catalog | pnpm probe run <seat> <seat> <analyst> "prompt"')
 }
 
-async function runOnce(prompt: string, seats: Seat[], web: boolean): Promise<void> {
+async function runOnce(prompt: string, seats: Seat[]): Promise<void> {
     const config: RunConfig = {
         prompt,
-        web,
         panel: seats.slice(0, -1),
         analyst: seats[seats.length - 1],
         temperature: 0.7,
@@ -56,10 +53,10 @@ async function runOnce(prompt: string, seats: Seat[], web: boolean): Promise<voi
                 console.log(
                     `member ${result.index} ${result.error ? `FAILED ${result.error}` : 'ok'} ` +
                         `${(result.ms / 1000).toFixed(1)}s ${result.usage.outputTokens} out ` +
-                        `${result.searches} searches`
+                        `${result.searches === null ? 'searches uncounted' : `${result.searches} searches`}`
                 ),
-            analysis: (analysis, _usage, ms) => {
-                console.log(`analysis in ${(ms / 1000).toFixed(1)}s`)
+            analysis: (analysis, _usage, ms, attempt) => {
+                console.log(`analysis in ${(ms / 1000).toFixed(1)}s, attempt ${attempt}`)
                 console.log(JSON.stringify(analysis, null, 2).slice(0, 1400))
             },
             answerDelta: (text) => process.stdout.write(text),

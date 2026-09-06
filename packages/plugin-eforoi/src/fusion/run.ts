@@ -82,7 +82,7 @@ async function member(
             text: '',
             usage: { inputTokens: 0, outputTokens: 0, cachedTokens: 0, costUsd: null, billing: 'plan' },
             ms: Date.now() - started,
-            searches: 0,
+            searches: null,
             error: expired
                 ? `no answer within ${MEMBER_DEADLINE_MS / 1000}s, so this seat does not vote`
                 : error instanceof Error

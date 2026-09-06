@@ -53,7 +53,7 @@ async function runOnce(prompt: string, seats: Seat[]): Promise<void> {
                 console.log(
                     `member ${result.index} ${result.error ? `FAILED ${result.error}` : 'ok'} ` +
                         `${(result.ms / 1000).toFixed(1)}s ${result.usage.outputTokens} out ` +
-                        `${result.searches} searches`
+                        `${result.searches === null ? 'searches uncounted' : `${result.searches} searches`}`
                 ),
             analysis: (analysis, _usage, ms, attempt) => {
                 console.log(`analysis in ${(ms / 1000).toFixed(1)}s, attempt ${attempt}`)

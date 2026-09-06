@@ -150,7 +150,7 @@ async function drive(config) {
     for (const [i, seat] of config.panel.entries()) {
         await stream('member', i + 1, MEMBER(i + 1))
         emit({ type: 'member:done', result: {
-            index: i + 1, seat, text: MEMBER(i + 1), ms: 12400 + i * 3000, searches: 3,
+            index: i + 1, seat, text: MEMBER(i + 1), ms: 12400 + i * 3000, searches: i === 1 ? null : i === 2 ? 0 : 3,
             usage: { inputTokens: 4200, outputTokens: 1830, cachedTokens: 0, costUsd: 0.0412, billing: 'plan' }
         } })
     }

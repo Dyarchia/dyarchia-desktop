@@ -66,7 +66,7 @@ export interface MemberResult {
     text: string
     usage: Usage
     ms: number
-    searches: number
+    searches: number | null
     error?: string
 }
 

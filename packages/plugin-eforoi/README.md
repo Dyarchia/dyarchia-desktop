@@ -88,7 +88,10 @@ shadow cost      $0.6657            $0.3099
 
 There is no switch to turn searching off. There was one briefly; it reached four routes of
 five, because opencode has no flag for web access, and a panel that cannot look anything up
-is a panel of models guessing. Each card reports its own search count beside its time.
+is a panel of models guessing. Each card reports its own search count beside its time: `3 web` when the route reported
+three, `0 web` when it reported none, and `web ?` when the route does not report tool use at
+all. opencode is the one that cannot be counted, and it says so rather than showing a zero
+it cannot stand behind.
 
 
 ## Presets and effort

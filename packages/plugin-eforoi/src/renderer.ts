@@ -613,7 +613,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const memberNote = (result: MemberResult): string => {
         const parts = [seconds(result.ms), result.seat.mode === 'api' ? 'API' : 'plan']
-        if (result.searches) parts.push(`${result.searches} web`)
+        parts.push(result.searches === null ? 'web ?' : `${result.searches} web`)
         if (result.usage.costUsd) parts.push(money(result.usage.costUsd))
         if (result.usage.outputTokens) parts.push(`${result.usage.outputTokens} out`)
         return parts.join(' · ')
@@ -657,6 +657,10 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
             if (!card) return
             card.dot.dataset.state = event.result.error ? 'error' : 'done'
             card.note.textContent = event.result.error ?? memberNote(event.result)
+            card.note.title =
+                event.result.searches === null
+                    ? 'this route does not report tool use, so searches cannot be counted here'
+                    : ''
             if (event.result.error) {
                 forget(id)
                 card.raw = event.result.error

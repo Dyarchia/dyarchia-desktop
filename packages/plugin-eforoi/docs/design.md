@@ -368,8 +368,37 @@ openai      Responses API web_search tool
 ```
 
 Each member card reports its own search count beside its time, so the budget is visible
-rather than asserted. That count is also the only thing that tells you what an `opencode`
-member actually did.
+rather than asserted — **and where it cannot be counted, it says so rather than showing a
+zero.**
+
+```text
+Card reads   Means
+----------   ----------------------------------------------------
+3 web        the route reported three searches
+0 web        the route reported none, and none happened
+web ?        this route does not report tool use; unknown
+```
+
+`searches` is `number | null` all the way from `CompletionResult`, and `opencode` is the
+route that returns `null`. Its spec carries `countsSearches: false` and no counter at all.
+
+There was a counter for it, and removing it is the point. It matched `event.type === 'tool'`
+with `part.state.status === 'completed'`, which was written without ever having seen an
+opencode event stream — the shape was a guess. A guess that reports zero is worse than
+reporting nothing, because a card showing no searches then asserts a fact the plugin cannot
+establish, and the operator reasonably reads it as "this model did not search".
+
+Confirming the real shape needs a successful `opencode run --format json`, and the free tier
+would not produce one: `ling-3.0-flash-fin-free` returned `{"type":"error"}` in 1.2s,
+`mimo-v2.5-free` the same in 2s, and both `mimo-v2.5-free` and
+`muse-spark-1.3-contributor-free` produced zero bytes on stdout and stderr across 200
+seconds. The same three models had answered in that operator's panel minutes earlier at
+16.4s, 61.6s and 73.8s. That variance is the free tier, not the pipeline, and it is also the
+best available explanation for an analyst on `nemotron-3.5-lightning-free` taking 377.2s on
+a single attempt while its members took under 75.
+
+When a run does succeed, dump its event types, give `opencode` a real counter and flip
+`countsSearches` to true.
 
 `--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
 plugins; neither touches web search. Both were searching all along.

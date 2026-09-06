@@ -28,6 +28,8 @@
     --dya-size-display: 44px;
     --dya-size-metric: 34px;
     --dya-size-h2: 26px;
+    --dya-size-h3: 19px;
+    --dya-size-h4: 15.5px;
     --dya-size-body: 13.5px;
     --dya-size-body-sm: 12.5px;
     --dya-size-body-xs: 11.5px;
@@ -41,6 +43,7 @@
     --dya-tracking-display: -0.035em;
     --dya-tracking-metric: -0.03em;
     --dya-tracking-h2: -0.02em;
+    --dya-tracking-h3: -0.015em;
     --dya-tracking-mono: 0.02em;
     --dya-tracking-data: 0.14em;
     --dya-tracking-label: 0.2em;
@@ -102,6 +105,13 @@
     --dya-on-status: #151515;
     --dya-idle: #343433;
     --dya-on-idle: #cbcbc8;
+
+    --dya-code-keyword: #cf8fb4;
+    --dya-code-string: #8fb87a;
+    --dya-code-number: #d6a95c;
+    --dya-code-comment: #85857f;
+    --dya-code-function: #7fb0dd;
+    --dya-code-punct: #b7b6b4;
 
     --dya-glass: none;
     --dya-glass-bg: transparent;

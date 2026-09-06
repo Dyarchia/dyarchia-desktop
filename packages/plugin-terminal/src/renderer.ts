@@ -5,27 +5,22 @@ import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { ClipboardAddon } from '@xterm/addon-clipboard'
 import xtermCss from '@xterm/xterm/css/xterm.css'
+import { injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 
-function ensureStyles(): void {
-    if (document.getElementById('dyarchia-terminal-styles')) return
-    const style = document.createElement('style')
-    style.id = 'dyarchia-terminal-styles'
-    style.textContent =
-        xtermCss +
-        '\n.dyarchia-terminal {' +
-        ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
-        '\n.xterm .xterm-viewport { background-color: transparent !important; }' +
-        '\n.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }' +
-        '\n.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }' +
-        '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb {' +
-        ' background-color: transparent; border-radius: var(--dya-radius); }' +
-        '\n.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {' +
-        ' background-color: var(--dya-border); }' +
-        '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {' +
-        ' background-color: var(--dya-border-strong); }'
-    document.head.appendChild(style)
-}
+const STYLES =
+    xtermCss +
+    '\n.dyarchia-terminal {' +
+    ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
+    '\n.xterm .xterm-viewport { background-color: transparent !important; }' +
+    '\n.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }' +
+    '\n.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }' +
+    '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb {' +
+    ' background-color: transparent; border-radius: var(--dya-radius); }' +
+    '\n.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {' +
+    ' background-color: var(--dya-border); }' +
+    '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {' +
+    ' background-color: var(--dya-border-strong); }'
 
 const ANSI: ITheme = {
     black: '#3a3d42',
@@ -62,7 +57,7 @@ export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
         { id: 'terminal', title: 'Terminal', icon: TERMINAL_ICON, duplicable: true },
         (container, handle) => {
-        ensureStyles()
+        injectStyles(ctx.pluginId, STYLES)
         container.classList.add('dyarchia-terminal')
 
         const terminalTheme = (): ITheme => ({

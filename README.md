@@ -125,8 +125,10 @@ The rules, in order:
   on `develop` has lost the review surface the branch exists to give it.
 - **Merge with `--no-ff`, always.** A fast-forward erases the fact that a set of commits
   belonged together, which is the only thing that makes the history readable later.
-- **`develop` reaches `master` when it is asked for**, never automatically, and by the
-  same `--no-ff` merge. Nothing is committed directly to `master`.
+- **A feature branch is merged when it is asked for, never on its own judgement.** Finished
+  work waits on its branch, committed and verified, until someone says to land it. The same
+  word lands it on `develop` and on `master`: both hops happen together, by `--no-ff` merge,
+  and nothing is committed directly to either.
 - **Push `develop` and `master` together** once a release merge is made, so the remote is
   never a partial view of what happened.
 - **Delete the feature branch after it merges.** The merge commit holds the name.

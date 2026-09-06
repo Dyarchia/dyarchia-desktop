@@ -87,6 +87,24 @@ reply that cannot be split is retried once with the format restated, and the ret
 the two stages so a partial answer from the first attempt is cleared rather than appended
 to.
 
+**The analyst is bounded and the bound covers both attempts.** `ANALYST_DEADLINE_MS` is 300
+seconds against one `AbortController` wrapping the whole of `fuse`, not each call inside it,
+because a per-attempt deadline would let a retry double the worst case rather than cap it.
+
+It needs its own number rather than sharing `MEMBER_DEADLINE_MS`, and the reason is
+structural: a member answers a one-line question, while the analyst reads that question plus
+every surviving answer. A run where three members produced 4891, 427 and 3849 tokens hands
+the analyst more than nine thousand tokens of input before it writes anything. Comparing its
+time against a member's is not comparing like with like, and a small model can be slower here
+than any seat was.
+
+That run is also why the attempt count reaches the panel. The analyst took 388.9 seconds
+against members at 21, 37 and 38, and nothing said whether that was one slow call or two
+ordinary ones — a free model that misses the marker on the first try pays for the prompt
+twice, invisibly. The analysis card now reads `attempt 2` when it happens, and the card
+counts elapsed seconds while the stage runs rather than sitting on a static label for minutes.
+
+
 The JSON is rendered in the panel, and it is often more useful than the prose: it is the
 only place the disagreement is visible as data.
 
@@ -255,6 +273,14 @@ Haiku 4.5 is given no levels at all, because effort errors on it.
 An effort the selected route does not list is dropped before the call rather than passed and
 rejected, so changing a seat's route cannot silently send a level that route never offered.
 
+**A seat whose model has gone is kept, not dropped.** `refresh` used to filter the panel
+against the catalogue and silently discard any seat whose key no longer resolved. A preset
+saved when `openai/gpt-5.6-sol` existed therefore loaded, lost that seat without a word,
+and looked like a preset that had not been read at all — the catalogue moves under a saved
+panel whenever a CLI updates its model list. The seat now survives, shows its raw key in
+the danger colour with the reason on hover, and the action bar names it. Reseeding from
+`defaultPanel` only happens when the panel is genuinely empty, not merely short.
+
 Presets are saved by name to a JSON file beside the encrypted key store:
 
 ```text
@@ -278,13 +304,9 @@ is showing you everything.
 
 ## 6. Web search and fetch
 
-Web access is a switch in the action bar, **on by default**, and it applies to the panel
-only. The analyst never searches: it is given the members' answers and compares them, and a
-comparison that goes looking for a sixth opinion is not a comparison.
-
-It is on by default because a panel that cannot look anything up is a panel of models
-guessing. The switch is there for a question you know they already know, not as the normal
-state.
+Every member searches, always, and there is no switch. The analyst never searches: it is
+given the members' answers and compares them, and a comparison that goes looking for a sixth
+opinion is not a comparison.
 
 **What is bounded is the number of searches, not the ability to search.** Three identical
 Haiku seats, same question, same run, before any budget existed:
@@ -299,16 +321,17 @@ seat   time      searches   output
 
 The same model, the same prompt, the same moment, and a two-fold spread in wall clock that
 is entirely a spread in how many times it decided to search. Nothing capped the agent loop:
-the API routes carried `max_uses: 4` from the start, the CLI routes carried nothing, and
-`claude -p` has no `--max-turns` to give them. So a run's duration was decided by whichever
-member happened to be most curious, and a panel is only as fast as its slowest seat.
+the API routes carried a `max_uses` cap from the start, the CLI routes carried nothing, and
+`claude -p` has no `--max-turns` to give them. A run lasted as long as whichever member
+happened to be most curious, and a panel is only as fast as its slowest seat.
 
-Two things bound it now. The panel prompt states a budget in as many words — at most three
-searches, and that searching is not free because the panel is waiting. And because a prompt
-is a request rather than a guarantee, `MEMBER_DEADLINE_MS` gives each member 120 seconds on
-its own `AbortController`, after which that seat reports that it did not answer in time and
-does not vote. The pipeline already tolerated a failed member, so a seat that overruns costs
-the run nothing but its own opinion.
+Two things bound it. `PANEL_SYSTEM` states a budget in as many words — at most three
+searches, only where the answer turns on a fact the model does not hold, and searching is
+not free because the panel is waiting. And because a prompt is a request rather than a
+guarantee, `MEMBER_DEADLINE_MS` gives each member 120 seconds on its own `AbortController`,
+after which that seat reports that it did not answer in time and does not vote. The pipeline
+already tolerated a failed member, so a seat that overruns costs the run nothing but its own
+opinion. `MAX_WEB_USES` on the API routes is set to the same three.
 
 The budget held, measured the same way:
 
@@ -318,33 +341,64 @@ The budget held, measured the same way:
 searches         6 / 8 / 15         3 / 3 / 3
 members          53.8/67.5/107.3s   38.7/42.2/33.6s
 panel stage      107.3s             42.2s
-whole run        152.5s             108.2s
 shadow cost      $0.6657            $0.3099
 ```
 
 Half the cost, and the tail is gone: the spread across three identical seats fell from
 two-fold to a quarter. Nothing was turned off to get it.
 
-The analyst was the larger half of a run at this point — 64 seconds of 108, against 42 for
-three members in parallel — because it ran twice in sequence. It runs once now; section 1
-has the measurements and what else that fixed.
+**There was briefly a Web switch, and removing it is the point of this section.** It was
+added on the belief that searching was the problem, defaulting to off. That reading came
+from timing one CLI call rather than the pipeline, and it was wrong twice over: it did not
+explain the member that took 87 seconds, and a panel that cannot look anything up is a panel
+of models guessing. It also failed this document's own test for a control — the same test
+that keeps `temperature` out. `opencode` has no flag for web access, so the switch reached
+four routes of five and silently lied about the fifth.
 
-Each member card reports its own search count beside its time, so the budget is visible
-rather than asserted.
+The routes, with the budget rather than a switch:
 
 ```text
-Route       Switch off                  Switch on
----------   -------------------------   ------------------------------------
-claude      no --allowed-tools           --allowed-tools "WebSearch WebFetch"
-codex       -c tools.web_search=false    -c tools.web_search=true
-opencode    unchanged                    unchanged
-anthropic   no tools in the request      web_search + web_fetch, max_uses 4
-openai      no tools in the request      Responses API web_search tool
+Route       How it searches
+---------   -----------------------------------------
+claude      --allowed-tools "WebSearch WebFetch"
+codex       -c tools.web_search=true
+opencode    on by default, no flag either way
+anthropic   web_search + web_fetch, max_uses 3
+openai      Responses API web_search tool
 ```
 
-`opencode` is the one route the switch does not reach: it has no flag for web access and
-`--pure` only drops external plugins. A member on that route may search whatever the
-switch says, and its card will report the searches it made. The deadline still binds it.
+Each member card reports its own search count beside its time, so the budget is visible
+rather than asserted — **and where it cannot be counted, it says so rather than showing a
+zero.**
+
+```text
+Card reads   Means
+----------   ----------------------------------------------------
+3 web        the route reported three searches
+0 web        the route reported none, and none happened
+web ?        this route does not report tool use; unknown
+```
+
+`searches` is `number | null` all the way from `CompletionResult`, and `opencode` is the
+route that returns `null`. Its spec carries `countsSearches: false` and no counter at all.
+
+There was a counter for it, and removing it is the point. It matched `event.type === 'tool'`
+with `part.state.status === 'completed'`, which was written without ever having seen an
+opencode event stream — the shape was a guess. A guess that reports zero is worse than
+reporting nothing, because a card showing no searches then asserts a fact the plugin cannot
+establish, and the operator reasonably reads it as "this model did not search".
+
+Confirming the real shape needs a successful `opencode run --format json`, and the free tier
+would not produce one: `ling-3.0-flash-fin-free` returned `{"type":"error"}` in 1.2s,
+`mimo-v2.5-free` the same in 2s, and both `mimo-v2.5-free` and
+`muse-spark-1.3-contributor-free` produced zero bytes on stdout and stderr across 200
+seconds. The same three models had answered in that operator's panel minutes earlier at
+16.4s, 61.6s and 73.8s. That variance is the free tier, not the pipeline, and it is also the
+best available explanation for an analyst on `nemotron-3.5-lightning-free` taking 377.2s on
+a single attempt while its members took under 75.
+
+When a run does succeed, dump its event types, give `opencode` a real counter and flip
+`countsSearches` to true.
 
 `--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
 plugins; neither touches web search. Both were searching all along.
@@ -664,6 +718,26 @@ structure came out as a run of identical rubber stamps. Both are fixed upstream 
 here: the renderer is in the SDK because any plugin showing model output needs it, and the
 scale it renders into is kanon's.
 
+**Mathematics is rendered as Unicode, not typeset.** Ask a mathematical question and every
+member answers in LaTeX, whether or not the question used any: `$\Im(s)=t\approx
+14.13\dots$` arrives literally, and a page of it is unreadable. `texToUnicode` in the SDK
+maps the notation that actually turns up — Greek, operators, relations, set and logic
+symbols, superscripts, subscripts, roots and fractions — onto real characters, so that
+line becomes `ℑ(s)=t≈14.13…`. Inline math is wrapped in `.dya-math`, and a `$$` block
+becomes `.dya-math--block`.
+
+It is a subset and it is meant to be. Fractions degrade to `(1)/(n²)` and a superscript
+with no Unicode form degrades to `^(∞)`; both read, neither typesets. KaTeX would typeset
+properly and costs a 280 KB bundle plus twenty font files that `install-plugins.mjs` does
+not currently carry, which is a trade worth making only if someone is reading real
+mathematics here rather than the occasional expression.
+
+Two details that matter more than they look. A `$` pair is only treated as math when
+neither delimiter touches a space and the content is not purely numeric, so `$0.0376` and
+`$0.0493` in the same paragraph survive as currency. And `\{` is protected before grouping
+braces are stripped, so `$d\in\{2,3,5,7\}$` keeps its set braces rather than losing them
+to the same pass that removes `^{-11}`.
+
 The streaming path stays plain text and the markup is applied once, on completion.
 
 ```text
@@ -692,6 +766,9 @@ with anything, which is the usual reason a run takes far longer than its slowest
 ```text
 Absent               Why
 ------------------   ---------------------------------------------------------
+a web switch         It reached four routes of five: opencode has no flag for
+                     web access either way. The same objection that keeps
+                     temperature out. Section 6 has the whole story.
 follow-up turns      A panel is not a chat. A follow-up is a new question and a
                      new question deserves a fresh panel. Section 2 has the
                      machinery this removed and what it bought back.

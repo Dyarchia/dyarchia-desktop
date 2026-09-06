@@ -26,7 +26,6 @@ const DONE_ICON =
 
 const SEATS_KEY = 'eforoi:seats'
 const LATENCY_KEY = 'eforoi:latency'
-const WEB_KEY = 'eforoi:web'
 const PAINT_MS = 140
 const MIN_PANEL = 2
 const MAX_PANEL = 5
@@ -191,7 +190,6 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     let catalog: Catalog | null = null
     let state: Stored = read<Stored>(SEATS_KEY, { panel: [], analyst: null })
     let latency = read<Record<string, number>>(LATENCY_KEY, {})
-    let web = read<boolean>(WEB_KEY, true)
     let store: PanelStore = { path: '', items: [] }
     let runId: string | null = null
     let answerText = ''
@@ -211,7 +209,6 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const nameInput = el('input', 'dya-field dya-field--sm eforoi-name')
     const refreshButton = el('button', 'dya-button', 'Refresh')
     const clearButton = el('button', 'dya-button', 'Clear')
-    const webButton = el('button', 'dya-button', 'Web')
     const status = el('span', 'dya-value eforoi-meta')
 
     clearButton.title = 'empty the board'
@@ -231,21 +228,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     legendActions.append(panelsButton, saveButton, addButton, removeButton, nameInput)
     panelLegend.append(el('span', 'dya-label', 'Panel'), legendActions)
 
-    const renderWeb = (): void => {
-        webButton.setAttribute('aria-pressed', String(web))
-        webButton.title = web
-            ? 'members may search, at most three times each'
-            : 'members answer from what they know, with no network round trips'
-    }
-
-    webButton.addEventListener('click', () => {
-        web = !web
-        write(WEB_KEY, web)
-        renderWeb()
-    })
-
-    renderWeb()
-    bar.append(runButton, refreshButton, clearButton, webButton, el('span', 'eforoi-spacer'), status)
+    bar.append(runButton, refreshButton, clearButton, el('span', 'eforoi-spacer'), status)
 
     const promptColumn = el('div', 'eforoi-column')
     promptColumn.dataset.side = 'prompt'
@@ -381,7 +364,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         )
         mode.dataset.empty = String(!seat)
         mode.dataset.broken = String(Boolean(seat) && !offer?.available)
-        if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
+        if (seat && !entryOf(seat.key)) mode.title = `${seat.key} is no longer offered by any route`
+        else if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
         mode.addEventListener('click', () => {
             if (seat) pickMode(mode, seat, set)
             else pickSeat(mode, seat, set)
@@ -418,6 +402,27 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const cards = new Map<string, Card>()
     const painting = new Map<string, number>()
+    const ticking = new Map<string, number>()
+
+    const stopTicking = (id?: string): void => {
+        for (const [key, timer] of ticking) {
+            if (id !== undefined && key !== id) continue
+            window.clearInterval(timer)
+            ticking.delete(key)
+        }
+    }
+
+    const tick = (id: string, card: Card, prefix: string): void => {
+        stopTicking(id)
+        const started = Date.now()
+        card.note.textContent = `${prefix} · 0.0s`
+        ticking.set(
+            id,
+            window.setInterval(() => {
+                card.note.textContent = `${prefix} · ${seconds(Date.now() - started)}`
+            }, 100)
+        )
+    }
 
     const draw = (card: Card): void => {
         const following =
@@ -452,6 +457,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const stopPainting = (): void => {
         for (const timer of painting.values()) window.clearTimeout(timer)
         painting.clear()
+        stopTicking()
     }
 
     const makeCard = (id: string, title: string, role: string, expanded: boolean, host: HTMLElement): Card => {
@@ -607,7 +613,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const memberNote = (result: MemberResult): string => {
         const parts = [seconds(result.ms), result.seat.mode === 'api' ? 'API' : 'plan']
-        if (result.searches) parts.push(`${result.searches} web`)
+        parts.push(result.searches === null ? 'web ?' : `${result.searches} web`)
         if (result.usage.costUsd) parts.push(money(result.usage.costUsd))
         if (result.usage.outputTokens) parts.push(`${result.usage.outputTokens} out`)
         return parts.join(' · ')
@@ -625,6 +631,12 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                 card.raw = ''
                 card.body.replaceChildren()
                 if (event.stage === 'answer') answerText = ''
+                const analyst = labelOf(state.analyst)
+                tick(
+                    event.stage,
+                    card,
+                    event.stage === 'analysis' ? `comparing with ${analyst}` : `writing with ${analyst}`
+                )
             }
             return
         }
@@ -645,6 +657,10 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
             if (!card) return
             card.dot.dataset.state = event.result.error ? 'error' : 'done'
             card.note.textContent = event.result.error ?? memberNote(event.result)
+            card.note.title =
+                event.result.searches === null
+                    ? 'this route does not report tool use, so searches cannot be counted here'
+                    : ''
             if (event.result.error) {
                 forget(id)
                 card.raw = event.result.error
@@ -658,10 +674,13 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         }
 
         if (event.type === 'analysis') {
+            stopTicking('analysis')
             const card = cards.get('analysis')
             if (card) {
                 card.dot.dataset.state = 'done'
-                card.note.textContent = `compared by ${labelOf(state.analyst)} · ${seconds(event.ms)}`
+                const again = event.attempt > 1 ? ` · attempt ${event.attempt}` : ''
+                card.note.textContent =
+                    `compared by ${labelOf(state.analyst)} · ${seconds(event.ms)}${again}`
             }
             renderAnalysis(event.analysis)
             return
@@ -678,6 +697,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         }
 
         if (event.type === 'done') {
+            stopTicking()
             const card = cards.get('answer')
             if (card) {
                 card.dot.dataset.state = 'done'
@@ -698,6 +718,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         }
 
         if (event.type === 'error') {
+            stopTicking()
             status.textContent = ''
             const card = cards.get('answer')
             if (card) {
@@ -736,7 +757,6 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                     prompt: promptBox.value,
                     panel: state.panel,
                     analyst: state.analyst,
-                    web,
                     temperature: 0.7,
                     maxTokens: 16000
                 })
@@ -753,18 +773,25 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         catalog = (await ctx.invoke('catalog', force)) as Catalog
 
         const known = new Set(catalog.entries.map((entry) => entry.key))
-        state.panel = state.panel.filter((seat) => known.has(seat.key))
-        if (state.analyst && !known.has(state.analyst.key)) state.analyst = null
+        const missing = [...state.panel, state.analyst]
+            .filter((seat): seat is Seat => seat !== null && !known.has(seat.key))
+            .map((seat) => seat.key)
 
-        if (state.panel.length < MIN_PANEL || !state.analyst) {
+        if (!state.panel.length || !state.analyst) {
             const seeded = defaultPanel(catalog)
-            if (state.panel.length < MIN_PANEL) state.panel = seeded.panel
+            if (!state.panel.length) state.panel = seeded.panel
             state.analyst = state.analyst ?? seeded.analyst
         }
 
         renderSeats()
         const live = Object.values(catalog.routes).filter((route) => route.available)
-        status.textContent = live.length ? '' : 'no route available'
+        if (!live.length) {
+            status.textContent = 'no route available'
+        } else if (missing.length) {
+            status.textContent = `${missing.join(', ')} no longer offered — pick a replacement`
+        } else {
+            status.textContent = ''
+        }
     }
 
     const applyPanel = (entry: SavedPanel): void => {
@@ -886,6 +913,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     return () => {
         unsubscribe()
         stopPainting()
+        stopTicking()
         if (runId) void ctx.invoke('cancel', runId)
         root.remove()
     }

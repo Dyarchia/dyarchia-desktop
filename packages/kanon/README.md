@@ -225,3 +225,5 @@ Colour is never the only signal. It states the outcome; a word or an icon says w
   exception is justified: a product rendering markdown or model output cannot put a class
   on elements it did not author. A second such exception would mean the rule is not
   holding.
+- **`.dya-math` is sized in `em`, and nothing else in the system is.** Notation has to
+  scale with whatever it sits inside, including a heading, and no fixed step can do that.

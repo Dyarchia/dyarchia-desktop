@@ -67,6 +67,7 @@ interface CliSpec {
     bin: string
     args(request: CompletionRequest, scratch: string): string[]
     inlineSystem: boolean
+    countsSearches: boolean
     consume(event: Record<string, unknown>, sink: Sink): void
 }
 
@@ -83,6 +84,7 @@ const claude: CliSpec = {
     label: 'Claude Code',
     bin: 'claude',
     inlineSystem: false,
+    countsSearches: true,
     args(request) {
         return [
             '-p',
@@ -96,7 +98,8 @@ const claude: CliSpec = {
             '--model',
             request.model,
             ...(request.effort ? ['--effort', request.effort] : []),
-            ...(request.web ? ['--allowed-tools', 'WebSearch WebFetch'] : []),
+            '--allowed-tools',
+            'WebSearch WebFetch',
             '--disallowed-tools',
             CLAUDE_DENY,
             '--permission-mode',
@@ -135,6 +138,7 @@ const codex: CliSpec = {
     label: 'Codex CLI',
     bin: 'codex',
     inlineSystem: true,
+    countsSearches: true,
     args(request, scratch) {
         return [
             'exec',
@@ -148,7 +152,7 @@ const codex: CliSpec = {
             '--ignore-user-config',
             '--ignore-rules',
             '-c',
-            `tools.web_search=${request.web}`,
+            'tools.web_search=true',
             ...(request.effort ? ['-c', `model_reasoning_effort=${request.effort}`] : []),
             '-m',
             request.model,
@@ -180,6 +184,7 @@ const opencode: CliSpec = {
     label: 'opencode',
     bin: 'opencode',
     inlineSystem: true,
+    countsSearches: false,
     args(request, scratch) {
         return [
             'run',
@@ -195,10 +200,6 @@ const opencode: CliSpec = {
     },
     consume(event, sink) {
         const part = asRecord(event.part)
-        if (event.type === 'tool' && part.state) {
-            if (asRecord(part.state).status === 'completed') sink.search()
-            return
-        }
         if (event.type === 'text' && typeof part.text === 'string') {
             sink.replace(String(part.id ?? 'text'), part.text)
             return
@@ -316,7 +317,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     const text = streamed || [...parts.values()].join('')
     if (!text.trim()) throw new Error(stderr.trim().split('\n').pop() ?? `${spec.bin} returned no text`)
 
-    return { text, usage, ms: Date.now() - started, searches }
+    return { text, usage, ms: Date.now() - started, searches: spec.countsSearches ? searches : null }
 }
 
 async function codexModels(): Promise<ModelInfo[]> {

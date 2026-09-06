@@ -41,7 +41,7 @@ function cost(table: Record<string, Price>, model: string, usage: Usage): number
     )
 }
 
-const MAX_WEB_USES = 4
+const MAX_WEB_USES = 3
 const LEGACY_TOOLS = /haiku|-4-5/
 type AnthropicEffort = NonNullable<Anthropic.Messages.OutputConfig['effort']>
 type OpenAIEffort = NonNullable<OpenAI.ReasoningEffort>
@@ -81,13 +81,13 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
     let text = ''
     let searches = 0
 
-    for (let turn = 0; turn <= (request.web ? MAX_WEB_USES : 0); turn += 1) {
+    for (let turn = 0; turn <= MAX_WEB_USES; turn += 1) {
         const stream = client.messages.stream(
             {
                 model: request.model,
                 max_tokens: request.maxTokens,
                 system: request.system,
-                ...(request.web ? { tools: anthropicTools(request.model) } : {}),
+                tools: anthropicTools(request.model),
                 ...(request.effort
                     ? { output_config: { effort: request.effort as AnthropicEffort } }
                     : {}),
@@ -131,7 +131,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
             instructions: request.system,
             input: [{ role: 'user' as const, content: request.prompt }],
             max_output_tokens: request.maxTokens,
-            ...(request.web ? { tools: [{ type: 'web_search' as const }] } : {}),
+            tools: [{ type: 'web_search' as const }],
             ...(request.effort ? { reasoning: { effort: request.effort as OpenAIEffort } } : {}),
             stream: true
         },

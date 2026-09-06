@@ -192,6 +192,25 @@
     color: var(--dya-text-2);
 }
 
+.dya-math {
+    font-family: var(--dya-font-mono);
+    font-size: 0.94em;
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-2);
+    white-space: nowrap;
+}
+
+.dya-math--block {
+    display: block;
+    margin: var(--dya-space-4) 0;
+    padding: var(--dya-space-3);
+    overflow-x: auto;
+    border-left: 2px solid var(--dya-accent-soft);
+    font-size: var(--dya-size-mono-sm);
+    text-align: center;
+    white-space: pre-wrap;
+}
+
 .dya-prose__scroll {
     margin: 0 0 var(--dya-space-3);
     overflow-x: auto;

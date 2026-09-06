@@ -4,12 +4,14 @@ import { DockLayout } from './layout/DockLayout'
 import { TopBar } from './components/TopBar'
 import { basePanelId, getRegisteredPanels, onRegistryChange } from './panels/registry'
 import { loadPlugins } from './plugins/host'
+import { applyTheme, readTheme } from './theme'
 
 export function App(): React.JSX.Element {
     const [api, setApi] = useState<DockviewApi | null>(null)
     const [pluginsReady, setPluginsReady] = useState(false)
     const [, setRevision] = useState(0)
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
+    const [theme, setTheme] = useState(readTheme)
 
     useEffect(() => {
         const unsubscribe = onRegistryChange(() => setRevision((r) => r + 1))
@@ -59,12 +61,19 @@ export function App(): React.JSX.Element {
         [api]
     )
 
+    const handleTheme = useCallback((id: string) => {
+        applyTheme(id)
+        setTheme(id)
+    }, [])
+
     return (
         <div className="shell">
             <TopBar
                 panels={getRegisteredPanels().map((panel) => panel.descriptor)}
                 openPanelIds={openPanelIds}
                 onToggle={handleToggle}
+                theme={theme}
+                onThemeChange={handleTheme}
             />
             <div className="shell-body">
                 {pluginsReady ? (

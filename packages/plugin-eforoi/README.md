@@ -48,13 +48,15 @@ A mode that cannot work is shown greyed with the reason: no CLI on PATH, no key 
 the model not offered on that route.
 
 
-## Conversation
+## One prompt, one run
 
-Runs are not one-shot. Each panel member keeps a thread of its own, and so does the analyst —
-the seat the panel labels **Dogma**, δόγμα, the resolution a council issues. So a follow-up
-like "which of the three you just named is hardest?" works, and no member ever sees another
-member's answers, which is what keeps the panel worth polling. Ten turns per conversation;
-`New` starts over.
+A run is one-shot. Every model is asked once, the analyst — the seat the panel labels
+**Dogma**, δόγμα, the resolution a council issues — compares what came back and writes from
+the comparison, and nothing carries to the next Run. No member ever sees another member's
+answer, which is what keeps the panel worth polling.
+
+Follow-up turns existed and were removed. A panel is not a chat: a follow-up is a new
+question, and a new question deserves a fresh panel. `Clear` empties the board.
 
 
 ## Presets and effort
@@ -107,16 +109,31 @@ cached by the `dyarchia-plugin://` protocol and the main module is only read at 
 
 ## Driving it without the shell
 
-The orchestration layer runs headless, which is how it is tested:
+Both halves can be exercised with no window. The orchestration layer runs headless:
 
 ```bash
 pnpm --filter @dyarchia/plugin-eforoi probe catalog
-pnpm probe run "anthropic/claude-opus-5@subscription" "openai/gpt-5.6-sol@subscription" "anthropic/claude-opus-5@subscription" "your prompt || a follow-up that depends on the first"
+pnpm --filter @dyarchia/plugin-eforoi probe run "anthropic/claude-opus-5@subscription" "anthropic/claude-sonnet-5@subscription" "anthropic/claude-opus-5@subscription" "your prompt"
 ```
 
-The last seat is the analyst, and `||` splits the prompt into consecutive turns of one
-conversation, which is how the threading is tested. `scripts/electron-stub.mjs` stands in for
-the two Electron APIs the plugin uses, so no window is involved.
+The last seat is the analyst. `scripts/electron-stub.mjs` stands in for the two Electron
+APIs the plugin uses.
+
+The panel itself is checked by mounting the built bundle against a fake context.
+`scripts/panel-harness.html` supplies a catalogue, a canned set of run events and answers
+carrying the markdown that matters — fenced code, tables, nested lists — so the layout,
+both themes and the code rendering can be inspected in an ordinary browser:
+
+```bash
+pnpm --filter @dyarchia/plugin-eforoi build
+py -m http.server 8731 --bind 127.0.0.1
+```
+
+Then open `http://127.0.0.1:8731/packages/plugin-eforoi/scripts/panel-harness.html` from
+the repository root. Do not try to stub `window.dyarchia` inside the real shell instead:
+that object comes from `contextBridge` and its properties are not writable, so the
+assignment fails silently, the real IPC call goes through, and a modal dialog opens on the
+operator's screen.
 
 
 ## Documentation

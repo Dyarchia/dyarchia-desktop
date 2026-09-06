@@ -1,5 +1,5 @@
 import { complete } from '../providers/registry.js'
-import type { CompletionResult, Turn } from '../providers/adapter.js'
+import type { CompletionResult } from '../providers/adapter.js'
 import type { Analysis, MemberResult, RunConfig, RunSummary, Seat, Stage, Usage } from '../types.js'
 import { parseAnalysis } from './parse.js'
 import { ANALYST_SYSTEM, PANEL_SYSTEM, WRITER_SYSTEM, analysisPrompt, answerPrompt } from './prompts.js'
@@ -15,21 +15,6 @@ export interface RunEvents {
 
 const RETRY_NUDGE = '\n\nYour previous reply was not valid JSON. Return only the JSON object.'
 
-export interface ThreadState {
-    session: string | null
-    history: Turn[]
-}
-
-export type Threads = Map<string, ThreadState>
-
-function threadOf(threads: Threads, key: string): ThreadState {
-    const existing = threads.get(key)
-    if (existing) return existing
-    const fresh: ThreadState = { session: null, history: [] }
-    threads.set(key, fresh)
-    return fresh
-}
-
 interface SpeakOptions {
     system: string
     prompt: string
@@ -39,37 +24,16 @@ interface SpeakOptions {
     onDelta(text: string): void
 }
 
-async function speak(
-    threads: Threads,
-    key: string,
-    seat: Seat,
-    options: SpeakOptions
-): Promise<CompletionResult> {
-    const thread = threadOf(threads, key)
-
-    const result = await complete(seat, {
+function speak(seat: Seat, options: SpeakOptions): Promise<CompletionResult> {
+    return complete(seat, {
         system: options.system,
         prompt: options.prompt,
         temperature: options.config.temperature,
         maxTokens: options.config.maxTokens,
         json: options.json,
         signal: options.signal,
-        history: thread.history,
-        session: thread.session,
         onDelta: options.onDelta
     })
-
-    if (result.session) {
-        thread.session = result.session
-    } else {
-        thread.history = [
-            ...thread.history,
-            { role: 'user', content: options.prompt },
-            { role: 'assistant', content: result.text }
-        ]
-    }
-
-    return result
 }
 
 
@@ -86,12 +50,11 @@ async function member(
     index: number,
     config: RunConfig,
     events: RunEvents,
-    signal: AbortSignal,
-    threads: Threads
+    signal: AbortSignal
 ): Promise<MemberResult> {
     const started = Date.now()
     try {
-        const result = await speak(threads, `member:${index}`, seat, {
+        const result = await speak(seat, {
             system: PANEL_SYSTEM,
             prompt: config.prompt,
             json: false,
@@ -115,14 +78,13 @@ async function member(
 async function analyse(
     config: RunConfig,
     survivors: MemberResult[],
-    signal: AbortSignal,
-    threads: Threads
+    signal: AbortSignal
 ): Promise<{ analysis: Analysis; usage: Usage; ms: number }> {
     const prompt = analysisPrompt(config.prompt, survivors)
     let nudge = ''
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
-        const result = await speak(threads, 'analyst:analysis', config.analyst, {
+        const result = await speak(config.analyst, {
             system: ANALYST_SYSTEM + nudge,
             prompt,
             json: true,
@@ -144,8 +106,7 @@ async function analyse(
 export async function runFusion(
     config: RunConfig,
     events: RunEvents,
-    signal: AbortSignal,
-    threads: Threads
+    signal: AbortSignal
 ): Promise<void> {
     const started = Date.now()
     const summary: RunSummary = {
@@ -153,15 +114,13 @@ export async function runFusion(
         costUsd: 0,
         meteredCostUsd: 0,
         inputTokens: 0,
-        outputTokens: 0,
-        turn: 0,
-        maxTurns: 0
+        outputTokens: 0
     }
 
     events.stage('panel')
     const members = await Promise.all(
         config.panel.map((seat, position) =>
-            member(seat, position + 1, config, events, signal, threads)
+            member(seat, position + 1, config, events, signal)
         )
     )
     for (const result of members) {
@@ -173,12 +132,12 @@ export async function runFusion(
     if (!survivors.length) throw new Error('every panel member failed')
 
     events.stage('analysis')
-    const analysed = await analyse(config, survivors, signal, threads)
+    const analysed = await analyse(config, survivors, signal)
     accumulate(summary, analysed.usage)
     events.analysis(analysed.analysis, analysed.usage, analysed.ms)
 
     events.stage('answer')
-    const answer = await speak(threads, 'analyst:writer', config.analyst, {
+    const answer = await speak(config.analyst, {
         system: WRITER_SYSTEM,
         prompt: answerPrompt(config.prompt, analysed.analysis),
         json: false,

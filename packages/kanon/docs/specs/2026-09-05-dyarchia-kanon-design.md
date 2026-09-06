@@ -205,6 +205,33 @@ token           value     as a fill in Gi   as a fill in Oneiro   role
 Each hue has a `-soft` companion at 10% for the background of a row or a quiet badge.
 `--dya-on-status` is the ink on any status fill.
 
+- **The syntax hues are functional on the same grounds, and are likewise declared once.**
+  A highlighted token means the same thing in both themes, so `--dya-code-*` is defined on
+  `:root` and Oneiro does not touch it. What changes between themes is the ground under
+  the block, which is `--dya-surface-2` in both.
+
+```text
+token                 value     Gi s-2   Gi s-1   Oneiro s-2   Oneiro s-1
+-------------------   -------   ------   ------   ----------   ----------
+--dya-code-keyword    #cf8fb4     6.84     7.17         6.89         7.33
+--dya-code-string     #8fb87a     7.72     8.09         7.78         8.28
+--dya-code-number     #d6a95c     8.04     8.43         8.11         8.62
+--dya-code-function   #7fb0dd     7.59     7.96         7.66         8.15
+--dya-code-punct      #b7b6b4     8.60     9.01         8.67         9.22
+--dya-code-comment    #85857f     4.69     4.92         4.73         5.03
+```
+
+`--dya-code-comment` is the lowest ink in the system that is still text. It is deliberately
+the most recessive of the six and sits just above the 4.50 floor on every ground; anything
+darker would put a comment below the bar. `--dya-code-number` reuses the value of
+`--dya-warning`, which is coincidence rather than kinship: they answer to different rules
+and either may move without the other.
+
+Colour is not the only signal here either, but the second signal is position in the
+grammar rather than a word. Two of the six, keyword and string, converge under
+deuteranopia; the system accepts that in a code block because a reader who cannot separate
+them still has indentation, quotes and delimiters.
+
 - **`--dya-faint`, the elevation shadows and the glass tokens are theme-neutral.** They are
   black and white alphas and resolve correctly over either ground. `--dya-elev-focus` is
   the exception: it names the accent and each theme overrides it.
@@ -246,6 +273,17 @@ variable font, so the system carries six static faces at weights 300, 400 and 50
 ```
 
 One scale, no breakpoint, no `clamp()`.
+
+**The prose scale is a second, shorter scale, and it exists for documents the system did
+not write.** A product that renders markdown, model output or a fetched file cannot put a
+class on every element, so `.dya-prose` is the one block in the system that styles by
+element rather than by class. Inside it, `h1` takes `--dya-size-h2`, `h2` takes
+`--dya-size-h3` at 19px, `h3` takes `--dya-size-h4` at 15.5px, and `h4` through `h6` sit
+at body size and separate themselves by weight, which is the single sanctioned exception
+to hierarchy coming from size and tracking: six levels do not fit in four sizes.
+
+Prose is content, so it is sans and it keeps its case. The one uppercase element inside
+`.dya-prose` is a table head, which is a label.
 
 ## 8. Shape and spacing
 
@@ -290,6 +328,8 @@ Pressable    button (--quiet --sm --danger) key chip item entry (--strong --acti
 Input        field toggle checkbox radio slider
 Content      tag badge (--success --warning --danger --soft) table row (--selected)
              metric display heading text label eyebrow value mono caret
+Documents    prose (styles by element) prose__scroll
+             code (__kw __str __num __com __fn __pun)
 Layers       menu menu__item tooltip
 Navigation   tabs tab pagination
 Absence      empty loading skeleton
@@ -315,8 +355,9 @@ There is nothing to build, lint or test. What replaces those commands:
   checkbox, radio, slider, content tabs, pagination, empty, loading and skeleton. They are
   the first candidates for revision.
 - The IBM Plex stylistic sets are undetermined.
-- The prose scale has one step. `.dya-heading` is the only heading size, which is thin for
-  a product that renders arbitrary documents.
+- `.dya-prose` styles by element and every other component styles by class. The exception
+  is justified by content the system does not author, but it is still an exception, and a
+  second one would mean the rule is not holding.
 - Oneiro has no observed source for its raised and overlay steps, only for its chassis,
   surface, raised and selected. The four interpolated values have not been seen against
   real content.

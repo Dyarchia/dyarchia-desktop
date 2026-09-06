@@ -1,6 +1,5 @@
-import { injectStyles } from '@dyarchia/sdk'
+import { injectStyles, renderMarkdown } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
-import { renderMarkdown } from './markdown.js'
 import { openMenu } from './menu.js'
 import type { MenuLeaf, MenuRow } from './menu.js'
 import { STYLES } from './styles.js'
@@ -177,11 +176,12 @@ function defaultPanel(catalog: Catalog): Stored {
     return { panel: picks, analyst: picks[0] ?? null }
 }
 
-function mount(ctx: PluginContext, container: HTMLElement, conversation: string): () => void {
+function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const root = el('div', 'eforoi')
     const head = el('div', 'eforoi-head')
     const results = el('div', 'eforoi-results')
     const grid = el('div', 'eforoi-grid')
+    const members = el('div', 'eforoi-members')
     results.appendChild(grid)
     root.append(head, results)
     container.appendChild(root)
@@ -207,11 +207,10 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const saveButton = el('button', 'dya-button', 'Save')
     const nameInput = el('input', 'dya-field dya-field--sm eforoi-name')
     const refreshButton = el('button', 'dya-button', 'Refresh')
-    const newButton = el('button', 'dya-button', 'New')
-    const turnLabel = el('span', 'dya-value eforoi-meta')
+    const clearButton = el('button', 'dya-button', 'Clear')
     const status = el('span', 'dya-value eforoi-meta')
 
-    newButton.title = 'forget the conversation and start over'
+    clearButton.title = 'empty the board'
 
     addButton.title = 'add a panel member'
     removeButton.title = 'remove the last panel member'
@@ -228,14 +227,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     legendActions.append(panelsButton, saveButton, addButton, removeButton, nameInput)
     panelLegend.append(el('span', 'dya-label', 'Panel'), legendActions)
 
-    bar.append(
-        runButton,
-        refreshButton,
-        newButton,
-        turnLabel,
-        el('span', 'eforoi-spacer'),
-        status
-    )
+    bar.append(runButton, refreshButton, clearButton, el('span', 'eforoi-spacer'), status)
 
     const promptColumn = el('div', 'eforoi-column')
     promptColumn.dataset.side = 'prompt'
@@ -408,7 +400,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
 
     const cards = new Map<string, Card>()
 
-    const makeCard = (id: string, title: string, role: string, expanded: boolean): Card => {
+    const makeCard = (id: string, title: string, role: string, expanded: boolean, host: HTMLElement): Card => {
         const wrapper = el('div', 'dya-card eforoi-card')
         wrapper.dataset.role = role
 
@@ -458,7 +450,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         toggle.addEventListener('click', () => card.open(body.hidden))
         header.append(toggle, copy)
         wrapper.append(header, body)
-        grid.appendChild(wrapper)
+        host.appendChild(wrapper)
         cards.set(id, card)
         return card
     }
@@ -466,18 +458,22 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
     const prepare = (): void => {
         cards.clear()
         grid.replaceChildren()
+        members.replaceChildren()
 
         const analyst = labelOf(state.analyst)
-        const answer = makeCard('answer', 'Answer', 'answer', true)
-        answer.note.textContent = `written by ${analyst}`
-        answer.body.append(el('span', 'dya-empty', 'waiting for the panel'))
-
-        const analysis = makeCard('analysis', 'Analysis', 'analysis', true)
+        const analysis = makeCard('analysis', 'Analysis', 'analysis', true, grid)
         analysis.note.textContent = `compared by ${analyst}`
         analysis.body.append(el('span', 'dya-empty', 'waiting for the panel'))
 
+        const answer = makeCard('answer', 'Answer', 'answer', true, grid)
+        answer.note.textContent = `written by ${analyst}`
+        answer.body.append(el('span', 'dya-empty', 'waiting for the panel'))
+
+        members.style.setProperty('--eforoi-members', String(state.panel.length))
+        grid.appendChild(members)
+
         state.panel.forEach((seat, index) => {
-            const card = makeCard(`member-${index + 1}`, `${index + 1}. ${labelOf(seat)}`, 'member', false)
+            const card = makeCard(`member-${index + 1}`, `${index + 1}. ${labelOf(seat)}`, 'member', true, members)
             card.note.textContent = seat.mode === 'api' ? 'API' : 'plan'
         })
     }
@@ -593,7 +589,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
                 card.body.replaceChildren(el('div', 'eforoi-error', event.result.error))
             } else {
                 card.raw = event.result.text
-                card.body.dataset.prose = 'true'
+                card.body.classList.add('dya-prose')
                 card.body.innerHTML = renderMarkdown(event.result.text)
                 remember(event.result.seat.key, event.result.ms)
             }
@@ -625,7 +621,7 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
                 card.dot.dataset.state = 'done'
                 card.note.textContent = `written by ${labelOf(state.analyst)}`
                 card.raw = answerText || event.answer
-                card.body.dataset.prose = 'true'
+                card.body.classList.add('dya-prose')
                 card.body.innerHTML = renderMarkdown(card.raw)
             }
             const spend =
@@ -633,8 +629,6 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
                     ? `${money(event.summary.meteredCostUsd)} metered`
                     : 'plan only'
             status.textContent = `${seconds(event.summary.ms)} · ${spend} · ${event.summary.outputTokens} out`
-            turnLabel.textContent = `turn ${event.summary.turn}/${event.summary.maxTurns}`
-            promptBox.value = ''
             promptBox.focus()
             renderSeats()
             runId = null
@@ -678,7 +672,6 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         try {
             runId = String(
                 await ctx.invoke('run', {
-                    conversation,
                     prompt: promptBox.value,
                     panel: state.panel,
                     analyst: state.analyst,
@@ -805,12 +798,11 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         commit()
     })
 
-    newButton.addEventListener('click', () => {
-        void ctx.invoke('reset', conversation)
-        turnLabel.textContent = ''
-        status.textContent = 'conversation cleared'
+    clearButton.addEventListener('click', () => {
+        status.textContent = ''
         cards.clear()
         grid.replaceChildren()
+        members.replaceChildren()
         promptBox.value = ''
         promptBox.focus()
     })
@@ -827,10 +819,6 @@ function mount(ctx: PluginContext, container: HTMLElement, conversation: string)
         saveButton.title = `save this panel to ${store.path}`
     })
     void refresh(true)
-    void ctx.invoke('turns', conversation).then((raw) => {
-        const state = raw as { turn: number; maxTurns: number }
-        if (state?.turn) turnLabel.textContent = `turn ${state.turn}/${state.maxTurns}`
-    })
 
     return () => {
         unsubscribe()
@@ -843,6 +831,6 @@ export function activate(ctx: PluginContext): void {
     injectStyles('eforoi', STYLES)
     ctx.registerPanel(
         { id: 'eforoi', title: 'Eforoi', icon: ICON, duplicable: true },
-        (container, handle) => mount(ctx, container, handle.instanceId)
+        (container) => mount(ctx, container)
     )
 }

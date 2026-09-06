@@ -8,7 +8,7 @@ reasoning underneath it.
 ## Index
 
 - [1. The pipeline](#1-the-pipeline)
-- [2. Conversation](#2-conversation)
+- [2. One prompt, one run](#2-one-prompt-one-run)
 - [3. Routes and adapters](#3-routes-and-adapters)
 - [4. The catalogue is discovered, not declared](#4-the-catalogue-is-discovered-not-declared)
 - [5. Effort and presets](#5-effort-and-presets)
@@ -76,68 +76,44 @@ prompt, the reply is parsed with a brace-balancing extractor that tolerates fenc
 surrounding prose, and one retry with a stricter instruction follows a parse failure.
 
 
-## 2. Conversation
+## 2. One prompt, one run
 
-A run is not one-shot. Every participant keeps a thread of its own, and none of them can see
-anyone else's:
+A run is one-shot. Every participant is asked once, answers once, and is not asked again;
+nothing carries from one Run to the next.
 
-```text
-Thread              Holds
------------------   -------------------------------------------------------
-member:1 .. n       that member's own questions and its own answers
-analyst:analysis    the comparisons it has produced
-analyst:writer      the answers it has written
-```
+It did not start that way. Members and analyst each kept a thread, continuity used every
+route's native mechanism — `claude --resume`, `codex exec resume`, `opencode -s`, and a
+replayed `messages[]` on the API routes — and conversations were capped at ten turns. That
+machinery existed to make turn two cheaper than turn one, and it worked: a measured second
+turn cost $0.0376 against $0.0493 for the first, because resuming kept each CLI's prompt
+cache warm.
 
-Members must not see each other across turns any more than within one. Three models that
-have read each other's previous answers converge, and a panel that converges has nothing
-left to compare. Isolation is the product.
+It was removed because the panel is not a chat. What the panel does is put one question to
+several models that cannot see each other and compare what comes back; a follow-up is a new
+question, and a new question deserves a fresh panel. The cost of keeping it was paid on
+every route: `CompletionRequest` carried `history` and `session`, `CompletionResult` carried
+`session` back, and each of the three CLI specs had a resume branch in its argument list and
+a session sink in its event handler. Removing the feature removed all of it.
 
-Continuity uses each route's native mechanism rather than replaying a transcript:
-
-```text
-Route       Mechanism                         Captured from
----------   -------------------------------   -----------------------------
-claude      --resume <session_id>             the result event's session_id
-codex       exec resume <thread_id>           the thread.started event
-opencode    -s <sessionID>                    any event's sessionID
-anthropic   messages[] replay                 n/a
-openai      input[] replay                    n/a
-```
-
-This is not just tidier than resending history — it keeps each CLI's prompt cache warm.
-Claude Code carries a ~47k token prefix per call; resuming its session means paying cache
-read rather than cache write for it. A measured second turn cost $0.0376 against $0.0493 for
-the first.
-
-Two consequences worth knowing.
-
-**Sessions reach disk, in each CLI's own store.** `--ephemeral` was dropped from the codex
-invocation entirely, because it suppresses the very session file `exec resume` needs. So a
-panel turn leaves state where that CLI normally keeps it:
+One consequence is worth having on its own. `--ephemeral` had been dropped from the codex
+invocation entirely, because it suppresses the very session file `exec resume` needs. With
+nothing to resume the flag is back, and a panel run no longer leaves a rollout in the
+operator's own codex history:
 
 ```text
-Route       Written to                                Shows up in
----------   ---------------------------------------   -------------------------
-codex       ~/.codex/sessions/<date>/rollout-*.jsonl   codex resume
-claude      ~/.claude/projects/<scratch-slug>/         claude --resume
-opencode    ~/.local/share/opencode/storage            opencode session
+Route       Wrote to                                   Still does
+---------   ----------------------------------------   ----------
+codex       ~/.codex/sessions/<date>/rollout-*.jsonl   no
+claude      ~/.claude/projects/<scratch-slug>/         yes
+opencode    ~/.local/share/opencode/storage            yes
 ```
 
-Claude's are at least segregated: sessions are keyed by working directory and every member
-runs in the plugin's own scratch directory, so they land under one obviously-named project.
-Codex offers no equivalent — `CODEX_HOME` would move the sessions but `auth.json` lives there
-too, so redirecting it would break the subscription login that Subscription mode exists to
-use. Panel turns are therefore visible in the operator's own codex history, and that is the
-price of native resume.
+Claude and opencode still write where they normally write; neither offers an equivalent
+flag. Claude's are at least segregated, since sessions are keyed by working directory and
+every member runs in the plugin's own scratch directory.
 
-**A thread is keyed by seat index plus model and mode**, so changing a seat's model
-mid-conversation starts that seat afresh rather than handing a claude session id to codex.
-
-Conversations are capped at ten turns. On the eleventh the run is refused with a message
-rather than silently dropping the oldest exchange: with CLI session resume the history lives
-inside the CLI, so a sliding window would mean different routes forgetting different things.
-`New` clears every thread and the counter.
+`Clear` empties the board. It is not `New` renamed: there is no conversation left to
+forget, so it removes the cards and nothing else.
 
 
 ## 3. Routes and adapters
@@ -399,8 +375,6 @@ invoke      keys        where each API key comes from: stored, env, or none
 invoke      setKey      encrypt a key into userData, or clear it
 invoke      run         start a run, returns a run id
 invoke      cancel      abort a run in flight
-invoke      reset       forget every thread of one conversation
-invoke      turns       how many turns a conversation has spent
 invoke      panels      the saved presets and the path they live at
 invoke      savePanel   store the current arrangement under a name
 invoke      deletePanel forget one saved preset
@@ -449,6 +423,8 @@ So the plugin declares classes where it used to declare rules:
 ```text
 Element                  Class it carries
 ----------------------   ------------------------------------------------
+rendered answers         dya-prose
+fenced code              dya-code, dya-code__kw / __str / __num / __com
 buttons                  dya-button
 icon buttons, copy       dya-key
 seat pickers             dya-item
@@ -512,8 +488,8 @@ Zone         Split                             Fills
 ----------   -------------------------------   ----------------------------------
 head         prompt 5/12, panel 7/12           both reach the right edge
 seat row     64 / 1fr / 168 / 76 / 46 / 54px   columns line up across rows
-results      answer 6/12, analysis 6/12        text spans its assigned column
-members      12/12 below                       collapsed strips
+results      analysis 6/12, answer 6/12        text spans its assigned column
+members      one column each, full width       a band of equal-width cards
 ```
 
 The grid is a container query grid, not a media query one: a panel docked narrow inside a
@@ -526,8 +502,28 @@ arrived, which ordered them by whoever streamed fastest: the panel showed 2, 1, 
 analysis referred to members 1, 2 and 3. Attribution the reader cannot follow is worse than
 no attribution.
 
-The answer leads because it is the deliverable; the analysis follows because it is the
-evidence; members collapse because they are the raw material.
+**The analysis leads and the answer closes.** The first version had it the other way, on
+the reasoning that the answer is the deliverable and a reader wants the deliverable first.
+Reading it that way for a while showed the flaw: the eye lands left, and what it lands on
+should be what makes the answer trustworthy. The comparison is the evidence and the answer
+is the conclusion, so they read in that order.
+
+**Members are a band, not a stack.** They used to be collapsed strips twelve columns wide,
+one under the other, on the reasoning that they are raw material. They are raw material
+that exists to be compared, and three answers stacked vertically cannot be compared at all
+— you scroll past one to reach the next and hold the first in your head. They now sit in
+their own row, one column each, expanded, each body capped at `min(46vh, 520px)` with its
+own scrollbar. The cap is what makes it work: without it the longest answer sets the row
+height and the band becomes a stack again with extra steps. Container queries drop the band
+to two columns under 1180px and to one under 720px, where comparison is not on offer
+anyway.
+
+A detail that cost an hour. A member card still carries `.eforoi-card`, which is
+`grid-column: span 12`. Dropped into a three-column band that made every card span twelve
+tracks — three explicit and nine implicit at 0px — so the three sat stacked and the
+computed template read `560px 560px 560px 0px 0px 0px …`. The band resets `grid-column` to
+`auto` on its own children. A nested grid does not isolate a child from a span it already
+carries.
 
 Line length is governed by the grid rather than by a character cap. An earlier version put a
 `max-width` in characters on every prose block, which left a card spanning the window with its
@@ -551,9 +547,19 @@ Two details worth keeping in mind for anything else built in this shell:
   or spend an hour convinced your changes are not compiling.
 
 Every model returns markdown whether or not you ask it to, so every prose card renders it
-through a small subset — paragraphs, headings, lists, bold, inline code. Member cards used to
-show the source instead, asterisks and all; they now render like the answer. The streaming
-path stays plain text and the markup is applied once, on completion.
+through `renderMarkdown` from `@dyarchia/sdk` and carries `.dya-prose`. That covers fenced
+code with a language, thematic breaks, links, ordered and nested lists, blockquotes, pipe
+tables and six heading levels.
+
+The plugin used to carry its own renderer, and it had two failures that made long answers
+unreadable. A fenced block fell through to the paragraph branch and was joined with spaces,
+so a twelve-line Python function arrived as one line. And all six heading levels mapped to
+`h4.dya-label`, which is kanon's uppercase section label at 0.2em tracking, so a document's
+structure came out as a run of identical rubber stamps. Both are fixed upstream rather than
+here: the renderer is in the SDK because any plugin showing model output needs it, and the
+scale it renders into is kanon's.
+
+The streaming path stays plain text and the markup is applied once, on completion.
 
 ```text
 Card       Model returns      Displayed as          Copy button yields
@@ -575,6 +581,12 @@ a button is invalid, so the header is a row holding two of them.
 ```text
 Absent               Why
 ------------------   ---------------------------------------------------------
+follow-up turns      A panel is not a chat. A follow-up is a new question and a
+                     new question deserves a fresh panel. Section 2 has the
+                     machinery this removed and what it bought back.
+markdown library     Model output reaches the DOM through innerHTML, so a
+                     parser that emits raw HTML would need a sanitiser behind
+                     it. The SDK renderer escapes at every leaf instead.
 temperature          Current Anthropic models reject the parameter with a 400,
                      and no CLI route exposes one. A control that worked on two
                      routes out of five would mislead.

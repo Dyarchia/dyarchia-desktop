@@ -322,6 +322,14 @@ There is nothing to build, lint or test. What replaces those commands:
   real content.
 - Whether `--dya-field` earns its place in Gi is open. It currently aliases the primary
   accent, which is the one value the theme is told to use sparingly.
+- The system carries no version a consumer can read. A product vendors `css/` and its
+  plugins then reference `dya-*` classes from the document without importing anything, so
+  a plugin's dependency on this system is real, unversioned and invisible. A plugin
+  written against a class this system has not shipped yet installs cleanly and renders
+  wrong, with nothing to check and nothing to report. Exposing the version at runtime,
+  letting a plugin declare a minimum and having the host say something when it is not met
+  is the shape of an answer; whether an unmet minimum should refuse to load or only warn
+  is the part that needs deciding.
 - The system has no flat pressable. dyarchia-desktop draws the open control of two panels
   as a bare icon with no background, border or relief, because an empty panel holding one
   raised button reads as an unfilled form. It does that with plugin-prefixed rules built

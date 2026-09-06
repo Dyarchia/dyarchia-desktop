@@ -482,6 +482,11 @@ against it:
   component declares. Tracking follows the role, and a model name is an identifier, not a
   section label.
 
+One shape is drawn rather than borrowed. The accent edge on the Dogma seat is a square 2px
+`::before`, not the `inset 2px 0 0` that `dya-row--selected` uses. Kanon applies that form to
+a `td`, which carries no radius; the seat row carries 6px, and an inset shadow follows it into
+a bracket at both ends.
+
 The plugin never touches `ctx.theme`. That API resolves tokens to literal strings for code
 that draws outside the DOM — canvas, WebGL, a terminal emulator. Eforoi is plain DOM, so
 `var()` and a class name cover every case.

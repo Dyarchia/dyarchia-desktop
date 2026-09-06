@@ -255,6 +255,14 @@ Haiku 4.5 is given no levels at all, because effort errors on it.
 An effort the selected route does not list is dropped before the call rather than passed and
 rejected, so changing a seat's route cannot silently send a level that route never offered.
 
+**A seat whose model has gone is kept, not dropped.** `refresh` used to filter the panel
+against the catalogue and silently discard any seat whose key no longer resolved. A preset
+saved when `openai/gpt-5.6-sol` existed therefore loaded, lost that seat without a word,
+and looked like a preset that had not been read at all — the catalogue moves under a saved
+panel whenever a CLI updates its model list. The seat now survives, shows its raw key in
+the danger colour with the reason on hover, and the action bar names it. Reseeding from
+`defaultPanel` only happens when the panel is genuinely empty, not merely short.
+
 Presets are saved by name to a JSON file beside the encrypted key store:
 
 ```text
@@ -662,6 +670,26 @@ so a twelve-line Python function arrived as one line. And all six heading levels
 structure came out as a run of identical rubber stamps. Both are fixed upstream rather than
 here: the renderer is in the SDK because any plugin showing model output needs it, and the
 scale it renders into is kanon's.
+
+**Mathematics is rendered as Unicode, not typeset.** Ask a mathematical question and every
+member answers in LaTeX, whether or not the question used any: `$\Im(s)=t\approx
+14.13\dots$` arrives literally, and a page of it is unreadable. `texToUnicode` in the SDK
+maps the notation that actually turns up — Greek, operators, relations, set and logic
+symbols, superscripts, subscripts, roots and fractions — onto real characters, so that
+line becomes `ℑ(s)=t≈14.13…`. Inline math is wrapped in `.dya-math`, and a `$$` block
+becomes `.dya-math--block`.
+
+It is a subset and it is meant to be. Fractions degrade to `(1)/(n²)` and a superscript
+with no Unicode form degrades to `^(∞)`; both read, neither typesets. KaTeX would typeset
+properly and costs a 280 KB bundle plus twenty font files that `install-plugins.mjs` does
+not currently carry, which is a trade worth making only if someone is reading real
+mathematics here rather than the occasional expression.
+
+Two details that matter more than they look. A `$` pair is only treated as math when
+neither delimiter touches a space and the content is not purely numeric, so `$0.0376` and
+`$0.0493` in the same paragraph survive as currency. And `\{` is protected before grouping
+braces are stripped, so `$d\in\{2,3,5,7\}$` keeps its set braces rather than losing them
+to the same pass that removes `^{-11}`.
 
 The streaming path stays plain text and the markup is applied once, on completion.
 

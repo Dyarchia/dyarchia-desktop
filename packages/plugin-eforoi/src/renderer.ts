@@ -364,7 +364,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         )
         mode.dataset.empty = String(!seat)
         mode.dataset.broken = String(Boolean(seat) && !offer?.available)
-        if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
+        if (seat && !entryOf(seat.key)) mode.title = `${seat.key} is no longer offered by any route`
+        else if (offer && !offer.available) mode.title = offer.reason ?? 'unavailable'
         mode.addEventListener('click', () => {
             if (seat) pickMode(mode, seat, set)
             else pickSeat(mode, seat, set)
@@ -735,18 +736,25 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         catalog = (await ctx.invoke('catalog', force)) as Catalog
 
         const known = new Set(catalog.entries.map((entry) => entry.key))
-        state.panel = state.panel.filter((seat) => known.has(seat.key))
-        if (state.analyst && !known.has(state.analyst.key)) state.analyst = null
+        const missing = [...state.panel, state.analyst]
+            .filter((seat): seat is Seat => seat !== null && !known.has(seat.key))
+            .map((seat) => seat.key)
 
-        if (state.panel.length < MIN_PANEL || !state.analyst) {
+        if (!state.panel.length || !state.analyst) {
             const seeded = defaultPanel(catalog)
-            if (state.panel.length < MIN_PANEL) state.panel = seeded.panel
+            if (!state.panel.length) state.panel = seeded.panel
             state.analyst = state.analyst ?? seeded.analyst
         }
 
         renderSeats()
         const live = Object.values(catalog.routes).filter((route) => route.available)
-        status.textContent = live.length ? '' : 'no route available'
+        if (!live.length) {
+            status.textContent = 'no route available'
+        } else if (missing.length) {
+            status.textContent = `${missing.join(', ')} no longer offered — pick a replacement`
+        } else {
+            status.textContent = ''
+        }
     }
 
     const applyPanel = (entry: SavedPanel): void => {

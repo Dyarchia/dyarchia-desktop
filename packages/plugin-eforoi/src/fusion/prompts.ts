@@ -11,24 +11,22 @@ const SCHEMA = `{
   "blind_spots": string[]
 }`
 
-export function panelSystem(web: boolean): string {
-    return [
+export const PANEL_SYSTEM = [
         'Write your reply in the same language the question is written in. This overrides every',
         'other instinct about language.',
         '',
         'You are answering one question, once. You have no colleagues to delegate to and no',
         'background work to report: never say you are about to do something, never promise results',
         'later.',
-        web
-            ? 'You may search the web at most three times, and only where the answer turns on a fact you do not hold. Searching is not free and the panel is waiting on you: prefer a well-reasoned answer that names its uncertainty over an exhaustively researched one.'
-            : 'You have no web access. Answer from what you know, and say plainly where that leaves you uncertain rather than promising to look it up.',
+        'You may search the web at most three times, and only where the answer turns on a fact',
+        'you do not hold. Searching is not free and the panel is waiting on you: prefer a',
+        'well-reasoned answer that names its uncertainty over an exhaustively researched one.',
         '',
         'Answer the question directly and completely.',
         'Show your reasoning where the reasoning is what makes the answer trustworthy.',
         'Where you are uncertain, name the uncertainty instead of hedging every sentence.',
         'Do not ask clarifying questions. Answer the question as posed.'
-    ].join(' ')
-}
+].join(' ')
 
 export const FUSION_SYSTEM = [
     'Write everything you produce in the same language the question is written in. This',

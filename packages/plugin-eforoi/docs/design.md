@@ -278,13 +278,9 @@ is showing you everything.
 
 ## 6. Web search and fetch
 
-Web access is a switch in the action bar, **on by default**, and it applies to the panel
-only. The analyst never searches: it is given the members' answers and compares them, and a
-comparison that goes looking for a sixth opinion is not a comparison.
-
-It is on by default because a panel that cannot look anything up is a panel of models
-guessing. The switch is there for a question you know they already know, not as the normal
-state.
+Every member searches, always, and there is no switch. The analyst never searches: it is
+given the members' answers and compares them, and a comparison that goes looking for a sixth
+opinion is not a comparison.
 
 **What is bounded is the number of searches, not the ability to search.** Three identical
 Haiku seats, same question, same run, before any budget existed:
@@ -299,16 +295,17 @@ seat   time      searches   output
 
 The same model, the same prompt, the same moment, and a two-fold spread in wall clock that
 is entirely a spread in how many times it decided to search. Nothing capped the agent loop:
-the API routes carried `max_uses: 4` from the start, the CLI routes carried nothing, and
-`claude -p` has no `--max-turns` to give them. So a run's duration was decided by whichever
-member happened to be most curious, and a panel is only as fast as its slowest seat.
+the API routes carried a `max_uses` cap from the start, the CLI routes carried nothing, and
+`claude -p` has no `--max-turns` to give them. A run lasted as long as whichever member
+happened to be most curious, and a panel is only as fast as its slowest seat.
 
-Two things bound it now. The panel prompt states a budget in as many words — at most three
-searches, and that searching is not free because the panel is waiting. And because a prompt
-is a request rather than a guarantee, `MEMBER_DEADLINE_MS` gives each member 120 seconds on
-its own `AbortController`, after which that seat reports that it did not answer in time and
-does not vote. The pipeline already tolerated a failed member, so a seat that overruns costs
-the run nothing but its own opinion.
+Two things bound it. `PANEL_SYSTEM` states a budget in as many words — at most three
+searches, only where the answer turns on a fact the model does not hold, and searching is
+not free because the panel is waiting. And because a prompt is a request rather than a
+guarantee, `MEMBER_DEADLINE_MS` gives each member 120 seconds on its own `AbortController`,
+after which that seat reports that it did not answer in time and does not vote. The pipeline
+already tolerated a failed member, so a seat that overruns costs the run nothing but its own
+opinion. `MAX_WEB_USES` on the API routes is set to the same three.
 
 The budget held, measured the same way:
 
@@ -318,33 +315,35 @@ The budget held, measured the same way:
 searches         6 / 8 / 15         3 / 3 / 3
 members          53.8/67.5/107.3s   38.7/42.2/33.6s
 panel stage      107.3s             42.2s
-whole run        152.5s             108.2s
 shadow cost      $0.6657            $0.3099
 ```
 
 Half the cost, and the tail is gone: the spread across three identical seats fell from
 two-fold to a quarter. Nothing was turned off to get it.
 
-The analyst was the larger half of a run at this point — 64 seconds of 108, against 42 for
-three members in parallel — because it ran twice in sequence. It runs once now; section 1
-has the measurements and what else that fixed.
+**There was briefly a Web switch, and removing it is the point of this section.** It was
+added on the belief that searching was the problem, defaulting to off. That reading came
+from timing one CLI call rather than the pipeline, and it was wrong twice over: it did not
+explain the member that took 87 seconds, and a panel that cannot look anything up is a panel
+of models guessing. It also failed this document's own test for a control — the same test
+that keeps `temperature` out. `opencode` has no flag for web access, so the switch reached
+four routes of five and silently lied about the fifth.
 
-Each member card reports its own search count beside its time, so the budget is visible
-rather than asserted.
+The routes, with the budget rather than a switch:
 
 ```text
-Route       Switch off                  Switch on
----------   -------------------------   ------------------------------------
-claude      no --allowed-tools           --allowed-tools "WebSearch WebFetch"
-codex       -c tools.web_search=false    -c tools.web_search=true
-opencode    unchanged                    unchanged
-anthropic   no tools in the request      web_search + web_fetch, max_uses 4
-openai      no tools in the request      Responses API web_search tool
+Route       How it searches
+---------   -----------------------------------------
+claude      --allowed-tools "WebSearch WebFetch"
+codex       -c tools.web_search=true
+opencode    on by default, no flag either way
+anthropic   web_search + web_fetch, max_uses 3
+openai      Responses API web_search tool
 ```
 
-`opencode` is the one route the switch does not reach: it has no flag for web access and
-`--pure` only drops external plugins. A member on that route may search whatever the
-switch says, and its card will report the searches it made. The deadline still binds it.
+Each member card reports its own search count beside its time, so the budget is visible
+rather than asserted. That count is also the only thing that tells you what an `opencode`
+member actually did.
 
 `--sandbox read-only` on codex and `--pure` on opencode restrict command execution and
 plugins; neither touches web search. Both were searching all along.
@@ -692,6 +691,9 @@ with anything, which is the usual reason a run takes far longer than its slowest
 ```text
 Absent               Why
 ------------------   ---------------------------------------------------------
+a web switch         It reached four routes of five: opencode has no flag for
+                     web access either way. The same objection that keeps
+                     temperature out. Section 6 has the whole story.
 follow-up turns      A panel is not a chat. A follow-up is a new question and a
                      new question deserves a fresh panel. Section 2 has the
                      machinery this removed and what it bought back.

@@ -63,29 +63,27 @@ Follow-up turns existed and were removed. A panel is not a chat: a follow-up is 
 question, and a new question deserves a fresh panel. `Clear` empties the board.
 
 
-## Web access
+## Web search
 
-`Web` in the action bar lets the panel search and fetch. It is **on by default** and applies
-to the members only — the analyst compares what it is given and never goes looking.
+Every member searches, always. The analyst never does — it compares what it is given.
 
-What is capped is how much they search, not whether they can. Three identical Haiku seats
-answering the same question took 53.8s, 67.5s and 107.3s, having searched 6, 8 and 15 times:
-nothing bounded the agent loop, so a run lasted as long as whichever seat was most curious.
-The panel prompt now states a budget of three searches, and each member carries a 120 second
-deadline as a backstop — a seat that overruns reports that it did not answer in time and
-does not vote.
+What is capped is how much they search. Three identical Haiku seats answering the same
+question took 53.8s, 67.5s and 107.3s, having searched 6, 8 and 15 times: nothing bounded
+the agent loop, so a run lasted as long as whichever seat was most curious. The panel prompt
+now states a budget of three searches, and each member carries a 120 second deadline as a
+backstop — a seat that overruns reports that it did not answer in time and does not vote.
 
 ```text
                   before             after
 --------------   ----------------   ----------------
 searches         6 / 8 / 15         3 / 3 / 3
 members          53.8/67.5/107.3s   38.7/42.2/33.6s
-whole run        152.5s             108.2s
 shadow cost      $0.6657            $0.3099
 ```
 
-Each card reports its own search count beside its time. Turn the switch off for a question
-you know the models already know.
+There is no switch to turn searching off. There was one briefly; it reached four routes of
+five, because opencode has no flag for web access, and a panel that cannot look anything up
+is a panel of models guessing. Each card reports its own search count beside its time.
 
 
 ## Presets and effort

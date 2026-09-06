@@ -26,7 +26,6 @@ const DONE_ICON =
 
 const SEATS_KEY = 'eforoi:seats'
 const LATENCY_KEY = 'eforoi:latency'
-const WEB_KEY = 'eforoi:web'
 const PAINT_MS = 140
 const MIN_PANEL = 2
 const MAX_PANEL = 5
@@ -191,7 +190,6 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     let catalog: Catalog | null = null
     let state: Stored = read<Stored>(SEATS_KEY, { panel: [], analyst: null })
     let latency = read<Record<string, number>>(LATENCY_KEY, {})
-    let web = read<boolean>(WEB_KEY, true)
     let store: PanelStore = { path: '', items: [] }
     let runId: string | null = null
     let answerText = ''
@@ -211,7 +209,6 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const nameInput = el('input', 'dya-field dya-field--sm eforoi-name')
     const refreshButton = el('button', 'dya-button', 'Refresh')
     const clearButton = el('button', 'dya-button', 'Clear')
-    const webButton = el('button', 'dya-button', 'Web')
     const status = el('span', 'dya-value eforoi-meta')
 
     clearButton.title = 'empty the board'
@@ -231,21 +228,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     legendActions.append(panelsButton, saveButton, addButton, removeButton, nameInput)
     panelLegend.append(el('span', 'dya-label', 'Panel'), legendActions)
 
-    const renderWeb = (): void => {
-        webButton.setAttribute('aria-pressed', String(web))
-        webButton.title = web
-            ? 'members may search, at most three times each'
-            : 'members answer from what they know, with no network round trips'
-    }
-
-    webButton.addEventListener('click', () => {
-        web = !web
-        write(WEB_KEY, web)
-        renderWeb()
-    })
-
-    renderWeb()
-    bar.append(runButton, refreshButton, clearButton, webButton, el('span', 'eforoi-spacer'), status)
+    bar.append(runButton, refreshButton, clearButton, el('span', 'eforoi-spacer'), status)
 
     const promptColumn = el('div', 'eforoi-column')
     promptColumn.dataset.side = 'prompt'
@@ -736,7 +719,6 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                     prompt: promptBox.value,
                     panel: state.panel,
                     analyst: state.analyst,
-                    web,
                     temperature: 0.7,
                     maxTokens: 16000
                 })

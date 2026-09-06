@@ -3,7 +3,7 @@ import type { CompletionResult } from '../providers/adapter.js'
 import { NO_USAGE } from '../providers/adapter.js'
 import type { Analysis, MemberResult, RunConfig, RunSummary, Seat, Stage, Usage } from '../types.js'
 import { parseAnalysis } from './parse.js'
-import { ANSWER_MARK, FUSION_NUDGE, FUSION_SYSTEM, fusionPrompt, panelSystem } from './prompts.js'
+import { ANSWER_MARK, FUSION_NUDGE, FUSION_SYSTEM, PANEL_SYSTEM, fusionPrompt } from './prompts.js'
 
 export interface RunEvents {
     stage(stage: Stage): void
@@ -19,7 +19,6 @@ export const MEMBER_DEADLINE_MS = 120_000
 interface SpeakOptions {
     system: string
     prompt: string
-    web: boolean
     config: RunConfig
     signal: AbortSignal
     onDelta(text: string): void
@@ -31,7 +30,6 @@ function speak(seat: Seat, options: SpeakOptions): Promise<CompletionResult> {
         prompt: options.prompt,
         temperature: options.config.temperature,
         maxTokens: options.config.maxTokens,
-        web: options.web,
         signal: options.signal,
         onDelta: options.onDelta
     })
@@ -61,9 +59,8 @@ async function member(
 
     try {
         const result = await speak(seat, {
-            system: panelSystem(config.web),
+            system: PANEL_SYSTEM,
             prompt: config.prompt,
-            web: config.web,
             config,
             signal: bounded.signal,
             onDelta: (text) => events.memberDelta(index, text)
@@ -136,7 +133,6 @@ async function fuse(
         const result = await speak(config.analyst, {
             system: FUSION_SYSTEM + nudge,
             prompt,
-            web: false,
             config,
             signal,
             onDelta(text) {

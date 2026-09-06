@@ -48,7 +48,6 @@ export interface RunConfig {
     prompt: string
     panel: Seat[]
     analyst: Seat
-    web: boolean
     temperature: number
     maxTokens: number
 }

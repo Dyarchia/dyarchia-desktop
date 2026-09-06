@@ -1,3 +1,6 @@
+export { highlight } from './highlight.js'
+export { renderMarkdown } from './markdown.js'
+
 export interface PanelDescriptor {
     id: string
     title: string

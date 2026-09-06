@@ -214,13 +214,14 @@ Colour is never the only signal. It states the outcome; a word or an icon says w
   seen against real content.
 - **Six of Oneiro's ten surfaces are interpolated**, and the interpolated steps have not
   been seen against real content either.
-- The system has no flat pressable. dyarchia-desktop draws the open control of two panels
-  as a bare icon with no background, border or relief, because an empty panel holding one
-  raised button reads as an unfilled form. It does that with plugin-prefixed rules built
-  from tokens, which is the sanctioned escape hatch and also a standing bug report: a
-  `.dya-button--bare` beside `--quiet` would let the product drop those rules.
+- **The system has no flat pressable.** dyarchia-desktop draws the open control of two
+  panels as a bare icon with no background, border or relief, because an empty panel
+  holding one raised button reads as an unfilled form. It does that with
+  plugin-prefixed rules built from tokens, which is the sanctioned escape hatch and also
+  a standing bug report: a `.dya-button--bare` beside `--quiet` would let the product
+  drop those rules.
 - **The IBM Plex stylistic sets are undetermined.**
-- **The prose scale has one step.** `.dya-heading` is the only heading, at
-  `--dya-size-h2`, and there is nothing between `--dya-size-metric` and `--dya-size-body`.
-  A product that renders arbitrary documents has three heading levels and one size to spend
-  on them.
+- **`.dya-prose` styles by element and every other component styles by class.** The
+  exception is justified: a product rendering markdown or model output cannot put a class
+  on elements it did not author. A second such exception would mean the rule is not
+  holding.

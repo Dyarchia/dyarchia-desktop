@@ -7,3 +7,7 @@ release/
 __pycache__/
 *.py[cod]
 CLAUDE.md
+
+# Kanon theme measurement pages
+scratch/
+.probe/

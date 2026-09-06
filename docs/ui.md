@@ -25,36 +25,38 @@ restates its values; it says how they reach a plugin.
 
 ## 1. Where the system lives
 
-`packages/kanon` is a vendored copy of `dyarchia-kanon`, published to the workspace as
+`packages/kanon` is the design system itself, published to the workspace as
 `@dyarchia/kanon`.
 
 ```text
-Path                          What it is
----------------------------   -------------------------------------------------
-packages/kanon/css/           the stylesheet, copied verbatim from upstream
-packages/kanon/fonts/         IBM Plex Sans Condensed and Mono, six static woff2
-packages/kanon/src/index.ts   token(), for code that needs a resolved value
-scripts/sync-kanon.mjs        re-copies css/, fonts/ and README.md from upstream
+Path                              What it is
+-------------------------------   -------------------------------------------------
+packages/kanon/css/               the stylesheet
+packages/kanon/fonts/             IBM Plex Sans Condensed and Mono, six static woff2
+packages/kanon/src/index.ts       token(), for code that needs a resolved value
+packages/kanon/docs/specs/        the spec, which is the authority over the CSS
 ```
 
-`css/` and `fonts/` are never edited here. A change to the system is a change upstream,
-and it reaches the app through the sync:
+**This is the source.** It was a separate repository, vendored here and kept in step by a
+sync script; it was absorbed by subtree, so its history is this history and the sync is
+gone. `css/` and `fonts/` are edited in place, and the spec is brought into line with the
+same commit.
 
-```bash
-node scripts/sync-kanon.mjs
-```
+What that buys, beyond one less script: the system used to carry no version a consumer
+could read. A plugin references `dya-*` from the document without importing anything, so a
+plugin written against a class that had not shipped yet installed cleanly and rendered
+wrong — silently, with no error anywhere. A plugin and the system it references now ship
+from the same commit.
 
-**The sync runs itself.** `predev`, `prebuild` and `prepackage` invoke it with
-`--if-present`, so `pnpm dev` and `pnpm build` cannot start against a stale copy, and a
-machine without the sibling checkout keeps the vendored files and carries on. It prints
-what it changed, or that the copy already matched.
+What it costs: nothing enforces the separation any more. The rule that a product never
+restyles a `dya-*` class used to be protected by the class living in another repository.
+It is now protected only by review. `packages/kanon/css/components.css` is the single
+declaration site for every component, and a rule that overrides one belongs in the plugin's
+own prefixed stylesheet or in kanon itself — never as a second `.dya-button`.
 
-Vendoring is deliberate: the packaged app and a fresh clone must build with no sibling
-repository present. The cost is drift, and the automatic sync is what pays it.
-
-The upstream checkout is found by walking up from the repository looking for a
-`dyarchia-kanon` folder; `DYARCHIA_KANON` overrides. CSS is normalised to LF on the way
-in, so the vendored copy does not churn against whatever line endings upstream carries.
+Any change to a colour token is re-measured against every surface it can sit on, in both
+themes, with the ratios in the commit body. The full rule set is in the repository's
+CLAUDE.md; the mandate is in `packages/kanon/docs/specs/`.
 
 
 ## 2. The ambient contract

@@ -322,3 +322,8 @@ There is nothing to build, lint or test. What replaces those commands:
   real content.
 - Whether `--dya-field` earns its place in Gi is open. It currently aliases the primary
   accent, which is the one value the theme is told to use sparingly.
+- The system has no flat pressable. dyarchia-desktop draws the open control of two panels
+  as a bare icon with no background, border or relief, because an empty panel holding one
+  raised button reads as an unfilled form. It does that with plugin-prefixed rules built
+  from tokens, which is the sanctioned escape hatch and also a standing bug report: a
+  `.dya-button--bare` beside `--quiet` would let the product drop those rules.

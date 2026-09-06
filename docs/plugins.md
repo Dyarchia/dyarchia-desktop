@@ -68,8 +68,7 @@ export function activate(ctx: PluginContext): void {
 
 Notes:
 
-- The shell imposes no framework: the mount can host React, a canvas, or plain DOM. Each
-  plugin bundles its own UI dependencies.
+- The renderer is plain DOM. This is a rule, not an observation; see below.
 - icon is the content of the toggle button in the top bar: inline SVG markup, recommended,
   such as a Lucide icon with stroke="currentColor"; or, as a fallback, a short
   one-character string.
@@ -87,6 +86,41 @@ Notes:
   theme redefines colour tokens and never rules, so there is nothing to branch on and
   nothing to subscribe to.
 
+
+### The framework rule
+
+**A renderer is written in plain DOM. The shell's own framework is not available to it and
+must not be assumed.**
+
+The shell is React and dockview. That is an implementation detail of the shell, it is not
+exported, and no version of it is part of the contract. What a plugin gets is
+`mount(container, handle)`: a DOM node, and a function to call when the panel goes away.
+
+The contract is that small deliberately, and it buys three things:
+
+- **A main module can be written in any language.** The renderer cannot tell whether the
+  other side is Node or Python, because the boundary is `invoke`/`on` and not a framework's
+  data flow. Widen the contract to include a component model and that stops being true.
+- **The shell can change without breaking plugins.** React, dockview and the panel host can
+  be replaced wholesale as long as a DOM node still arrives. Export React and every plugin
+  is married to the shell's React version for as long as the product lives.
+- **Nothing owns a plugin's lifecycle but the plugin.** `mount` returns its own teardown.
+  There is no reconciler above it deciding when its subtree exists.
+
+A plugin may still bundle a framework — nothing prevents it, and for a genuinely stateful
+panel it can be the right call. It is not free, and the cost is the plugin's to carry:
+
+- A second copy of that framework in the bundle, on top of the shell's. Two React instances
+  in one document is a supported but real cost, in bytes and in memory.
+- The plugin owns unmounting it inside the `dispose` it returns. The shell calls `dispose`
+  and nothing else.
+- The plugin owns its own build complexity. The shared build script targets plain DOM.
+
+Before reaching for one, note what the plain path already gives. The design system is
+linked once into the document, so every `dya-*` class is available with no import: the work
+a component library would do for a button, a field, a table or a menu is already done, and
+`docs/ui.md` lists what exists. Four of the five plugins in this workspace render real UI
+with `document.createElement` and no framework, and the largest of them is a terminal.
 
 ## 3. The main module (optional)
 
@@ -198,7 +232,9 @@ flowchart TD
 ## 7. Checklist for a new plugin
 
 1. A folder under packages/ with a valid dyarchia-plugin.json.
-2. renderer.ts with an activate that registers at least one panel.
+2. renderer.ts with an activate that registers at least one panel, in plain DOM. If it
+   bundles a framework instead, the dispose it returns unmounts that framework, and the
+   reason it was needed is written in the plugin's README.
 3. A build script with esbuild, producing dist/.
 4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
    console errors. Rebuild the plugin after every edit: a renderer change needs a window

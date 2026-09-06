@@ -48,13 +48,6 @@ body,
     margin-right: var(--dya-space-3);
 }
 
-.topbar-glyph {
-    display: block;
-    font-size: 13px;
-    line-height: 1;
-    letter-spacing: 0;
-}
-
 .topbar-icon,
 .topbar-icon svg {
     display: block;

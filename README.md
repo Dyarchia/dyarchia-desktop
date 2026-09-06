@@ -106,7 +106,39 @@ npx tsc -p apps/shell
 ```
 
 
-## 4. Persistence and paths
+## 4. Branches and releases
+
+One repository, three kinds of branch. `master` is the trunk, `develop` is where work
+lands, and everything is built on a `feature/*` cut from `develop`.
+
+```text
+Branch       Holds                              Merged with
+----------   --------------------------------   ----------------------------
+master       the released state                 --no-ff, from develop only
+develop      integrated, unreleased work        --no-ff, from feature/* only
+feature/*    one coherent change                deleted after merging
+```
+
+The rules, in order:
+
+- **Cut the branch before the first edit, not after.** A change that has already started
+  on `develop` has lost the review surface the branch exists to give it.
+- **Merge with `--no-ff`, always.** A fast-forward erases the fact that a set of commits
+  belonged together, which is the only thing that makes the history readable later.
+- **`develop` reaches `master` when it is asked for**, never automatically, and by the
+  same `--no-ff` merge. Nothing is committed directly to `master`.
+- **Push `develop` and `master` together** once a release merge is made, so the remote is
+  never a partial view of what happened.
+- **Delete the feature branch after it merges.** The merge commit holds the name.
+- **Commit bodies are long and evidentiary.** State the measurement or the failure that
+  forced the change, what the alternative was, and what was deliberately left alone. A
+  one-line body on anything but a typo is below the bar this history sets. A change under
+  `packages/kanon/css/` additionally carries its contrast ratios, in both themes — see
+  `docs/ui.md`.
+- **Everything written to a file is in English**, commit messages included.
+
+
+## 5. Persistence and paths
 
     Data                  Path
     ------------------    -------------------------------------------
@@ -120,7 +152,7 @@ synchronously before the first paint, and an IPC round trip would put a frame of
 theme on screen at every launch.
 
 
-## 5. Debugging
+## 6. Debugging
 
 With the DYARCHIA_DEBUG=1 environment variable, and always in dev, the shell exposes the
 Chrome DevTools Protocol on port 9222. The renderer publishes the dockview API on

@@ -2,7 +2,7 @@ import { complete } from '../providers/registry.js'
 import type { CompletionResult } from '../providers/adapter.js'
 import type { Analysis, MemberResult, RunConfig, RunSummary, Seat, Stage, Usage } from '../types.js'
 import { parseAnalysis } from './parse.js'
-import { ANALYST_SYSTEM, PANEL_SYSTEM, WRITER_SYSTEM, analysisPrompt, answerPrompt } from './prompts.js'
+import { ANALYST_SYSTEM, WRITER_SYSTEM, analysisPrompt, answerPrompt, panelSystem } from './prompts.js'
 
 export interface RunEvents {
     stage(stage: Stage): void
@@ -19,6 +19,7 @@ interface SpeakOptions {
     system: string
     prompt: string
     json: boolean
+    web: boolean
     config: RunConfig
     signal: AbortSignal
     onDelta(text: string): void
@@ -31,6 +32,7 @@ function speak(seat: Seat, options: SpeakOptions): Promise<CompletionResult> {
         temperature: options.config.temperature,
         maxTokens: options.config.maxTokens,
         json: options.json,
+        web: options.web,
         signal: options.signal,
         onDelta: options.onDelta
     })
@@ -55,14 +57,22 @@ async function member(
     const started = Date.now()
     try {
         const result = await speak(seat, {
-            system: PANEL_SYSTEM,
+            system: panelSystem(config.web),
             prompt: config.prompt,
             json: false,
+            web: config.web,
             config,
             signal,
             onDelta: (text) => events.memberDelta(index, text)
         })
-        return { index, seat, text: result.text, usage: result.usage, ms: result.ms }
+        return {
+            index,
+            seat,
+            text: result.text,
+            usage: result.usage,
+            ms: result.ms,
+            searches: result.searches
+        }
     } catch (error) {
         return {
             index,
@@ -70,6 +80,7 @@ async function member(
             text: '',
             usage: { inputTokens: 0, outputTokens: 0, cachedTokens: 0, costUsd: null, billing: 'plan' },
             ms: Date.now() - started,
+            searches: 0,
             error: error instanceof Error ? error.message : String(error)
         }
     }
@@ -88,6 +99,7 @@ async function analyse(
             system: ANALYST_SYSTEM + nudge,
             prompt,
             json: true,
+            web: false,
             config,
             signal,
             onDelta: () => undefined
@@ -141,6 +153,7 @@ export async function runFusion(
         system: WRITER_SYSTEM,
         prompt: answerPrompt(config.prompt, analysed.analysis),
         json: false,
+        web: false,
         config,
         signal,
         onDelta: (text) => events.answerDelta(text)

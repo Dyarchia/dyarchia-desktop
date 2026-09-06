@@ -37,12 +37,58 @@ flowchart TD
 A member that fails does not fail the run — it is reported on its own card and the analyst
 sees only the survivors. The run aborts only when nothing survives.
 
-The analyst is one seat but two calls. The first returns the comparison as JSON; the second
-writes the answer from that JSON. OpenRouter's Fusion splits these across two models — the
-analyst emits the analysis, the caller's own model writes the reply. There is no caller
-model in a desktop panel, so the roles collapse onto one seat while the two steps stay
-separate. The intermediate JSON is rendered in the panel, and it is often more useful than
-the prose: it is the only place the disagreement is visible as data.
+**The analyst is one seat and one call.** It emits the comparison as JSON, then a marker,
+then the answer, and the run splits the reply on that marker:
+
+```text
+===ANALYSIS===
+{ the comparison, as JSON }
+===ANSWER===
+the answer, in markdown
+```
+
+OpenRouter's Fusion splits these across two models — the analyst emits the analysis, the
+caller's own model writes the reply. There is no caller model in a desktop panel, so the
+roles collapsed onto one seat, and for a while they stayed two calls made in sequence. That
+cost more than time.
+
+It cost time first. Members run in parallel, so the panel stage costs whatever the slowest
+member costs; the analyst then ran twice with nothing to overlap against, and had become
+the larger half of a run — 64 seconds of 108, against 42 for three members together.
+
+It also cost the answer. The writer was given the question and the analysis JSON, and
+nothing else. It never saw a member's actual words, and it was told never to introduce a
+fact absent from the analysis, so the answer could not be richer than a compressed summary
+of answers it had not read. The observed failure was exactly that: a long, specific analysis
+followed by a thin answer that dropped most of its own reasoning.
+
+And it cost the language. `panelSystem` and the writer both opened by fixing the reply to
+the question's language; the analyst prompt never mentioned language at all. A Spanish
+question therefore produced Spanish member answers, an English analysis, and a Spanish
+answer written from it. The rule now governs the JSON as explicitly as the prose — every
+claim, topic, position and insight inside it.
+
+One call fixes all three. The analyst holds the member answers and its own comparison in the
+same context, so the answer is written from both; the language rule covers the whole reply;
+and the second call is gone.
+
+```text
+                  two calls   one call
+--------------   ---------   --------
+analyst stage        63.7s      35.1s
+whole run           108.2s      74.5s
+shadow cost       $0.3099    $0.2595
+```
+
+The answer still streams, which is the reason for a marker rather than one JSON object with
+the answer as a field. Deltas are buffered until the marker appears; at that point the
+analysis is parsed and rendered, and everything after it streams into the answer card. A
+reply that cannot be split is retried once with the format restated, and the retry re-emits
+the two stages so a partial answer from the first attempt is cleared rather than appended
+to.
+
+The JSON is rendered in the panel, and it is often more useful than the prose: it is the
+only place the disagreement is visible as data.
 
 The analysis schema:
 
@@ -279,12 +325,9 @@ shadow cost      $0.6657            $0.3099
 Half the cost, and the tail is gone: the spread across three identical seats fell from
 two-fold to a quarter. Nothing was turned off to get it.
 
-**The analyst is now the larger half of a run.** Of those 108 seconds, 42 are the panel —
-three members in parallel — and 64 are the analyst, which runs twice in sequence after every
-member has finished: once for the comparison JSON, once to write the answer. A slow model in
-the Dogma seat is therefore paid for twice and overlaps with nothing. Collapsing the two
-calls into one would halve it and would cost the streamed answer, since a JSON call has
-nothing readable to stream; that trade has not been made.
+The analyst was the larger half of a run at this point — 64 seconds of 108, against 42 for
+three members in parallel — because it ran twice in sequence. It runs once now; section 1
+has the measurements and what else that fixed.
 
 Each member card reports its own search count beside its time, so the budget is visible
 rather than asserted.

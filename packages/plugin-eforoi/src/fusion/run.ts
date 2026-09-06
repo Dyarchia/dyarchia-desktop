@@ -1,8 +1,9 @@
 import { complete } from '../providers/registry.js'
 import type { CompletionResult } from '../providers/adapter.js'
+import { NO_USAGE } from '../providers/adapter.js'
 import type { Analysis, MemberResult, RunConfig, RunSummary, Seat, Stage, Usage } from '../types.js'
 import { parseAnalysis } from './parse.js'
-import { ANALYST_SYSTEM, WRITER_SYSTEM, analysisPrompt, answerPrompt, panelSystem } from './prompts.js'
+import { ANSWER_MARK, FUSION_NUDGE, FUSION_SYSTEM, fusionPrompt, panelSystem } from './prompts.js'
 
 export interface RunEvents {
     stage(stage: Stage): void
@@ -15,12 +16,9 @@ export interface RunEvents {
 
 export const MEMBER_DEADLINE_MS = 120_000
 
-const RETRY_NUDGE = '\n\nYour previous reply was not valid JSON. Return only the JSON object.'
-
 interface SpeakOptions {
     system: string
     prompt: string
-    json: boolean
     web: boolean
     config: RunConfig
     signal: AbortSignal
@@ -33,7 +31,6 @@ function speak(seat: Seat, options: SpeakOptions): Promise<CompletionResult> {
         prompt: options.prompt,
         temperature: options.config.temperature,
         maxTokens: options.config.maxTokens,
-        json: options.json,
         web: options.web,
         signal: options.signal,
         onDelta: options.onDelta
@@ -66,7 +63,6 @@ async function member(
         const result = await speak(seat, {
             system: panelSystem(config.web),
             prompt: config.prompt,
-            json: false,
             web: config.web,
             config,
             signal: bounded.signal,
@@ -101,33 +97,75 @@ async function member(
     }
 }
 
-async function analyse(
+interface Fused {
+    analysis: Analysis
+    answer: string
+}
+
+function cut(text: string): Fused | null {
+    const at = text.indexOf(ANSWER_MARK)
+    if (at < 0) return null
+    const head = text.slice(0, at)
+    const answer = text.slice(at + ANSWER_MARK.length).trim()
+    if (!answer) return null
+    try {
+        return { analysis: parseAnalysis(head), answer }
+    } catch {
+        return null
+    }
+}
+
+async function fuse(
     config: RunConfig,
     survivors: MemberResult[],
+    events: RunEvents,
     signal: AbortSignal
-): Promise<{ analysis: Analysis; usage: Usage; ms: number }> {
-    const prompt = analysisPrompt(config.prompt, survivors)
+): Promise<{ fused: Fused; usage: Usage; ms: number; streamed: boolean }> {
+    const prompt = fusionPrompt(config.prompt, survivors)
     let nudge = ''
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
+        if (attempt) {
+            events.stage('answer')
+            events.stage('analysis')
+        }
+        const started = Date.now()
+        let buffer = ''
+        let past = false
+
         const result = await speak(config.analyst, {
-            system: ANALYST_SYSTEM + nudge,
+            system: FUSION_SYSTEM + nudge,
             prompt,
-            json: true,
             web: false,
             config,
             signal,
-            onDelta: () => undefined
+            onDelta(text) {
+                if (past) {
+                    events.answerDelta(text)
+                    return
+                }
+                buffer += text
+                const at = buffer.indexOf(ANSWER_MARK)
+                if (at < 0) return
+                past = true
+                try {
+                    events.analysis(parseAnalysis(buffer.slice(0, at)), NO_USAGE, Date.now() - started)
+                } catch {
+                    past = false
+                    return
+                }
+                events.stage('answer')
+                const tail = buffer.slice(at + ANSWER_MARK.length).replace(/^\s*\n/, '')
+                if (tail) events.answerDelta(tail)
+            }
         })
-        try {
-            return { analysis: parseAnalysis(result.text), usage: result.usage, ms: result.ms }
-        } catch (error) {
-            if (attempt === 1) throw error
-            nudge = RETRY_NUDGE
-        }
+
+        const fused = cut(result.text)
+        if (fused) return { fused, usage: result.usage, ms: result.ms, streamed: past }
+        nudge = FUSION_NUDGE
     }
 
-    throw new Error('the analyst never returned usable JSON')
+    throw new Error('the analyst never returned a readable analysis and answer')
 }
 
 export async function runFusion(
@@ -159,22 +197,15 @@ export async function runFusion(
     if (!survivors.length) throw new Error('every panel member failed')
 
     events.stage('analysis')
-    const analysed = await analyse(config, survivors, signal)
-    accumulate(summary, analysed.usage)
-    events.analysis(analysed.analysis, analysed.usage, analysed.ms)
+    const { fused, usage, ms, streamed } = await fuse(config, survivors, events, signal)
+    accumulate(summary, usage)
 
-    events.stage('answer')
-    const answer = await speak(config.analyst, {
-        system: WRITER_SYSTEM,
-        prompt: answerPrompt(config.prompt, analysed.analysis),
-        json: false,
-        web: false,
-        config,
-        signal,
-        onDelta: (text) => events.answerDelta(text)
-    })
-    accumulate(summary, answer.usage)
+    if (!streamed) {
+        events.analysis(fused.analysis, usage, ms)
+        events.stage('answer')
+        events.answerDelta(fused.answer)
+    }
 
     summary.ms = Date.now() - started
-    events.done(answer.text, summary)
+    events.done(fused.answer, summary)
 }

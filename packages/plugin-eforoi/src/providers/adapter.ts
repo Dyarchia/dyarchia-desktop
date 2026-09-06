@@ -6,7 +6,6 @@ export interface CompletionRequest {
     prompt: string
     temperature: number
     maxTokens: number
-    json: boolean
     web: boolean
     signal: AbortSignal
     effort: string | null

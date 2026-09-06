@@ -1,3 +1,7 @@
+export { highlight, knownLanguage } from './highlight.js'
+export type { TokenKind } from './highlight.js'
+export { renderMarkdown } from './markdown.js'
+
 export interface PanelDescriptor {
     id: string
     title: string

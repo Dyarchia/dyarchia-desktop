@@ -48,6 +48,7 @@ export interface RunConfig {
     prompt: string
     panel: Seat[]
     analyst: Seat
+    web: boolean
     temperature: number
     maxTokens: number
 }
@@ -66,6 +67,7 @@ export interface MemberResult {
     text: string
     usage: Usage
     ms: number
+    searches: number
     error?: string
 }
 

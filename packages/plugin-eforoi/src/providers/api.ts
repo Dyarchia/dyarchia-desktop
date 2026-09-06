@@ -79,14 +79,15 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
     }
 
     let text = ''
+    let searches = 0
 
-    for (let turn = 0; turn <= MAX_WEB_USES; turn += 1) {
+    for (let turn = 0; turn <= (request.web ? MAX_WEB_USES : 0); turn += 1) {
         const stream = client.messages.stream(
             {
                 model: request.model,
                 max_tokens: request.maxTokens,
                 system: request.system,
-                tools: anthropicTools(request.model),
+                ...(request.web ? { tools: anthropicTools(request.model) } : {}),
                 ...(request.effort
                     ? { output_config: { effort: request.effort as AnthropicEffort } }
                     : {}),
@@ -101,6 +102,7 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
         usage.inputTokens += message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0)
         usage.outputTokens += message.usage.output_tokens
         usage.cachedTokens += message.usage.cache_read_input_tokens ?? 0
+        searches += message.content.filter((block) => block.type === 'server_tool_use').length
 
         text += message.content
             .filter((block): block is Anthropic.TextBlock => block.type === 'text')
@@ -116,7 +118,7 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
     }
 
     usage.costUsd = cost(ANTHROPIC_PRICES, request.model, usage)
-    return { text, usage, ms: Date.now() - started }
+    return { text, usage, ms: Date.now() - started, searches }
 }
 
 async function openaiComplete(apiKey: string, request: CompletionRequest): Promise<CompletionResult> {
@@ -129,7 +131,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
             instructions: request.system,
             input: [{ role: 'user' as const, content: request.prompt }],
             max_output_tokens: request.maxTokens,
-            tools: [{ type: 'web_search' }],
+            ...(request.web ? { tools: [{ type: 'web_search' as const }] } : {}),
             ...(request.effort ? { reasoning: { effort: request.effort as OpenAIEffort } } : {}),
             stream: true
         },
@@ -137,6 +139,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
     )
 
     let text = ''
+    let searches = 0
     const usage: Usage = {
         inputTokens: 0,
         outputTokens: 0,
@@ -151,6 +154,10 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
             request.onDelta(event.delta)
             continue
         }
+        if (event.type === 'response.web_search_call.completed') {
+            searches += 1
+            continue
+        }
         if (event.type !== 'response.completed') continue
         const totals = event.response.usage
         if (!totals) continue
@@ -160,7 +167,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
     }
 
     usage.costUsd = cost(OPENAI_PRICES, request.model, usage)
-    return { text, usage, ms: Date.now() - started }
+    return { text, usage, ms: Date.now() - started, searches }
 }
 
 function missing(variable: string): RouteStatus {

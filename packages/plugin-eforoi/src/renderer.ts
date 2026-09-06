@@ -26,6 +26,8 @@ const DONE_ICON =
 
 const SEATS_KEY = 'eforoi:seats'
 const LATENCY_KEY = 'eforoi:latency'
+const WEB_KEY = 'eforoi:web'
+const PAINT_MS = 140
 const MIN_PANEL = 2
 const MAX_PANEL = 5
 
@@ -189,6 +191,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     let catalog: Catalog | null = null
     let state: Stored = read<Stored>(SEATS_KEY, { panel: [], analyst: null })
     let latency = read<Record<string, number>>(LATENCY_KEY, {})
+    let web = read<boolean>(WEB_KEY, false)
     let store: PanelStore = { path: '', items: [] }
     let runId: string | null = null
     let answerText = ''
@@ -208,6 +211,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const nameInput = el('input', 'dya-field dya-field--sm eforoi-name')
     const refreshButton = el('button', 'dya-button', 'Refresh')
     const clearButton = el('button', 'dya-button', 'Clear')
+    const webButton = el('button', 'dya-button', 'Web')
     const status = el('span', 'dya-value eforoi-meta')
 
     clearButton.title = 'empty the board'
@@ -227,7 +231,21 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     legendActions.append(panelsButton, saveButton, addButton, removeButton, nameInput)
     panelLegend.append(el('span', 'dya-label', 'Panel'), legendActions)
 
-    bar.append(runButton, refreshButton, clearButton, el('span', 'eforoi-spacer'), status)
+    const renderWeb = (): void => {
+        webButton.setAttribute('aria-pressed', String(web))
+        webButton.title = web
+            ? 'members may search the web: slower, and each search is billed'
+            : 'members answer from what they know, with no network round trips'
+    }
+
+    webButton.addEventListener('click', () => {
+        web = !web
+        write(WEB_KEY, web)
+        renderWeb()
+    })
+
+    renderWeb()
+    bar.append(runButton, refreshButton, clearButton, webButton, el('span', 'eforoi-spacer'), status)
 
     const promptColumn = el('div', 'eforoi-column')
     promptColumn.dataset.side = 'prompt'
@@ -399,6 +417,42 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     }
 
     const cards = new Map<string, Card>()
+    const painting = new Map<string, number>()
+
+    const draw = (card: Card): void => {
+        const following =
+            card.body.scrollHeight - card.body.scrollTop - card.body.clientHeight < 40
+        card.body.classList.add('dya-prose')
+        card.body.innerHTML = renderMarkdown(card.raw)
+        if (following) card.body.scrollTop = card.body.scrollHeight
+    }
+
+    const paint = (id: string, card: Card): void => {
+        if (painting.has(id)) return
+        painting.set(
+            id,
+            window.setTimeout(() => {
+                painting.delete(id)
+                draw(card)
+            }, PAINT_MS)
+        )
+    }
+
+    const forget = (id: string): void => {
+        const timer = painting.get(id)
+        if (timer !== undefined) window.clearTimeout(timer)
+        painting.delete(id)
+    }
+
+    const settle = (id: string, card: Card): void => {
+        forget(id)
+        draw(card)
+    }
+
+    const stopPainting = (): void => {
+        for (const timer of painting.values()) window.clearTimeout(timer)
+        painting.clear()
+    }
 
     const makeCard = (id: string, title: string, role: string, expanded: boolean, host: HTMLElement): Card => {
         const wrapper = el('div', 'dya-card eforoi-card')
@@ -456,6 +510,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     }
 
     const prepare = (): void => {
+        stopPainting()
         cards.clear()
         grid.replaceChildren()
         members.replaceChildren()
@@ -552,6 +607,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const memberNote = (result: MemberResult): string => {
         const parts = [seconds(result.ms), result.seat.mode === 'api' ? 'API' : 'plan']
+        if (result.searches) parts.push(`${result.searches} web`)
         if (result.usage.costUsd) parts.push(money(result.usage.costUsd))
         if (result.usage.outputTokens) parts.push(`${result.usage.outputTokens} out`)
         return parts.join(' · ')
@@ -566,31 +622,35 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
             const card = cards.get(event.stage === 'analysis' ? 'analysis' : 'answer')
             if (event.stage !== 'panel' && card) {
                 card.dot.dataset.state = 'running'
+                card.raw = ''
                 card.body.replaceChildren()
             }
             return
         }
 
         if (event.type === 'member:delta') {
-            const card = cards.get(`member-${event.index}`)
+            const id = `member-${event.index}`
+            const card = cards.get(id)
             if (!card) return
             card.dot.dataset.state = 'running'
-            card.body.textContent = (card.body.textContent ?? '') + event.text
+            card.raw += event.text
+            paint(id, card)
             return
         }
 
         if (event.type === 'member:done') {
-            const card = cards.get(`member-${event.result.index}`)
+            const id = `member-${event.result.index}`
+            const card = cards.get(id)
             if (!card) return
             card.dot.dataset.state = event.result.error ? 'error' : 'done'
             card.note.textContent = event.result.error ?? memberNote(event.result)
             if (event.result.error) {
+                forget(id)
                 card.raw = event.result.error
                 card.body.replaceChildren(el('div', 'eforoi-error', event.result.error))
             } else {
                 card.raw = event.result.text
-                card.body.classList.add('dya-prose')
-                card.body.innerHTML = renderMarkdown(event.result.text)
+                settle(id, card)
                 remember(event.result.seat.key, event.result.ms)
             }
             return
@@ -611,7 +671,8 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
             if (!card) return
             card.dot.dataset.state = 'running'
             answerText += event.text
-            card.body.textContent = answerText
+            card.raw = answerText
+            paint('answer', card)
             return
         }
 
@@ -621,8 +682,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                 card.dot.dataset.state = 'done'
                 card.note.textContent = `written by ${labelOf(state.analyst)}`
                 card.raw = answerText || event.answer
-                card.body.classList.add('dya-prose')
-                card.body.innerHTML = renderMarkdown(card.raw)
+                settle('answer', card)
             }
             const spend =
                 event.summary.meteredCostUsd > 0
@@ -675,6 +735,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                     prompt: promptBox.value,
                     panel: state.panel,
                     analyst: state.analyst,
+                    web,
                     temperature: 0.7,
                     maxTokens: 16000
                 })
@@ -799,6 +860,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     })
 
     clearButton.addEventListener('click', () => {
+        stopPainting()
         status.textContent = ''
         cards.clear()
         grid.replaceChildren()
@@ -822,6 +884,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     return () => {
         unsubscribe()
+        stopPainting()
         if (runId) void ctx.invoke('cancel', runId)
         root.remove()
     }

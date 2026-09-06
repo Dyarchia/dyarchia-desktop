@@ -50,6 +50,7 @@ An ESM module exporting activate(ctx). The context offers:
     invoke(channel, ...args)      calls a handler in the plugin's main module
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
+    onThemeChange(listener)       fires when the theme changes; returns unsubscribe
 
 The SDK also exports one function, outside the context:
 
@@ -90,9 +91,11 @@ Notes:
   token is resolvable and a plugin must never write a literal colour, font or radius, nor
   restyle a dya-* selector. See docs/ui.md for the order, the class list and the rules.
 - ctx.token covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
-  resolved string. token('accent') and token('--dya-accent') both return the value. A
-  theme redefines colour tokens and never rules, so there is nothing to branch on and
-  nothing to subscribe to.
+  resolved string. token('accent') and token('--dya-accent') both return the value. What
+  it returns is a copy, so it goes stale when the theme changes: pair it with
+  ctx.onThemeChange and resolve again in the listener, unsubscribing from the dispose. A
+  panel drawn entirely with dya-* classes and var() needs neither, and must not branch on
+  which theme is mounted in any case.
 
 
 ### The framework rule

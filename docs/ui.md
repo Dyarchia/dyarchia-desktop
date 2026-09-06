@@ -75,9 +75,15 @@ into that same document, so:
   the right of the title bar set it, [theme.ts](apps/shell/src/renderer/src/theme.ts) owns
   the read and the apply, and the choice lives in `localStorage` under `dyarchia:theme`,
   read in module scope before React renders so the first paint is already correct. A theme
-  redefines colour tokens and nothing else, so a plugin never reads it, never branches on
-  it and never subscribes to it — it writes `var(--dya-surface-1)` and gets whichever theme
-  is mounted. The CSS never consults `prefers-color-scheme` and there is no light theme.
+  redefines colour tokens and nothing else, so a plugin never reads it and never branches
+  on it — it writes `var(--dya-surface-1)` and gets whichever theme is mounted. The CSS
+  never consults `prefers-color-scheme` and there is no light theme.
+- **A plugin that paints outside the DOM subscribes.** The cascade cannot reach a canvas,
+  a WebGL context or xterm's theme object, so a plugin that resolved tokens through
+  `ctx.token` holds stale strings after a switch. `ctx.onThemeChange(listener)` fires after
+  the attribute moves and returns an unsubscribe to call from the panel's dispose. The
+  listener receives nothing on purpose: the answer is always to resolve the tokens again,
+  never to branch on which theme is mounted.
 
 ```mermaid
 flowchart TD
@@ -230,8 +236,10 @@ export function activate(ctx: PluginContext): void {
 }
 ```
 
-`'accent'` and `'--dya-accent'` both resolve. There is nothing to subscribe to and
-nothing to unsubscribe from.
+`'accent'` and `'--dya-accent'` both resolve. A resolved string is a copy, so anything
+held across a theme switch is stale: pair `ctx.token` with `ctx.onThemeChange` and resolve
+again inside the listener. The terminal is the worked example — it rebuilds xterm's
+`ITheme` and reassigns `terminal.options.theme`, and unsubscribes in its dispose.
 
 The terminal plugin is the worked example: it builds xterm's `ITheme` from
 `token('surface-1')`, `token('text')` and `token('accent-soft')` over a fixed 16-colour

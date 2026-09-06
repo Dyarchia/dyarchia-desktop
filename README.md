@@ -12,10 +12,9 @@ own panels — draggable, resizable, and persistent across sessions.
   recompiling to add or remove functionality.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
-- The look is not the shell's: it is dyarchia-kanon, the shared design system, vendored
-  into packages/kanon and linked once. Plugins inherit its dya-* component classes and its
-  tokens, and are expected to reference them rather than reimplement them. The vendored
-  copy is re-synced automatically before dev, build and package.
+- The look is not the shell's: it is kanon, the shared design system in packages/kanon,
+  linked once. Plugins inherit its dya-* component classes and its tokens, and are expected
+  to reference them rather than reimplement them.
 - The system carries two dark themes, Gi and Oneiro, switched from the title bar. A theme
   redefines colour tokens and never rules, so no plugin reads it or branches on it.
 
@@ -52,19 +51,20 @@ The pieces:
         apps/
             shell/               Electron app (main, preload, renderer)
         packages/
-            kanon/               @dyarchia/kanon - vendored design system and token lookup
+            kanon/               @dyarchia/kanon - the design system, its spec, and token lookup
             sdk/                 @dyarchia/sdk - contract types and injectStyles
             pysdk/               dyarchia_sdk - python plugin runtime
             plugin-terminal/     embedded terminal (xterm.js + node-pty)
             plugin-docviewer/    native file picker + markdown, mermaid, source toggle
             plugin-player/       audio/video player (dyarchia-media://)
+            plugin-eforoi/       a panel of models with one of them comparing the answers
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes
             install-plugins.mjs  copies plugins to %APPDATA%/dyarchia/plugins
-            sync-kanon.mjs       re-copies the design system from the dyarchia-kanon checkout
+            build-plugin.mjs     the shared esbuild invocation every plugin builds with
         docs/
             plugins.md           how to write a plugin
             ui.md                the UI contract: components, tokens, rules
@@ -96,13 +96,6 @@ Install plugins for the packaged app:
 
 ```bash
 node scripts/install-plugins.mjs
-```
-
-Re-sync the design system by hand. predev, prebuild and prepackage already run it, so
-this is only needed to pull an upstream change into an app that is already running:
-
-```bash
-node scripts/sync-kanon.mjs
 ```
 
 There is no test runner, linter or formatter. Type checking is manual, as every tsconfig

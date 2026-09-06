@@ -1,4 +1,4 @@
-export type TokenKind = 'kw' | 'str' | 'num' | 'com' | 'fn' | 'pun'
+type TokenKind = 'kw' | 'str' | 'num' | 'com' | 'fn' | 'pun'
 
 interface Rule {
     kind: TokenKind | 'word' | 'plain'
@@ -95,7 +95,7 @@ const SHELL = grammar(
         { kind: 'num', re: sticky(String.raw`\$\{[^}]*\}|\$[\w@*#?]+`) },
         NUMBER
     ],
-    'break case cd cat cd continue do done echo elif else esac exit export fi for function ' +
+    'break case cat cd continue do done echo elif else esac exit export fi for function ' +
         'grep if in local read return set shift source then unset until while'
 )
 
@@ -169,10 +169,6 @@ const BY_LANGUAGE: Record<string, Grammar> = {
     html: MARKUP,
     xml: MARKUP,
     svg: MARKUP
-}
-
-export function knownLanguage(language: string): boolean {
-    return language.toLowerCase() in BY_LANGUAGE
 }
 
 function wrap(kind: TokenKind, text: string): string {

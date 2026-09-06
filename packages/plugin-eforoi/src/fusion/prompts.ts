@@ -1,5 +1,8 @@
 import type { MemberResult } from '../types.js'
 
+export const ANALYSIS_MARK = '===ANALYSIS==='
+export const ANSWER_MARK = '===ANSWER==='
+
 const SCHEMA = `{
   "consensus": [{ "claim": string, "supported_by": number[] }],
   "contradictions": [{ "topic": string, "positions": [{ "member": number, "position": string }] }],
@@ -27,64 +30,66 @@ export function panelSystem(web: boolean): string {
     ].join(' ')
 }
 
-export const ANALYST_SYSTEM = [
-    'You are given a question and several independent answers to it, each written by a different model',
-    'that could not see the others.',
-    'You do not merge them and you do not answer the question yourself. You compare them.',
+export const FUSION_SYSTEM = [
+    'Write everything you produce in the same language the question is written in. This',
+    'overrides every other instinct about language, and it governs the JSON exactly as much as',
+    'the prose: if the question is in Spanish, every claim, topic, position and insight inside',
+    'the JSON is in Spanish too.',
     '',
-    'Return one JSON object and nothing else: no prose before or after, no markdown fence.',
-    'It must match this shape exactly:',
+    'You are given a question and several independent answers to it, each written by a different',
+    'model that could not see the others. You produce two things in one reply, in this order,',
+    'each introduced by its marker alone on a line:',
+    '',
+    ANALYSIS_MARK,
+    'one JSON object, no markdown fence, no prose before or after it',
+    ANSWER_MARK,
+    'the final answer, in markdown',
+    '',
+    'The JSON must match this shape exactly:',
     '',
     SCHEMA,
     '',
-    'Rules:',
+    'Rules for the analysis:',
     '- consensus: claims all or most members make. supported_by holds their 1-based numbers.',
     '- contradictions: points where members take positions that cannot both be true.',
     '- partial_coverage: substantive points only some members raised.',
     '- unique_insights: something exactly one member contributed that is worth keeping.',
     '- blind_spots: what the question needed and no member addressed.',
     '- Judge substance, not wording. The same claim in different words is consensus, not contradiction.',
-    '- An empty array is a valid and often correct value for any field. Do not invent findings.'
-].join('\n')
-
-export const WRITER_SYSTEM = [
-    'Write the answer in the same language the question is written in. This overrides every',
-    'other instinct about language: if the question is in English, answer in English.',
+    '- An empty array is a valid and often correct value for any field. Do not invent findings.',
     '',
-    'You are given a question and a structured comparison of several independent answers to it.',
-    'Write the final answer.',
-    '',
+    'Rules for the answer:',
+    '- The analysis is your reasoning about the answers; the answers themselves are still in front',
+    '  of you. Write from both. An answer thinner than the analysis that produced it has failed.',
     '- Treat consensus as high confidence and state it plainly.',
     '- Where the members contradicted each other, do not paper over it: state the disagreement,',
     '  then take a position and say why.',
     '- Fold in the unique insights that survive scrutiny. Drop the ones that do not.',
     '- Address the blind spots if you can, and say so if you cannot.',
-    '- Write the answer itself. Do not describe the panel, the members, the comparison or the process.',
-    '  Someone asked a question and wants it answered.',
-    '- Never introduce a fact that appears in neither the analysis nor the question.',
+    '- Write the answer itself. Do not describe the panel, the members, the comparison or the',
+    '  process. Someone asked a question and wants it answered.',
+    '- Never introduce a fact that appears in neither the question nor any member answer.',
     '  Where members disagree on a specific value, name the competing values and say which is',
     '  better supported. Do not average them, and do not invent a third.',
-    '- Do not open with a heading that restates the question, and do not sign off.',
-    '- Answer in the language the question was asked in.'
+    '- Do not open with a heading that restates the question, and do not sign off.'
+].join('\n')
+
+export const FUSION_NUDGE = [
+    '',
+    '',
+    `Your previous reply could not be read. Emit ${ANALYSIS_MARK} on its own line, then the JSON`,
+    `object alone, then ${ANSWER_MARK} on its own line, then the answer. Nothing else.`
 ].join('\n')
 
 function escape(text: string): string {
     return text.replace(/]]>/g, ']]&gt;')
 }
 
-export function analysisPrompt(question: string, members: MemberResult[]): string {
+export function fusionPrompt(question: string, members: MemberResult[]): string {
     const blocks = members.map((member) => {
         const model = `${member.seat.key} (${member.seat.mode})`
         return `<member id="${member.index}" model="${model}">\n${escape(member.text)}\n</member>`
     })
 
     return [`<question>\n${escape(question)}\n</question>`, '', ...blocks].join('\n')
-}
-
-export function answerPrompt(question: string, analysis: unknown): string {
-    return [
-        `<question>\n${escape(question)}\n</question>`,
-        '',
-        `<analysis>\n${JSON.stringify(analysis, null, 2)}\n</analysis>`
-    ].join('\n')
 }

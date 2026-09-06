@@ -55,6 +55,10 @@ A run is one-shot. Every model is asked once, the analyst — the seat the panel
 the comparison, and nothing carries to the next Run. No member ever sees another member's
 answer, which is what keeps the panel worth polling.
 
+The analyst does both in a single call, emitting the comparison as JSON, a marker, then the
+answer. It used to be two calls, which made it the slower half of a run and left the writer
+working from the JSON alone, having never read a word any member wrote.
+
 Follow-up turns existed and were removed. A panel is not a chat: a follow-up is a new
 question, and a new question deserves a fresh panel. `Clear` empties the board.
 

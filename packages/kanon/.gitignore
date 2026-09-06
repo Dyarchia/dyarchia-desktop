@@ -1,0 +1,43 @@
+# Dependencies and build output
+node_modules/
+dist/
+out/
+build/
+coverage/
+*.tsbuildinfo
+
+# Agent and session tooling
+.superpowers/
+.claude/
+CLAUDE.md
+.cursor/
+.aider*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating system
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and environment
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+.env
+.env.*
+!.env.example
+
+# Temporary
+*.tmp
+*.bak
+.cache/
+scratch/
+tmp/
+

@@ -69,13 +69,7 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
     const client = new Anthropic({ apiKey })
     const started = Date.now()
 
-    const messages: Anthropic.MessageParam[] = [
-        ...request.history.map((turn): Anthropic.MessageParam => ({
-            role: turn.role,
-            content: turn.content
-        })),
-        { role: 'user', content: request.prompt }
-    ]
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: request.prompt }]
     const usage: Usage = {
         inputTokens: 0,
         outputTokens: 0,
@@ -122,7 +116,7 @@ async function anthropicComplete(apiKey: string, request: CompletionRequest): Pr
     }
 
     usage.costUsd = cost(ANTHROPIC_PRICES, request.model, usage)
-    return { text, usage, ms: Date.now() - started, session: null }
+    return { text, usage, ms: Date.now() - started }
 }
 
 async function openaiComplete(apiKey: string, request: CompletionRequest): Promise<CompletionResult> {
@@ -133,10 +127,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
         {
             model: request.model,
             instructions: request.system,
-            input: [
-                ...request.history.map((turn) => ({ role: turn.role, content: turn.content })),
-                { role: 'user' as const, content: request.prompt }
-            ],
+            input: [{ role: 'user' as const, content: request.prompt }],
             max_output_tokens: request.maxTokens,
             tools: [{ type: 'web_search' }],
             ...(request.effort ? { reasoning: { effort: request.effort as OpenAIEffort } } : {}),
@@ -169,7 +160,7 @@ async function openaiComplete(apiKey: string, request: CompletionRequest): Promi
     }
 
     usage.costUsd = cost(OPENAI_PRICES, request.model, usage)
-    return { text, usage, ms: Date.now() - started, session: null }
+    return { text, usage, ms: Date.now() - started }
 }
 
 function missing(variable: string): RouteStatus {

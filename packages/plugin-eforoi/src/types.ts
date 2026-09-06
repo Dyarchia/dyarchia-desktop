@@ -45,7 +45,6 @@ export interface PanelStore {
 }
 
 export interface RunConfig {
-    conversation: string
     prompt: string
     panel: Seat[]
     analyst: Seat
@@ -104,8 +103,6 @@ export interface RunSummary {
     meteredCostUsd: number
     inputTokens: number
     outputTokens: number
-    turn: number
-    maxTurns: number
 }
 
 export const EMPTY_ANALYSIS: Analysis = {

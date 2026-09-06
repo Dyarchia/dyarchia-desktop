@@ -150,6 +150,23 @@ export const STYLES = `
 .eforoi-card[data-role='answer'] { grid-column: span 6; border-color: var(--dya-accent-soft); }
 .eforoi-card[data-role='analysis'] { grid-column: span 6; }
 
+.eforoi-members {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(var(--eforoi-members, 3), minmax(0, 1fr));
+    align-items: start;
+    gap: var(--dya-space-2);
+}
+
+.eforoi-members > .eforoi-card {
+    grid-column: auto;
+}
+
+.eforoi-card[data-role='member'] .eforoi-body {
+    max-height: min(46vh, 520px);
+    overflow-y: auto;
+}
+
 .eforoi-card-head { padding-right: var(--dya-space-2); }
 
 .eforoi-card-head:hover {
@@ -218,30 +235,14 @@ export const STYLES = `
 
 .eforoi-body[hidden] { display: none; }
 .eforoi-body[data-structured='true'] { padding: 0; white-space: normal; }
-.eforoi-body[data-prose='true'] { white-space: normal; }
-.eforoi-body[data-prose='true'] > *:first-child { margin-top: 0; }
-.eforoi-body[data-prose='true'] > *:last-child { margin-bottom: 0; }
+.eforoi-body.dya-prose { white-space: normal; }
 
-.eforoi-body p { margin: 0 0 var(--dya-space-2); }
-.eforoi-body h4 { margin: var(--dya-space-4) 0 var(--dya-space-2); }
-
-.eforoi-body ul,
 .eforoi-section ul {
     margin: 0;
     padding-left: var(--dya-space-4);
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-1);
-}
-
-.eforoi-body ul { margin-bottom: var(--dya-space-2); }
-
-.eforoi-body code {
-    padding: 0 3px;
-    border-radius: var(--dya-radius-sm);
-    background: var(--dya-surface-2);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
 }
 
 .eforoi-error {
@@ -301,10 +302,12 @@ export const STYLES = `
     .eforoi-column[data-side='panel'] { grid-column: span 12; }
     .eforoi-card[data-role='answer'],
     .eforoi-card[data-role='analysis'] { grid-column: span 12; }
+    .eforoi-members { grid-template-columns: repeat(min(var(--eforoi-members, 3), 2), minmax(0, 1fr)); }
 }
 
 @container (max-width: 720px) {
     .eforoi-seat { grid-template-columns: 64px minmax(0, 1fr) 168px; }
     .eforoi-seat > .eforoi-cell:nth-last-child(-n + 3) { display: none; }
+    .eforoi-members { grid-template-columns: minmax(0, 1fr); }
 }
 `

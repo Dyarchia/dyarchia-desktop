@@ -624,6 +624,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                 card.dot.dataset.state = 'running'
                 card.raw = ''
                 card.body.replaceChildren()
+                if (event.stage === 'answer') answerText = ''
             }
             return
         }

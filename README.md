@@ -16,6 +16,8 @@ own panels — draggable, resizable, and persistent across sessions.
   into packages/kanon and linked once. Plugins inherit its dya-* component classes and its
   tokens, and are expected to reference them rather than reimplement them. The vendored
   copy is re-synced automatically before dev, build and package.
+- The system carries two dark themes, Gi and Oneiro, switched from the title bar. A theme
+  redefines colour tokens and never rules, so no plugin reads it or branches on it.
 
 ```mermaid
 flowchart LR
@@ -55,7 +57,7 @@ The pieces:
             pysdk/               dyarchia_sdk - python plugin runtime
             plugin-sample/       minimal reference plugin
             plugin-terminal/     embedded terminal (xterm.js + node-pty)
-            plugin-docviewer/    native file picker + markdown, with mermaid diagrams
+            plugin-docviewer/    native file picker + markdown, mermaid, source toggle
             plugin-player/       audio/video player (dyarchia-media://)
             plugin-pyinfo/       reference plugin with a python main module
         scripts/
@@ -117,6 +119,11 @@ npx tsc -p apps/shell
     Layout (dev)          %APPDATA%/@dyarchia/shell/layout.json
     Layout (portable)     %APPDATA%/dyarchia/layout.json
     Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
+    Theme choice          renderer localStorage, key dyarchia:theme
+
+The theme is the one preference that does not go through the layout store. It is read
+synchronously before the first paint, and an IPC round trip would put a frame of the wrong
+theme on screen at every launch.
 
 
 ## 5. Debugging

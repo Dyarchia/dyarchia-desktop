@@ -51,6 +51,14 @@ An ESM module exporting activate(ctx). The context offers:
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
 
+The SDK also exports one function, outside the context:
+
+    injectStyles(pluginId, css)   adds the plugin's style tag once, id
+                                  dyarchia-<pluginId>-styles, ignored on later calls
+
+Call it at the top of the mount rather than at module scope, so a plugin that is never
+opened never touches the document.
+
 The mount receives the panel's DOM container and optionally returns a cleanup function:
 
 ```typescript
@@ -182,16 +190,32 @@ Bundles are built with esbuild, ESM format. The renderer is served over the
 dyarchia-plugin:// protocol and the main module is imported as a Node module from the
 plugin folder.
 
-```bash
-esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js
-esbuild src/main.ts --bundle --platform=node --format=esm --external:node-pty --outfile=dist/main.js
+```json
+"scripts": {
+    "build": "pnpm build:renderer && pnpm build:main",
+    "build:renderer": "node ../../scripts/build-plugin.mjs renderer",
+    "build:main": "node ../../scripts/build-plugin.mjs main"
+}
 ```
+
+[scripts/build-plugin.mjs](scripts/build-plugin.mjs) holds the esbuild invocation for every
+plugin, so format, externals and output paths are decided once. It takes the entry to
+build and two optional flags:
+
+    Flag           Effect
+    -----------    ----------------------------------------------------------
+    --splitting    emits the entry plus chunks into dist/, for dynamic import()
+    --css-text     loads .css imports as text, for a library stylesheet
+
+A plugin with a need outside those two writes its own esbuild line rather than growing a
+third flag. The terminal does exactly that for its pty host, which is CJS and has a native
+external, and it is the only such case.
 
 Build rules:
 
 - Native dependencies such as node-pty are marked external and copied into node_modules/
   inside the installed plugin folder; everything else is bundled.
-- Library CSS is imported as text (--loader:.css=text) and injected into a style tag.
+- Library CSS is imported as text (--css-text) and handed to injectStyles.
 - The Python module is not bundled: main.py is copied as-is next to the manifest.
 - A heavy dependency that only some documents need goes behind a dynamic import(), and
   the renderer is then built with --splitting --outdir=dist instead of --outfile.
@@ -235,7 +259,7 @@ flowchart TD
 2. renderer.ts with an activate that registers at least one panel, in plain DOM. If it
    bundles a framework instead, the dispose it returns unmounts that framework, and the
    reason it was needed is written in the plugin's README.
-3. A build script with esbuild, producing dist/.
+3. Build scripts that call scripts/build-plugin.mjs, producing dist/.
 4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
    console errors. Rebuild the plugin after every edit: a renderer change needs a window
    reload, a main module change needs the app restarted, because main modules are

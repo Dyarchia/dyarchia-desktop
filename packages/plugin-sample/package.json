@@ -4,7 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "esbuild src/renderer.ts --bundle --format=esm --outfile=dist/renderer.js"
+        "build": "node ../../scripts/build-plugin.mjs renderer"
     },
     "devDependencies": {
         "@dyarchia/sdk": "workspace:*",

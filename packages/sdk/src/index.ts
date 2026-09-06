@@ -27,3 +27,12 @@ export interface PluginMainContext {
     handle(channel: string, handler: (...args: unknown[]) => unknown | Promise<unknown>): void
     broadcast(channel: string, ...args: unknown[]): void
 }
+
+export function injectStyles(pluginId: string, css: string): void {
+    const id = `dyarchia-${pluginId}-styles`
+    if (document.getElementById(id)) return
+    const style = document.createElement('style')
+    style.id = id
+    style.textContent = css
+    document.head.appendChild(style)
+}

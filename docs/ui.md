@@ -2,9 +2,9 @@
 
 Every dyarchia product renders against the same design system: two dark themes over one
 token contract, one pair of typefaces, one grammar of relief, and a layer of `dya-*`
-component classes the products consume without redefining them. This document is the desktop side of that
-contract — what the shell provides, and what a plugin must respect to look like it
-belongs.
+component classes the products consume without redefining them. This document is the
+desktop side of that contract — what the shell provides, and what a plugin must respect
+to look like it belongs.
 
 The system itself is specified in the `dyarchia-kanon` repository. This document never
 restates its values; it says how they reach a plugin.
@@ -34,7 +34,7 @@ Path                          What it is
 packages/kanon/css/           the stylesheet, copied verbatim from upstream
 packages/kanon/fonts/         IBM Plex Sans Condensed and Mono, six static woff2
 packages/kanon/src/index.ts   token(), for code that needs a resolved value
-scripts/sync-kanon.mjs        re-copies css/ and fonts/ from the upstream checkout
+scripts/sync-kanon.mjs        re-copies css/, fonts/ and README.md from upstream
 ```
 
 `css/` and `fonts/` are never edited here. A change to the system is a change upstream,
@@ -71,10 +71,13 @@ into that same document, so:
 - **The reset already applied.** `box-sizing`, margin zeroing, focus ring, scrollbars
   and the reduced-motion block are in force before the plugin runs.
 - **The theme is an attribute, and the shell owns it.** The system carries two dark
-  themes: `Gi` on `:root` and `Oneiro` under `[data-theme="oneiro"]`. A theme redefines
-  colour tokens and nothing else, so a plugin never reads it, never branches on it and
-  never subscribes to it — it writes `var(--dya-surface-1)` and gets whichever theme is
-  mounted. The CSS never consults `prefers-color-scheme` and there is no light theme.
+  themes: `Gi` on `:root` and `Oneiro` under `[data-theme="oneiro"]`. The two buttons at
+  the right of the title bar set it, [theme.ts](apps/shell/src/renderer/src/theme.ts) owns
+  the read and the apply, and the choice lives in `localStorage` under `dyarchia:theme`,
+  read in module scope before React renders so the first paint is already correct. A theme
+  redefines colour tokens and nothing else, so a plugin never reads it, never branches on
+  it and never subscribes to it — it writes `var(--dya-surface-1)` and gets whichever theme
+  is mounted. The CSS never consults `prefers-color-scheme` and there is no light theme.
 
 ```mermaid
 flowchart TD
@@ -124,6 +127,8 @@ Surface                     Class
 -------------------------   ---------------------------------------------------
 Title bar                   dya-bar dya-bar--flush, dya-brand,
                             dya-key / dya-key--active
+Theme toggle                dya-key, two SVG glyphs at currentColor, separated
+                            from the panel toggles by a 1px rule
 Dock tab                    dya-tab, aria-selected drives the active state
 Group actions               dya-key
 Loading and empty states    dya-loading, dya-empty
@@ -135,6 +140,8 @@ pyinfo field and button     dya-field, dya-button
 pyinfo key and value        dya-key-label, dya-mono
 player title                dya-mono
 docviewer prose             dya-text, plus local rules for injected markdown
+docviewer mode toggle       dya-key, eye and pencil, present only while the
+                            open file is markdown
 ```
 
 What is left in a plugin style tag after that is layout and the markdown the viewer does

@@ -402,6 +402,27 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
 
     const cards = new Map<string, Card>()
     const painting = new Map<string, number>()
+    const ticking = new Map<string, number>()
+
+    const stopTicking = (id?: string): void => {
+        for (const [key, timer] of ticking) {
+            if (id !== undefined && key !== id) continue
+            window.clearInterval(timer)
+            ticking.delete(key)
+        }
+    }
+
+    const tick = (id: string, card: Card, prefix: string): void => {
+        stopTicking(id)
+        const started = Date.now()
+        card.note.textContent = `${prefix} · 0.0s`
+        ticking.set(
+            id,
+            window.setInterval(() => {
+                card.note.textContent = `${prefix} · ${seconds(Date.now() - started)}`
+            }, 100)
+        )
+    }
 
     const draw = (card: Card): void => {
         const following =
@@ -436,6 +457,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     const stopPainting = (): void => {
         for (const timer of painting.values()) window.clearTimeout(timer)
         painting.clear()
+        stopTicking()
     }
 
     const makeCard = (id: string, title: string, role: string, expanded: boolean, host: HTMLElement): Card => {
@@ -609,6 +631,12 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
                 card.raw = ''
                 card.body.replaceChildren()
                 if (event.stage === 'answer') answerText = ''
+                const analyst = labelOf(state.analyst)
+                tick(
+                    event.stage,
+                    card,
+                    event.stage === 'analysis' ? `comparing with ${analyst}` : `writing with ${analyst}`
+                )
             }
             return
         }
@@ -642,10 +670,13 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         }
 
         if (event.type === 'analysis') {
+            stopTicking('analysis')
             const card = cards.get('analysis')
             if (card) {
                 card.dot.dataset.state = 'done'
-                card.note.textContent = `compared by ${labelOf(state.analyst)} · ${seconds(event.ms)}`
+                const again = event.attempt > 1 ? ` · attempt ${event.attempt}` : ''
+                card.note.textContent =
+                    `compared by ${labelOf(state.analyst)} · ${seconds(event.ms)}${again}`
             }
             renderAnalysis(event.analysis)
             return
@@ -662,6 +693,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         }
 
         if (event.type === 'done') {
+            stopTicking()
             const card = cards.get('answer')
             if (card) {
                 card.dot.dataset.state = 'done'
@@ -682,6 +714,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
         }
 
         if (event.type === 'error') {
+            stopTicking()
             status.textContent = ''
             const card = cards.get('answer')
             if (card) {
@@ -876,6 +909,7 @@ function mount(ctx: PluginContext, container: HTMLElement): () => void {
     return () => {
         unsubscribe()
         stopPainting()
+        stopTicking()
         if (runId) void ctx.invoke('cancel', runId)
         root.remove()
     }

@@ -87,6 +87,24 @@ reply that cannot be split is retried once with the format restated, and the ret
 the two stages so a partial answer from the first attempt is cleared rather than appended
 to.
 
+**The analyst is bounded and the bound covers both attempts.** `ANALYST_DEADLINE_MS` is 300
+seconds against one `AbortController` wrapping the whole of `fuse`, not each call inside it,
+because a per-attempt deadline would let a retry double the worst case rather than cap it.
+
+It needs its own number rather than sharing `MEMBER_DEADLINE_MS`, and the reason is
+structural: a member answers a one-line question, while the analyst reads that question plus
+every surviving answer. A run where three members produced 4891, 427 and 3849 tokens hands
+the analyst more than nine thousand tokens of input before it writes anything. Comparing its
+time against a member's is not comparing like with like, and a small model can be slower here
+than any seat was.
+
+That run is also why the attempt count reaches the panel. The analyst took 388.9 seconds
+against members at 21, 37 and 38, and nothing said whether that was one slow call or two
+ordinary ones — a free model that misses the marker on the first try pays for the prompt
+twice, invisibly. The analysis card now reads `attempt 2` when it happens, and the card
+counts elapsed seconds while the stage runs rather than sitting on a static label for minutes.
+
+
 The JSON is rendered in the panel, and it is often more useful than the prose: it is the
 only place the disagreement is visible as data.
 

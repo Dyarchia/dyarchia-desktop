@@ -55,8 +55,8 @@ async function runOnce(prompt: string, seats: Seat[]): Promise<void> {
                         `${(result.ms / 1000).toFixed(1)}s ${result.usage.outputTokens} out ` +
                         `${result.searches} searches`
                 ),
-            analysis: (analysis, _usage, ms) => {
-                console.log(`analysis in ${(ms / 1000).toFixed(1)}s`)
+            analysis: (analysis, _usage, ms, attempt) => {
+                console.log(`analysis in ${(ms / 1000).toFixed(1)}s, attempt ${attempt}`)
                 console.log(JSON.stringify(analysis, null, 2).slice(0, 1400))
             },
             answerDelta: (text) => process.stdout.write(text),

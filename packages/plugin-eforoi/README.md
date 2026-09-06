@@ -59,6 +59,11 @@ The analyst does both in a single call, emitting the comparison as JSON, a marke
 answer. It used to be two calls, which made it the slower half of a run and left the writer
 working from the JSON alone, having never read a word any member wrote.
 
+It reads every surviving answer, so it is routinely the slowest seat even on a fast model —
+three members producing 4891, 427 and 3849 tokens hand it over nine thousand tokens of input.
+It carries its own 300 second deadline covering both attempts, the card counts seconds while
+it runs, and a reply that had to be retried says `attempt 2`.
+
 Follow-up turns existed and were removed. A panel is not a chat: a follow-up is a new
 question, and a new question deserves a fresh panel. `Clear` empties the board.
 

@@ -12,7 +12,7 @@
 <body>
 <div id="host"></div>
 <script type="module">
-import { activate } from '/packages/plugin-eforoi/dist/renderer.js'
+const { activate } = await import(`/packages/plugin-eforoi/dist/renderer.js?t=${Date.now()}`)
 
 const CATALOG = {
     entries: [
@@ -155,7 +155,8 @@ async function drive(config) {
         } })
     }
     emit({ type: 'stage', stage: 'analysis' })
-    emit({ type: 'analysis', analysis: ANALYSIS, ms: 18300, usage: {} })
+    await sleep(3200)
+    emit({ type: 'analysis', analysis: ANALYSIS, ms: 388900, usage: {}, attempt: 2 })
     emit({ type: 'stage', stage: 'answer' })
     await stream('answer', null, ANSWER)
     emit({ type: 'done', answer: ANSWER, summary: {

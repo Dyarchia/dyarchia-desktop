@@ -120,7 +120,7 @@ export type RunEvent =
     | { runId: string; type: 'stage'; stage: Stage }
     | { runId: string; type: 'member:delta'; index: number; text: string }
     | { runId: string; type: 'member:done'; result: MemberResult }
-    | { runId: string; type: 'analysis'; analysis: Analysis; usage: Usage; ms: number }
+    | { runId: string; type: 'analysis'; analysis: Analysis; usage: Usage; ms: number; attempt: number }
     | { runId: string; type: 'answer:delta'; text: string }
     | { runId: string; type: 'done'; answer: string; summary: RunSummary }
     | { runId: string; type: 'error'; message: string }

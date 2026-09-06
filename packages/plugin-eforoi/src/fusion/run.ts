@@ -9,12 +9,13 @@ export interface RunEvents {
     stage(stage: Stage): void
     memberDelta(index: number, text: string): void
     memberDone(result: MemberResult): void
-    analysis(analysis: Analysis, usage: Usage, ms: number): void
+    analysis(analysis: Analysis, usage: Usage, ms: number, attempt: number): void
     answerDelta(text: string): void
     done(answer: string, summary: RunSummary): void
 }
 
 export const MEMBER_DEADLINE_MS = 120_000
+export const ANALYST_DEADLINE_MS = 300_000
 
 interface SpeakOptions {
     system: string
@@ -112,56 +113,90 @@ function cut(text: string): Fused | null {
     }
 }
 
+interface Fusion {
+    fused: Fused
+    usage: Usage
+    ms: number
+    streamed: boolean
+    attempt: number
+}
+
+async function attempt(
+    config: RunConfig,
+    prompt: string,
+    round: number,
+    events: RunEvents,
+    signal: AbortSignal
+): Promise<Fusion | null> {
+    const started = Date.now()
+    let buffer = ''
+    let past = false
+
+    const result = await speak(config.analyst, {
+        system: FUSION_SYSTEM + (round > 1 ? FUSION_NUDGE : ''),
+        prompt,
+        config,
+        signal,
+        onDelta(text) {
+            if (past) {
+                events.answerDelta(text)
+                return
+            }
+            buffer += text
+            const at = buffer.indexOf(ANSWER_MARK)
+            if (at < 0) return
+            past = true
+            try {
+                events.analysis(parseAnalysis(buffer.slice(0, at)), NO_USAGE, Date.now() - started, round)
+            } catch {
+                past = false
+                return
+            }
+            events.stage('answer')
+            const tail = buffer.slice(at + ANSWER_MARK.length).replace(/^\s*\n/, '')
+            if (tail) events.answerDelta(tail)
+        }
+    })
+
+    const fused = cut(result.text)
+    if (!fused) return null
+    return { fused, usage: result.usage, ms: result.ms, streamed: past, attempt: round }
+}
+
 async function fuse(
     config: RunConfig,
     survivors: MemberResult[],
     events: RunEvents,
     signal: AbortSignal
-): Promise<{ fused: Fused; usage: Usage; ms: number; streamed: boolean }> {
+): Promise<Fusion> {
     const prompt = fusionPrompt(config.prompt, survivors)
-    let nudge = ''
+    const bounded = new AbortController()
+    const relay = (): void => bounded.abort()
+    signal.addEventListener('abort', relay, { once: true })
+    const deadline = setTimeout(() => bounded.abort(), ANALYST_DEADLINE_MS)
 
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-        if (attempt) {
-            events.stage('answer')
-            events.stage('analysis')
-        }
-        const started = Date.now()
-        let buffer = ''
-        let past = false
-
-        const result = await speak(config.analyst, {
-            system: FUSION_SYSTEM + nudge,
-            prompt,
-            config,
-            signal,
-            onDelta(text) {
-                if (past) {
-                    events.answerDelta(text)
-                    return
-                }
-                buffer += text
-                const at = buffer.indexOf(ANSWER_MARK)
-                if (at < 0) return
-                past = true
-                try {
-                    events.analysis(parseAnalysis(buffer.slice(0, at)), NO_USAGE, Date.now() - started)
-                } catch {
-                    past = false
-                    return
-                }
+    try {
+        for (let round = 1; round <= 2; round += 1) {
+            if (round > 1) {
                 events.stage('answer')
-                const tail = buffer.slice(at + ANSWER_MARK.length).replace(/^\s*\n/, '')
-                if (tail) events.answerDelta(tail)
+                events.stage('analysis')
             }
-        })
-
-        const fused = cut(result.text)
-        if (fused) return { fused, usage: result.usage, ms: result.ms, streamed: past }
-        nudge = FUSION_NUDGE
+            const done = await attempt(config, prompt, round, events, bounded.signal)
+            if (done) return done
+        }
+        throw new Error('the analyst never returned a readable analysis and answer')
+    } catch (error) {
+        if (bounded.signal.aborted && !signal.aborted) {
+            throw new Error(
+                `the analyst did not finish within ${ANALYST_DEADLINE_MS / 1000}s — it reads every ` +
+                    'member answer, so a small model can be slower here than any seat was'
+            )
+        }
+        throw error
+    } finally {
+        clearTimeout(deadline)
+        signal.removeEventListener('abort', relay)
     }
-
-    throw new Error('the analyst never returned a readable analysis and answer')
 }
 
 export async function runFusion(
@@ -193,11 +228,11 @@ export async function runFusion(
     if (!survivors.length) throw new Error('every panel member failed')
 
     events.stage('analysis')
-    const { fused, usage, ms, streamed } = await fuse(config, survivors, events, signal)
+    const { fused, usage, ms, streamed, attempt } = await fuse(config, survivors, events, signal)
     accumulate(summary, usage)
 
     if (!streamed) {
-        events.analysis(fused.analysis, usage, ms)
+        events.analysis(fused.analysis, usage, ms, attempt)
         events.stage('answer')
         events.answerDelta(fused.answer)
     }

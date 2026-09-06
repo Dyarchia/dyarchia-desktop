@@ -90,16 +90,19 @@ The `Save` button's tooltip shows the resolved path on the machine it is running
 
 ## Install
 
+This is a workspace package. From the repository root:
+
 ```bash
 pnpm install
-pnpm build
-pnpm install:plugin
+pnpm --filter @dyarchia/plugin-eforoi build
 ```
 
-`install:plugin` copies the manifest and `dist/` into the shell's plugin directory
-(`%APPDATA%/dyarchia/plugins/eforoi` on Windows). Restart the shell afterwards: the
-renderer bundle is cached by the `dyarchia-plugin://` protocol and the main module is only
-read at startup.
+In development that is enough: the shell discovers plugins under `packages/` directly. For
+the packaged app, `node scripts/install-plugins.mjs` copies the manifest and `dist/` into
+`%APPDATA%/dyarchia/plugins/eforoi`.
+
+Restart the shell afterwards rather than reloading the window: the renderer bundle is
+cached by the `dyarchia-plugin://` protocol and the main module is only read at startup.
 
 
 ## Driving it without the shell
@@ -107,7 +110,7 @@ read at startup.
 The orchestration layer runs headless, which is how it is tested:
 
 ```bash
-pnpm probe catalog
+pnpm --filter @dyarchia/plugin-eforoi probe catalog
 pnpm probe run "anthropic/claude-opus-5@subscription" "openai/gpt-5.6-sol@subscription" "anthropic/claude-opus-5@subscription" "your prompt || a follow-up that depends on the first"
 ```
 

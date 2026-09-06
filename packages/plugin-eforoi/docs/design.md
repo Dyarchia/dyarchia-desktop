@@ -438,10 +438,11 @@ with a focused filter box that matches on both model name and group.
 
 ## 11. Styling by reference, not by copy
 
-The plugin imports nothing from `dyarchia-kanon` and nothing from `dyarchia-desktop`. It
-does not need to: the panel mounts into the shell's own document, and the shell links kanon
-there. Both halves of that system are inherited for free — the `--dya-*` custom properties
-on the root, and the `dya-*` component classes.
+The plugin imports no CSS and no token. It does not need to: the panel mounts into the
+shell's own document, and the shell links kanon there. Both halves of that system are
+inherited for free — the `--dya-*` custom properties on the root, and the `dya-*` component
+classes. `packages/kanon` being a sibling in the same workspace changes nothing about this:
+the inheritance is ambient, through the document, not through a module graph.
 
 So the plugin declares classes where it used to declare rules:
 

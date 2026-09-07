@@ -169,35 +169,14 @@ export function activate(ctx: PluginMainContext): void {
         return path ? await worker.progress(path) : null
     })
 
-    ctx.handle('diagnostics', async () => {
-        const found: { slug: string; cardId: string; problem: string }[] = []
-        const now = Date.now()
-        const sessions = await agents.snapshot()
+    ctx.handle('diagnostics', () => dispatch.diagnose())
 
-        for (const meta of await boards.list()) {
-            if (meta.archived) continue
-            const file = await board.load(meta.slug)
-            for (const card of file.cards) {
-                if (card.status === 'ready' && now - card.updatedAt > 30 * 60_000) {
-                    found.push({ slug: meta.slug, cardId: card.id, problem: 'claimable for 30 minutes' })
-                }
-                if (card.status !== 'running') continue
-                const run = card.runs[card.runs.length - 1]
-                if (!run?.sessionId) continue
-                const session = agents.find(sessions, run.sessionId)
-                if (agents.waiting(session)) {
-                    found.push({ slug: meta.slug, cardId: card.id, problem: 'waiting on a person' })
-                }
-                if (sessions === null) {
-                    found.push({
-                        slug: meta.slug,
-                        cardId: card.id,
-                        problem: 'liveness unknown, claim extended'
-                    })
-                }
-            }
-        }
-        return found
+    ctx.handle('unblock', async (slug, id, rev) => {
+        const target = await open(String(slug))
+        const card = await board.unblock(target, String(id), Number(rev))
+        await board.promote(target, Date.now())
+        changed(target)
+        return card
     })
 
     ipcMain.handle('plugin:kanban:attach', async (event, ...args: unknown[]) => {

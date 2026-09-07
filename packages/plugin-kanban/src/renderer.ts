@@ -10,6 +10,12 @@ import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
 import type { BoardMeta, BoardPayload, Card, KanbanEvent, Rules, Status } from './types.js'
 
+interface Diagnostic {
+    slug: string
+    cardId: string | null
+    problem: string
+}
+
 interface CardProgress {
     slug: string
     cardId: string
@@ -82,6 +88,17 @@ function tokens(count: number): string {
     return `${(count / 1_000_000).toFixed(2)}M`
 }
 
+function when(at: number): string {
+    const date = new Date(at)
+    const day = date.toDateString() === new Date().toDateString() ? '' : `${date.getDate()}/${date.getMonth() + 1} `
+    return `${day}${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function local(at: number): string {
+    const shifted = new Date(at - new Date(at).getTimezoneOffset() * 60_000)
+    return shifted.toISOString().slice(0, 16)
+}
+
 function order(cards: Card[]): Card[] {
     return cards.slice().sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
 }
@@ -99,6 +116,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     let gesturing = false
     let deferred = false
     let disposed = false
+    let diagnostics: Diagnostic[] = []
 
     const nodes = new Map<string, CardNode>()
     const columns = new Map<Status, Column>()
@@ -126,8 +144,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     tickButton.type = 'button'
     tickButton.title = 'sweep every board now instead of waiting for the tick'
     const spacer = el('span', 'kanban-spacer')
+    const healthButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'health')
+    healthButton.type = 'button'
+    healthButton.hidden = true
     const meter = el('span', 'kanban-meta')
-    bar.append(boardButton, titleField, addButton, tickButton, spacer, meter)
+    bar.append(boardButton, titleField, addButton, tickButton, spacer, healthButton, meter)
 
     const main = el('div', 'kanban-main')
     const board = el('div', 'kanban-board')
@@ -244,6 +265,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             if (live.outputTokens) bits.push(`${tokens(live.inputTokens + live.outputTokens)} tok`)
         } else {
             if (card.priority) bits.push(`p${card.priority}`)
+            if (status === 'blocked' && card.blockKind) bits.push(card.blockKind.replace('_', ' '))
+            if (status === 'scheduled' && card.scheduledFor) bits.push(when(card.scheduledFor))
             if (blocked) bits.push(`${card.parents.length} open`)
             if (card.comments.length) bits.push(`${card.comments.length} notes`)
             bits.push(ago(card.updatedAt, clock))
@@ -344,6 +367,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         bar.hidden = false
         boardButton.textContent = meta.name
         reconcile()
+        void health().catch(() => undefined)
     }
 
     const renderAbsence = (missing: string | null): void => {
@@ -684,7 +708,62 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             }
         }
 
+        const scheduleGroup = el('div', 'kanban-group')
+        if (shown(card) === 'ready' || shown(card) === 'scheduled') {
+            scheduleGroup.append(el('span', 'dya-label', 'park until'))
+            const row = el('div', 'kanban-row')
+            const at = el('input', 'dya-field dya-field--sm')
+            at.type = 'datetime-local'
+            if (card.scheduledFor) at.value = local(card.scheduledFor)
+            const park = el('button', 'dya-button dya-button--quiet dya-button--sm', 'park')
+            park.type = 'button'
+            park.addEventListener('click', () => {
+                const at2 = at.value ? new Date(at.value).getTime() : 0
+                if (!at2 || Number.isNaN(at2)) {
+                    say('that is not a time this card can wait for')
+                    return
+                }
+                void invoke('updateCard', meta?.slug, card.id, { scheduledFor: at2 })
+                    .then((updated) => {
+                        const next = updated as Card
+                        if (next.status === 'scheduled') return refresh()
+                        return invoke('moveCard', meta?.slug, card.id, next.rev, 'scheduled').then(
+                            () => refresh()
+                        )
+                    })
+                    .catch(fail)
+            })
+            row.append(at, park)
+            scheduleGroup.appendChild(row)
+        }
+
         const actions = el('div', 'kanban-row')
+
+        if (shown(card) === 'blocked') {
+            const back = el('button', 'dya-button dya-button--sm', 'unblock')
+            back.type = 'button'
+            back.title = `returns it to ${card.sourcePhase ?? 'ready'}, or to todo while parents are open`
+            back.addEventListener('click', () => {
+                void invoke<Card>('unblock', meta?.slug, card.id, card.rev)
+                    .then((next) => {
+                        say(`${next.title} returned to ${next.status}`)
+                        return refresh()
+                    })
+                    .catch(fail)
+            })
+            actions.append(back)
+        }
+
+        if (shown(card) === 'review') {
+            const approve = el('button', 'dya-button dya-button--sm', 'approve')
+            approve.type = 'button'
+            approve.addEventListener('click', () => move(card.id, 'done'))
+            const changes = el('button', 'dya-button dya-button--quiet dya-button--sm', 'request changes')
+            changes.type = 'button'
+            changes.addEventListener('click', () => move(card.id, 'ready'))
+            actions.append(approve, changes)
+        }
+
         if (shown(card) === 'running') {
             const stop = el('button', 'dya-button dya-button--sm dya-button--danger', 'stop')
             stop.type = 'button'
@@ -712,7 +791,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         actions.append(moveButton, remove)
 
-        body.append(titleGroup, bodyGroup, priorityGroup, depsGroup, runsGroup, actions, notesGroup)
+        body.append(
+            titleGroup,
+            bodyGroup,
+            priorityGroup,
+            depsGroup,
+            scheduleGroup,
+            runsGroup,
+            actions,
+            notesGroup
+        )
         drawer.append(head, stage, body)
         syncTerminal(card)
     }
@@ -905,6 +993,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     boardButton.addEventListener('click', () => openBoardMenu(boardButton))
+    healthButton.addEventListener('click', () => showHealth())
     tickButton.addEventListener('click', () => {
         void invoke('dispatchNow')
             .then(() => refresh())
@@ -915,6 +1004,34 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (event.key === 'Enter') add()
     })
     board.addEventListener('keydown', onBoardKey)
+
+    const health = async (): Promise<void> => {
+        const found = await invoke<Diagnostic[]>('diagnostics')
+        const mine = found.filter((entry) => entry.slug === meta?.slug || entry.slug === '')
+        healthButton.hidden = mine.length === 0
+        healthButton.textContent = mine.length ? `health ${mine.length}` : 'health'
+        diagnostics = mine
+    }
+
+    const showHealth = (): void => {
+        if (!diagnostics.length) return
+        openMenu({
+            anchor: healthButton,
+            rows: diagnostics.map((entry, index) => ({
+                key: entry.cardId ?? '',
+                label: entry.cardId ? (cardById(entry.cardId)?.title ?? entry.cardId) : 'this machine',
+                group: entry.problem,
+                direct: true,
+                leaves: [{ label: entry.problem, value: String(index) }]
+            })),
+            filter: 'filter problems',
+            onPick: (row) => {
+                if (!row.key) return
+                select(row.key)
+                focusCard(row.key)
+            }
+        })
+    }
 
     const ticker = window.setInterval(() => {
         clock = Date.now()

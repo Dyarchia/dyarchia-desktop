@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as agents from './agents.js'
-import type { BlockKind, BoardMeta, Card } from './types.js'
+import type { BlockKind, Card } from './types.js'
 
 const MARKER = '===KANBAN==='
 const LAUNCH_TIMEOUT_MS = 60_000
@@ -63,7 +63,6 @@ export async function head(workdir: string): Promise<string | null> {
 }
 
 export function brief(
-    board: BoardMeta,
     card: Card,
     parents: Card[],
     workspace: string,
@@ -142,7 +141,6 @@ export function brief(
 }
 
 export async function start(
-    board: BoardMeta,
     card: Card,
     parents: Card[],
     runId: string,
@@ -162,7 +160,7 @@ export async function start(
     const isolate = (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
     const predicted = isolate ? join(workspace, '.claude', 'worktrees', isolate) : workspace
 
-    const text = brief(board, card, parents, predicted, isolate !== null)
+    const text = brief(card, parents, predicted, isolate !== null)
     await writeFile(briefPath, text, 'utf-8')
     const prompt =
         text.length <= INLINE_LIMIT

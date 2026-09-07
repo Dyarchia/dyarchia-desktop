@@ -133,6 +133,7 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
         protocolViolations: 0,
         blockRecurrences: 0,
         blockKind: null,
+        lastBlockKind: null,
         sourcePhase: null,
         locked: false,
         createdAt: now,
@@ -188,9 +189,29 @@ export async function moveCard(slug: string, id: string, rev: number, to: Status
         card.blockKind = null
         card.sourcePhase = null
     }
-    if (to === 'triage') card.sourcePhase = null
+    if (to === 'triage') {
+        card.sourcePhase = null
+        card.lastBlockKind = null
+        card.blockRecurrences = 0
+    }
 
     card.status = to
+    touch(card)
+    await save(slug, file)
+    return card
+}
+
+export async function unblock(slug: string, id: string, rev: number): Promise<Card> {
+    const file = await load(slug)
+    const card = find(file, id)
+
+    if (card.rev !== rev) throw new Error('that card changed while you were unblocking it')
+    if (card.status !== 'blocked') throw new Error('that card is not blocked')
+
+    const open = blockedBy(file, card).length > 0
+    card.status = open ? 'todo' : (card.sourcePhase ?? 'ready')
+    card.blockKind = null
+    card.sourcePhase = null
     touch(card)
     await save(slug, file)
     return card

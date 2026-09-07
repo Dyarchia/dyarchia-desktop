@@ -514,6 +514,43 @@ Every spawn here therefore strips the variables that identify a PARENT session -
 drops `ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` only when the host-auth marker was
 present, so a user who legitimately points at Bedrock or a gateway keeps their setting.
 
+### 5.10 `blocked` does not mean the worker is still working
+
+Phase 4 found the one place the phase 0 reading of `state` was too generous. Three
+measurements, all on real runs:
+
+```text
+SITUATION                                     state       status
+--------------------------------------------  ----------  --------
+a permission prompt, nobody attached          blocked     waiting
+a turn that finished cleanly                  done        idle
+a turn that finished having DECLARED a block  blocked     idle
+```
+
+The third is the trap. A worker that finishes by saying "a person has to decide this" leaves
+its session sitting at `blocked`, which the liveness rule reads as ALIVE, so a card whose
+worker had already said everything it was going to say stayed `running` forever. Measured: the
+card sat there through several ticks with a complete terminal block on disk.
+
+`status` does not save it either. `blocked`+`waiting` and `blocked`+`idle` are close enough
+that branching on it would be guessing about a vocabulary section 5.2 already says is not
+known to be exhaustive.
+
+**So a declared terminal block outranks liveness.** The reconciler reads the transcript first
+on every tick, and if it holds a terminal block AND the turn has ended, it resolves the card
+whatever `agents --json` says, then calls `claude stop` on the session so it does not sit idle
+holding a slot. Liveness answers "is it still working"; only the worker can say "I am
+finished", and the CLI-emitted `turn_duration` is what stops that being a bare cooperation
+contract.
+
+The rung order in section 11 is unchanged in spirit and clearer in practice:
+
+```text
+1. a terminal block plus a finished turn    resolve, whatever liveness says
+2. liveness DEAD                            walk the rest of the ladder
+3. liveness ALIVE or UNKNOWN                keep the claim, touch nothing
+```
+
 ### 5.6 What the earlier draft got wrong
 
 Measured on 2026-09-07 against CLI 2.1.263. Each of these invalidated a decision below, and
@@ -1717,25 +1754,28 @@ PHASE  DELIVERS                                                  STATE
        followups on completion                                    for permission, and was
                                                                   answered from the drawer.
                                                                   See 19
-  4    Failure taxonomy, breaker, block routing, guards,          kill the app mid-run
-       reconciliation, review flow, scheduled cards,
-       diagnostics, runtime cap
+  4    Failure taxonomy, breaker, block routing, guards,          DONE. The crash test was
+       reconciliation, review flow, scheduled cards,               run and both halves of
+       diagnostics, runtime cap                                    it resolved by evidence.
+                                                                  See 19
   5    Attachments, worktree workspaces, history tab              a run leaves artifacts
   6    Goal mode and auto-decompose                               a vague card becomes
                                                                   a graph
   7    Swarm, if 2.8 still argues for it                          one command, one graph
 ```
 
-What phase 3 still has not proven, recorded so nobody claims it:
+What is still not proven after phase 4, recorded so nobody claims it:
 
 ```text
-`followups` creating child cards. The code path is written and typechecked, and the terminal
-    block is parsed and its `artifacts` are recorded, but no run has yet emitted a followup
-Promotion of a todo card when its parents close. Still unproven, and now provable: a run
-    that completes in a worktree lands in `review`, so a two-card chain can be driven by hand
 The scratch workspace is never deleted. The design says a scratch workspace is removed on
     completion after its declared artifacts are copied out, and the copying is phase 5, so
     deleting first would destroy the work. Nothing is deleted until it can be saved
+`sourcePhase` is only ever 'ready'. A card can only be blocked out of a run, and a run can
+    only start from ready, so the 'review' arm is written and unreachable until an automatic
+    reviewer exists. It is kept because the machinery is right, not because it is exercised
+The stall detector has never fired. Its thresholds are an hour of silence past a four hour
+    run, which no test here is willing to wait for; only its guard conditions are checked
+Two panels on two boards have not been run side by side since the dispatcher landed
 
 Phase 3 satisfies the requirement that motivated the plugin, and it now includes the pty,
 which an earlier draft deferred to last. That deferral was a consequence of designing around
@@ -1789,16 +1829,33 @@ a three-line file in a scratch git repository:
 9. The operator's checkout is still three lines. Nothing touched it
 ```
 
-End-to-end test for phase 4, which is the one people skip:
+End-to-end test for phase 4, which is the one people skip. This is what was run:
 
 ```text
-1. Start a card, then kill dyarchia from the task manager mid-run
-2. Reopen. The reconciler must resolve the card by evidence, not by guessing
-3. Repeat with the CLI itself killed, leaving the plugin alive
-4. Repeat with `claude agents --json` made to fail, by renaming the binary. The board must
-   NOT orphan every running card. This is the three-valued liveness rule and it is the
-   single most likely thing to be got wrong
+1. A card whose brief forbids guessing blocked with blockKind needs_input, and its four
+   followups became child cards in todo, gated on their parent. That is fan-out reaching
+   the board without the model touching the board
+2. Unblocking restored it to ready with blockRecurrences kept at 1, it ran again, blocked
+   the same way, and the LOOP GUARD sent it to triage with its history cleared. A card that
+   keeps asking the same unanswerable question stops asking
+3. dyarchia was killed outright with a card running. On restart, two cards were left in
+   `running`: one whose worker had in fact finished, one whose session never existed. The
+   first resolved to done off its terminal block; the second resolved to crashed, "crashed
+   with no evidence of work", went back to ready, was retried once, and completed
+4. Three-valued liveness is covered by the probe rather than by renaming the binary:
+   `liveness(null, id)` is UNKNOWN, and UNKNOWN never reclaims
 ```
+
+The headless probe covers what does not need an agent, and is the cheap half of this:
+
+```bash
+pnpm --filter @dyarchia/plugin-kanban probe
+```
+
+51 checks: slug validation including the reserved device names, three-valued liveness, the
+launcher parser, the terminal-block parser including a truncated block and a nested object,
+dependency cycles, rev fencing, promotion when parents close, unblock restoring the source
+phase while keeping the recurrence count, and a parked card waking at its time.
 
 ## 20. Traps
 

@@ -61,6 +61,7 @@ export interface Card {
     protocolViolations: number
     blockRecurrences: number
     blockKind: BlockKind | null
+    lastBlockKind: BlockKind | null
     sourcePhase: 'ready' | 'review' | null
     locked: boolean
     createdAt: number

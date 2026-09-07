@@ -21,7 +21,7 @@ behind every claim about the Claude Code CLI. Read it before changing anything h
 
 ## 1. What is built
 
-Phases 0 to 3 of the design's section 18.
+Phases 0 to 4 of the design's section 18.
 
 ```text
 AREA                     STATE
@@ -46,6 +46,14 @@ Worker                   a real `claude --bg` session in a git worktree of the p
 Terminal                 `claude attach` in a pty, in a utilityProcess, over a
                          MessagePort. The operator watches and answers permission
                          prompts in the agent's own interface
+Failure handling         crash, protocol violation, runtime cap, silence past a four
+                         hour run, circuit breaker, respawn guard, block routing by
+                         kind, and a block-loop guard that sends a card to triage
+                         after it blocks the same way twice
+Fan-out                  `followups` in the terminal block become child cards gated
+                         on the card that proposed them
+Health                   a strip in the bar naming what is wrong: cards waiting on
+                         you, cards claimable and never claimed, liveness unknown
 ```
 
 There is deliberately no way to move a card to `done` by hand. `done` means a worker finished.
@@ -66,6 +74,10 @@ Spawned with the PARENT session's environment stripped, so a dyarchia launched f
     Claude Code session does not hand its workers a proxy they cannot authenticate against
 Never deleted. `claude rm` refuses a session whose worktree holds unmerged commits, so the
     plugin does not call it at all: `stop` is the only lifecycle verb it uses
+Stopped as soon as it declares itself finished, so a resolved card does not leave a session
+    sitting idle. A DECLARED TERMINAL BLOCK OUTRANKS LIVENESS: a worker that ends its turn by
+    blocking leaves its session at state 'blocked', which liveness reads as alive, so waiting
+    for liveness to say 'dead' left such cards running forever. See design.md 5.10
 ```
 
 A run that completes inside a worktree lands its card in **review**, not done, because there
@@ -81,6 +93,16 @@ pnpm --filter @dyarchia/plugin-kanban build
 ```bash
 npx tsc -p packages/plugin-kanban
 ```
+
+```bash
+pnpm --filter @dyarchia/plugin-kanban probe
+```
+
+The probe is the headless half of verification: esbuild through an electron stub, then plain
+node, no window and no IPC. 51 checks over slug validation, three-valued liveness, both
+parsers, dependency cycles, rev fencing, promotion, unblock and scheduled cards. It writes to
+a temp userData and takes about a second. Everything it covers is everything that does not
+need a real agent, which is why it is worth keeping green.
 
 A **main module change needs the whole app restarted**, not a window reload. The shell's watch
 mode does not cover plugin sources at all, so rebuild by hand.
@@ -127,7 +149,7 @@ slug first, because there is no ambient current board in the main module.
 ```text
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
-dispatchNow   stopCard      runEvents     diagnostics
+dispatchNow   stopCard      unblock       runEvents      diagnostics
 attach        negotiates a MessagePort for the pty, never terminal data
 event         broadcast, a discriminated union the renderer filters by slug
 ```

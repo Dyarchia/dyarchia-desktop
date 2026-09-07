@@ -168,13 +168,25 @@ operator's own codex history:
 Route       Wrote to                                   Still does
 ---------   ----------------------------------------   ----------
 codex       ~/.codex/sessions/<date>/rollout-*.jsonl   no
-claude      ~/.claude/projects/<scratch-slug>/         yes
+claude      ~/.claude/projects/<scratch-slug>/         no
 opencode    ~/.local/share/opencode/storage            yes
 ```
 
-Claude and opencode still write where they normally write; neither offers an equivalent
-flag. Claude's are at least segregated, since sessions are keyed by working directory and
-every member runs in the plugin's own scratch directory.
+Claude has no flag for it: `claude -p` persists every headless run as a full session
+transcript, and a panel of four seats puts four rows into the operator's resume picker,
+each titled with the same prompt. So the plugin removes them itself. Every stream-json
+event carries `session_id`, the transcript is named after it, and once the child has
+exited its file is deleted from whichever project directory it landed in. Two seats of
+the same run cannot collide, since each holds its own id.
+
+The scratch directory is the second half of that. Sessions are keyed by working
+directory, so a member running there is filed away from the operator's own projects, and
+it inherits no repository: a seat that ran in the desktop checkout read the memory index,
+the skill listing and the agent listing before answering, and spent 27k input tokens to
+say `Four`. From scratch the same seat spends 1.7k.
+
+Deletion is the guarantee and segregation is the fallback, for the run that is killed
+before its child exits.
 
 `Clear` empties the board. It is not `New` renamed: there is no conversation left to
 forget, so it removes the cards and nothing else.
@@ -444,8 +456,9 @@ codex       --ignore-user-config --ignore-rules   config.toml, execpolicy rules
 opencode    --pure                                external plugins
 ```
 
-Session files are the one thing deliberately *not* dropped — conversation depends on them.
-See [2. Conversation](#2-conversation) for where each CLI writes them.
+No flag governs the session file a CLI writes on its way out. See
+[2. One prompt, one run](#2-one-prompt-one-run) for what each route leaves behind and what
+the plugin deletes afterwards.
 
 `--safe-mode` is the right instrument because it keeps authentication working. The adjacent
 `--bare` also strips context but forces API-key auth, which would silently move a

@@ -1,0 +1,250 @@
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename } from 'node:fs/promises'
+import { isAbsolute, join } from 'node:path'
+import { boardPath, boardRoot, runsRoot, writeAtomic } from './boards.js'
+import { allows, isClosed } from './rules.js'
+import type { BoardFile, Card, CardDraft, CardPatch, Comment, Status } from './types.js'
+
+const VERSION = 1
+const BACKUPS = 3
+
+const cache = new Map<string, BoardFile>()
+
+function empty(): BoardFile {
+    return { version: VERSION, cards: [] }
+}
+
+export async function load(slug: string): Promise<BoardFile> {
+    const held = cache.get(slug)
+    if (held) return held
+
+    let file = empty()
+    try {
+        const parsed = JSON.parse(await readFile(boardPath(slug), 'utf-8')) as BoardFile
+        if (Array.isArray(parsed?.cards)) file = { version: VERSION, cards: parsed.cards }
+    } catch {
+        file = empty()
+    }
+
+    cache.set(slug, file)
+    return file
+}
+
+async function rotate(slug: string): Promise<void> {
+    for (let index = BACKUPS - 1; index >= 0; index -= 1) {
+        const from =
+            index === 0 ? boardPath(slug) : join(boardRoot(slug), `board.bak.${index - 1}.json`)
+        const to = join(boardRoot(slug), `board.bak.${index}.json`)
+        await rename(from, to).catch(() => undefined)
+    }
+}
+
+export async function save(slug: string, file: BoardFile): Promise<void> {
+    await mkdir(boardRoot(slug), { recursive: true })
+    await mkdir(runsRoot(slug), { recursive: true })
+    await rotate(slug)
+    await writeAtomic(boardPath(slug), JSON.stringify(file, null, 4))
+    cache.set(slug, file)
+}
+
+export async function cards(slug: string): Promise<Card[]> {
+    return (await load(slug)).cards
+}
+
+export function find(file: BoardFile, id: string): Card {
+    const card = file.cards.find((entry) => entry.id === id)
+    if (!card) throw new Error(`no card '${id}'`)
+    return card
+}
+
+function touch(card: Card): Card {
+    card.rev += 1
+    card.updatedAt = Date.now()
+    return card
+}
+
+function assertNoCycle(file: BoardFile, id: string, parents: string[]): void {
+    const byId = new Map(file.cards.map((card) => [card.id, card]))
+    const seen = new Set<string>()
+    const stack = [...parents]
+
+    while (stack.length) {
+        const next = stack.pop() as string
+        if (next === id) throw new Error('that dependency would close a cycle')
+        if (seen.has(next)) continue
+        seen.add(next)
+        const parent = byId.get(next)
+        if (!parent) throw new Error(`no card '${next}' on this board`)
+        stack.push(...parent.parents)
+    }
+}
+
+function normalizeParents(file: BoardFile, id: string, parents: string[] | undefined): string[] {
+    if (!parents) return []
+    const unique = [...new Set(parents.filter((parent) => parent !== id))]
+    assertNoCycle(file, id, unique)
+    return unique
+}
+
+function assertWorkdir(workdir: string | null | undefined): string | null {
+    if (workdir === undefined || workdir === null || workdir === '') return null
+    if (!isAbsolute(workdir)) throw new Error(`'${workdir}' is not an absolute path`)
+    return workdir
+}
+
+export function blockedBy(file: BoardFile, card: Card): Card[] {
+    const byId = new Map(file.cards.map((entry) => [entry.id, entry]))
+    return card.parents
+        .map((parent) => byId.get(parent))
+        .filter((parent): parent is Card => Boolean(parent) && !isClosed((parent as Card).status))
+}
+
+export async function createCard(slug: string, draft: CardDraft): Promise<Card> {
+    const file = await load(slug)
+    const title = String(draft.title ?? '').trim()
+    if (!title) throw new Error('the card needs a title')
+
+    const id = randomUUID()
+    const now = Date.now()
+    const parents = normalizeParents(file, id, draft.parents)
+    const requested = draft.status ?? 'triage'
+    const status: Status = requested === 'ready' && parents.length ? 'todo' : requested
+
+    const card: Card = {
+        id,
+        rev: 1,
+        title,
+        body: String(draft.body ?? ''),
+        status,
+        priority: Number.isFinite(draft.priority) ? Number(draft.priority) : 0,
+        assignee: 'claude',
+        workdir: assertWorkdir(draft.workdir),
+        workspaceKind: draft.workspaceKind ?? 'dir',
+        model: draft.model ?? null,
+        effort: draft.effort ?? null,
+        maxRuntimeSeconds: draft.maxRuntimeSeconds ?? null,
+        maxRetries: draft.maxRetries ?? null,
+        permissionMode: draft.permissionMode ?? 'acceptEdits',
+        scheduledFor: draft.scheduledFor ?? null,
+        parents,
+        runs: [],
+        comments: [],
+        consecutiveFailures: 0,
+        protocolViolations: 0,
+        blockRecurrences: 0,
+        blockKind: null,
+        sourcePhase: null,
+        locked: false,
+        createdAt: now,
+        updatedAt: now
+    }
+
+    file.cards.push(card)
+    await save(slug, file)
+    return card
+}
+
+export async function updateCard(slug: string, id: string, patch: CardPatch): Promise<Card> {
+    const file = await load(slug)
+    const card = find(file, id)
+    if (card.locked) throw new Error('that card has a live worker')
+
+    if (patch.title !== undefined) {
+        const title = String(patch.title).trim()
+        if (!title) throw new Error('the card needs a title')
+        card.title = title
+    }
+    if (patch.body !== undefined) card.body = String(patch.body)
+    if (patch.priority !== undefined) card.priority = Number(patch.priority) || 0
+    if (patch.workdir !== undefined) card.workdir = assertWorkdir(patch.workdir)
+    if (patch.workspaceKind !== undefined) card.workspaceKind = patch.workspaceKind
+    if (patch.model !== undefined) card.model = patch.model
+    if (patch.effort !== undefined) card.effort = patch.effort
+    if (patch.maxRuntimeSeconds !== undefined) card.maxRuntimeSeconds = patch.maxRuntimeSeconds
+    if (patch.maxRetries !== undefined) card.maxRetries = patch.maxRetries
+    if (patch.permissionMode !== undefined) card.permissionMode = String(patch.permissionMode)
+    if (patch.scheduledFor !== undefined) card.scheduledFor = patch.scheduledFor
+    if (patch.parents !== undefined) card.parents = normalizeParents(file, id, patch.parents)
+
+    touch(card)
+    await save(slug, file)
+    return card
+}
+
+export async function moveCard(slug: string, id: string, rev: number, to: Status): Promise<Card> {
+    const file = await load(slug)
+    const card = find(file, id)
+
+    if (card.rev !== rev) throw new Error('that card changed while you were moving it')
+    if (card.locked) throw new Error('that card has a live worker')
+    if (card.status === to) return card
+    if (!allows(card.status, to)) throw new Error(`a card cannot go from ${card.status} to ${to}`)
+
+    if (to === 'ready' && blockedBy(file, card).length) {
+        throw new Error('that card still has open dependencies')
+    }
+
+    if (card.status === 'blocked') {
+        card.blockKind = null
+        card.sourcePhase = null
+    }
+    if (to === 'triage') card.sourcePhase = null
+
+    card.status = to
+    touch(card)
+    await save(slug, file)
+    return card
+}
+
+export async function deleteCard(slug: string, id: string): Promise<boolean> {
+    const file = await load(slug)
+    const card = find(file, id)
+    if (card.locked) throw new Error('that card has a live worker')
+
+    const child = file.cards.find((entry) => entry.parents.includes(id))
+    if (child) throw new Error(`'${child.title}' depends on that card`)
+
+    file.cards = file.cards.filter((entry) => entry.id !== id)
+    await save(slug, file)
+    return true
+}
+
+export async function comment(
+    slug: string,
+    id: string,
+    text: string,
+    author: Comment['author']
+): Promise<Card> {
+    const body = String(text ?? '').trim()
+    if (!body) throw new Error('the comment is empty')
+
+    const file = await load(slug)
+    const card = find(file, id)
+    card.comments.push({ at: Date.now(), author, text: body })
+    touch(card)
+    await save(slug, file)
+    return card
+}
+
+export async function promote(slug: string, now: number): Promise<boolean> {
+    const file = await load(slug)
+    let changed = false
+
+    for (const card of file.cards) {
+        if (card.status === 'todo' && card.parents.length && !blockedBy(file, card).length) {
+            card.status = 'ready'
+            touch(card)
+            changed = true
+            continue
+        }
+        if (card.status === 'scheduled' && card.scheduledFor !== null && card.scheduledFor <= now) {
+            card.status = 'ready'
+            card.scheduledFor = null
+            touch(card)
+            changed = true
+        }
+    }
+
+    if (changed) await save(slug, file)
+    return changed
+}

@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>kanban panel harness</title>
+<link rel="stylesheet" href="/packages/kanon/css/dyarchia.css">
+<style>
+    html, body { margin: 0; height: 100%; background: var(--dya-bg); }
+    #host { height: 100vh; }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<script type="module">
+const { activate } = await import(`/packages/plugin-kanban/dist/renderer.js?t=${Date.now()}`)
+
+const RULES = {
+    order: ['triage', 'todo', 'scheduled', 'ready', 'running', 'blocked', 'review', 'done', 'archived'],
+    allow: {
+        triage: ['todo', 'ready'],
+        todo: ['ready', 'triage'],
+        scheduled: ['ready', 'triage'],
+        ready: ['scheduled', 'triage'],
+        running: [],
+        blocked: ['ready', 'review', 'todo', 'triage', 'archived'],
+        review: ['done', 'ready'],
+        done: ['archived'],
+        archived: []
+    },
+    confirm: {
+        'review>ready': 'Send this back to the implementer? The review is discarded and the card returns to ready.',
+        'blocked>triage': 'Send this back to triage? The phase it was blocked from is forgotten.',
+        'done>archived': 'Archive this card? Completed cards are immutable history and archiving is one way.',
+        'blocked>archived': 'Archive this card without resolving what blocked it?'
+    },
+    labels: Object.fromEntries(['triage', 'todo', 'scheduled', 'ready', 'running', 'blocked', 'review', 'done', 'archived'].map((s) => [s, s])),
+    tone: {
+        triage: 'idle', todo: 'idle', scheduled: 'idle', ready: 'accent-2', running: 'accent',
+        blocked: 'warning', review: 'accent-3', done: 'success', archived: 'idle'
+    }
+}
+
+const REGISTRY = [
+    { slug: 'dyarchia', name: 'dyarchia-desktop', workdir: 'C:\\Users\\Usuario\\ai-department\\dyarchia', archived: false, createdAt: 0, order: 0 },
+    { slug: 'notes', name: 'notes', workdir: 'C:\\Users\\Usuario\\ai-department\\notes', archived: false, createdAt: 0, order: 1 }
+]
+
+const TITLES = [
+    ['triage', 'Decide whether the pty host is a utilityProcess or a thread'],
+    ['triage', 'Audit every call site of writeAtomic for a missing fsync'],
+    ['todo', 'Wire the reconciler to the three-valued liveness answer'],
+    ['todo', 'Rotate the transcript copy by size, not by run count'],
+    ['ready', 'Measure accent-2 and accent-3 against surface-1 in both themes'],
+    ['ready', 'Replace the cost cap with a token estimate and say it is one'],
+    ['ready', 'packages/plugin-kanban/src/drag.ts autoscroll at 60Hz'],
+    ['running', 'Parse the short id out of the --bg launch line'],
+    ['blocked', 'Answer whether claude attach survives node-pty resize'],
+    ['review', 'Board slug validation, including the reserved device names'],
+    ['done', 'Cut feature/plugin-kanban from develop before the first edit'],
+    ['done', 'Probe the CLI: --bg ignores --session-id'],
+    ['archived', 'An earlier draft built on print mode']
+]
+
+let seq = 0
+const now = Date.now()
+const cards = TITLES.map(([status, title], index) => ({
+    id: `card-${index}`,
+    rev: 1,
+    title,
+    body: index % 3 === 0 ? 'A body long enough to wrap in the drawer and prove the field grows.' : '',
+    status,
+    priority: index % 4,
+    assignee: 'claude',
+    workdir: null,
+    workspaceKind: 'dir',
+    model: null,
+    effort: null,
+    maxRuntimeSeconds: null,
+    maxRetries: null,
+    permissionMode: 'acceptEdits',
+    scheduledFor: null,
+    parents: index === 2 ? ['card-0'] : [],
+    runs: [],
+    comments: index === 8 ? [{ at: now - 900000, author: 'agent', text: 'Waiting on a permission prompt nobody is attached to.' }] : [],
+    consecutiveFailures: 0,
+    protocolViolations: 0,
+    blockRecurrences: 0,
+    blockKind: null,
+    sourcePhase: null,
+    locked: status === 'running',
+    createdAt: now - index * 600000,
+    updatedAt: now - index * 300000
+}))
+
+const listeners = new Set()
+const emit = (event) => listeners.forEach((listener) => listener(event))
+const byId = (id) => cards.find((card) => card.id === id)
+
+const ctx = {
+    pluginId: 'kanban',
+    token: (name) => getComputedStyle(document.documentElement).getPropertyValue(`--dya-${name.replace(/^--dya-/, '')}`).trim(),
+    onThemeChange: () => () => {},
+    on: (channel, listener) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+    },
+    registerPanel: (descriptor, mountPanel) => {
+        mountPanel(document.getElementById('host'), { instanceId: 'kanban#0', close: () => {} })
+    },
+    invoke: async (channel, ...args) => {
+        if (channel === 'boards') return REGISTRY
+        if (channel === 'pickWorkdir') return 'C:\\Users\\Usuario\\ai-department\\dyarchia'
+        if (channel === 'board') {
+            const board = REGISTRY.find((entry) => entry.slug === args[0])
+            if (!board) throw new Error(`no board '${args[0]}'`)
+            return structuredClone({ board, cards, rules: RULES, now: Date.now() })
+        }
+        if (channel === 'createCard') {
+            seq += 1
+            const card = { ...cards[0], id: `new-${seq}`, rev: 1, title: args[1].title, body: '', status: 'triage', priority: 0, parents: [], comments: [], locked: false, createdAt: Date.now(), updatedAt: Date.now() }
+            cards.push(card)
+            emit({ type: 'board:changed', slug: args[0] })
+            return card
+        }
+        if (channel === 'moveCard') {
+            const card = byId(args[1])
+            if (card.rev !== args[2]) throw new Error('that card changed while you were moving it')
+            if (!RULES.allow[card.status].includes(args[3])) throw new Error(`a card cannot go from ${card.status} to ${args[3]}`)
+            card.status = args[3]
+            card.rev += 1
+            card.updatedAt = Date.now()
+            emit({ type: 'board:changed', slug: args[0] })
+            return card
+        }
+        if (channel === 'updateCard') {
+            const card = byId(args[1])
+            Object.assign(card, args[2])
+            card.rev += 1
+            card.updatedAt = Date.now()
+            emit({ type: 'board:changed', slug: args[0] })
+            return card
+        }
+        if (channel === 'deleteCard') {
+            const index = cards.findIndex((card) => card.id === args[1])
+            cards.splice(index, 1)
+            emit({ type: 'board:changed', slug: args[0] })
+            return true
+        }
+        if (channel === 'comment') {
+            const card = byId(args[1])
+            card.comments.push({ at: Date.now(), author: 'user', text: args[2] })
+            card.rev += 1
+            emit({ type: 'board:changed', slug: args[0] })
+            return card
+        }
+        throw new Error(`the harness has no '${channel}'`)
+    }
+}
+
+localStorage.setItem('kanban:board:kanban#0', 'dyarchia')
+activate(ctx)
+</script>
+</body>
+</html>

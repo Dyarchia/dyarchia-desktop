@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import type { Dirent } from 'node:fs'
+import { readFile, readdir, rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { RouteId, Usage } from '../types.js'
@@ -59,6 +60,7 @@ interface Sink {
     replace(id: string, text: string): void
     usage(patch: Partial<Usage>): void
     search(): void
+    session(id: string): void
 }
 
 interface CliSpec {
@@ -68,6 +70,7 @@ interface CliSpec {
     args(request: CompletionRequest, scratch: string): string[]
     inlineSystem: boolean
     countsSearches: boolean
+    discardsTranscript: boolean
     consume(event: Record<string, unknown>, sink: Sink): void
 }
 
@@ -85,6 +88,7 @@ const claude: CliSpec = {
     bin: 'claude',
     inlineSystem: false,
     countsSearches: true,
+    discardsTranscript: true,
     args(request) {
         return [
             '-p',
@@ -109,6 +113,7 @@ const claude: CliSpec = {
         ]
     },
     consume(event, sink) {
+        if (typeof event.session_id === 'string') sink.session(event.session_id)
         if (event.type === 'stream_event') {
             const inner = asRecord(event.event)
             if (inner.type === 'content_block_start') {
@@ -139,6 +144,7 @@ const codex: CliSpec = {
     bin: 'codex',
     inlineSystem: true,
     countsSearches: true,
+    discardsTranscript: false,
     args(request, scratch) {
         return [
             'exec',
@@ -185,6 +191,7 @@ const opencode: CliSpec = {
     bin: 'opencode',
     inlineSystem: true,
     countsSearches: false,
+    discardsTranscript: false,
     args(request, scratch) {
         return [
             'run',
@@ -218,6 +225,29 @@ const opencode: CliSpec = {
 
 const SPECS: Record<string, CliSpec> = { claude, codex, opencode }
 
+function claudeHome(): string {
+    return process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')
+}
+
+async function discardTranscript(sessionId: string): Promise<void> {
+    const projects = join(claudeHome(), 'projects')
+    let entries: Dirent[]
+    try {
+        entries = await readdir(projects, { withFileTypes: true })
+    } catch {
+        return
+    }
+    for (const entry of entries) {
+        if (!entry.isDirectory()) continue
+        try {
+            await rm(join(projects, entry.name, `${sessionId}.jsonl`))
+            return
+        } catch {
+            /* the session was filed under another project */
+        }
+    }
+}
+
 function childEnv(): NodeJS.ProcessEnv {
     const env = { ...process.env }
     for (const key of KEY_VARS) delete env[key]
@@ -232,6 +262,7 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
     const parts = new Map<string, string>()
     let streamed = ''
     let searches = 0
+    let sessionId: string | null = null
     const usage: Usage = {
         inputTokens: 0,
         outputTokens: 0,
@@ -259,6 +290,9 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
         },
         search() {
             searches += 1
+        },
+        session(id) {
+            sessionId = id
         }
     }
 
@@ -309,6 +343,8 @@ async function run(spec: CliSpec, request: CompletionRequest, scratch: string): 
         child.on('error', reject)
         child.on('close', resolve)
     }).finally(() => request.signal.removeEventListener('abort', abort))
+
+    if (spec.discardsTranscript && sessionId) await discardTranscript(sessionId)
 
     if (request.signal.aborted) throw new Error('cancelled')
     if (failure) throw failure

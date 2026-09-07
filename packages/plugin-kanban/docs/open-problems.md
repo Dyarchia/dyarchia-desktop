@@ -45,9 +45,16 @@ commits, which is correct of it, so a board that runs fifty cards leaves fifty b
 fifty working trees in the operator's repository. The board knows the branch, so it can say
 which are landed and offer to remove those.
 
+A worktree also lands *inside* the operator's checkout, at `.claude/worktrees/`, and that path
+is not in dyarchia's `.gitignore`. A run on this repository therefore puts untracked files in
+`git status` while it works, which is noise at best and something committed by accident at
+worst.
+
 Done looks like: `deleteCard` removes that card's attachments; a sweep removes temp workspaces
-with no live card; and the panel lists worktree branches with their merge state and can remove
-the ones that are landed. Lives in `src/artifacts.ts`, `src/board.ts` and `src/dispatch.ts`.
+with no live card; the panel lists worktree branches with their merge state and can remove the
+ones that are landed; and `.claude/` is ignored by any repository a board points at, which the
+board can offer to do when it creates the board. Lives in `src/artifacts.ts`, `src/board.ts`
+and `src/dispatch.ts`.
 
 ### 1.2 Every measurement on this machine was taken inside a package container
 

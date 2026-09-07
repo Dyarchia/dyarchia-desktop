@@ -19,6 +19,8 @@ export interface Run {
     runId: string
     sessionId: string | null
     shortId: string | null
+    worktree: string | null
+    branch: string | null
     startedAt: number
     endedAt: number | null
     outcome: Outcome | null

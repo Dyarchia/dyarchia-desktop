@@ -11,6 +11,7 @@ behind every claim about the Claude Code CLI. Read it before changing anything h
 ## Index
 
 - [1. What is built](#1-what-is-built)
+- [1.1 What a worker actually is](#11-what-a-worker-actually-is)
 - [2. Build and verify](#2-build-and-verify)
 - [3. Storage](#3-storage)
 - [4. IPC](#4-ipc)
@@ -20,7 +21,7 @@ behind every claim about the Claude Code CLI. Read it before changing anything h
 
 ## 1. What is built
 
-Phases 0 to 2 of the design's section 18.
+Phases 0 to 3 of the design's section 18.
 
 ```text
 AREA                     STATE
@@ -37,11 +38,38 @@ Drag                     pointer events, ghost, insertion indicator, autoscroll,
                          accept and refuse washes, Escape to cancel
 Keyboard                 roving tabindex, arrows, Ctrl with arrows to move a card
                          to the nearest legal status, Enter to open, live region
-Dispatch                 NOT YET. Phase 3
+Dispatch                 a tick sweeps every board, reconciles running cards against
+                         `claude agents --json` with three-valued liveness, promotes,
+                         and claims. 1 card per board, 2 across all of them
+Worker                   a real `claude --bg` session in a git worktree of the project,
+                         watched through its transcript
+Terminal                 `claude attach` in a pty, in a utilityProcess, over a
+                         MessagePort. The operator watches and answers permission
+                         prompts in the agent's own interface
 ```
 
-There is deliberately no way to move a card to `done` by hand. `done` means a worker finished,
-and until phase 3 there are no workers. See section 9 of the design.
+There is deliberately no way to move a card to `done` by hand. `done` means a worker finished.
+See section 9 of the design.
+
+
+## 1.1 What a worker actually is
+
+```text
+A REAL Claude Code session, started detached with `claude --bg`, not `claude -p`
+Confined to a git worktree of the project: <repo>/.claude/worktrees/kanban-<8> on branch
+    worktree-kanban-<8>. THE CLI REQUIRES THIS. A background session refuses to edit the
+    checkout it started in, so the plugin passes -w and the operator's tree is never touched
+Told what to do by a brief passed INLINE as the prompt when it is under 8000 characters,
+    and written to <workspace>/.dyakanban/<runId>/brief.md either way. That directory gets a
+    .gitignore of `*` so it never reaches anyone's git status
+Spawned with the PARENT session's environment stripped, so a dyarchia launched from inside a
+    Claude Code session does not hand its workers a proxy they cannot authenticate against
+Never deleted. `claude rm` refuses a session whose worktree holds unmerged commits, so the
+    plugin does not call it at all: `stop` is the only lifecycle verb it uses
+```
+
+A run that completes inside a worktree lands its card in **review**, not done, because there
+is a branch for a person to land.
 
 
 ## 2. Build and verify
@@ -82,7 +110,7 @@ Under `app.getPath('userData')`, one directory per board:
 kanban/boards.json                       the registry
 kanban/boards/<slug>/board.json          that board's cards
 kanban/boards/<slug>/board.bak.<n>.json  three rotated copies, newest is 0
-kanban/boards/<slug>/runs/               transcript-derived events, phase 3
+kanban/boards/<slug>/runs/               reserved for the transcript copy, phase 5
 ```
 
 Written by temp file plus `rename`, which is atomic on NTFS within a volume. **The slug is a
@@ -99,8 +127,15 @@ slug first, because there is no ambient current board in the main module.
 ```text
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
+dispatchNow   stopCard      runEvents     diagnostics
+attach        negotiates a MessagePort for the pty, never terminal data
 event         broadcast, a discriminated union the renderer filters by slug
 ```
+
+`attach` is registered with `ipcMain.handle` under its full channel name rather than through
+`ctx.handle`, because it needs `event.sender` to hand the port back. `plugin-terminal` does the
+same for the same reason, and it is the one sanctioned place a plugin writes the prefixed
+channel name.
 
 `moveCard` takes the card's `rev` and refuses on mismatch, which turns a stale optimistic move
 into a refusal instead of a silent clobber.
@@ -109,7 +144,7 @@ into a refusal instead of a silent clobber.
 ## 5. Plugin-prefixed CSS, and why each rule exists
 
 Every `dya-*` class the system has is used as-is; nothing here restyles one. What is left is
-layout and four things the system does not carry.
+layout and the handful of things the system does not carry.
 
 ```text
 RULE                        WHY
@@ -136,6 +171,13 @@ RULE                        WHY
                             transition: its transform is written every frame
 .kanban-sr                  a screen-reader-only region for the live announcements.
                             The system has no such class. See section 6
+.kanban-stage               the drawer's terminal band, on --dya-surface-1 because
+                            xterm computes its own contrast and has to know what it
+                            is drawing on
+.xterm-viewport             xterm ships its own CSS, bundled as text and injected
+                            ahead of this stylesheet. The three rules here make its
+                            scrollbar and background match the system; they target
+                            xterm's classes, not dya-* ones
 ```
 
 `touch-action: none` sits on the whole card rather than on a grip. That disables touch panning
@@ -180,4 +222,10 @@ kanon's reset            already recorded in this repo's CLAUDE.md. Every plugin
                          `hidden` will hit this, silently
 No screen-reader-only    The same standing request. The live region here is a
 class in kanon           prefixed .kanban-sr until the system carries one
+A scratch workspace is   The design says it is removed on completion once its declared
+never deleted            artifacts are copied out, and the copying is phase 5. Deleting
+                         first would destroy the work, so nothing is deleted until it
+                         can be saved
+`followups` is unproven  The parser and the child-card creation are written and
+                         typechecked; no run has emitted one yet
 ```

@@ -449,6 +449,71 @@ one of section 6's questions and it is better news than the question expected: t
 not have to infer a permission stall from transcript mtime, because `agents --json` says so
 directly, on the same call the reconciler already makes.
 
+### 5.7 A background session is confined to a git worktree
+
+Measured on 2026-09-07, and it is the largest single finding of phase 3, because the design
+had this capability filed as OPTIONAL and deferred to phase 5.
+
+A `--bg` session in a git repository **cannot edit the checkout it started in**. The Read
+succeeded; the first Edit came back with:
+
+```text
+This background session hasn't isolated its changes yet. Call EnterWorktree first so edits
+land in a worktree instead of the shared checkout, then retry this edit using the worktree
+path (a path inside a linked git worktree).
+```
+
+The session then sat at `state: 'blocked'` waiting for a person, having done nothing.
+
+Passing `-w/--worktree <name>` at launch fixes it and is what this plugin does:
+
+```text
+The CLI creates <repo>/.claude/worktrees/<name> on branch worktree-<name>, and LOCKS it
+The session's cwd becomes that worktree, so its transcript directory is mangled from the
+    WORKTREE path, not the project path
+The operator's checkout is never touched. Measured: the worker appended a line and
+    committed it, and the main checkout was still three lines afterwards
+`claude rm <id>` REFUSES a session whose worktree holds unmerged commits, saying so:
+    "kept <id> - 2 unpushed commits on worktree-kanban-b7820484". Never assume rm succeeded
+```
+
+The consequence for the board is that a `dir` workspace on a git project is really a
+worktree workspace, and the operator has a branch to land at the end. That is why a run that
+completes inside a worktree lands its card in `review` rather than `done`: something needs a
+person, and pretending otherwise would lose the branch.
+
+`agents --json` reports the ORIGINAL cwd for about a second after the launcher exits, before
+the session switches into its worktree, so reading the worktree path off that record is a
+race. The path is derivable from the name passed to `-w`, so derive it and wait for the
+directory to appear instead.
+
+### 5.8 The brief goes inline, and why the file indirection was not enough
+
+An earlier draft put the brief in a file and passed a short instruction pointing at it. That
+is correct about the command line and wrong about permissions: with `-w`, the session's cwd is
+the worktree while the brief sits in the main checkout, so the first thing the worker does is
+ask permission to read a file outside its working directory, and it blocks there with nobody
+attached.
+
+The brief is therefore passed **inline as the positional prompt** whenever it is under 8000
+characters, which is safe even where the CLI resolves through `cmd.exe` and its 8191 limit.
+The file is still written, because the operator wants to read it and because a brief over the
+limit still needs somewhere to live.
+
+### 5.9 The worker inherits the parent process environment
+
+If dyarchia is launched from inside a Claude Code session, its workers inherit that session's
+variables and fail with "Not logged in - Please run /login", because `ANTHROPIC_BASE_URL`
+points at a host proxy the child cannot authenticate against. Measured, twice, before the
+cause was found.
+
+Every spawn here therefore strips the variables that identify a PARENT session -
+`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_HOST_SESSION_ID`,
+`CLAUDE_CODE_CHILD_SESSION`, `CLAUDE_CODE_MESSAGING_SOCKET`, `CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH`,
+`CLAUDE_CODE_OAUTH_SCOPES`, `CLAUDE_AGENT_SDK_VERSION`, `CLAUDE_PID`, `CLAUDE_EFFORT` - and
+drops `ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` only when the host-auth marker was
+present, so a user who legitimately points at Bedrock or a gateway keeps their setting.
+
 ### 5.6 What the earlier draft got wrong
 
 Measured on 2026-09-07 against CLI 2.1.263. Each of these invalidated a decision below, and
@@ -563,11 +628,16 @@ What is the full vocabulary of `state`?            Observed: 'working', 'blocked
                                                   'busy' and 'idle'. Still not proven
                                                   exhaustive, so still treat an unknown
                                                   value as opaque
-Does `claude attach` behave correctly inside      NOT YET ANSWERED. It needs node-pty and
-node-pty, including resize and Ctrl+Z?            belongs to phase 3, which is where the
-                                                  pty is written. It is the one open
-                                                  question the whole watch-and-talk
-                                                  surface still rides on
+Does `claude attach` behave correctly inside      YES. Measured in a standalone node-pty
+node-pty, including resize and Ctrl+Z?            harness and then in the panel: the full
+                                                  agent view renders, resize reflows it,
+                                                  typed input reaches the session, and a
+                                                  permission prompt was answered from the
+                                                  drawer. node-pty throws
+                                                  "AttachConsole failed" from its conpty
+                                                  console-list agent on teardown, which
+                                                  is contained by the utilityProcess and
+                                                  is one more reason for it
 Where does a --bg session started with an         `~/.claude/projects/<mangled-cwd>/
 explicit cwd write its transcript?                <session-id>.jsonl`, the mangle being
                                                   every `:`, `\` and `/` replaced by `-`.
@@ -1642,9 +1712,11 @@ PHASE  DELIVERS                                                  STATE
        dispatch
   2    Full drag with the rule guard, and the keyboard path       DONE, in the panel
                                                                   harness
-  3    Dispatch with `claude --bg`, the pty drawer running        NEXT. Rewritten around
-       `claude attach`, card summary from the transcript,         7.3 and 11
-       followups on completion
+  3    Dispatch with `claude --bg`, the pty drawer running        DONE. One card did real
+       `claude attach`, card summary from the transcript,         work in a worktree, asked
+       followups on completion                                    for permission, and was
+                                                                  answered from the drawer.
+                                                                  See 19
   4    Failure taxonomy, breaker, block routing, guards,          kill the app mid-run
        reconciliation, review flow, scheduled cards,
        diagnostics, runtime cap
@@ -1654,14 +1726,16 @@ PHASE  DELIVERS                                                  STATE
   7    Swarm, if 2.8 still argues for it                          one command, one graph
 ```
 
-Two things phases 1 and 2 could not verify, recorded so nobody claims them:
+What phase 3 still has not proven, recorded so nobody claims it:
 
 ```text
-Promotion of a todo card when its parents close is written and typechecked but UNPROVEN,
-    because with no dispatcher no card can reach `done`: the state machine of section 9
-    gives `done` no manual predecessor. It is verifiable in phase 3 and not before
-`claude attach` inside node-pty is still the open question of section 6, and it is the one
-    the whole watch-and-talk surface rides on
+`followups` creating child cards. The code path is written and typechecked, and the terminal
+    block is parsed and its `artifacts` are recorded, but no run has yet emitted a followup
+Promotion of a todo card when its parents close. Still unproven, and now provable: a run
+    that completes in a worktree lands in `review`, so a two-card chain can be driven by hand
+The scratch workspace is never deleted. The design says a scratch workspace is removed on
+    completion after its declared artifacts are copied out, and the copying is phase 5, so
+    deleting first would destroy the work. Nothing is deleted until it can be saved
 
 Phase 3 satisfies the requirement that motivated the plugin, and it now includes the pty,
 which an earlier draft deferred to last. That deferral was a consequence of designing around
@@ -1696,16 +1770,23 @@ stubbing `window.dyarchia` inside the real shell, **does not work and is not har
 object comes from `contextBridge`, its properties are not writable, the assignment fails
 silently, the real IPC call proceeds and a modal dialog opens on the operator's screen.
 
-End-to-end test for phase 3:
+End-to-end test for phase 3. This is the run that was actually made, on 2026-09-07, against
+a three-line file in a scratch git repository:
 
 ```text
-1. Create a card with a small, checkable task against a scratch repo
-2. Drag it to ready, confirm the dispatcher claims it on the next tick
-3. Watch the stream in the drawer: tool calls, text, accumulating cost
-4. Send it a message mid-run and confirm the acknowledgment arrives
-5. Trigger a permission request and answer it from the card
-6. See the terminal block and the card move to review or done
-7. Confirm runs/<runId>.jsonl holds the whole trace
+1. Create a board on the scratch repo, create a card, move it to ready
+2. The dispatcher claims it, writes the brief, and launches `claude --bg -w kanban-<8>`
+3. The card shows running with the live tool, elapsed and token count
+4. The worker edits inside its worktree, then asks to run git commit
+5. `agents --json` reports state 'blocked': the card says WAITING ON YOU and is NOT
+   reclaimed. This is the three-valued liveness rule earning its place
+6. Open the card. The drawer shows the real agent view: the diff, the command, and the
+   four-option permission prompt
+7. Type 1 and Enter into that terminal. The worker proceeds and commits
+8. The dispatcher sees state 'done', reads the terminal block, and lands the card in
+   REVIEW with outcome completed, the summary, artifacts ["lines.txt"], 304552 tokens and
+   the branch worktree-kanban-b7820484 recorded on the run
+9. The operator's checkout is still three lines. Nothing touched it
 ```
 
 End-to-end test for phase 4, which is the one people skip:

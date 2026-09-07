@@ -1,3 +1,4 @@
+import xtermCss from '@xterm/xterm/css/xterm.css'
 import { injectStyles } from '@dyarchia/sdk'
 import type { PanelHandle, PluginContext } from '@dyarchia/sdk'
 import { installDrag } from './drag.js'
@@ -5,7 +6,21 @@ import type { DragColumn } from './drag.js'
 import { openMenu } from './menu.js'
 import type { MenuRow } from './menu.js'
 import { STYLES } from './styles.js'
+import { openTerminal } from './terminal.js'
+import type { Attached } from './terminal.js'
 import type { BoardMeta, BoardPayload, Card, KanbanEvent, Rules, Status } from './types.js'
+
+interface CardProgress {
+    slug: string
+    cardId: string
+    runId: string
+    state: string
+    tool: string | null
+    inputTokens: number
+    outputTokens: number
+    startedAt: number
+    waiting: boolean
+}
 
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="10" rx="1"/><rect x="16" y="4" width="5" height="13" rx="1"/></svg>'
@@ -61,6 +76,12 @@ function ago(from: number, now: number): string {
     return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`
 }
 
+function tokens(count: number): string {
+    if (count < 1000) return String(count)
+    if (count < 1_000_000) return `${(count / 1000).toFixed(1)}k`
+    return `${(count / 1_000_000).toFixed(2)}M`
+}
+
 function order(cards: Card[]): Card[] {
     return cards.slice().sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
 }
@@ -83,6 +104,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const columns = new Map<Status, Column>()
     const pending = new Map<string, number>()
     const optimistic = new Map<string, Status>()
+    const progress = new Map<string, CardProgress>()
+
+    let terminal: Attached | null = null
+    let terminalFor = ''
+    let drawnId: string | null = null
+    let drawnRev = -1
 
     const root = el('div', 'kanban')
 
@@ -95,9 +122,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     titleField.spellcheck = false
     const addButton = el('button', 'dya-button dya-button--sm', 'add')
     addButton.type = 'button'
+    const tickButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'dispatch')
+    tickButton.type = 'button'
+    tickButton.title = 'sweep every board now instead of waiting for the tick'
     const spacer = el('span', 'kanban-spacer')
     const meter = el('span', 'kanban-meta')
-    bar.append(boardButton, titleField, addButton, spacer, meter)
+    bar.append(boardButton, titleField, addButton, tickButton, spacer, meter)
 
     const main = el('div', 'kanban-main')
     const board = el('div', 'kanban-board')
@@ -106,6 +136,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const drawer = el('aside', 'kanban-drawer')
     drawer.hidden = true
+
+    const stage = el('div', 'kanban-stage')
+    stage.hidden = true
 
     const setup = el('div', 'kanban-setup')
     setup.hidden = true
@@ -202,17 +235,26 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const status = shown(card)
         const tone = rules?.tone[status] ?? 'idle'
         const blocked = card.parents.length > 0 && status === 'todo'
+        const live = status === 'running' ? progress.get(card.id) : undefined
         const bits: string[] = []
-        if (card.priority) bits.push(`p${card.priority}`)
-        if (blocked) bits.push(`${card.parents.length} open`)
-        if (card.comments.length) bits.push(`${card.comments.length} notes`)
-        bits.push(ago(card.updatedAt, clock))
+
+        if (live) {
+            bits.push(live.waiting ? 'waiting on you' : (live.tool ?? live.state))
+            bits.push(ago(live.startedAt, clock))
+            if (live.outputTokens) bits.push(`${tokens(live.inputTokens + live.outputTokens)} tok`)
+        } else {
+            if (card.priority) bits.push(`p${card.priority}`)
+            if (blocked) bits.push(`${card.parents.length} open`)
+            if (card.comments.length) bits.push(`${card.comments.length} notes`)
+            bits.push(ago(card.updatedAt, clock))
+        }
 
         node.title.textContent = card.title
         node.dot.dataset.tone = tone
         node.note.textContent = bits.join(' · ')
         node.root.dataset.status = status
         node.root.dataset.locked = String(card.locked)
+        node.root.dataset.waiting = String(live?.waiting === true)
         node.root.dataset.selected = String(selected === card.id)
         node.root.dataset.rev = String(card.rev)
         node.root.setAttribute('aria-label', `${card.title}, ${status}`)
@@ -486,14 +528,52 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         paintDrawer()
     }
 
+    const closeTerminal = (): void => {
+        terminal?.dispose()
+        terminal = null
+        terminalFor = ''
+        stage.replaceChildren()
+        stage.hidden = true
+    }
+
+    const syncTerminal = (card: Card): void => {
+        const run = card.runs[card.runs.length - 1]
+        const key = shown(card) === 'running' && run ? `${card.id}:${run.runId}` : ''
+        if (key === terminalFor) return
+
+        closeTerminal()
+        if (!key) return
+
+        stage.hidden = false
+        const view = el('div', 'kanban-terminal')
+        stage.replaceChildren(view)
+        terminalFor = key
+        terminal = openTerminal(ctx, view, meta?.slug ?? '', card.id, (reason) => {
+            closeTerminal()
+            fail(reason)
+        })
+    }
+
     const paintDrawer = (): void => {
         const card = selected ? cardById(selected) : undefined
         if (!card || !rules) {
+            closeTerminal()
             drawer.hidden = true
             drawer.replaceChildren()
+            drawnId = null
+            drawnRev = -1
             return
         }
 
+        if (drawnId === card.id && drawnRev === card.rev) {
+            const label = drawer.querySelector('.kanban-drawer-head .dya-label')
+            if (label) label.textContent = rules.labels[shown(card)]
+            syncTerminal(card)
+            return
+        }
+
+        drawnId = card.id
+        drawnRev = card.rev
         drawer.hidden = false
         drawer.replaceChildren()
 
@@ -574,7 +654,48 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         notesGroup.appendChild(note)
 
+        const runsGroup = el('div', 'kanban-group')
+        if (card.runs.length) {
+            runsGroup.append(el('span', 'dya-label', 'runs'))
+            for (const run of [...card.runs].reverse().slice(0, 6)) {
+                const row = el('div', 'kanban-run')
+                const dot = el('span', 'kanban-dot')
+                dot.dataset.tone =
+                    run.outcome === 'completed'
+                        ? 'success'
+                        : run.outcome === null
+                          ? 'accent'
+                          : run.outcome === 'blocked'
+                            ? 'warning'
+                            : 'idle'
+                const label = el(
+                    'span',
+                    'kanban-card-note',
+                    `${run.outcome ?? 'running'} · ${tokens(run.inputTokens + run.outputTokens)} tok · ${ago(run.startedAt, clock)}`
+                )
+                row.append(dot, label)
+                if (run.branch) {
+                    const branch = el('span', 'dya-tag', run.branch)
+                    branch.title = run.worktree ?? ''
+                    row.append(branch)
+                }
+                if (run.summary) row.append(el('div', 'kanban-comment-text', run.summary))
+                runsGroup.appendChild(row)
+            }
+        }
+
         const actions = el('div', 'kanban-row')
+        if (shown(card) === 'running') {
+            const stop = el('button', 'dya-button dya-button--sm dya-button--danger', 'stop')
+            stop.type = 'button'
+            stop.addEventListener('click', () => {
+                if (!window.confirm(`Stop the worker on '${card.title}'? Its conversation is kept.`)) return
+                void invoke('stopCard', meta?.slug, card.id)
+                    .then(() => refresh())
+                    .catch(fail)
+            })
+            actions.append(stop)
+        }
         const moveButton = el('button', 'dya-button dya-button--sm', 'move')
         moveButton.type = 'button'
         moveButton.addEventListener('click', () => openMoveMenu(card.id, moveButton))
@@ -591,8 +712,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         actions.append(moveButton, remove)
 
-        body.append(titleGroup, bodyGroup, priorityGroup, depsGroup, actions, notesGroup)
-        drawer.append(head, body)
+        body.append(titleGroup, bodyGroup, priorityGroup, depsGroup, runsGroup, actions, notesGroup)
+        drawer.append(head, stage, body)
+        syncTerminal(card)
     }
 
     const openParentMenu = (card: Card, anchor: HTMLElement): void => {
@@ -752,12 +874,29 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     })
 
     const onEvent = (raw: unknown): void => {
-        const event = raw as KanbanEvent
-        if (event.type === 'boards:changed') {
+        const event = raw as KanbanEvent | CardProgress | { type: string; slug: string; cardId: string }
+        const kind = (event as { type: string }).type
+
+        if (kind === 'boards:changed') {
             void refresh().catch(fail)
             return
         }
-        if (event.type !== 'board:changed' || event.slug !== meta?.slug) return
+
+        if ((event as { slug?: string }).slug !== meta?.slug) return
+
+        if (kind === 'card:progress') {
+            const live = event as CardProgress
+            progress.set(live.cardId, live)
+            const card = cardById(live.cardId)
+            if (card) paintCard(card)
+            return
+        }
+
+        if (kind === 'run:ended') {
+            progress.delete((event as { cardId: string }).cardId)
+        }
+
+        if (kind !== 'board:changed' && kind !== 'run:ended') return
         if (gesturing) {
             deferred = true
             return
@@ -766,6 +905,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     boardButton.addEventListener('click', () => openBoardMenu(boardButton))
+    tickButton.addEventListener('click', () => {
+        void invoke('dispatchNow')
+            .then(() => refresh())
+            .catch(fail)
+    })
     addButton.addEventListener('click', add)
     titleField.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') add()
@@ -782,6 +926,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     return () => {
         disposed = true
+        closeTerminal()
         unsubscribe()
         stopDrag()
         window.clearInterval(ticker)
@@ -792,7 +937,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 }
 
 export function activate(ctx: PluginContext): void {
-    injectStyles('kanban', STYLES)
+    injectStyles('kanban', `${xtermCss}
+${STYLES}`)
     ctx.registerPanel(
         { id: 'kanban', title: 'Kanban', icon: ICON, duplicable: true },
         (container, handle) => mount(ctx, container, handle)

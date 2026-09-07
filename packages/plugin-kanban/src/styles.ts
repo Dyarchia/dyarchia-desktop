@@ -318,4 +318,40 @@ export const STYLES = `
     clip-path: inset(50%);
     white-space: nowrap;
 }
+.kanban-stage {
+    flex: none;
+    height: 44%;
+    min-height: 160px;
+    padding: var(--dya-space-2) 0 0 var(--dya-space-2);
+    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    background: var(--dya-surface-1);
+}
+
+.kanban-terminal { height: 100%; }
+
+.kanban-run {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--dya-space-2);
+    padding: var(--dya-space-1) 0;
+    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+}
+
+.kanban-run > .kanban-comment-text {
+    flex: 1 0 100%;
+    font-size: var(--dya-size-body-sm);
+    color: var(--dya-text-3);
+}
+
+.kanban-card[data-waiting='true'] { border-color: var(--dya-warning); }
+
+.xterm .xterm-viewport { background-color: transparent !important; }
+.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }
+.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
+.xterm .xterm-viewport::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: var(--dya-radius);
+}
+.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb { background-color: var(--dya-border); }
 `

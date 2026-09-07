@@ -7,6 +7,10 @@ and talk to it while it does.
 inventory, data model, state machine, worker contract, failure taxonomy, and the measurements
 behind every claim about the Claude Code CLI. Read it before changing anything here.
 
+[docs/open-problems.md](docs/open-problems.md) is the register of what is wrong, missing or
+unproven. Anything found while building goes there before the commit that found it, and
+nothing leaves it silently. Read it before deciding what to do next.
+
 
 ## Index
 
@@ -17,6 +21,7 @@ behind every claim about the Claude Code CLI. Read it before changing anything h
 - [4. IPC](#4-ipc)
 - [5. Plugin-prefixed CSS, and why each rule exists](#5-plugin-prefixed-css-and-why-each-rule-exists)
 - [6. Debts](#6-debts)
+- [docs/open-problems.md](docs/open-problems.md)
 
 
 ## 1. What is built
@@ -241,6 +246,10 @@ something is happening, not the primary signal.
 
 ## 6. Debts
 
+The full register is [docs/open-problems.md](docs/open-problems.md). Two debts belong here
+because they are about this plugin's relationship to the rest of the workspace rather than
+about the board.
+
 ```text
 DEBT                     WHY IT IS HERE
 -----------------------  ---------------------------------------------------------
@@ -251,16 +260,10 @@ of plugin-eforoi's       plugin-eforoi and is not exported by @dyarchia/sdk.
                          a sibling plugin and a feature branch here is one coherent
                          change. Promote later, in its own branch, touching both
                          consumers at once
-No [hidden] rule in      A standing request, alongside the .dya-button--bare
-kanon's reset            already recorded in this repo's CLAUDE.md. Every plugin
-                         that sets a display on a class it also toggles with
-                         `hidden` will hit this, silently
-No screen-reader-only    The same standing request. The live region here is a
-class in kanon           prefixed .kanban-sr until the system carries one
-A scratch workspace is   The design says it is removed on completion once its declared
-never deleted            artifacts are copied out, and the copying is phase 5. Deleting
-                         first would destroy the work, so nothing is deleted until it
-                         can be saved
-`followups` is unproven  The parser and the child-card creation are written and
-                         typechecked; no run has emitted one yet
+Two standing requests    kanon's reset carries no [hidden] { display: none }, so
+on kanon                 the UA rule loses to any class that sets a display and a
+                         hidden element renders at full size with no error
+                         anywhere; and it has no screen-reader-only class, so the
+                         live region here is a prefixed .kanban-sr. Both are worked
+                         around locally and both belong upstream
 ```

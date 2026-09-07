@@ -47,10 +47,6 @@ export function boardPath(slug: string): string {
     return join(boardRoot(slug), 'board.json')
 }
 
-export function runsRoot(slug: string): string {
-    return join(boardRoot(slug), 'runs')
-}
-
 export function workspacesRoot(slug: string): string {
     return join(tmpdir(), 'dyarchia-kanban', assertSlug(slug))
 }
@@ -132,7 +128,6 @@ export async function create(draft: BoardDraft): Promise<BoardMeta> {
     }
 
     await mkdir(boardRoot(slug), { recursive: true })
-    await mkdir(runsRoot(slug), { recursive: true })
     await persist([...boards, board])
     return board
 }

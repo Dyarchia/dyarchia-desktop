@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
-import { boardPath, boardRoot, runsRoot, writeAtomic } from './boards.js'
+import { boardPath, boardRoot, writeAtomic } from './boards.js'
 import { allows, isClosed } from './rules.js'
 import type { BoardFile, Card, CardDraft, CardPatch, Comment, Status } from './types.js'
 
@@ -41,7 +41,6 @@ async function rotate(slug: string): Promise<void> {
 
 export async function save(slug: string, file: BoardFile): Promise<void> {
     await mkdir(boardRoot(slug), { recursive: true })
-    await mkdir(runsRoot(slug), { recursive: true })
     await rotate(slug)
     await writeAtomic(boardPath(slug), JSON.stringify(file, null, 4))
     cache.set(slug, file)

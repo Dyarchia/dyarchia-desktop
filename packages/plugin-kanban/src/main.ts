@@ -172,13 +172,6 @@ export function activate(ctx: PluginMainContext): void {
         return path ? await worker.history(path) : []
     })
 
-    ctx.handle('attachments', async (slug, id) => {
-        const target = await open(String(slug))
-        const card = (await board.cards(target)).find((entry) => entry.id === String(id))
-        if (!card) throw new Error(`no card '${id}'`)
-        return { root: boards.attachmentsRoot(target, card.id) }
-    })
-
     ctx.handle('reveal', async (slug, id, name) => {
         const target = await open(String(slug))
         shell.showItemInFolder(join(boards.attachmentsRoot(target, String(id)), String(name)))

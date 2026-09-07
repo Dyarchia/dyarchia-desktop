@@ -4,7 +4,9 @@ A task board that dispatches work to Claude Code and lets the operator watch the
 and talk to it while it does.
 
 This document is the design authority and the handoff artifact. It is written for an
-implementer with no prior context. Every capability is specified here from first principles;
+implementer with no prior context. What it says the plugin should be, the plugin is not all of
+yet: [open-problems.md](open-problems.md) is the register of the gap, and it is the file to
+read before deciding what to build next. Every capability is specified here from first principles;
 nothing requires reading another product, another repository or another document.
 
 Target: a plugin for `dyarchia-desktop`, an Electron shell at
@@ -1811,21 +1813,10 @@ PHASE  DELIVERS                                                  STATE
   7    Swarm, if 2.8 still argues for it                          one command, one graph
 ```
 
-What is still not proven after phase 4, recorded so nobody claims it:
-
-```text
-`sourcePhase` is only ever 'ready'. A card can only be blocked out of a run, and a run can
-    only start from ready, so the 'review' arm is written and unreachable until an automatic
-    reviewer exists. It is kept because the machinery is right, not because it is exercised
-The stall detector has never fired. Its thresholds are an hour of silence past a four hour
-    run, which no test here is willing to wait for; only its guard conditions are checked
-Two panels on two boards have not been run side by side since the dispatcher landed
-
-Phase 3 satisfies the requirement that motivated the plugin, and it now includes the pty,
-which an earlier draft deferred to last. That deferral was a consequence of designing around
-print mode: with a real session, the terminal is not a luxury tab added at the end, it is the
-mechanism by which the operator watches and talks. Phase 4 is where the board becomes
-trustworthy. Everything after is reach.
+What is not built, not proven or plain wrong at any moment lives in
+[open-problems.md](open-problems.md) rather than here, because a list of gaps kept in two
+places drifts and the wrong copy is always the one that gets read. This document says what the
+plugin should be; that one says where it is not that yet.
 
 ## 19. Verification
 

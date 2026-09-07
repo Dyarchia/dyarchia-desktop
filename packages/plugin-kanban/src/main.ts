@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, MessageChannelMain, utilityProcess } from 'electron'
+import { app, dialog, ipcMain, MessageChannelMain, shell, utilityProcess } from 'electron'
 import type { UtilityProcess } from 'electron'
 import { join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
@@ -155,18 +155,34 @@ export function activate(ctx: PluginMainContext): void {
         return true
     })
 
-    ctx.handle('runEvents', async (slug, id) => {
+    ctx.handle('runEvents', async (slug, id, runId) => {
         const target = String(slug)
         const { meta, card } = await liveRun(target, String(id))
-        const run = card.runs[card.runs.length - 1]
-        if (!run?.sessionId) return null
+        const run = runId
+            ? card.runs.find((entry) => entry.runId === String(runId))
+            : card.runs[card.runs.length - 1]
+        if (!run?.sessionId) return []
 
         const place =
-            card.workspaceKind === 'scratch'
-                ? join(boards.boardRoot(meta.slug), 'workspaces', card.id)
-                : (card.workdir ?? meta.workdir)
+            run.worktree ??
+            (card.workspaceKind === 'scratch'
+                ? join(boards.workspacesRoot(meta.slug), card.id)
+                : (card.workdir ?? meta.workdir))
         const path = await agents.transcript(place, run.sessionId)
-        return path ? await worker.progress(path) : null
+        return path ? await worker.history(path) : []
+    })
+
+    ctx.handle('attachments', async (slug, id) => {
+        const target = await open(String(slug))
+        const card = (await board.cards(target)).find((entry) => entry.id === String(id))
+        if (!card) throw new Error(`no card '${id}'`)
+        return { root: boards.attachmentsRoot(target, card.id) }
+    })
+
+    ctx.handle('reveal', async (slug, id, name) => {
+        const target = await open(String(slug))
+        shell.showItemInFolder(join(boards.attachmentsRoot(target, String(id)), String(name)))
+        return true
     })
 
     ctx.handle('diagnostics', () => dispatch.diagnose())

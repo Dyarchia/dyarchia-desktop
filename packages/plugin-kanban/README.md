@@ -21,7 +21,7 @@ behind every claim about the Claude Code CLI. Read it before changing anything h
 
 ## 1. What is built
 
-Phases 0 to 4 of the design's section 18.
+Phases 0 to 5 of the design's section 18.
 
 ```text
 AREA                     STATE
@@ -54,6 +54,13 @@ Fan-out                  `followups` in the terminal block become child cards ga
                          on the card that proposed them
 Health                   a strip in the bar naming what is wrong: cards waiting on
                          you, cards claimable and never claimed, liveness unknown
+Artifacts                what a run declares is copied out of the workspace before the
+                         workspace is reclaimed, and shown on the run as a chip that
+                         opens it on disk. A declared artifact that is not there is a
+                         violation, not a completion
+History                  the transcript as readable rows in the drawer, beside the
+                         terminal: prose, thinking, tool calls with a one-line argument
+                         summary, results that expand, and a closing turn row
 ```
 
 There is deliberately no way to move a card to `done` by hand. `done` means a worker finished.
@@ -129,11 +136,16 @@ IPC call goes through, and a modal dialog opens on the operator's screen.
 Under `app.getPath('userData')`, one directory per board:
 
 ```text
-kanban/boards.json                       the registry
-kanban/boards/<slug>/board.json          that board's cards
-kanban/boards/<slug>/board.bak.<n>.json  three rotated copies, newest is 0
-kanban/boards/<slug>/runs/               reserved for the transcript copy, phase 5
+kanban/boards.json                          the registry
+kanban/boards/<slug>/board.json             that board's cards
+kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
+kanban/boards/<slug>/attachments/<cardId>/  artifacts harvested from a run
 ```
+
+Scratch workspaces are the exception and live at `<tmpdir>/dyarchia-kanban/<slug>/<cardId>`,
+NOT under userData. **A background session refuses to start anywhere under AppData**, with the
+system temp directory the only exception, so a scratch workspace in userData could never have
+run. Measured; see design.md 5.11.
 
 Written by temp file plus `rename`, which is atomic on NTFS within a volume. **The slug is a
 path segment**, so it is validated against an allowlist before it is ever joined to a path:
@@ -150,6 +162,7 @@ slug first, because there is no ambient current board in the main module.
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
 dispatchNow   stopCard      unblock       runEvents      diagnostics
+attachments   reveal
 attach        negotiates a MessagePort for the pty, never terminal data
 event         broadcast, a discriminated union the renderer filters by slug
 ```

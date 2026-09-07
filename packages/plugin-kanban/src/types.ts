@@ -26,6 +26,7 @@ export interface Run {
     outcome: Outcome | null
     summary: string | null
     artifacts: string[]
+    kept: string[]
     inputTokens: number
     outputTokens: number
     error: string | null

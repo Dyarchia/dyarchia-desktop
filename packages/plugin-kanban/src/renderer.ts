@@ -10,6 +10,14 @@ import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
 import type { BoardMeta, BoardPayload, Card, KanbanEvent, Rules, Status } from './types.js'
 
+interface HistoryRow {
+    at: number
+    kind: 'text' | 'thinking' | 'tool' | 'result' | 'end'
+    label: string
+    body: string
+    error: boolean
+}
+
 interface Diagnostic {
     slug: string
     cardId: string | null
@@ -126,6 +134,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     let terminal: Attached | null = null
     let terminalFor = ''
+    let tab: 'terminal' | 'history' = 'terminal'
     let drawnId: string | null = null
     let drawnRev = -1
 
@@ -560,18 +569,76 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         stage.hidden = true
     }
 
+    const paintHistory = (card: Card, into: HTMLElement): void => {
+        void invoke<HistoryRow[]>('runEvents', meta?.slug, card.id)
+            .then((rows) => {
+                if (!into.isConnected) return
+                into.replaceChildren()
+                if (!rows.length) {
+                    into.appendChild(el('div', 'dya-empty kanban-empty', 'nothing recorded yet'))
+                    return
+                }
+                const stick = into.scrollTop + into.clientHeight >= into.scrollHeight - 8
+                for (const row of rows) into.appendChild(historyRow(row))
+                if (stick) into.scrollTop = into.scrollHeight
+            })
+            .catch(fail)
+    }
+
+    const historyRow = (row: HistoryRow): HTMLElement => {
+        const node = el('div', 'kanban-row-entry')
+        node.dataset.kind = row.kind
+        node.dataset.error = String(row.error)
+
+        if (row.kind === 'text') {
+            node.appendChild(el('div', 'kanban-comment-text', row.body))
+            return node
+        }
+
+        const head = el('button', 'kanban-row-head')
+        head.type = 'button'
+        const label =
+            row.kind === 'tool'
+                ? row.label
+                : row.kind === 'result'
+                  ? (row.error ? 'error' : 'result')
+                  : row.kind
+        head.append(
+            el('span', 'dya-badge dya-badge--soft', label),
+            el('span', 'kanban-card-note', row.kind === 'tool' ? row.body : row.body.slice(0, 90))
+        )
+
+        const body = el('pre', 'kanban-row-body', row.body)
+        body.hidden = true
+        head.addEventListener('click', () => {
+            body.hidden = !body.hidden
+        })
+
+        node.append(head, body)
+        return node
+    }
+
     const syncTerminal = (card: Card): void => {
         const run = card.runs[card.runs.length - 1]
-        const key = shown(card) === 'running' && run ? `${card.id}:${run.runId}` : ''
-        if (key === terminalFor) return
+        const live = shown(card) === 'running' && run !== undefined
+        const key = run ? `${tab}:${card.id}:${run.runId}` : ''
 
+        if (key === terminalFor) return
         closeTerminal()
         if (!key) return
 
+        terminalFor = key
         stage.hidden = false
+
+        if (tab === 'history' || !live) {
+            const list = el('div', 'kanban-history')
+            stage.replaceChildren(list)
+            paintHistory(card, list)
+            return
+        }
+
         const view = el('div', 'kanban-terminal')
         stage.replaceChildren(view)
-        terminalFor = key
         terminal = openTerminal(ctx, view, meta?.slug ?? '', card.id, (reason) => {
             closeTerminal()
             fail(reason)
@@ -603,11 +670,28 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const head = el('div', 'dya-card__header kanban-drawer-head')
         const heading = el('span', 'dya-label', rules.labels[shown(card)])
+
+        const tabs = el('div', 'dya-tabs kanban-tabs')
+        tabs.setAttribute('role', 'tablist')
+        for (const name of ['terminal', 'history'] as const) {
+            const button = el('button', 'dya-tab', name)
+            button.type = 'button'
+            button.setAttribute('role', 'tab')
+            button.setAttribute('aria-selected', String(tab === name))
+            button.addEventListener('click', () => {
+                if (tab === name) return
+                tab = name
+                drawnRev = -1
+                paintDrawer()
+            })
+            tabs.appendChild(button)
+        }
+
         const close = el('button', 'dya-key', '×')
         close.type = 'button'
         close.setAttribute('aria-label', 'close the card')
         close.addEventListener('click', () => select(null))
-        head.append(heading, el('span', 'kanban-spacer'), close)
+        head.append(heading, el('span', 'kanban-spacer'), tabs, close)
 
         const body = el('div', 'kanban-drawer-body')
 
@@ -702,6 +786,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     const branch = el('span', 'dya-tag', run.branch)
                     branch.title = run.worktree ?? ''
                     row.append(branch)
+                }
+                for (const name of run.kept ?? []) {
+                    const file = el('button', 'dya-chip', name)
+                    file.type = 'button'
+                    file.title = 'show this artifact on disk'
+                    file.addEventListener('click', () => {
+                        void invoke('reveal', meta?.slug, card.id, name).catch(fail)
+                    })
+                    row.append(file)
                 }
                 if (run.summary) row.append(el('div', 'kanban-comment-text', run.summary))
                 runsGroup.appendChild(row)

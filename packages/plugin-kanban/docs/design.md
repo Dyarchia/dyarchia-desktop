@@ -551,6 +551,49 @@ The rung order in section 11 is unchanged in spirit and clearer in practice:
 3. liveness ALIVE or UNKNOWN                keep the claim, touch nothing
 ```
 
+### 5.11 A worker refuses to run anywhere under AppData
+
+Phase 5 put a card in a `scratch` workspace for the first time, and every launch failed:
+
+```text
+Couldn't start a background session (working directory no longer exists or is not
+accessible: C:\Users\Usuario\AppData\Roaming\dyarchia\kanban\boards\p5\workspaces\<id>)
+```
+
+The directory existed. Narrowed by launching the same argv, from the same parent, against
+different directories:
+
+```text
+DIRECTORY                                    RESULT
+-------------------------------------------  --------
+%APPDATA%\dyarchia\kanban\...\workspaces\x   refused
+%APPDATA%\anything-else                      refused
+%LOCALAPPDATA%\anything-else                 refused
+%LOCALAPPDATA%\Temp\...                      works
+an ordinary project directory                works
+```
+
+So the CLI refuses a background session whose working directory sits under either AppData
+root, with the system temp directory excepted. Section 8.1 put scratch workspaces at
+`userData/kanban/boards/<slug>/workspaces/<cardId>`, which is under AppData by construction,
+so **no scratch card could ever have run**.
+
+Scratch workspaces are now `<tmpdir>/dyarchia-kanban/<slug>/<cardId>`, which is also a better
+reading of 2.2: it calls a scratch workspace "a fresh temporary directory", and userData is
+not temporary. What stays in userData is what has to be durable, which is the board itself and
+the harvested artifacts under `attachments/<cardId>/`.
+
+Two smaller facts from the same phase:
+
+```text
+A finished session still holds its working directory open. `rm` on a reclaimed scratch
+    workspace fails until the session is stopped, so the reclaim calls `claude stop` first and
+    then retries the removal a few times before giving up and saying so on the run
+A worker asked to declare an artifact it never wrote does exactly that. The board catches it:
+    the run is recorded as a violation naming the missing path, a comment goes on the card so
+    the next run reads it in its brief, and the card does NOT complete
+```
+
 ### 5.6 What the earlier draft got wrong
 
 Measured on 2026-09-07 against CLI 2.1.263. Each of these invalidated a decision below, and
@@ -804,8 +847,9 @@ kanban/boards.json                            registry: slug, name, workdir, arc
 kanban/boards/<slug>/board.json               that board's cards
 kanban/boards/<slug>/board.bak.<n>.json       rotated copies, newest is 0
 kanban/boards/<slug>/runs/<runId>.jsonl       our copy of transcript-derived events
-kanban/boards/<slug>/workspaces/<cardId>/     scratch workspace, deleted on completion
-kanban/boards/<slug>/attachments/<cardId>/    durable artifacts, phase 5
+kanban/boards/<slug>/attachments/<cardId>/    artifacts harvested from a run, durable
+<tmpdir>/dyarchia-kanban/<slug>/<cardId>/     scratch workspace, deleted on completion.
+                                              NOT under userData: see 5.11
 ```
 
 ```ts
@@ -1758,7 +1802,10 @@ PHASE  DELIVERS                                                  STATE
        reconciliation, review flow, scheduled cards,               run and both halves of
        diagnostics, runtime cap                                    it resolved by evidence.
                                                                   See 19
-  5    Attachments, worktree workspaces, history tab              a run leaves artifacts
+  5    Attachments, worktree workspaces, history tab              DONE. A run leaves an
+                                                                  artifact, a lying run is
+                                                                  caught, and the transcript
+                                                                  reads as rows
   6    Goal mode and auto-decompose                               a vague card becomes
                                                                   a graph
   7    Swarm, if 2.8 still argues for it                          one command, one graph
@@ -1767,9 +1814,6 @@ PHASE  DELIVERS                                                  STATE
 What is still not proven after phase 4, recorded so nobody claims it:
 
 ```text
-The scratch workspace is never deleted. The design says a scratch workspace is removed on
-    completion after its declared artifacts are copied out, and the copying is phase 5, so
-    deleting first would destroy the work. Nothing is deleted until it can be saved
 `sourcePhase` is only ever 'ready'. A card can only be blocked out of a run, and a run can
     only start from ready, so the 'review' arm is written and unreachable until an automatic
     reviewer exists. It is kept because the machinery is right, not because it is exercised

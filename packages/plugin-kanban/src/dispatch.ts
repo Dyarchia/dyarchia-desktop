@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as agents from './agents.js'
+import { harvest, reclaim } from './artifacts.js'
 import type { SessionRecord } from './agents.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
@@ -51,7 +52,7 @@ function current(card: Card): Run | null {
 
 function workspace(meta: BoardMeta, card: Card): string {
     if (card.workspaceKind === 'scratch') {
-        return join(boards.boardRoot(meta.slug), 'workspaces', card.id)
+        return join(boards.workspacesRoot(meta.slug), card.id)
     }
     return card.workdir ?? meta.workdir
 }
@@ -127,6 +128,28 @@ async function resolve(
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
 
+        const from = run.worktree ?? workspace(meta, card)
+        const picked = await harvest(meta.slug, card.id, from, declared.artifacts)
+        run.kept = picked.kept
+
+        if (declared.outcome === 'completed' && picked.missing.length) {
+            const names = picked.missing.join(', ')
+            close(run, 'violation', declared.summary, `declared but missing: ${names}`)
+            card.comments.push({
+                at: Date.now(),
+                author: 'agent',
+                text: `The last run declared artifacts that were not there: ${names}. Write them, or declare the paths they actually have.`
+            })
+            card.consecutiveFailures += 1
+            if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
+                block(card, 'capability', 'ready')
+            } else {
+                land(card, 'ready')
+            }
+            sink.runEnded(meta.slug, card.id, 'violation')
+            return
+        }
+
         if (declared.followups.length) await adopt(file, meta, card, declared.followups)
 
         if (declared.outcome === 'completed') {
@@ -135,6 +158,11 @@ async function resolve(
             card.blockRecurrences = 0
             card.lastBlockKind = null
             card.blockKind = null
+            if (card.workspaceKind === 'scratch') {
+                if (run.shortId) await agents.stop(run.shortId)
+                const gone = await reclaim(workspace(meta, card), boards.workspacesRoot(meta.slug))
+                if (!gone) run.error = 'the scratch workspace could not be removed'
+            }
             land(card, run.worktree ? 'review' : 'done')
         } else if (declared.blockKind === 'dependency') {
             card.blockKind = null
@@ -294,6 +322,7 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
         outcome: null,
         summary: null,
         artifacts: [],
+        kept: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,

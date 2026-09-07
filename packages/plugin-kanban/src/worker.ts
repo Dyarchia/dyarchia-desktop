@@ -320,3 +320,102 @@ export async function progress(path: string): Promise<Progress | null> {
     result.terminal = parseTerminal(texts.join('\n'))
     return result
 }
+
+export interface HistoryRow {
+    at: number
+    kind: 'text' | 'thinking' | 'tool' | 'result' | 'end'
+    label: string
+    body: string
+    error: boolean
+}
+
+const TELLING = ['file_path', 'command', 'pattern', 'path', 'url', 'query', 'prompt']
+const MAX_ROWS = 400
+const MAX_BODY = 4_000
+
+function summarise(input: unknown): string {
+    const record = (input ?? {}) as Record<string, unknown>
+    for (const key of TELLING) {
+        const value = record[key]
+        if (typeof value === 'string' && value.trim()) return value.replace(/\s+/g, ' ').slice(0, 200)
+    }
+    const rendered = JSON.stringify(record) ?? ''
+    return rendered.length > 200 ? `${rendered.slice(0, 200)}...` : rendered
+}
+
+function stamp(entry: Record<string, unknown>): number {
+    const raw = entry.timestamp
+    const at = typeof raw === 'string' ? Date.parse(raw) : 0
+    return Number.isNaN(at) ? 0 : at
+}
+
+export async function history(path: string): Promise<HistoryRow[]> {
+    let raw = ''
+    try {
+        raw = await readFile(path, 'utf-8')
+    } catch {
+        return []
+    }
+
+    const rows: HistoryRow[] = []
+
+    for (const line of raw.split('\n')) {
+        if (!line.trim()) continue
+        let entry: Record<string, unknown>
+        try {
+            entry = JSON.parse(line) as Record<string, unknown>
+        } catch {
+            continue
+        }
+
+        const at = stamp(entry)
+
+        if (entry.type === 'system' && entry.subtype === 'turn_duration') {
+            const ms = typeof entry.durationMs === 'number' ? entry.durationMs : 0
+            const count = typeof entry.messageCount === 'number' ? entry.messageCount : 0
+            rows.push({
+                at,
+                kind: 'end',
+                label: 'turn',
+                body: `${(ms / 1000).toFixed(1)}s over ${count} messages`,
+                error: false
+            })
+            continue
+        }
+
+        if (entry.type === 'user' && entry.toolUseResult !== undefined) {
+            const value = entry.toolUseResult
+            const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '')
+            rows.push({
+                at,
+                kind: 'result',
+                label: '',
+                body: text.slice(0, MAX_BODY),
+                error: /^error\b|"is_error":\s*true/i.test(text)
+            })
+            continue
+        }
+
+        if (entry.type !== 'assistant') continue
+        const message = entry.message as Record<string, unknown> | undefined
+        for (const block of (message?.content as Record<string, unknown>[] | undefined) ?? []) {
+            if (block.type === 'text' && typeof block.text === 'string' && block.text.trim()) {
+                rows.push({ at, kind: 'text', label: '', body: block.text.slice(0, MAX_BODY), error: false })
+            }
+            if (block.type === 'thinking' && typeof block.thinking === 'string' && block.thinking.trim()) {
+                rows.push({
+                    at,
+                    kind: 'thinking',
+                    label: '',
+                    body: block.thinking.slice(0, MAX_BODY),
+                    error: false
+                })
+            }
+            if (block.type === 'tool_use' && typeof block.name === 'string') {
+                rows.push({ at, kind: 'tool', label: block.name, body: summarise(block.input), error: false })
+            }
+        }
+    }
+
+    return rows.slice(-MAX_ROWS)
+}

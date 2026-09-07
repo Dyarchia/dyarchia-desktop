@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import type { BoardDraft, BoardMeta } from './types.js'
 
@@ -48,6 +49,14 @@ export function boardPath(slug: string): string {
 
 export function runsRoot(slug: string): string {
     return join(boardRoot(slug), 'runs')
+}
+
+export function workspacesRoot(slug: string): string {
+    return join(tmpdir(), 'dyarchia-kanban', assertSlug(slug))
+}
+
+export function attachmentsRoot(slug: string, cardId: string): string {
+    return join(boardRoot(slug), 'attachments', cardId)
 }
 
 export function assertSlug(slug: string): string {

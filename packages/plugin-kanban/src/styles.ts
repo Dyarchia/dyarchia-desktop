@@ -354,4 +354,54 @@ export const STYLES = `
     border-radius: var(--dya-radius);
 }
 .xterm .xterm-viewport:hover::-webkit-scrollbar-thumb { background-color: var(--dya-border); }
+.kanban-tabs { flex: none; }
+
+.kanban-history {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: var(--dya-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-1);
+}
+
+.kanban-row-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--dya-space-1) 0;
+    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+}
+
+.kanban-row-entry[data-kind='text'] { padding: var(--dya-space-2) 0; }
+.kanban-row-entry[data-error='true'] .dya-badge { background: var(--dya-danger-soft); color: var(--dya-danger); }
+
+.kanban-row-head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.kanban-row-body {
+    margin: 0;
+    padding: var(--dya-space-2);
+    background: var(--dya-sunken);
+    border-radius: var(--dya-radius);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-3);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 320px;
+    overflow-y: auto;
+}
 `

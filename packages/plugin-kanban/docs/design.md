@@ -553,7 +553,7 @@ The rung order in section 11 is unchanged in spirit and clearer in practice:
 3. liveness ALIVE or UNKNOWN                keep the claim, touch nothing
 ```
 
-### 5.11 A worker refuses to run anywhere under AppData
+### 5.11 A scratch workspace under userData did not work, and the reason is NOT settled
 
 Phase 5 put a card in a `scratch` workspace for the first time, and every launch failed:
 
@@ -562,30 +562,55 @@ Couldn't start a background session (working directory no longer exists or is no
 accessible: C:\Users\Usuario\AppData\Roaming\dyarchia\kanban\boards\p5\workspaces\<id>)
 ```
 
-The directory existed. Narrowed by launching the same argv, from the same parent, against
-different directories:
+The directory existed, and Electron had just created it and stat'd it successfully.
+
+**An earlier version of this section concluded that the CLI refuses any working directory
+under AppData. That conclusion was wrong, and it is worth explaining how, because the same
+trap is waiting for the next person who measures anything on this machine.**
+
+Every measurement "from a shell" in this document was taken from a shell running inside the
+Claude desktop app, which is an MSIX package. Writes that shell makes to `AppData\Roaming` are
+redirected into the package container. Verified directly:
 
 ```text
-DIRECTORY                                    RESULT
--------------------------------------------  --------
-%APPDATA%\dyarchia\kanban\...\workspaces\x   refused
-%APPDATA%\anything-else                      refused
-%LOCALAPPDATA%\anything-else                 refused
-%LOCALAPPDATA%\Temp\...                      works
-an ordinary project directory                works
+write  ~/AppData/Roaming/marker.txt        from that shell
+read   ~/AppData/Local/Packages/Claude_<id>/LocalCache/Roaming/marker.txt   the same file
 ```
 
-So the CLI refuses a background session whose working directory sits under either AppData
-root, with the system temp directory excepted. Section 8.1 put scratch workspaces at
-`userData/kanban/boards/<slug>/workspaces/<cardId>`, which is under AppData by construction,
-so **no scratch card could ever have run**.
+The transcript directory names prove the sessions followed the redirect: a session launched
+from that shell into `AppData\Roaming\dyarchia\...` recorded its cwd as
+`...\AppData\Local\Packages\Claude_<id>\LocalCache\Roaming\dyarchia\...` and ran perfectly
+happily. That path is itself under AppData, which is the counter-example the earlier
+conclusion needed and did not get.
 
-Scratch workspaces are now `<tmpdir>/dyarchia-kanban/<slug>/<cardId>`, which is also a better
-reading of 2.2: it calls a scratch workspace "a fresh temporary directory", and userData is
-not temporary. What stays in userData is what has to be durable, which is the board itself and
-the harvested artifacts under `attachments/<cardId>/`.
+So what is actually established is narrower:
 
-Two smaller facts from the same phase:
+```text
+ESTABLISHED   A directory created by the Electron process at
+              userData/kanban/boards/<slug>/workspaces/<id> was refused by the CLI as
+              "no longer exists or is not accessible"
+ESTABLISHED   The same apparent path, when the directory was created by the packaged
+              shell instead, was accepted
+ESTABLISHED   Sessions run without complaint in a directory under AppData, as long as
+              it is the one the resolving side can see
+NOT KNOWN     Whether the CLI has any policy about AppData at all. The evidence now
+              points at a path-virtualization mismatch between the process that
+              created the directory and the process that resolved it, rather than at
+              a refusal
+NOT KNOWN     Whether this reproduces at all on a machine where dyarchia is launched
+              normally, outside any package container
+```
+
+Scratch workspaces are at `<tmpdir>/dyarchia-kanban/<slug>/<cardId>` and should stay there,
+but for a reason that does not depend on any of the above: section 2.2 calls a scratch
+workspace "a fresh temporary directory", userData is not temporary, and the system temp
+directory is outside every redirect either way. What stays in userData is what has to outlive
+the run, which is the board and the harvested artifacts under `attachments/<cardId>/`.
+
+The open question is in [open-problems.md](open-problems.md); it is not blocking, and it is
+not to be quietly re-answered by guessing.
+
+Two smaller facts from the same phase, both solid:
 
 ```text
 A finished session still holds its working directory open. `rm` on a reclaimed scratch
@@ -595,6 +620,27 @@ A worker asked to declare an artifact it never wrote does exactly that. The boar
     the run is recorded as a violation naming the missing path, a comment goes on the card so
     the next run reads it in its brief, and the card does NOT complete
 ```
+
+### 5.12 `~/.claude/sessions/` is a process registry, not the transcripts
+
+Worth stating because the name invites the wrong guess. There are two directories and they
+hold different things:
+
+```text
+~/.claude/sessions/<pid>.json        one file per LIVE session: pid, sessionId, cwd, name,
+                                     kind, version, and a messaging socket path. Paired with
+                                     a <pid>.<hash>.key. This is the state behind
+                                     `claude agents --json`, and it disappears with the process
+~/.claude/projects/<mangled-cwd>/    the conversation transcripts, one <sessionId>.jsonl per
+                                     session. This is what the board reads for progress, the
+                                     terminal block and the history tab
+```
+
+The registry is tempting as a cheaper liveness source than spawning `claude agents --json`
+every tick, and it should be resisted: it is undocumented on-disk state whose shape can change
+without notice, whereas `--json` is documented as being for scripting. The seam of section 21
+exists so that this choice is made in one file, and it is made in favour of the documented
+interface.
 
 ### 5.6 What the earlier draft got wrong
 

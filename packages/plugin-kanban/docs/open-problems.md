@@ -49,7 +49,33 @@ Done looks like: `deleteCard` removes that card's attachments; a sweep removes t
 with no live card; and the panel lists worktree branches with their merge state and can remove
 the ones that are landed. Lives in `src/artifacts.ts`, `src/board.ts` and `src/dispatch.ts`.
 
-### 1.2 A worker filing more than ten followups loses the rest in silence
+### 1.2 Every measurement on this machine was taken inside a package container
+
+The shell used for every measurement in design.md section 5 runs inside the Claude desktop
+app, which is an MSIX package, so its writes to `AppData\Roaming` are redirected into
+`AppData\Local\Packages\Claude_<id>\LocalCache\Roaming\`. Verified by writing a marker through
+one path and reading it back through the other.
+
+This already produced one wrong conclusion. Section 5.11 originally said the CLI refuses any
+working directory under AppData; the counter-example was in the transcript directory names all
+along, where sessions had been running happily under
+`AppData\Local\Packages\Claude_<id>\LocalCache\Roaming\dyarchia\...`. The section now says
+what was observed and marks the cause unresolved.
+
+Two things follow, and neither is urgent:
+
+- **The scratch-workspace failure has no established cause.** The evidence points at a
+  virtualization mismatch between the process that created the directory and the process that
+  resolved it, not at a policy. It may not reproduce at all on a machine where dyarchia is
+  launched normally. The fix stands on its own reasoning — a scratch workspace is a temporary
+  directory and belongs in the temp directory — so nothing is blocked.
+- **Every other AppData-shaped or path-shaped measurement is suspect** until re-taken outside
+  the container, including anything about where userData really is.
+
+Done looks like: the handful of path-dependent claims re-measured from a plainly launched
+dyarchia, and section 5 annotated with which ones held.
+
+### 1.3 A worker filing more than ten followups loses the rest in silence
 
 `adopt` in `src/dispatch.ts` takes `followups.slice(0, 10)`. A worker that finds fifteen
 problems has five dropped with nothing said anywhere. The cap is right; the silence is not.
@@ -57,7 +83,7 @@ problems has five dropped with nothing said anywhere. The cap is right; the sile
 Done looks like: the extras are named in a comment on the card, or the cap is lifted and the
 board deals with the volume.
 
-### 1.3 The transcript copy of section 7.2 does not exist
+### 1.4 The transcript copy of section 7.2 does not exist
 
 The design has two storage tiers: the board as one JSON file, and a JSONL per run that is "our
 copy of transcript-derived events", which is what makes a run explicable after the CLI has
@@ -72,7 +98,7 @@ Done looks like: the dispatcher tees what it parses into `kanban/boards/<slug>/r
 the history tab falls back to it, and it is rotated by size. Section 20 already lists
 "the transcript copy grows without bound" as the risk to answer at the same time.
 
-### 1.4 Two dyarchia processes would fight over one board
+### 1.5 Two dyarchia processes would fight over one board
 
 Section 13 asks for a single elected dispatcher with a lease. There is none. It does not bite
 today because a plugin main module is imported once per app process, so one running dyarchia is
@@ -82,7 +108,7 @@ be a second dispatcher on the same files, and both would claim.
 Done looks like: a lease file next to the board with an expiry, stolen only when the holder is
 verified dead. Cheap now, and the alternative is double-dispatching real work.
 
-### 1.5 Errors are a single strip that the next error overwrites
+### 1.6 Errors are a single strip that the next error overwrites
 
 `fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
 a card is not attached to that card, and a second error erases the first. A run's `error` field
@@ -91,7 +117,7 @@ is shown in the drawer, but a refused move or a failed invoke is not.
 Done looks like: the error belongs to the thing it happened to, and the strip is a summary of
 what is currently wrong rather than a scratchpad.
 
-### 1.6 The panel harness stopped covering the panel
+### 1.7 The panel harness stopped covering the panel
 
 `scripts/panel-harness.html` was written for phases 1 and 2 and still only fakes those
 channels. It has no `card:progress`, no `run:ended`, no terminal and no history, so the drawer
@@ -213,8 +239,9 @@ Workers inherited the parent session's       stripped at spawn       design.md 5
 environment and came up "not logged in"
 state 'blocked' also means "finished, and    a declared terminal     design.md 5.10
 waiting on you", so cards stayed running     block outranks liveness
-A worker refuses to run under AppData, so    scratch workspaces      design.md 5.11
-no scratch card could ever have run          moved to tmpdir
+A scratch workspace under userData could     scratch workspaces      design.md 5.11
+not be launched into                         moved to tmpdir. The       and 1.2 above
+                                             CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
 createCard accepted any slug and created a   every card channel      commit 2784ca7

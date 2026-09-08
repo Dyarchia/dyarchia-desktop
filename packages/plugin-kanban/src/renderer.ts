@@ -54,9 +54,17 @@ interface CardProgress {
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="10" rx="1"/><rect x="16" y="4" width="5" height="13" rx="1"/></svg>'
 
+const PERMISSIONS = ['acceptEdits', 'auto', 'bypassPermissions', 'manual', 'dontAsk', 'plan']
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
+const WORKSPACES: [string, string][] = [
+    ['dir', 'the project directory'],
+    ['scratch', 'a fresh temporary directory']
+]
+
 const SLOW_MS = 1200
 const PIN = 'kanban:board:'
 const WORKTREES = '#worktrees'
+const SETTINGS = '#settings'
 
 interface CardNode {
     root: HTMLElement
@@ -459,6 +467,98 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         return form
     }
 
+    const showBoardSettings = (): void => {
+        if (!meta) return
+        main.hidden = true
+        setup.hidden = false
+        setup.replaceChildren(buildBoardSettings(meta))
+    }
+
+    const buildBoardSettings = (current: BoardMeta): HTMLElement => {
+        const form = el('div', 'kanban-setup-form')
+        form.append(
+            el(
+                'div',
+                'dya-empty',
+                `${current.name}. The slug '${current.slug}' names its storage and never changes.`
+            )
+        )
+
+        const name = el('input', 'dya-field')
+        name.type = 'text'
+        name.value = current.name
+
+        const dirRow = el('div', 'kanban-row')
+        const dir = el('input', 'dya-field')
+        dir.type = 'text'
+        dir.spellcheck = false
+        dir.value = current.workdir
+        const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
+        browse.type = 'button'
+        browse.addEventListener('click', () => {
+            void invoke<string | null>('pickWorkdir')
+                .then((picked) => {
+                    if (picked) dir.value = picked
+                })
+                .catch(fail)
+        })
+        dirRow.append(dir, browse)
+
+        const save = el('button', 'dya-button', 'save')
+        save.type = 'button'
+        save.addEventListener('click', () => {
+            void invoke('updateBoard', current.slug, { name: name.value, workdir: dir.value })
+                .then(() => {
+                    say(`${name.value} saved`)
+                    return refresh()
+                })
+                .catch(fail)
+        })
+
+        const back = el('button', 'dya-button dya-button--quiet', 'cancel')
+        back.type = 'button'
+        back.addEventListener('click', () => void refresh().catch(fail))
+
+        const archive = el('button', 'dya-button dya-button--quiet dya-button--sm', 'archive')
+        archive.type = 'button'
+        archive.title = 'the files are kept and the board leaves the picker'
+        archive.addEventListener('click', () => {
+            if (!window.confirm(`Archive ${current.name}? Its cards and files are kept, and it leaves the picker.`)) {
+                return
+            }
+            void invoke('archiveBoard', current.slug, true)
+                .then(() => {
+                    write(pinKey, '')
+                    say(`${current.name} archived`)
+                    return refresh()
+                })
+                .catch(fail)
+        })
+
+        const remove = el('button', 'dya-button dya-button--danger dya-button--sm', 'delete')
+        remove.type = 'button'
+        remove.addEventListener('click', () => {
+            const warning =
+                `Delete ${current.name}? Its cards, their run history and every artifact a run left ` +
+                `go with it, and none of that is recoverable. ${current.workdir} itself is NOT touched, ` +
+                'and neither are the worktrees any run left in it.'
+            if (!window.confirm(warning)) return
+            void invoke('deleteBoard', current.slug)
+                .then(() => {
+                    write(pinKey, '')
+                    say(`${current.name} deleted`)
+                    return refresh()
+                })
+                .catch(fail)
+        })
+
+        const actions = el('div', 'kanban-row')
+        actions.append(save, back, el('span', 'kanban-spacer'), archive, remove)
+
+        form.append(name, dirRow, actions)
+        return form
+    }
+
     const openBoardMenu = (anchor: HTMLElement): void => {
         const rows: MenuRow[] = registry
             .filter((entry) => !entry.archived)
@@ -482,6 +582,14 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         if (meta) {
             rows.push({
+                key: SETTINGS,
+                label: 'board settings',
+                group: 'this board',
+                direct: true,
+                note: 'rename it, point it somewhere else, archive it or delete it',
+                leaves: [{ label: 'board settings', value: SETTINGS }]
+            })
+            rows.push({
                 key: WORKTREES,
                 label: 'worktrees',
                 group: 'this board',
@@ -498,6 +606,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             onPick: (row) => {
                 if (row.key === WORKTREES) {
                     openWorktreeMenu(anchor)
+                    return
+                }
+                if (row.key === SETTINGS) {
+                    showBoardSettings()
                     return
                 }
                 if (!row.key) {
@@ -809,6 +921,110 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         priority.addEventListener('change', () => patch(card.id, { priority: Number(priority.value) }))
         priorityGroup.appendChild(priority)
 
+        const settingsGroup = el('div', 'kanban-group')
+        settingsGroup.append(el('span', 'dya-label', 'settings'))
+        const settings = el('div', 'kanban-settings')
+
+        const chooser = (
+            what: string,
+            current: string,
+            values: string[],
+            labels: Record<string, string>,
+            apply: (value: string) => void
+        ): HTMLButtonElement => {
+            const button = el('button', 'dya-button dya-button--quiet dya-button--sm', labels[current] ?? current)
+            button.type = 'button'
+            button.disabled = card.locked
+            button.addEventListener('click', () =>
+                openMenu({
+                    anchor: button,
+                    rows: values.map((value) => ({
+                        key: value,
+                        label: labels[value] ?? value,
+                        group: what,
+                        direct: true,
+                        selected: value === current,
+                        leaves: [{ label: labels[value] ?? value, value }]
+                    })),
+                    filter: `filter ${what}`,
+                    onPick: (row) => apply(row.key)
+                })
+            )
+            return button
+        }
+
+        const number = (value: number | null, unit: string, apply: (next: number | null) => void): HTMLInputElement => {
+            const input = el('input', 'dya-field dya-field--sm')
+            input.type = 'number'
+            input.min = '1'
+            input.placeholder = unit
+            input.disabled = card.locked
+            if (value !== null) input.value = String(value)
+            input.addEventListener('change', () => {
+                const parsed = Number(input.value)
+                apply(input.value.trim() && parsed > 0 ? Math.round(parsed) : null)
+            })
+            return input
+        }
+
+        const model = el('input', 'dya-field dya-field--sm')
+        model.type = 'text'
+        model.spellcheck = false
+        model.placeholder = 'opus, sonnet, fable, or a full name'
+        model.disabled = card.locked
+        model.value = card.model ?? ''
+        model.addEventListener('change', () => patch(card.id, { model: model.value.trim() || null }))
+
+        const override = el('input', 'dya-field dya-field--sm')
+        override.type = 'text'
+        override.spellcheck = false
+        override.placeholder = meta?.workdir ?? 'the board directory'
+        override.disabled = card.locked
+        override.value = card.workdir ?? ''
+        override.addEventListener('change', () => patch(card.id, { workdir: override.value.trim() || null }))
+
+        const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
+        browse.type = 'button'
+        browse.disabled = card.locked
+        browse.addEventListener('click', () => {
+            void invoke<string | null>('pickWorkdir')
+                .then((picked) => (picked ? patch(card.id, { workdir: picked }) : undefined))
+                .catch(fail)
+        })
+        const overrideRow = el('div', 'kanban-row')
+        overrideRow.append(override, browse)
+
+        const efforts = ['', ...EFFORTS]
+        const labelled = Object.fromEntries(WORKSPACES) as Record<string, string>
+
+        settings.append(
+            el('span', 'kanban-setting', 'permission'),
+            chooser('permission mode', card.permissionMode, PERMISSIONS, {}, (value) =>
+                patch(card.id, { permissionMode: value })
+            ),
+            el('span', 'kanban-setting', 'model'),
+            model,
+            el('span', 'kanban-setting', 'effort'),
+            chooser('effort', card.effort ?? '', efforts, { '': 'the CLI default' }, (value) =>
+                patch(card.id, { effort: value || null })
+            ),
+            el('span', 'kanban-setting', 'workspace'),
+            chooser('workspace', card.workspaceKind, ['dir', 'scratch'], labelled, (value) =>
+                patch(card.id, { workspaceKind: value as Card['workspaceKind'] })
+            ),
+            el('span', 'kanban-setting', 'directory'),
+            overrideRow,
+            el('span', 'kanban-setting', 'runtime cap'),
+            number(card.maxRuntimeSeconds, 'seconds, blank for none', (next) =>
+                patch(card.id, { maxRuntimeSeconds: next })
+            ),
+            el('span', 'kanban-setting', 'retries'),
+            number(card.maxRetries, 'blank for the default 2', (next) =>
+                patch(card.id, { maxRetries: next })
+            )
+        )
+        settingsGroup.appendChild(settings)
+
         const depsGroup = el('div', 'kanban-group')
         depsGroup.append(el('span', 'dya-label', 'depends on'))
         const parents = el('div', 'kanban-parents')
@@ -979,6 +1195,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             titleGroup,
             bodyGroup,
             priorityGroup,
+            settingsGroup,
             depsGroup,
             scheduleGroup,
             runsGroup,

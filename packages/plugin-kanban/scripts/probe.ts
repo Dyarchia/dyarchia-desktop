@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
+import { adopt } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { strays } from '../src/artifacts.js'
 import { parseTerminal } from '../src/worker.js'
@@ -222,6 +223,27 @@ async function housekeeping(): Promise<void> {
     check('and it goes with the card', existsSync(kept), false)
 }
 
+async function followups(): Promise<void> {
+    console.log('\nno followup is dropped in silence')
+    const meta = await boards.find('probe')
+    const file = await board.load('probe')
+    const parent = await board.createCard('probe', { title: 'a run with opinions' })
+    file.cards.push(parent)
+
+    const proposed = Array.from({ length: 12 }, (unused, index) => ({
+        title: `followup ${index + 1}`,
+        body: 'found while working'
+    }))
+    proposed.push({ title: '   ', body: 'a title that is only spaces' })
+
+    await adopt(file, meta, parent, proposed)
+    const children = (await board.cards('probe')).filter((card) => card.parents.includes(parent.id))
+    check('the cap still holds', children.length, 10)
+    check('an empty title is never a card', children.some((card) => !card.title.trim()), false)
+    check('the extras are named on the card', parent.comments.length, 1)
+    check('and they are named by title', parent.comments[0].text.includes('followup 12'), true)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -229,6 +251,7 @@ launches()
 terminals()
 await machine()
 await housekeeping()
+await followups()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

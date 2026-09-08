@@ -66,6 +66,11 @@ Artifacts                what a run declares is copied out of the workspace befo
 History                  the transcript as readable rows in the drawer, beside the
                          terminal: prose, thinking, tool calls with a one-line argument
                          summary, results that expand, and a closing turn row
+Card settings            per card, from the drawer: permission mode, model, effort,
+                         workspace kind, a working directory override, a runtime cap
+                         and a retry limit, all disabled while a worker holds the card
+Board settings           rename, re-point, archive and delete, the last two refusing
+                         while a card on that board is running
 Housekeeping             every store the board fills has something that empties it:
                          attachments go with their card, temporary workspaces are swept
                          once their card is closed or gone, and the worktrees a run
@@ -188,7 +193,7 @@ Scratch workspaces are the exception and live at `<tmpdir>/dyarchia-kanban/<slug
 NOT under userData. Section 2.2 of the design calls a scratch workspace "a fresh temporary
 directory" and userData is not temporary, which is reason enough. It is also where a workspace
 under userData was measured to fail, though **the cause of that is not settled** and may be an
-artifact of the machine it was measured on. See design.md 5.11 and open-problems.md 1.2.
+artifact of the machine it was measured on. See design.md 5.11 and open-problems.md 1.1.
 
 Written by temp file plus `rename`, which is atomic on NTFS within a volume. **The slug is a
 path segment**, so it is validated against an allowlist before it is ever joined to a path:
@@ -204,7 +209,7 @@ slug first, because there is no ambient current board in the main module.
 ```text
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
-dispatchNow   stopCard      unblock       runEvents      diagnostics
+deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
 attachments   reveal        worktrees     removeWorktree
 ignoreState   addIgnore
 attach        negotiates a MessagePort for the pty, never terminal data

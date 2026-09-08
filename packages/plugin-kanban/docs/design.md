@@ -925,6 +925,10 @@ is a project, and it would add a "no board selected" state to every code path.
 
 Deleting a board is archiving it: the registry entry is flagged and the files are kept. Real
 deletion is a separate, confirmed action that refuses while any card on that board is running.
+It takes the registry entry, `kanban/boards/<slug>/` with the cards, their run history and
+every artifact a run left, and the board's temporary workspaces. It does **not** touch the
+project directory, and it does not touch the worktrees a run left inside it: those hold
+commits, and 8.3 says who may remove one.
 
 ### 8.2 Cards
 
@@ -1542,6 +1546,9 @@ createBoard       invoke     the created board. Validates the slug and that the
                              workdir exists and is absolute
 updateBoard       invoke     the board after a rename or a workdir change
 archiveBoard      invoke     confirmation. Refuses while a card is running
+deleteBoard       invoke     confirmation. Refuses while a card is running. Takes
+                             the registry entry, the board directory and the
+                             board's temporary workspaces, and nothing else
 board             invoke     one board's cards, plus the rules table and `now`
 createCard        invoke     the created card
 updateCard        invoke     the card after the change

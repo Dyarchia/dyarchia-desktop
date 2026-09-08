@@ -47,6 +47,10 @@ export async function save(slug: string, file: BoardFile): Promise<void> {
     cache.set(slug, file)
 }
 
+export function forget(slug: string): void {
+    cache.delete(slug)
+}
+
 export async function cards(slug: string): Promise<Card[]> {
     return (await load(slug)).cards
 }

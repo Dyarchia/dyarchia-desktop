@@ -3,6 +3,7 @@ import type { UtilityProcess } from 'electron'
 import { join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 import * as agents from './agents.js'
+import { reclaim } from './artifacts.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
 import * as dispatch from './dispatch.js'
@@ -94,6 +95,19 @@ export function activate(ctx: PluginMainContext): void {
         const updated = await boards.setArchived(target, archived !== false)
         registryChanged()
         return updated
+    })
+
+    ctx.handle('deleteBoard', async (slug) => {
+        const target = String(slug)
+        await boards.find(target)
+        if ((await running(target)).length) throw new Error('that board still has a card running')
+
+        await boards.forget(target)
+        board.forget(target)
+        await reclaim(boards.boardRoot(target), boards.root())
+        await reclaim(boards.workspacesRoot(target), boards.workspacesParent())
+        registryChanged()
+        return true
     })
 
     ctx.handle('board', async (slug): Promise<BoardPayload> => {

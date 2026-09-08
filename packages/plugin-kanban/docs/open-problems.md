@@ -7,7 +7,7 @@ this file says where the plugin is not that yet.
 Rules for keeping it:
 
 - An entry leaves this file only when it is done or deliberately dropped, and a dropped entry
-  moves to section 5 with the reason. Nothing is deleted silently.
+  moves to section 4 with the reason. Nothing is deleted silently.
 - Every entry names the file it lives in and what "done" looks like, so it can be picked up by
   someone with no memory of the session that found it.
 - A problem found while building is written here the same day, before the commit that found it.
@@ -16,11 +16,10 @@ Rules for keeping it:
 ## Index
 
 - [1. Open, in the order they would bite](#1-open-in-the-order-they-would-bite)
-- [2. Surfaces the data model has and the panel does not](#2-surfaces-the-data-model-has-and-the-panel-does-not)
-- [3. Unproven rather than broken](#3-unproven-rather-than-broken)
-- [4. Standing requests on kanon](#4-standing-requests-on-kanon)
-- [5. Deferred or dropped on purpose](#5-deferred-or-dropped-on-purpose)
-- [6. Closed, and where the evidence is](#6-closed-and-where-the-evidence-is)
+- [2. Unproven rather than broken](#2-unproven-rather-than-broken)
+- [3. Standing requests on kanon](#3-standing-requests-on-kanon)
+- [4. Deferred or dropped on purpose](#4-deferred-or-dropped-on-purpose)
+- [5. Closed, and where the evidence is](#5-closed-and-where-the-evidence-is)
 
 
 ## 1. Open, in the order they would bite
@@ -94,43 +93,7 @@ Done looks like: the error belongs to the thing it happened to, and the strip is
 what is currently wrong rather than a scratchpad.
 
 
-## 2. Surfaces the data model has and the panel does not
-
-None of these is a bug. Each is a field or a channel that works over IPC and has no way to
-reach it from the panel, which means it may as well not exist for the operator.
-
-```text
-WHAT                     WHERE IT LIVES              WHAT IS MISSING
------------------------  --------------------------  ------------------------------
-model, effort            Card, passed to the CLI     any control at all. Every card
-                                                     runs on the default model
-permissionMode           Card, defaults acceptEdits  the same. This is the one that
-                                                     governs what an unattended
-                                                     worker may do to a repository,
-                                                     and it is per card BECAUSE it
-                                                     should never be set globally
-maxRuntimeSeconds        Card, enforced by the tick  no way to set the cap that the
-                                                     dispatcher already honours
-maxRetries               Card, drives the breaker    the same
-workspaceKind            Card, scratch or dir        no way to choose scratch, so
-                                                     the whole scratch path is
-                                                     reachable only over IPC
-workdir override         Card, per-card directory    the same
-archiveBoard             channel, refuses while a    no button. A board cannot be
-                         card is running             put away
-updateBoard              channel, rename and         no button. A board cannot be
-                         re-point                    renamed or moved
-board deletion           NOT BUILT. 8.1 says real    neither channel nor button
-                         deletion is a separate
-                         confirmed action
-```
-
-Done looks like: a card settings group in the drawer for the per-card fields, and a board menu
-that can rename, re-point, archive and delete. The permission mode is the one worth doing
-first, because it is a safety control that currently cannot be exercised.
-
-
-## 3. Unproven rather than broken
+## 2. Unproven rather than broken
 
 ```text
 WHAT                        WHY IT IS UNPROVEN
@@ -153,7 +116,7 @@ Anything but Windows        Every measurement in design.md section 5 was made on
 ```
 
 
-## 4. Standing requests on kanon
+## 3. Standing requests on kanon
 
 Both are recorded in the README as debts and belong upstream rather than here.
 
@@ -164,7 +127,7 @@ Both are recorded in the README as debts and belong upstream rather than here.
 - **No screen-reader-only class.** The live region here is a prefixed `.kanban-sr`.
 
 
-## 5. Deferred or dropped on purpose
+## 4. Deferred or dropped on purpose
 
 ```text
 Inbound attachments      2.1 wants files bound to a card and handed to the worker as
@@ -186,7 +149,7 @@ The executor abstraction 21.5. Deliberately not built. Keep Claude-specific know
 ```
 
 
-## 6. Closed, and where the evidence is
+## 5. Closed, and where the evidence is
 
 Kept so nobody re-opens them or, worse, re-derives them.
 
@@ -232,4 +195,12 @@ the operator's git status                    into .git/info/exclude
 worktree remove succeeded before branch      the landed check moved  src/worktrees.ts
 -d refused, so an unlanded branch could      inside worktrees.remove
 lose its working tree
+A run filing more than ten followups lost    the extras are named    probe, 4 checks
+the rest in silence                          in a comment on the
+                                             card
+Nine fields and channels the data model      a settings group in     README, section 1
+had and the panel had no way to reach,       the drawer and a board
+including the permission mode, which is      settings view with
+a safety control                             rename, re-point,
+                                             archive and delete
 ```

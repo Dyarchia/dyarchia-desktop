@@ -473,6 +473,31 @@ const ctx = {
             emit({ type: 'boards:changed' })
             return created
         }
+        if (channel === 'updateBoard') {
+            const board = REGISTRY.find((entry) => entry.slug === args[0])
+            if (!board) throw new Error(`no board '${args[0]}'`)
+            const name = String(args[1].name ?? '').trim()
+            if (!name) throw new Error('the board needs a name')
+            board.name = name
+            if (args[1].workdir !== undefined) board.workdir = args[1].workdir
+            emit({ type: 'boards:changed' })
+            return board
+        }
+        if (channel === 'archiveBoard') {
+            const board = REGISTRY.find((entry) => entry.slug === args[0])
+            if (cards.some((card) => card.status === 'running')) throw new Error('that board still has a card running')
+            board.archived = args[1] !== false
+            emit({ type: 'boards:changed' })
+            return board
+        }
+        if (channel === 'deleteBoard') {
+            const index = REGISTRY.findIndex((entry) => entry.slug === args[0])
+            if (index < 0) throw new Error(`no board '${args[0]}'`)
+            if (cards.some((card) => card.status === 'running')) throw new Error('that board still has a card running')
+            REGISTRY.splice(index, 1)
+            emit({ type: 'boards:changed' })
+            return true
+        }
         if (channel === 'createCard') {
             seq += 1
             const card = {

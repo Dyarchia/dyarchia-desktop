@@ -226,6 +226,22 @@ export const STYLES = `
     letter-spacing: normal;
 }
 
+.kanban-settings {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: var(--dya-space-1) var(--dya-space-2);
+}
+
+.kanban-settings > button { justify-self: start; }
+
+.kanban-setting {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-3);
+}
+
 .kanban-parents {
     display: flex;
     flex-wrap: wrap;

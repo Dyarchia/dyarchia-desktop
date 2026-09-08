@@ -31,7 +31,7 @@ const RESERVED = new Set([
     'lpt9'
 ])
 
-function root(): string {
+export function root(): string {
     return join(app.getPath('userData'), 'kanban')
 }
 
@@ -150,6 +150,12 @@ export async function update(slug: string, patch: Partial<BoardDraft>): Promise<
     boards[index] = { ...boards[index], name, workdir }
     await persist(boards)
     return boards[index]
+}
+
+export async function forget(slug: string): Promise<void> {
+    const boards = await list()
+    if (!boards.some((entry) => entry.slug === slug)) throw new Error(`no board '${slug}'`)
+    await persist(boards.filter((entry) => entry.slug !== slug))
 }
 
 export async function setArchived(slug: string, archived: boolean): Promise<BoardMeta> {

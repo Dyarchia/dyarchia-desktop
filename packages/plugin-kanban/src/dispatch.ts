@@ -18,6 +18,7 @@ const GLOBAL = 2
 const RETRIES = 2
 const VIOLATIONS = 3
 const RECURRENCES = 2
+const ADOPTED = 10
 const GUARD_MS = 60_000
 const SILENT_MS = 60 * 60_000
 const MIN_AGE_MS = 4 * 60 * 60_000
@@ -94,23 +95,32 @@ function block(card: Card, kind: BlockKind, from: 'ready' | 'review'): void {
     land(card, 'blocked')
 }
 
-async function adopt(
+export async function adopt(
     file: BoardFile,
     meta: BoardMeta,
     card: Card,
     followups: { title: string; body: string }[]
 ): Promise<void> {
-    for (const entry of followups.slice(0, 10)) {
-        const title = entry.title.trim()
-        if (!title) continue
+    const named = followups.filter((entry) => entry.title.trim())
+
+    for (const entry of named.slice(0, ADOPTED)) {
         const child = await board.createCard(meta.slug, {
-            title,
+            title: entry.title.trim(),
             body: entry.body,
             status: 'todo',
             parents: [card.id]
         })
         if (!file.cards.some((existing) => existing.id === child.id)) file.cards.push(child)
     }
+
+    const dropped = named.slice(ADOPTED).map((entry) => entry.title.trim())
+    if (!dropped.length) return
+
+    card.comments.push({
+        at: Date.now(),
+        author: 'agent',
+        text: `The last run proposed ${named.length} followups and a run may only open ${ADOPTED}. These did not become cards: ${dropped.join('; ')}`
+    })
 }
 
 async function resolve(

@@ -61,8 +61,47 @@ const TITLES = [
     ['archived', 'An earlier draft built on print mode']
 ]
 
+const WORKTREES = 'C:\\Users\\Usuario\\ai-department\\dyarchia\\.claude\\worktrees'
+
 let seq = 0
 const now = Date.now()
+
+const LIVE_RUN = {
+    runId: 'run-live',
+    sessionId: '9f1c0d3a-1e77-4d21-9b6e-0c4a1f2b35de',
+    shortId: 'a1b2c3d4',
+    worktree: `${WORKTREES}\\kanban-a1b2c3d4`,
+    branch: 'worktree-kanban-a1b2c3d4',
+    startedAt: now - 7 * 60_000,
+    endedAt: null,
+    outcome: null,
+    summary: null,
+    artifacts: [],
+    kept: [],
+    inputTokens: 41_200,
+    outputTokens: 3_800,
+    error: null,
+    headBefore: '28e1456'
+}
+
+const PAST_RUN = {
+    runId: 'run-past',
+    sessionId: '2ab41d55-77c0-4e0e-9a5f-1d3b6f0e9c11',
+    shortId: 'ff90ab12',
+    worktree: `${WORKTREES}\\kanban-ff90ab12`,
+    branch: 'worktree-kanban-ff90ab12',
+    startedAt: now - 95 * 60_000,
+    endedAt: now - 61 * 60_000,
+    outcome: 'completed',
+    summary: 'Slug validation now rejects the reserved device names and every path separator, with a probe check per class.',
+    artifacts: ['report.md'],
+    kept: ['report.md'],
+    inputTokens: 88_400,
+    outputTokens: 12_600,
+    error: null,
+    headBefore: '416f992'
+}
+
 const cards = TITLES.map(([status, title], index) => ({
     id: `card-${index}`,
     rev: 1,
@@ -80,21 +119,319 @@ const cards = TITLES.map(([status, title], index) => ({
     permissionMode: 'acceptEdits',
     scheduledFor: null,
     parents: index === 2 ? ['card-0'] : [],
-    runs: [],
+    runs: index === 7 ? [structuredClone(LIVE_RUN)] : index === 9 ? [structuredClone(PAST_RUN)] : [],
     comments: index === 8 ? [{ at: now - 900000, author: 'agent', text: 'Waiting on a permission prompt nobody is attached to.' }] : [],
     consecutiveFailures: 0,
     protocolViolations: 0,
-    blockRecurrences: 0,
-    blockKind: null,
-    sourcePhase: null,
+    blockRecurrences: index === 8 ? 1 : 0,
+    blockKind: index === 8 ? 'needs_input' : null,
+    lastBlockKind: index === 8 ? 'needs_input' : null,
+    sourcePhase: index === 8 ? 'ready' : null,
     locked: status === 'running',
     createdAt: now - index * 600000,
     updatedAt: now - index * 300000
 }))
 
+const HISTORY = [
+    {
+        at: now - 420_000,
+        kind: 'text',
+        label: 'agent',
+        body: 'Reading the launch path before touching anything, because the short id is parsed out of a line the CLI prints once.',
+        error: false
+    },
+    {
+        at: now - 396_000,
+        kind: 'thinking',
+        label: 'thinking',
+        body: 'The launch line is the only place the short id appears. If the parse misses it there is no second chance, so it has to hold for the native binary and for the .cmd shim.',
+        error: false
+    },
+    {
+        at: now - 372_000,
+        kind: 'tool',
+        label: 'Read',
+        body: 'src/agents.ts',
+        error: false
+    },
+    {
+        at: now - 366_000,
+        kind: 'result',
+        label: 'result',
+        body: 'export function invocation(path, args) {\n    return path.endsWith(".cmd")\n        ? { file: process.env.COMSPEC, args: ["/c", path, ...args] }\n        : { file: path, args }\n}',
+        error: false
+    },
+    {
+        at: now - 324_000,
+        kind: 'tool',
+        label: 'Edit',
+        body: 'src/worker.ts +18 -4',
+        error: false
+    },
+    {
+        at: now - 288_000,
+        kind: 'tool',
+        label: 'Bash',
+        body: 'npx tsc -p packages/plugin-kanban',
+        error: false
+    },
+    {
+        at: now - 276_000,
+        kind: 'result',
+        label: 'error',
+        body: 'src/worker.ts(212,9): error TS2532: Object is possibly undefined.',
+        error: true
+    },
+    {
+        at: now - 234_000,
+        kind: 'text',
+        label: 'agent',
+        body: 'The match can be null. Guarding it and running the typecheck again.',
+        error: false
+    },
+    {
+        at: now - 132_000,
+        kind: 'end',
+        label: 'end',
+        body: 'turn ended, 41.2k in, 3.8k out',
+        error: false
+    }
+]
+
+const DIAGNOSTICS = [
+    { slug: 'dyarchia', cardId: 'card-8', problem: 'blocked and waiting on you for 15m' },
+    { slug: '', cardId: null, problem: 'liveness unknown: claude agents --json answered nothing' }
+]
+
+const SCRIPT = [
+    { state: 'starting', tool: null, waiting: false, inputTokens: 1_200, outputTokens: 0, ms: 900 },
+    { state: 'working', tool: null, waiting: false, inputTokens: 8_400, outputTokens: 260, ms: 1_200 },
+    { state: 'working', tool: 'Read src/dispatch.ts', waiting: false, inputTokens: 15_600, outputTokens: 640, ms: 1_200 },
+    { state: 'working', tool: 'Edit src/dispatch.ts', waiting: false, inputTokens: 24_100, outputTokens: 1_480, ms: 1_400 },
+    { state: 'blocked', tool: null, waiting: true, inputTokens: 31_000, outputTokens: 2_100, ms: 3_000 },
+    { state: 'working', tool: 'Bash npx tsc', waiting: false, inputTokens: 38_900, outputTokens: 3_020, ms: 1_600 },
+    { state: 'working', tool: null, waiting: false, inputTokens: 44_700, outputTokens: 3_900, ms: 1_200 }
+]
+
+const timers = new Set()
+
+const later = (fn, ms) => {
+    const id = window.setTimeout(() => {
+        timers.delete(id)
+        fn()
+    }, ms)
+    timers.add(id)
+    return id
+}
+
 const listeners = new Set()
 const emit = (event) => listeners.forEach((listener) => listener(event))
 const byId = (id) => cards.find((card) => card.id === id)
+const changed = () => emit({ type: 'board:changed', slug: 'dyarchia' })
+
+const touch = (card) => {
+    card.rev += 1
+    card.updatedAt = Date.now()
+}
+
+const closeRun = (run, outcome, summary, error) => {
+    run.endedAt = Date.now()
+    run.outcome = outcome
+    run.summary = summary
+    run.error = error
+}
+
+const land = (card, status) => {
+    card.status = status
+    card.locked = false
+    touch(card)
+}
+
+const progressOf = (card, run, step) => ({
+    slug: 'dyarchia',
+    cardId: card.id,
+    runId: run.runId,
+    state: step.state,
+    tool: step.tool,
+    inputTokens: step.inputTokens,
+    outputTokens: step.outputTokens,
+    startedAt: run.startedAt,
+    waiting: step.waiting
+})
+
+let completions = 0
+
+const finish = (card, run) => {
+    completions += 1
+    if (completions % 2 === 1) {
+        closeRun(run, 'completed', 'Parsed the short id out of the launch line and covered both invocation shapes in the probe.', null)
+        run.artifacts = ['report.md']
+        run.kept = ['report.md']
+        card.consecutiveFailures = 0
+        card.blockKind = null
+        card.lastBlockKind = null
+        card.blockRecurrences = 0
+        land(card, 'review')
+    } else {
+        closeRun(run, 'blocked', 'The CLI needs a credential this worker does not have.', null)
+        card.blockKind = 'needs_input'
+        card.lastBlockKind = 'needs_input'
+        card.blockRecurrences += 1
+        card.sourcePhase = 'ready'
+        card.comments.push({
+            at: Date.now(),
+            author: 'agent',
+            text: 'Blocked: the token in the environment is expired, and nothing here can renew it.'
+        })
+        land(card, 'blocked')
+    }
+    emit({ type: 'run:ended', slug: 'dyarchia', cardId: card.id, outcome: run.outcome })
+}
+
+const walk = (card, run, index) => {
+    if (card.status !== 'running' || run.endedAt !== null) return
+    const step = SCRIPT[index]
+    if (!step) {
+        finish(card, run)
+        return
+    }
+    run.inputTokens = step.inputTokens
+    run.outputTokens = step.outputTokens
+    emit({ type: 'card:progress', ...progressOf(card, run, step) })
+    later(() => walk(card, run, index + 1), step.ms)
+}
+
+const startRun = (card) => {
+    seq += 1
+    const short = `b${String(seq).padStart(3, '0')}cd${seq}`
+    const run = {
+        runId: `run-${seq}`,
+        sessionId: crypto.randomUUID(),
+        shortId: short,
+        worktree: `${WORKTREES}\\kanban-${short}`,
+        branch: `worktree-kanban-${short}`,
+        startedAt: Date.now(),
+        endedAt: null,
+        outcome: null,
+        summary: null,
+        artifacts: [],
+        kept: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        error: null,
+        headBefore: 'fc7cf1a'
+    }
+    card.runs.push(run)
+    card.status = 'running'
+    card.locked = true
+    touch(card)
+    changed()
+    walk(card, run, 0)
+}
+
+const tick = () => {
+    if (cards.some((card) => card.status === 'running')) return
+    const next = cards
+        .filter((card) => card.status === 'ready' && !card.locked)
+        .sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)[0]
+    if (next) startRun(next)
+}
+
+const heartbeat = window.setInterval(() => {
+    for (const card of cards) {
+        if (card.status !== 'running') continue
+        const run = card.runs[card.runs.length - 1]
+        if (!run || run.endedAt !== null || run.runId !== 'run-live') continue
+        emit({
+            type: 'card:progress',
+            ...progressOf(card, run, {
+                state: 'blocked',
+                tool: null,
+                waiting: true,
+                inputTokens: run.inputTokens,
+                outputTokens: run.outputTokens
+            })
+        })
+    }
+}, 5_000)
+
+const ESC = '\u001b'
+const DIM = `${ESC}[2m`
+const OFF = `${ESC}[0m`
+
+const PTY_BANNER = [
+    `${DIM} attached to session a1b2c3d4 in kanban-a1b2c3d4${OFF}`,
+    '',
+    `${ESC}[36m>${OFF} parse the short id out of the --bg launch line`,
+    '',
+    `${DIM}  Read(src/agents.ts)${OFF}`,
+    `${DIM}  Edit(src/worker.ts)${OFF}`,
+    '',
+    `${ESC}[33m Claude needs your permission to run:${OFF}`,
+    '   Bash(npx tsc -p packages/plugin-kanban)',
+    '',
+    '   1. Yes   2. Yes, and do not ask again   3. No',
+    ''
+]
+
+const PTY_CHATTER = [
+    `${DIM}  Bash(npx tsc -p packages/plugin-kanban)${OFF}`,
+    `${DIM}  Read(src/dispatch.ts)${OFF}`,
+    `${DIM}  thinking${OFF}`,
+    `${DIM}  Edit(src/dispatch.ts)${OFF}`
+]
+
+const fakePty = (port) => {
+    let opened = false
+    let chatter = 0
+    let line = ''
+    const send = (text) => port.postMessage({ t: 'data', d: text })
+
+    const beat = window.setInterval(() => {
+        if (!opened) return
+        send(`${PTY_CHATTER[chatter % PTY_CHATTER.length]}\r\n`)
+        chatter += 1
+    }, 4_000)
+
+    port.onmessage = (event) => {
+        const message = event.data
+        if (message.t === 'resize') {
+            if (opened) return
+            opened = true
+            send(`${PTY_BANNER.join('\r\n')}\r\n`)
+            return
+        }
+        if (message.t === 'in') {
+            const data = message.d
+            if (data === '\r') {
+                const answer = line.trim()
+                line = ''
+                send('\r\n')
+                if (answer === '1' || answer === '2') {
+                    send(`${ESC}[32m  allowed${OFF}\r\n${DIM}  Bash(npx tsc -p packages/plugin-kanban)${OFF}\r\n`)
+                } else if (answer === '3') {
+                    send(`${ESC}[31m  refused${OFF}\r\n${DIM}  looking for another way${OFF}\r\n`)
+                } else {
+                    send(`${DIM}  heard: ${answer}${OFF}\r\n`)
+                }
+                return
+            }
+            if (data === '\u007f') {
+                if (!line) return
+                line = line.slice(0, -1)
+                send('\b \b')
+                return
+            }
+            line += data
+            send(data)
+            return
+        }
+        if (message.t === 'detach') {
+            window.clearInterval(beat)
+            port.close()
+        }
+    }
+}
 
 const ctx = {
     pluginId: 'kanban',
@@ -117,9 +454,23 @@ const ctx = {
         }
         if (channel === 'createCard') {
             seq += 1
-            const card = { ...cards[0], id: `new-${seq}`, rev: 1, title: args[1].title, body: '', status: 'triage', priority: 0, parents: [], comments: [], locked: false, createdAt: Date.now(), updatedAt: Date.now() }
+            const card = {
+                ...structuredClone(cards[0]),
+                id: `new-${seq}`,
+                rev: 1,
+                title: args[1].title,
+                body: '',
+                status: 'triage',
+                priority: 0,
+                parents: [],
+                runs: [],
+                comments: [],
+                locked: false,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            }
             cards.push(card)
-            emit({ type: 'board:changed', slug: args[0] })
+            changed()
             return card
         }
         if (channel === 'moveCard') {
@@ -127,35 +478,86 @@ const ctx = {
             if (card.rev !== args[2]) throw new Error('that card changed while you were moving it')
             if (!RULES.allow[card.status].includes(args[3])) throw new Error(`a card cannot go from ${card.status} to ${args[3]}`)
             card.status = args[3]
-            card.rev += 1
-            card.updatedAt = Date.now()
-            emit({ type: 'board:changed', slug: args[0] })
+            touch(card)
+            changed()
             return card
         }
         if (channel === 'updateCard') {
             const card = byId(args[1])
             Object.assign(card, args[2])
-            card.rev += 1
-            card.updatedAt = Date.now()
-            emit({ type: 'board:changed', slug: args[0] })
+            if (card.status === 'scheduled' && card.scheduledFor && card.scheduledFor <= Date.now()) {
+                card.status = 'ready'
+                card.scheduledFor = null
+            }
+            touch(card)
+            changed()
             return card
         }
         if (channel === 'deleteCard') {
             const index = cards.findIndex((card) => card.id === args[1])
             cards.splice(index, 1)
-            emit({ type: 'board:changed', slug: args[0] })
+            changed()
             return true
         }
         if (channel === 'comment') {
             const card = byId(args[1])
             card.comments.push({ at: Date.now(), author: 'user', text: args[2] })
-            card.rev += 1
-            emit({ type: 'board:changed', slug: args[0] })
+            touch(card)
+            changed()
             return card
+        }
+        if (channel === 'dispatchNow') {
+            tick()
+            return true
+        }
+        if (channel === 'stopCard') {
+            const card = byId(args[1])
+            const run = card.runs[card.runs.length - 1]
+            if (!run || run.endedAt !== null) throw new Error('that card has no live run')
+            closeRun(run, 'crashed', null, 'crashed with no evidence of work')
+            card.consecutiveFailures += 1
+            land(card, 'ready')
+            emit({ type: 'run:ended', slug: 'dyarchia', cardId: card.id, outcome: 'crashed' })
+            return true
+        }
+        if (channel === 'unblock') {
+            const card = byId(args[1])
+            if (card.rev !== args[2]) throw new Error('that card changed while you were unblocking it')
+            const back = card.parents.length ? 'todo' : (card.sourcePhase ?? 'ready')
+            card.blockKind = null
+            card.sourcePhase = null
+            land(card, back)
+            changed()
+            return card
+        }
+        if (channel === 'runEvents') {
+            const card = byId(args[1])
+            return card?.runs.length ? structuredClone(HISTORY) : []
+        }
+        if (channel === 'reveal') {
+            window.alert(`the shell would show '${args[2]}' in its folder`)
+            return true
+        }
+        if (channel === 'diagnostics') return structuredClone(DIAGNOSTICS)
+        if (channel === 'attach') {
+            const request = args[0]
+            const card = byId(request.cardId)
+            const run = card?.runs[card.runs.length - 1]
+            if (!run || run.endedAt !== null) throw new Error('that card has no session to attach to')
+            const pair = new MessageChannel()
+            fakePty(pair.port1)
+            pair.port1.start()
+            window.postMessage({ dyarchiaPort: { pluginId: 'kanban', attachId: request.attachId } }, '*', [pair.port2])
+            return run.shortId
         }
         throw new Error(`the harness has no '${channel}'`)
     }
 }
+
+window.addEventListener('beforeunload', () => {
+    window.clearInterval(heartbeat)
+    for (const id of timers) window.clearTimeout(id)
+})
 
 localStorage.setItem('kanban:board:kanban#0', 'dyarchia')
 activate(ctx)

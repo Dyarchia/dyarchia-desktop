@@ -128,8 +128,33 @@ py -m http.server 8731 --bind 127.0.0.1
 
 Then open `http://127.0.0.1:8731/packages/plugin-kanban/scripts/panel-harness.html` from the
 repository root. The harness supplies two boards, thirteen cards across every column, a
-dependency, a locked running card and a comment thread, which is enough to drive the drag, the
-keyboard path and both themes.
+dependency, a running card with a live run, a finished run with an artifact, and a comment
+thread, which is enough to drive the drag, the keyboard path and both themes.
+
+It also fakes everything phases 3 to 5 added, so the drawer can be iterated on with no
+Electron, no agent and no spend:
+
+```text
+WHAT IT FAKES        HOW IT BEHAVES
+-------------------  -------------------------------------------------------------
+dispatchNow          claims the highest ready card exactly as the real tick does,
+                     one at a time, and walks a seven step run
+card:progress        a step every second or two: starting, working, two tools, a
+                     'waiting on you' pause, then tokens climbing throughout
+run:ended            alternates the two endings a run really has: completed into
+                     review with report.md harvested, and blocked on needs_input
+                     with the agent's reason left as a comment
+attach               a MessagePort pty that prints a permission prompt, echoes what
+                     is typed, answers 1, 2 and 3 differently, and keeps chattering
+runEvents            nine canned rows covering all five kinds, including a tool
+                     result that is an error
+diagnostics          two problems, so the health strip and its menu are populated
+stopCard, unblock    the real outcomes: a stop is a crash with no evidence and the
+                     card returns to ready; an unblock returns it to its source
+                     phase, or to todo while parents are open
+```
+
+The one path it cannot fake is `reveal`, which only says what the shell would have opened.
 
 Do not stub `window.dyarchia` inside the real shell instead. That object comes from
 `contextBridge` and its properties are not writable: the assignment fails silently, the real

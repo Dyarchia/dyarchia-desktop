@@ -124,18 +124,6 @@ is shown in the drawer, but a refused move or a failed invoke is not.
 Done looks like: the error belongs to the thing it happened to, and the strip is a summary of
 what is currently wrong rather than a scratchpad.
 
-### 1.7 The panel harness stopped covering the panel
-
-`scripts/panel-harness.html` was written for phases 1 and 2 and still only fakes those
-channels. It has no `card:progress`, no `run:ended`, no terminal and no history, so the drawer
-paths added in phases 3 to 5 can only be exercised by running a real agent. That is slow and it
-costs money, which means in practice they are exercised rarely.
-
-Done looks like: the harness fakes a running card with progress events and canned transcript
-rows, so the drawer, the tabs and the history renderer can be iterated on with no Electron and
-no spend.
-
-
 ## 2. Surfaces the data model has and the panel does not
 
 None of these is a bug. Each is a field or a channel that works over IPC and has no way to
@@ -260,4 +248,7 @@ dead zone and threw silently
 The optimistic move mutated the card object  a separate map          commit 0110b14
 kanon has no [hidden] rule, so a hidden      a prefixed rule         README, section 4
 setup form rendered at full height           of this file
+The harness covered phases 1 and 2 only,     a faked dispatcher,     README, section 2
+so the drawer could only be exercised by a   pty, transcript and
+real agent                                   diagnostics
 ```

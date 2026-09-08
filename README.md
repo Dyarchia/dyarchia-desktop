@@ -175,29 +175,32 @@ Profiles are not tracked by git. A profile describes somebody's corpus rather th
 lives on the machine that crawls it; the package ships `claude-docs` under `src/crawlee_lab/sites/`
 as the worked example, and `docs/profiles.md` documents the format. The example does not ask to be
 snapshotted: it is present in every corpus repository, so one that asked would enrol itself in
-every unattended round on the machine. The ten this toolkit was built against, in the group
+every unattended round on the machine. The eight this toolkit was built against, in the group
 `docs-labs`:
 
     Profile                Target                          Pages
     -------------------    ----------------------------    -----
     claude-docs            claude.com/docs                   194
-    claude-code-docs       code.claude.com, English          170
-    claude-code-docs-es    code.claude.com, Spanish          149
-    claude-api-docs        platform.claude.com, English      678
-    claude-api-docs-es     platform.claude.com, Spanish      228
+    claude-code-docs       code.claude.com                   170
+    claude-api-docs        platform.claude.com               678
     openai-docs            developers.openai.com             541
-    chatgpt-docs           learn.chatgpt.com, Codex        2,329
+    chatgpt-docs           learn.chatgpt.com, Codex          257
     gemini-docs            ai.google.dev, HTML               225
     xai-docs               docs.x.ai, Grok                   175
     mistral-docs           docs.mistral.ai, HTML             443
+
+Every corpus is English only. A publisher's other locales are a translation of pages already
+tracked, so they double the disk and the crawl for a diff that reports a retranslation as a change.
+Keeping them out is a rule about these corpora rather than about the toolkit: it is expressed as an
+`include` anchored at the first path segment, or an `exclude` on the locale, in each profile that
+needs one.
 
 All but two fetch the markdown variant the site publishes, so the snapshot is the document rather
 than an extractor's reading of it. `ai.google.dev` publishes none, and `docs.mistral.ai` publishes
 one for two of its eight sections, so `gemini-docs` and `mistral-docs` are extracted from HTML
 instead. Both were kept only after two runs hashed identically, which is the test an extractor's
 reading has to pass and a published document does not. Page counts are from the last run of each and
-move every week; chatgpt-docs went from 256 to 2,329 in one sweep when learn.chatgpt.com published
-eight locales of a corpus that had been English only.
+move every week.
 
 Each group is a folder and a round: its profiles share `<data>/<group>/`, `<output>/<group>/` and
 one weekly sweep. A corpus on a neighbouring topic gets its own group, and with it its own folder

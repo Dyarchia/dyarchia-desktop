@@ -79,11 +79,23 @@ Decide whether any change is worth acting on. If none is, say so in one line and
 write a short note saying what changed, for whom it matters, and which of our documents needs
 revisiting. Read the full page files before claiming what they now say; the diff shows what moved,
 not what the page means.
+
+Write that note to $review and nothing else to disk. Do not create a sibling of it under any other
+name. Print a one-line confirmation and no more: this run is unattended and stdout goes to a log.
 "@
 
-claude -p $prompt | Out-File -FilePath $review -Encoding utf8
-if ($LASTEXITCODE -ne 0) {
-    throw "the model step exited with $LASTEXITCODE"
+# Name the destination in the prompt and leave the file alone until the step is over. Piping the
+# model straight into the review creates that file and holds it open for the whole run, so a model
+# that writes files finds its own destination locked and writes a sibling instead. Stdout is
+# captured and used only if nothing was written, so a model that answers in the terminal still works.
+$transcript = & claude -p $prompt 2>&1
+$exit = $LASTEXITCODE
+if ($exit -ne 0) {
+    throw "the model step exited with $exit"
+}
+
+if (-not (Test-Path $review)) {
+    $transcript | Set-Content -Path $review -Encoding utf8
 }
 
 Write-Output "wrote $review"

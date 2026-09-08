@@ -531,6 +531,12 @@ could not commit it, the board committed it on the worker's branch, the operator
 branch, and the board then unlocked and removed the worktree and deleted the branch, with the
 work surviving in the project.
 
+`claude rm` turns out to apply the same two rules, which is a good sign for them. Cleaning up
+the five sessions that live board had produced, it removed three and refused two, in its own
+words: "kept c94ea457 - worktree has uncommitted changes" and "kept 17cb2391 - 2 unpushed
+commits on worktree-kanban-cd6e022a". It also offers an escape hatch this plugin deliberately
+does not use, `--discard-unpushed <commit>@<worktree-id>`, which throws the commits away.
+
 ### 5.8 The brief goes inline, and why the file indirection was not enough
 
 An earlier draft put the brief in a file and passed a short instruction pointing at it. That

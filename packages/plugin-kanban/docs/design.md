@@ -514,6 +514,23 @@ Measured against three worktrees the CLI had created and locked on a live board:
 one was refused, the same one after `git clean` was unlocked and removed with its branch, and
 the one whose work had been committed was refused as unlanded.
 
+**Telling the worker to commit is necessary and not sufficient**, and the next run said why: a
+commit is a `Bash` call, `acceptEdits` allows edits and asks about commands, so an unattended
+worker on the default permission mode edits happily and then sits waiting for a person to let
+it run `git commit`. The same is true of running the tests it was asked to run. A card whose
+work needs commands has to say so in its permission mode, which is the reason that control is
+per card and now reachable from the drawer.
+
+So the board does not depend on it. When a run completes in a worktree, the dispatcher commits
+whatever it left, with a message naming the card and the run and saying plainly that the board
+committed it. A clean worktree is left alone. If the commit fails, the reason goes on the run
+and a comment goes on the card, which the next run reads in its brief.
+
+The whole circle, measured end to end on a live board: the worker edited a tracked file and
+could not commit it, the board committed it on the worker's branch, the operator merged that
+branch, and the board then unlocked and removed the worktree and deleted the branch, with the
+work surviving in the project.
+
 ### 5.8 The brief goes inline, and why the file indirection was not enough
 
 An earlier draft put the brief in a file and passed a short instruction pointing at it. That

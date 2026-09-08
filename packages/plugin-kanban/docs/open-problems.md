@@ -207,9 +207,10 @@ stopped card sat in running for ever         two measured sets, and
                                              'unknown' otherwise
 A pty that never started said nothing:       attach waits for the    src/main.ts
 the host's 'failed' reply had no listener    host's own answer
-A completed run left an EMPTY branch:        the brief says COMMIT   design.md 5.7
-nothing told the worker to commit, so
-review had nothing to review
+A completed run left an EMPTY branch:        the brief says COMMIT,   design.md 5.7
+nothing told the worker to commit, and       and the board commits
+acceptEdits will not let it run the          what a completed run
+command anyway                               left behind
 Removal could not work: the CLI locks        unlock first, and       design.md 5.7
 every worktree it makes, and a dirty one     refuse a dirty tree
 would have thrown away the work

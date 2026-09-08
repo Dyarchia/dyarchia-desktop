@@ -139,6 +139,24 @@ export async function remove(workdir: string, path: string, branch: string | nul
     await run(workdir, ['worktree', 'prune'])
 }
 
+export interface Committed {
+    changed: boolean
+    error: string | null
+}
+
+export async function commitAll(worktree: string, message: string): Promise<Committed> {
+    const status = await run(worktree, ['status', '--porcelain'])
+    if (!status.ok) return { changed: false, error: status.err || 'git could not read that worktree' }
+    if (!status.out) return { changed: false, error: null }
+
+    const staged = await run(worktree, ['add', '-A'])
+    if (!staged.ok) return { changed: false, error: staged.err || 'git could not stage what was left' }
+
+    const done = await run(worktree, ['commit', '-m', message])
+    if (!done.ok) return { changed: false, error: done.err || 'git could not commit what was left' }
+    return { changed: true, error: null }
+}
+
 export async function state(workdir: string): Promise<IgnoreState> {
     const tracked = (await run(workdir, ['rev-parse', '--is-inside-work-tree'])).out === 'true'
     if (!tracked) return { tracked: false, ignored: false }

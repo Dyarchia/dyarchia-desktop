@@ -7,7 +7,8 @@ const packagesDir = join(repoRoot, 'packages')
 const targetRoot = join(process.env.APPDATA, 'dyarchia', 'plugins')
 
 const NATIVE_DEPS = {
-    terminal: ['node-pty']
+    terminal: ['node-pty'],
+    kanban: ['node-pty']
 }
 
 const entries = await readdir(packagesDir)

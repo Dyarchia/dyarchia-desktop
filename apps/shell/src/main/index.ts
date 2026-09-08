@@ -49,6 +49,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+    app.setAppUserModelId('dev.dyarchia.desktop')
     Menu.setApplicationMenu(null)
     registerLayoutStore()
     registerWindowControls()

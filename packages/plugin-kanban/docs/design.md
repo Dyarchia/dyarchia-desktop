@@ -1707,7 +1707,9 @@ control, and activating it selected the card, opened the drawer and focused it.
 **An OS notification is checkable on Windows without a person watching.** The window had no
 focus, so the shell raised one, and Windows records the app the first time it does:
 
-
+```text
+HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\dev.dyarchia.desktop
+```
 
 That key exists only because a toast was shown under that AppUserModelId, and that id is the
 one the shell sets at startup. No key, no notification.

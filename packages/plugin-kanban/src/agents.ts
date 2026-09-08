@@ -8,6 +8,9 @@ const EXTENSIONS = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] :
 
 export type Liveness = 'alive' | 'dead' | 'unknown'
 
+const LIVE = new Set(['working', 'blocked'])
+const FINISHED = new Set(['done', 'stopped', 'failed'])
+
 export interface SessionRecord {
     shortId: string
     sessionId: string
@@ -149,7 +152,9 @@ export function liveness(sessions: SessionRecord[] | null, sessionId: string): L
     if (sessions === null) return 'unknown'
     const session = find(sessions, sessionId)
     if (!session) return 'dead'
-    return session.state === 'done' ? 'dead' : 'alive'
+    if (FINISHED.has(session.state)) return 'dead'
+    if (LIVE.has(session.state)) return 'alive'
+    return 'unknown'
 }
 
 export function waiting(session: SessionRecord | null): boolean {

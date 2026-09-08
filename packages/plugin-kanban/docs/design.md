@@ -433,8 +433,11 @@ id            the first 8 characters of sessionId. Present on BACKGROUND records
 kind          'background' carries `state`, `status` and, while it has a process, `pid`.
               An earlier draft said background records carry no pid. They do
 startedAt     epoch milliseconds
-state         MEASURED vocabulary: 'working', 'blocked', 'done'. Still treat an
-              unrecognised value as opaque and never branch on it
+state         MEASURED vocabulary, widened on 2026-09-08 against a live board:
+              'working', 'blocked', 'done', 'stopped', 'failed'. The first two are
+              the only ones that mean a worker is still there. An unrecognised value
+              is NOT a guess in either direction: liveness answers 'unknown', the
+              claim is held, and the health strip says so
 status        a second axis the earlier draft did not know about: 'busy' while a turn is
               running, 'idle' otherwise. 'blocked' + 'idle' is the pair that means a
               person is being waited on
@@ -666,6 +669,31 @@ every tick, and it should be resisted: it is undocumented on-disk state whose sh
 without notice, whereas `--json` is documented as being for scripting. The seam of section 21
 exists so that this choice is made in one file, and it is made in favour of the documented
 interface.
+
+### 5.13 A stopped session reads as alive, and the card never lands
+
+Found on 2026-09-08 by running a real card from a dyarchia the operator had launched, stopping
+it from the panel, and watching the card sit in `running` for ten minutes afterwards while the
+tick kept emitting progress for a worker that no longer existed.
+
+```text
+WHAT WAS DONE     the card was stopped from the drawer. `claude stop` worked: the session
+                  left `claude agents --json` entirely
+WHAT WAS SEEN     `claude agents --json --all`, which is what the plugin actually calls,
+                  still listed it with state 'stopped'
+WHY IT MATTERED   liveness read anything that was not 'done' as alive, so 'stopped' was
+                  alive, reconcile took the `continue` at the bottom of its loop, and the
+                  card was locked in `running` with no way back except editing the file
+```
+
+`--all` is the right flag: without it a session that has ended is invisible, and the plugin
+needs to tell "ended" apart from "never existed" to close a run honestly. What was wrong was
+the reading. Liveness now answers from two measured sets: 'working' and 'blocked' are alive,
+'done', 'stopped' and 'failed' are dead, and anything else is 'unknown' rather than a guess in
+either direction, which is what the three-valued answer was built for. This is 5.10's mistake
+in the other direction: there a state that meant "finished" was read as alive because the
+session was still listed, here a state that means "finished" was read as alive because the
+list was not consulted carefully enough.
 
 ### 5.6 What the earlier draft got wrong
 
@@ -2044,6 +2072,12 @@ Already paid for in that repo. Do not rediscover them.
    a card. Correct trade for desktop Electron; a dedicated grip is worse with a mouse.
 7. **The Windows process facts in 5.5**, especially that `os.kill(pid, 0)` is not a liveness
    query and lies in both directions.
+8. **A card body that says "artifact" can send the worker to the Artifact tool.** Measured on a
+   live board: a card asking for a file to be "declared as an artifact" had the worker reach
+   for the tool of that name, which needs a permission the operator was not there to give, and
+   the run sat waiting. The protocol's own word is `artifacts` in the closing block, so say
+   "write the file and list its path in the closing block" instead of borrowing the word for
+   the instruction.
 
 Design risks and their mitigations:
 

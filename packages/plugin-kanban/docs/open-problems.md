@@ -202,6 +202,11 @@ lose its working tree
 A run filing more than ten followups lost    the extras are named    probe, 4 checks
 the rest in silence                          in a comment on the
                                              card
+A stopped session read as alive, so a        liveness answers from   design.md 5.13
+stopped card sat in running for ever         two measured sets, and
+                                             'unknown' otherwise
+A pty that never started said nothing:       attach waits for the    src/main.ts
+the host's 'failed' reply had no listener    host's own answer
 Nine fields and channels the data model      a settings group in     README, section 1
 had and the panel had no way to reach,       the drawer and a board
 including the permission mode, which is      settings view with

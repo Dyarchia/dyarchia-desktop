@@ -12,6 +12,8 @@ import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
 import type { BoardDraft, BoardMeta, BoardPayload, Card, CardDraft, CardPatch, Status } from './types.js'
 
+const ATTACH_TIMEOUT_MS = 10_000
+
 let host: UtilityProcess | null = null
 
 function ptyHost(): UtilityProcess {
@@ -239,7 +241,27 @@ export function activate(ctx: PluginMainContext): void {
         const call = agents.invocation(path, ['attach', run.shortId])
 
         const { port1, port2 } = new MessageChannelMain()
-        ptyHost().postMessage(
+        const host = ptyHost()
+
+        const answered = new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => {
+                host.off('message', listen)
+                reject(new Error('the pty host never answered'))
+            }, ATTACH_TIMEOUT_MS)
+
+            function listen(message: unknown): void {
+                const reply = message as { type?: string; attachId?: string; reason?: string }
+                if (reply?.attachId !== attachId) return
+                clearTimeout(timer)
+                host.off('message', listen)
+                if (reply.type === 'attached') resolve()
+                else reject(new Error(reply.reason ?? 'the pty could not start'))
+            }
+
+            host.on('message', listen)
+        })
+
+        host.postMessage(
             {
                 type: 'attach',
                 attachId,
@@ -252,6 +274,8 @@ export function activate(ctx: PluginMainContext): void {
             },
             [port1]
         )
+
+        await answered
         event.sender.postMessage('dyarchia:port', { pluginId: 'kanban', attachId }, [port2])
         return run.shortId
     })

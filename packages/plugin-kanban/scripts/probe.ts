@@ -73,9 +73,11 @@ async function livenessRules(): Promise<void> {
     check('a working session is alive', liveness(sessions('working'), id), 'alive')
     check('a blocked session is alive', liveness(sessions('blocked'), id), 'alive')
     check('a done session is dead', liveness(sessions('done'), id), 'dead')
+    check('a stopped session is dead', liveness(sessions('stopped'), id), 'dead')
+    check('a failed session is dead', liveness(sessions('failed'), id), 'dead')
     check('an absent session is dead', liveness([], id), 'dead')
     check('an unreadable snapshot is unknown', liveness(null, id), 'unknown')
-    check('an unknown state is not death', liveness(sessions('pondering'), id), 'alive')
+    check('a state nobody has seen is unknown, not a guess', liveness(sessions('pondering'), id), 'unknown')
 }
 
 function launches(): void {

@@ -25,6 +25,7 @@ plugins.
 - [8. Data model](#8-data-model)
 - [9. State machine](#9-state-machine)
 - [10. The worker](#10-the-worker)
+- [10.6 The review run](#106-the-review-run)
 - [11. Termination and the evidence ladder](#11-termination-and-the-evidence-ladder)
 - [12. Failure taxonomy](#12-failure-taxonomy)
 - [13. The dispatcher](#13-the-dispatcher)
@@ -173,12 +174,14 @@ Block loop guard       after N cycles of block, unblock, same block kind, the ca
 ```text
 CAPABILITY            WHAT IT MEANS                                     STATUS
 --------------------  ------------------------------------------------  ----------
-Same-card review      a card moves to review with a summary; a          IN SCOPE
-                      reviewer approves or requests changes, which      phase 4
-                      returns it to the implementer WITHOUT counting
+Same-card review      a card moves to review with a summary; a          BUILT
+                      reviewer approves or requests changes, which      by hand,
+                      returns it to the implementer WITHOUT counting    phase 4
                       as a block
-Automatic reviewer    a reviewer is dispatched automatically            DEFERRED
-                                                                        opt-in later
+An agent reviewer     a review run: an ordinary run with a reviewer     DESIGNED
+                      brief and a verdict in its terminal block         see 10.6
+Automatic reviewer    every completed card gets one without asking      DEFERRED
+                                                                        after 10.6
 Goal mode             a judge evaluates each turn against the card's    DEFERRED
                       title and body as acceptance criteria and feeds   phase 6
                       a continuation prompt back into the same
@@ -1392,6 +1395,109 @@ workspace before spawning and contains, in this order:
 The consequence for whoever writes cards, human or machine: **every shared decision must be
 stamped into every card that needs it.** A naming scheme, a schema, a file format or an API
 shape agreed on one card is invisible to its siblings.
+
+## 10.6 The review run
+
+A card that finishes inside a worktree lands in `review` because there is a branch for a
+person to land. Today that person is the only reviewer there is: two buttons, approve and
+request changes, and no way to ask an agent to look first. This section is the design for
+that, written before any of it is built.
+
+### 10.6.1 What a reviewer is here
+
+Not a role, not a profile, not a second identity. **A review run is an ordinary run with a
+different brief and one extra thing it may declare.** Everything that already exists applies
+unchanged: it is a real `claude --bg` session, it is watched through its transcript, it is
+answerable in the drawer, its liveness is the same three-valued answer, and it ends with the
+same terminal block.
+
+Three things make it different, and they are the whole design:
+
+```text
+WHAT                WHY
+------------------  --------------------------------------------------------------
+It does not get a   a reviewer reads and reports; it does not edit. So it launches
+worktree            in the project directory with no `-w`, and the branch it is
+                    judging is named in its brief. This also sidesteps the question
+                    of whether `-w` on an existing worktree name reuses it, which
+                    has never been measured
+Its brief is the    the card, what the implementer said it did, the branch, and the
+implementer's work  instruction to judge that work rather than to continue it
+It may declare a    `verdict` in the terminal block, and nothing else in the
+verdict             protocol changes
+```
+
+### 10.6.2 The protocol change, which is one optional field
+
+```json
+{ "outcome": "completed" | "blocked",
+  "verdict": "approved" | "changes",
+  "blockKind": "needs_input" | "capability" | "transient" | "dependency" | null,
+  "summary": "what was judged, and what is wrong with it",
+  "artifacts": [],
+  "followups": [] }
+```
+
+`verdict` is read **only** on a run the board dispatched as a review, and ignored everywhere
+else, so an implementer that emits it changes nothing. A review run that completes without a
+verdict is a protocol violation like any other missing field: the board does not guess, and
+`changes` is not a safe default because it would send work back for no stated reason.
+
+The alternative considered and rejected: reusing `outcome: blocked` with
+`blockKind: needs_input` to mean "changes requested". It reads as if a human is needed when
+the reviewer has already said exactly what to do, and it would feed the block-loop counter, so
+two rounds of ordinary review feedback would send the card to triage. A verdict is not a block.
+
+### 10.6.3 Where the card goes
+
+```text
+VERDICT / OUTCOME       CARD GOES TO   AND
+----------------------  -------------  -----------------------------------------
+completed, approved     done           the branch is still the operator's to
+                                       land; approving is a judgement, not a merge
+completed, changes      ready          the reviewer's summary is appended as an
+                                       agent comment, so the next implementer run
+                                       reads it in its brief. NO failure counter
+                                       moves: review feedback is not a failure
+blocked, any kind       blocked        with `sourcePhase: 'review'`, which is what
+                                       finally makes that arm reachable. Unblocking
+                                       returns the card to review, not to ready
+crashed or violation    review         the card stays where it was. A reviewer that
+                                       fell over has not judged anything, and the
+                                       existing retry budget applies
+```
+
+The `sourcePhase: 'review'` arm has been dead code since phase 4, written for exactly this and
+unreachable because a card could only be blocked out of an implementation run. This is the
+first thing that blocks out of a review.
+
+### 10.6.4 Who asks for it
+
+**A button, first.** The drawer's review actions become three: approve, request changes, and
+ask a reviewer. Nothing is dispatched automatically, because a reviewer is a second session
+per card and the operator should decide to spend it.
+
+A board-level "review every card automatically" setting is the obvious next step and belongs
+in the board settings that already exist, but it is deliberately not in the first cut: a
+setting that spends money on every completed run should be added once the manual path has been
+watched working.
+
+### 10.6.5 What it costs to build
+
+```text
+Run gains `kind: 'implement' | 'review'`, defaulted for old rows on read
+Card gains nothing
+worker.start gains a way to launch with no worktree, which the reviewer uses
+worker.brief gains a reviewer brief: the card, the branch, the implementer's
+    summary, and the shape of the verdict
+parseTerminal gains one optional field
+dispatch.resolve gains the four rows of 10.6.3, ahead of its existing routing
+The drawer gains one button and the run row shows which kind it was
+```
+
+Nothing else moves. In particular the dispatcher's caps, the claim, the liveness reading, the
+harvest and the worktree rules are all untouched: a review run is claimed, watched and closed
+by the same machinery as any other.
 
 ## 11. Termination and the evidence ladder
 

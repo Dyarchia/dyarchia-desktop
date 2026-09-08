@@ -11,6 +11,11 @@ behind every claim about the Claude Code CLI. Read it before changing anything h
 unproven. Anything found while building goes there before the commit that found it, and
 nothing leaves it silently. Read it before deciding what to do next.
 
+[docs/the reference system-parity.md](docs/the reference system-parity.md) is the itemised comparison with the reference system's
+kanban, the system this design was written against, sorted by one question: is it a board, or
+is it an agent runtime? The second kind is not parity, because the agent here runs in Claude
+Code.
+
 
 ## Index
 

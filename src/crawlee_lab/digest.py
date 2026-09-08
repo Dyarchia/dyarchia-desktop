@@ -27,6 +27,7 @@ from crawlee_lab import inventory, registry
 from crawlee_lab.config import Settings, get_settings
 from crawlee_lab.errors import CrawleeLabError
 from crawlee_lab.models import utcnow
+from crawlee_lab.storage.snapshots import CHANGES_DOCUMENT
 from crawlee_lab.versioning.diffing import ChangeKind, load_report
 from crawlee_lab.versioning.manifest import load_manifest
 from crawlee_lab.watch import WATCH_RESULT, watchable
@@ -155,6 +156,9 @@ class Digest:
         }
 
 
+_LISTED_KINDS = (ChangeKind.ADDED, ChangeKind.REMOVED, ChangeKind.MODIFIED)
+
+
 def _last_sweep(directory: Path, name: str) -> datetime | None:
     """When the last sweep that covered this corpus started, from the report written beside it.
 
@@ -239,8 +243,24 @@ def build(
     return Digest(targets=[_target(name, settings) for name in chosen])
 
 
+def _sections(target: DigestTarget) -> list[list[Any]]:
+    listed: list[list[Any]] = [target.of_kind(kind) for kind in _LISTED_KINDS]
+    listed.append(target.reordered)
+    listed.append(target.failed)
+    return listed
+
+
 def render_markdown(digest: Digest, *, diffs: bool = True, limit: int = 50) -> str:
-    """The digest as a document, which is the form a model reads without being told a schema."""
+    """The digest as a document, which is the form a model reads without being told a schema.
+
+    Every section stops at `limit`, and a reader who meets the framing sentence at the top and
+    works down meets the first cut thousands of lines later. A sweep of 1,067 modified pages was
+    reviewed as 356 twice before the header said so, so the warning is stated once at the top, and
+    only when something was actually cut: a digest that fits says nothing about a limit it did not
+    reach.
+    """
+    capped = any(len(entries) > limit for target in digest.targets for entries in _sections(target))
+
     lines = [
         '# Change digest',
         '',
@@ -253,6 +273,16 @@ def render_markdown(digest: Digest, *, diffs: bool = True, limit: int = 50) -> s
         '',
     ]
 
+    if capped:
+        lines.extend(
+            [
+                f'**This document is a sample.** Every section stops after {limit} entries and says how'
+                f' many it left out; the heading carries the true count either way. For a section that'
+                f' was cut, the complete list is `{CHANGES_DOCUMENT}`, in the directory the target names.',
+                '',
+            ]
+        )
+
     for target in digest.targets:
         lines.extend([f'## {target.name}', ''])
         if target.description:
@@ -263,7 +293,7 @@ def render_markdown(digest: Digest, *, diffs: bool = True, limit: int = 50) -> s
             lines.append('')
             continue
 
-        for kind in (ChangeKind.ADDED, ChangeKind.REMOVED, ChangeKind.MODIFIED):
+        for kind in _LISTED_KINDS:
             entries = target.of_kind(kind)
             if not entries:
                 continue
@@ -284,11 +314,15 @@ def render_markdown(digest: Digest, *, diffs: bool = True, limit: int = 50) -> s
             lines.append('Same lines in a different order. Listed, not counted as a change.')
             lines.append('')
             lines.extend(f'- {page.title or page.url}' for page in target.reordered[:limit])
+            if len(target.reordered) > limit:
+                lines.append(f'- ... and {len(target.reordered) - limit} more')
             lines.append('')
 
         if target.failed:
             lines.extend([f'### Failed ({len(target.failed)})', ''])
             lines.extend(f'- {url}' for url in target.failed[:limit])
+            if len(target.failed) > limit:
+                lines.append(f'- ... and {len(target.failed) - limit} more')
             lines.append('')
 
     return '\n'.join(lines)

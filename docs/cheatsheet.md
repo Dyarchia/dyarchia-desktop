@@ -180,6 +180,11 @@ crawlee-lab digest [OPTIONS] [NAMES...]
 its diff and the path to the file holding its current text, so a step that reads this can read the
 page in full instead of inferring it from the diff.
 
+Every section stops at `--limit`, and a document that was cut says so in its header rather than only
+at the cut, which is thousands of lines below the sentence promising every page. Section headings
+carry the true count either way, and the target's own `CHANGES.md` holds the untruncated list. A
+digest that fits under the limit says nothing about one.
+
 Pages that only reordered are listed under their own heading and never counted as a change, so a
 digest of a sweep that found nothing but shuffled table rows says "no change".
 

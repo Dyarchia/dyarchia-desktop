@@ -179,3 +179,52 @@ def test_without_a_sweep_report_nothing_is_called_stale(tmp_path: Path) -> None:
 
     assert not target.stale
     assert target.changed
+
+
+def capped_target(name: str, modified: int, reordered: int = 0, failed: int = 0) -> DigestTarget:
+    return DigestTarget(
+        name=name,
+        directory=Path(f'/corpus/{name}'),
+        pages=[DigestPage(url=f'https://s/m{i}', kind='modified') for i in range(modified)]
+        + [DigestPage(url=f'https://s/r{i}', kind='modified', reordered=True) for i in range(reordered)],
+        failed=[f'https://s/f{i}' for i in range(failed)],
+    )
+
+
+def test_a_digest_that_fits_says_nothing_about_a_limit() -> None:
+    """A warning about a cap that was never reached is noise on every quiet week."""
+    rendered = render_markdown(Digest(targets=[capped_target('small', modified=3)]), limit=50)
+
+    assert 'is a sample' not in rendered
+    assert '... and' not in rendered
+
+
+def test_a_digest_that_was_cut_says_so_before_the_first_section() -> None:
+    """The framing sentence promised every page, and the first cut is thousands of lines down.
+
+    Two weekly reviews covered a third of their sweep and reported it as the whole sweep, because
+    the reader met the promise at the top and the contradiction far below it.
+    """
+    rendered = render_markdown(Digest(targets=[capped_target('big', modified=120)]), limit=50)
+
+    warning = rendered.index('is a sample')
+    assert warning < rendered.index('## big')
+    assert 'Modified (120)' in rendered
+    assert '- ... and 70 more' in rendered
+    assert 'CHANGES.md' in rendered
+
+
+def test_the_quiet_sections_admit_their_cut_too() -> None:
+    """Reordered and failed used to stop at the limit and say nothing at all."""
+    bundle = Digest(targets=[capped_target('noisy', modified=0, reordered=60, failed=70)])
+    rendered = render_markdown(bundle, limit=50)
+
+    assert '- ... and 10 more' in rendered
+    assert '- ... and 20 more' in rendered
+
+
+def test_one_capped_target_warns_for_the_whole_document() -> None:
+    bundle = Digest(targets=[capped_target('small', modified=2), capped_target('big', modified=80)])
+    rendered = render_markdown(bundle, limit=50)
+
+    assert rendered.count('is a sample') == 1

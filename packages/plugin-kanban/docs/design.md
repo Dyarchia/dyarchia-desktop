@@ -607,6 +607,31 @@ workspace "a fresh temporary directory", userData is not temporary, and the syst
 directory is outside every redirect either way. What stays in userData is what has to outlive
 the run, which is the board and the harvested artifacts under `attachments/<cardId>/`.
 
+**Measured again on 2026-09-08, against a dyarchia the operator had launched with `pnpm dev`
+from an ordinary terminal, so the app itself was outside any container.** Two things were
+settled and one was not:
+
+```text
+SETTLED    The redirect covers READS as well as writes. That shell read
+           AppData\Roaming\dyarchia\DevToolsActivePort and got a file naming the
+           browser guid 112000ee-..., from a launch the day before, while the app
+           running at that moment was exposing d40dd86b-... on the same port. So a
+           shell inside the package cannot see the real userData AT ALL, and no
+           claim about a path under AppData\Roaming may be taken from one
+SETTLED    ~/.claude is NOT under the redirect: its subdirectories showed writes
+           from that same minute, made by processes outside the container. Every
+           fact in this section that rests on the transcripts or on the session
+           registry therefore stands as measured
+OPEN       Whether the CLI accepts a working directory under userData when the
+           directory is created by an unpackaged process and resolved by one. It
+           cannot be measured from inside the package, and nothing in the plugin
+           depends on the answer since scratch workspaces live in tmpdir
+```
+
+The app is the only oracle left for anything under AppData. In dev mode it exposes a
+DevTools port, so a channel can be invoked through `window.dyarchia.invoke` from outside and
+answers from the real filesystem.
+
 The open question is in [open-problems.md](open-problems.md); it is not blocking, and it is
 not to be quietly re-answered by guessing.
 

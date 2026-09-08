@@ -24,7 +24,7 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-### 1.1 Every measurement on this machine was taken inside a package container
+### 1.1 One AppData question is left, and it cannot be measured from here
 
 The shell used for every measurement in design.md section 5 runs inside the Claude desktop
 app, which is an MSIX package, so its writes to `AppData\Roaming` are redirected into
@@ -47,8 +47,20 @@ Two things follow, and neither is urgent:
 - **Every other AppData-shaped or path-shaped measurement is suspect** until re-taken outside
   the container, including anything about where userData really is.
 
-Done looks like: the handful of path-dependent claims re-measured from a plainly launched
-dyarchia, and section 5 annotated with which ones held.
+Re-measured on 2026-09-08 against a dyarchia the operator had launched with `pnpm dev`, and
+design.md 5.11 now records the result. The redirect turned out to cover reads as well as
+writes, proven by reading a `DevToolsActivePort` naming a browser guid from the previous day
+while the live app exposed a different one. `~/.claude` is outside the redirect, so every
+transcript-based and session-based fact in section 5 stands as measured.
+
+What is left of this entry is one question, and it is the narrow one: **does the CLI accept a
+working directory under userData when both the process that creates it and the process that
+resolves it are outside a container?** It cannot be answered from a shell inside the Claude
+desktop app, because that shell has no way to write to the real AppData. Nothing depends on
+the answer: scratch workspaces live in tmpdir for reasons of their own.
+
+Done looks like: that one command run from an ordinary terminal, and 5.11's OPEN line replaced
+by what it says.
 
 ### 1.2 The transcript copy of section 7.2 does not exist
 

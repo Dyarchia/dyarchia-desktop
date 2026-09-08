@@ -50,15 +50,7 @@ Two things follow, and neither is urgent:
 Done looks like: the handful of path-dependent claims re-measured from a plainly launched
 dyarchia, and section 5 annotated with which ones held.
 
-### 1.2 A worker filing more than ten followups loses the rest in silence
-
-`adopt` in `src/dispatch.ts` takes `followups.slice(0, 10)`. A worker that finds fifteen
-problems has five dropped with nothing said anywhere. The cap is right; the silence is not.
-
-Done looks like: the extras are named in a comment on the card, or the cap is lifted and the
-board deals with the volume.
-
-### 1.3 The transcript copy of section 7.2 does not exist
+### 1.2 The transcript copy of section 7.2 does not exist
 
 The design has two storage tiers: the board as one JSON file, and a JSONL per run that is "our
 copy of transcript-derived events", which is what makes a run explicable after the CLI has
@@ -73,7 +65,7 @@ Done looks like: the dispatcher tees what it parses into `kanban/boards/<slug>/r
 the history tab falls back to it, and it is rotated by size. Section 20 already lists
 "the transcript copy grows without bound" as the risk to answer at the same time.
 
-### 1.4 Two dyarchia processes would fight over one board
+### 1.3 Two dyarchia processes would fight over one board
 
 Section 13 asks for a single elected dispatcher with a lease. There is none. It does not bite
 today because a plugin main module is imported once per app process, so one running dyarchia is
@@ -83,7 +75,7 @@ be a second dispatcher on the same files, and both would claim.
 Done looks like: a lease file next to the board with an expiry, stolen only when the holder is
 verified dead. Cheap now, and the alternative is double-dispatching real work.
 
-### 1.5 Errors are a single strip that the next error overwrites
+### 1.4 Errors are a single strip that the next error overwrites
 
 `fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
 a card is not attached to that card, and a second error erases the first. A run's `error` field

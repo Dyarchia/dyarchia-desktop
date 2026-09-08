@@ -104,7 +104,9 @@ Stopped as soon as it declares itself finished, so a resolved card does not leav
 ```
 
 A run that completes inside a worktree lands its card in **review**, not done, because there
-is a branch for a person to land.
+is a branch for a person to land. The brief tells the worker to COMMIT what it changes: a
+worker does not commit unless it is asked, and a run that leaves its work uncommitted leaves
+an empty branch and nothing to review. Measured on a live board, see design.md 5.7.
 
 
 ## 2. Build and verify

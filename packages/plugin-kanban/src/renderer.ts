@@ -630,7 +630,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const worktreeNote = (tree: Worktree): string => {
         if (tree.live) return 'a worker is in it'
-        if (tree.landed) return tree.dirty ? 'landed, with uncommitted changes' : 'landed, removable'
+        if (tree.dirty) return 'it holds changes nobody committed'
+        if (tree.landed) return 'landed, removable'
         return `${tree.ahead} commit${tree.ahead === 1 ? '' : 's'} nothing has landed`
     }
 
@@ -657,7 +658,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                         const tree = trees.find((entry) => entry.path === row.key)
                         if (!tree) return
                         const name = tree.branch ?? tree.path
-                        if (tree.live || !tree.landed) {
+                        if (tree.live || tree.dirty || !tree.landed) {
                             say(`${name} cannot go yet: ${worktreeNote(tree)}`)
                             return
                         }

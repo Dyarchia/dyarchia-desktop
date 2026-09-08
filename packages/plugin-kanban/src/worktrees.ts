@@ -9,6 +9,7 @@ export interface Listed {
     path: string
     branch: string | null
     head: string | null
+    locked: string | null
 }
 
 export interface Worktree extends Listed {
@@ -54,12 +55,13 @@ export function parseList(text: string): Listed[] {
 
         if (key === 'worktree') {
             if (entry) found.push(entry)
-            entry = { path: normalize(value), branch: null, head: null }
+            entry = { path: normalize(value), branch: null, head: null, locked: null }
             continue
         }
         if (!entry) continue
         if (key === 'HEAD') entry.head = value
         if (key === 'branch') entry.branch = value.replace(/^refs\/heads\//, '')
+        if (key === 'locked') entry.locked = value || 'locked, with no reason given'
     }
 
     if (entry) found.push(entry)
@@ -113,6 +115,17 @@ export async function remove(workdir: string, path: string, branch: string | nul
 
     if (branch && !(await run(workdir, ['merge-base', '--is-ancestor', branch, 'HEAD'])).ok) {
         throw new Error(`${branch} holds commits this project has not landed`)
+    }
+
+    if ((await run(path, ['status', '--porcelain'])).out.length > 0) {
+        throw new Error(`${branch ?? path} holds changes nobody committed`)
+    }
+
+    const listed = parseList((await run(workdir, ['worktree', 'list', '--porcelain'])).out)
+    const held = listed.find((entry) => same(entry.path, path))
+    if (held?.locked) {
+        const unlocked = await run(workdir, ['worktree', 'unlock', path])
+        if (!unlocked.ok) throw new Error(unlocked.err || `git would not unlock ${path}`)
     }
 
     const removed = await run(workdir, ['worktree', 'remove', path])

@@ -101,6 +101,11 @@ export function brief(
             'It is a git worktree of the project, on its own branch, so your changes are isolated',
             'from the checkout the operator is working in. Do not try to merge it: say what you',
             'changed in the summary and leave the branch for a person to land.',
+            '',
+            'COMMIT what you change on that branch before you finish, in as many commits as the',
+            'work deserves. A change you leave uncommitted is not on the branch, so there is',
+            'nothing for anyone to land and nothing to review, and the workspace may be removed',
+            'from under it.',
             ''
         )
     }

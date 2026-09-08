@@ -492,6 +492,28 @@ the session switches into its worktree, so reading the worktree path off that re
 race. The path is derivable from the name passed to `-w`, so derive it and wait for the
 directory to appear instead.
 
+**Measured again on 2026-09-08, with a real card run from a launched dyarchia, and it cost
+this design one of its assumptions: a worker does NOT commit unless the brief says so.** The
+run completed, the card landed in review, and the branch was empty. `count.md` sat in the
+worktree as an untracked file. "The operator has a branch to land" was a fiction for exactly
+as long as the brief left the word out, and 10.5 now says COMMIT in those words.
+
+The lock is the other half of the same story, and it decides how a worktree may be removed:
+
+```text
+git worktree list --porcelain reports the lock on a `locked` line, with the reason the CLI
+    wrote: "claude session kanban-<8> (pid <n>)"
+git worktree remove REFUSES a locked tree, and refuses a dirty one, and says which
+So removal is: refuse if a worker is in it, refuse if it is dirty because uncommitted work
+    is not a board's to discard, refuse if the branch is not an ancestor of HEAD, and only
+    then unlock, remove, and delete the branch with `branch -d`, which refuses on its own
+    if the history says otherwise
+```
+
+Measured against three worktrees the CLI had created and locked on a live board: the dirty
+one was refused, the same one after `git clean` was unlocked and removed with its branch, and
+the one whose work had been committed was refused as unlanded.
+
 ### 5.8 The brief goes inline, and why the file indirection was not enough
 
 An earlier draft put the brief in a file and passed a short instruction pointing at it. That
@@ -1083,8 +1105,11 @@ holds commits, and a commit that is not in the project yet is work; nothing here
 operator's behalf that work can go. So the board reports rather than acts: the menu lists every
 worktree under `<workdir>/.claude/worktrees` with its branch, whether that branch is an
 ancestor of the project's HEAD, how many commits are not landed, and whether a worker is in it.
-Only a landed one can be removed, and removal is `git worktree remove` followed by `git branch
--d`, both of which refuse rather than force. The landed check lives in `worktrees.remove`, not
+Only a worktree that is landed, clean and unused can be removed, and removal is unlock, `git
+worktree remove`, then `git branch -d`, the last two of which refuse rather than force. Dirty
+is its own refusal: the CLI locks every worktree it makes, and a worker that never committed
+leaves its whole output uncommitted, so a board that removed a dirty tree would be deleting
+work. See 5.7. The landed check lives in `worktrees.remove`, not
 only in the channel, because `worktree remove` succeeds before `branch -d` fails: a caller that
 checked nothing would take the working tree and leave the branch.
 

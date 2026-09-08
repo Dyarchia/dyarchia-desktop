@@ -206,6 +206,7 @@ export function activate(ctx: PluginMainContext): void {
         )
         if (!found) throw new Error('that worktree is not on this board any more')
         if (found.live) throw new Error('a worker is still using that worktree')
+        if (found.dirty) throw new Error('that worktree holds changes nobody committed')
         if (!found.landed) throw new Error('that worktree holds commits nothing has landed')
         await worktrees.remove(meta.workdir, found.path, found.branch)
         return true

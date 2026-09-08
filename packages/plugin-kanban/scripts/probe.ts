@@ -187,6 +187,7 @@ const PORCELAIN = [
     'worktree C:/Users/x/project/.claude/worktrees/kanban-a1b2c3d4',
     'HEAD fc7cf1abb',
     'branch refs/heads/worktree-kanban-a1b2c3d4',
+    'locked claude session kanban-a1b2c3d4 (pid 7112)',
     '',
     'worktree C:/Users/x/elsewhere/detached',
     'HEAD 0110b14cc',
@@ -200,6 +201,8 @@ async function housekeeping(): Promise<void> {
     check('every worktree is read', listed.length, 3)
     check('the branch loses its refs prefix', listed[1].branch, 'worktree-kanban-a1b2c3d4')
     check('a detached worktree has no branch', listed[2].branch, null)
+    check('the CLI lock is read, with its reason', listed[1].locked, 'claude session kanban-a1b2c3d4 (pid 7112)')
+    check('an unlocked worktree says so', listed[0].locked, null)
     check('and it still has a head', listed[2].head, '0110b14cc')
 
     const project = 'C:\\Users\\x\\project'

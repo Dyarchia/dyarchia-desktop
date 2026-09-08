@@ -241,7 +241,11 @@ a machine that watches more than one:
 ```
 
 On Windows, `scripts/watch.ps1` wraps that in a log and a desktop notification raised only when the
-exit code is not 0, and `scripts/register-watch-task.ps1` registers it with the Task Scheduler:
+exit code is not 0, and `scripts/register-watch-task.ps1` registers it with the Task Scheduler. The
+notification is a toast that waits: it stays up until dismissed and remains in the notification
+centre, because a sweep that finishes while nobody is looking still has something to say. The
+window a scheduled round opens names the round and its phase in the title and streams the crawl as
+it happens, so a console appearing at logon reads as work rather than as a fault:
 
 ```powershell
 .\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs

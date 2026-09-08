@@ -17,7 +17,23 @@
 
     The sweep's own output is streamed to `watch-<name>.out` as it arrives rather than collected and
     written at the end, because the interesting run is the one that never reaches the end. A sweep
-    the scheduler kills used to leave a log saying it had started and nothing else.
+    the scheduler kills used to leave a log saying it had started and nothing else. It reaches the
+    console at the same time, so the window a scheduled round opens shows the crawl happening
+    instead of sitting blank for the tens of minutes a round takes.
+
+    That window also says what it is. Its title carries the round and the phase, and it opens with a
+    header naming the round, the corpus and the log, because a console that appears at logon with
+    nothing in it reads as something having gone wrong rather than as work in progress. The phase
+    matters: the crawl is not the slow part on a week that changed, the follow-up is.
+
+    A notification waits rather than passing. It is raised as a Windows toast with scenario
+    "reminder", which stays on screen until it is dismissed and remains in the notification centre
+    afterwards, so a sweep that finished while nobody was looking still gets read. This is why the
+    toast is raised through `powershell.exe`: the WinRT types it needs cannot be loaded from
+    PowerShell 7, which is what the scheduled task runs. Where that fails the older balloon is used
+    instead, and the log says which was used. The balloon is a fallback rather than the mechanism
+    because it has to be disposed, and disposing it takes the notification out of the notification
+    centre as well as off the screen: it was gone twelve seconds after it appeared.
 
     With -OncePerWeek the wrapper keeps a record of the current ISO week and refuses to sweep that
     week twice, which is what turns a trigger that fires on every logon into one sweep a week. The
@@ -98,6 +114,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+$WINDOWS_POWERSHELL_AUMID = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
 
 # A -File invocation hands a comma-separated list over as one string, so split it back apart.
 $Profiles = @($Profiles | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -210,11 +228,56 @@ function Get-WeekKey {
     '{0}-W{1:d2}' -f [System.Globalization.ISOWeek]::GetYear($now), [System.Globalization.ISOWeek]::GetWeekOfYear($now)
 }
 
+function ConvertTo-XmlText {
+    param([string]$Text)
+
+    $flat = ($Text -split "`r?`n" | ForEach-Object { $_.Trim() }) -join ' '
+    return $flat.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;')
+}
+
 function Show-Notification {
     param(
         [string]$Title,
         [string]$Message
     )
+
+    $toast = @"
+<toast scenario="reminder">
+  <visual>
+    <binding template="ToastGeneric">
+      <text>$(ConvertTo-XmlText $Title)</text>
+      <text>$(ConvertTo-XmlText $Message)</text>
+    </binding>
+  </visual>
+  <actions>
+    <action content="Dismiss" arguments="dismiss" activationType="system"/>
+  </actions>
+</toast>
+"@
+
+    $raiser = @"
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > `$null
+[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] > `$null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime] > `$null
+`$document = New-Object Windows.Data.Xml.Dom.XmlDocument
+`$document.LoadXml(@'
+$toast
+'@)
+`$notification = New-Object Windows.UI.Notifications.ToastNotification `$document
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('$WINDOWS_POWERSHELL_AUMID').Show(`$notification)
+"@
+
+    try {
+        $encoded = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($raiser))
+        & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $encoded 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            return
+        }
+        Write-Log "toast unavailable: powershell.exe exited with $LASTEXITCODE"
+    }
+    catch {
+        Write-Log "toast unavailable: $($_.Exception.Message)"
+    }
 
     try {
         Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
@@ -230,8 +293,18 @@ function Show-Notification {
         $icon.Dispose()
     }
     catch {
-        # A headless session has no desktop to notify. The log and the exit code still carry it.
         Write-Log "notification unavailable: $($_.Exception.Message)"
+    }
+}
+
+function Set-WindowTitle {
+    param([string]$Phase)
+
+    try {
+        $Host.UI.RawUI.WindowTitle = "crawlee-lab: $Name, $Phase"
+    }
+    catch {
+        Write-Log "window title unavailable: $($_.Exception.Message)"
     }
 }
 
@@ -267,11 +340,28 @@ if ($Profiles.Count -gt 0) { $arguments += $Profiles }
 elseif ($Group) { $arguments += @('--group', $Group) }
 if ($Commit) { $arguments += '--commit' }
 
+$covers = if ($Group) { "group $Group" } elseif ($Profiles.Count -gt 0) { $Profiles -join ', ' } else { 'every snapshot profile' }
+$corpus = if ($env:CRAWLEE_LAB_DATA_DIR) { $env:CRAWLEE_LAB_DATA_DIR } else { $logDirectory }
+
+Set-WindowTitle "sweeping $covers ($week)"
+Write-Host ''
+Write-Host 'crawlee-lab: the weekly documentation sweep'
+Write-Host "  round    $Name, $covers, week $week"
+Write-Host "  corpus   $corpus"
+Write-Host "  log      $logFile"
+Write-Host '  This window is the sweep itself. It closes when the crawl and its follow-up have'
+Write-Host '  finished, which takes tens of minutes, and it needs nothing from you.'
+Write-Host ''
+
 Write-Log "sweep started ($week): uv $($arguments -join ' ')"
 
-# Streamed rather than collected, so a run the scheduler kills still says how far it got.
-$transcript = & uv @arguments 2>&1 | Tee-Object -FilePath $outputFile | Out-String
+# Streamed rather than collected, so a run the scheduler kills still says how far it got, and so
+# the window shows the crawl while it happens rather than a blank console for tens of minutes.
+& uv @arguments 2>&1 |
+    Tee-Object -FilePath $outputFile |
+    Tee-Object -Variable swept
 $code = $LASTEXITCODE
+$transcript = $swept | Out-String
 
 $headline = ($transcript -split "`n" | Where-Object { $_ -match 'targets (changed|failed)|no change across' } | Select-Object -Last 1).Trim()
 if (-not $headline) { $headline = "watch exited with $code" }
@@ -293,6 +383,7 @@ elseif ($code -eq 30 -and $OncePerWeek) {
 # while the change reports it reads are still the ones this sweep wrote: the next sweep overwrites
 # them. Whatever -OnChange names is handed the file and left to decide what it is for.
 if ($code -eq 10) {
+    Set-WindowTitle 'writing the digest'
     $digestFile = Join-Path $logDirectory "digest-$Name.md"
     $digestArguments = @('run', 'crawlee-lab', 'digest', '--changed', '--out', $digestFile)
     if ($Profiles.Count -gt 0) { $digestArguments += $Profiles }
@@ -305,6 +396,8 @@ if ($code -eq 10) {
     }
 
     if ($OnChange -and $digestFile) {
+        Set-WindowTitle 'running the follow-up, which is the slow part'
+        Write-Host "running the follow-up: $OnChange"
         Write-Log "on-change: $OnChange $digestFile"
         try {
             & $OnChange $digestFile
@@ -326,6 +419,8 @@ if ($code -eq 10) {
     }
 }
 
+Set-WindowTitle "finished ($code)"
+
 switch ($code) {
     10 { Show-Notification -Title 'crawlee-lab: a tracked site changed' -Message $headline }
     0 { }
@@ -334,5 +429,4 @@ switch ($code) {
     default { Show-Notification -Title 'crawlee-lab: the sweep failed' -Message $headline }
 }
 
-Write-Output $transcript
 exit $code

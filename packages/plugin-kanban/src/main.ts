@@ -71,7 +71,8 @@ export function activate(ctx: PluginMainContext): void {
         runEnded: (slug, cardId, outcome) => {
             void release(slug, cardId)
             ctx.broadcast('event', { type: 'run:ended', slug, cardId, outcome })
-        }
+        },
+        notify: (notice) => ctx.notify(notice)
     }
 
     const changed = (slug: string): void => sink.boardChanged(slug)

@@ -71,6 +71,11 @@ Fan-out                  `followups` in the terminal block become child cards ga
 Health                   a strip in the bar naming what is wrong: cards waiting on
                          you, cards claimable and never claimed, liveness unknown,
                          and which process holds the dispatcher
+Notices                  the five moments the board needs you reach you when you are
+                         not looking: a worker waiting on a permission prompt, and a
+                         run that completed, blocked, broke the protocol or stopped.
+                         A toast in the corner, an OS notification when the window
+                         has no focus, and a click that opens the card
 Errors                   an error belongs to the thing it happened to. A card that
                          refuses an operation is outlined and says why in its drawer;
                          the strip at the bottom carries board-level failures and,

@@ -1672,6 +1672,33 @@ session waiting on a permission prompt, read the prompt, type `3`, and the agent
 refusal, says "Interrupted, what should Claude do instead", and carries on. Watching and
 talking both work; the width was the whole of it.
 
+### 14.1.1 When the operator is not looking
+
+Watching only works while somebody is watching. A worker that stops to ask for permission at
+the moment the operator switched to another window waits until they happen to come back, and
+the board knew and said nothing.
+
+The board now speaks through the shell's notice surface, which was added for this and is
+documented in `docs/plugins.md`: a toast in the corner always, and an OS notification as well
+when no window has focus. Clicking either focuses the window and hands the card back, and the
+panel pinned to that board opens it.
+
+```text
+WHEN                         WHAT IT SAYS
+---------------------------  -------------------------------------------------
+a worker starts waiting      "<card> is waiting on you", once per wait and not
+on a permission prompt       once per tick. The edge is what matters
+a run completes              "<card> is ready for review", with the summary
+a run is blocked             "<card> is blocked", with the reason
+a run breaks the protocol    "<card> broke the protocol"
+a run crashes or is stopped  "<card> stopped without finishing"
+```
+
+Nothing else. Promotions, claims and moves are board bookkeeping: they belong in the decision
+log of 7.2, which is there to be read, not in a notice, which interrupts. The rule that keeps
+the list short is that a notice is for a moment when the board needs the operator, not for
+every moment the board is busy.
+
 ### 14.2 The summary, for cards with no pty open
 
 Derived from the transcript JSONL, polled on the dispatcher tick. Cheap, and it works for every

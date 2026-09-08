@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { registerNotices, showNotice } from './notices'
+import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
 
 export interface PluginManifest {
@@ -168,7 +170,8 @@ async function activateMainModules(): Promise<void> {
                     for (const win of BrowserWindow.getAllWindows()) {
                         win.webContents.send(`plugin:${manifest.id}:${channel}`, ...args)
                     }
-                }
+                },
+                notify: (notice: PluginNotice) => showNotice(manifest.id, notice)
             })
         } catch (error) {
             console.error(`[plugins] failed to activate main module of "${manifest.id}"`, error)
@@ -202,6 +205,7 @@ async function startEagerly(pluginId: string, dir: string): Promise<string[] | n
 
 export async function setupPlugins(): Promise<void> {
     protocol.handle(PLUGIN_SCHEME, servePluginFile)
+    registerNotices()
     await discoverPlugins()
     await activateMainModules()
     await activatePythonModules()

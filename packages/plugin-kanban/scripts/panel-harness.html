@@ -242,8 +242,16 @@ const later = (fn, ms) => {
     return id
 }
 
-const listeners = new Set()
-const emit = (event) => listeners.forEach((listener) => listener(event))
+const listeners = new Map()
+const on = (channel, listener) => {
+    const held = listeners.get(channel) ?? new Set()
+    held.add(listener)
+    listeners.set(channel, held)
+    return () => held.delete(listener)
+}
+const send = (channel, payload) => (listeners.get(channel) ?? new Set()).forEach((listener) => listener(payload))
+const emit = (event) => send('event', event)
+window.notice = (cardId) => send('notice', { slug: 'dyarchia', cardId })
 const byId = (id) => cards.find((card) => card.id === id)
 const changed = () => emit({ type: 'board:changed', slug: 'dyarchia' })
 
@@ -435,10 +443,7 @@ const ctx = {
     pluginId: 'kanban',
     token: (name) => getComputedStyle(document.documentElement).getPropertyValue(`--dya-${name.replace(/^--dya-/, '')}`).trim(),
     onThemeChange: () => () => {},
-    on: (channel, listener) => {
-        listeners.add(listener)
-        return () => listeners.delete(listener)
-    },
+    on,
     registerPanel: (descriptor, mountPanel) => {
         mountPanel(document.getElementById('host'), { instanceId: 'kanban#0', close: () => {} })
     },

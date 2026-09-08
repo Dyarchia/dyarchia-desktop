@@ -1614,13 +1614,22 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         for (const card of cards) paintCard(card)
     }, 30_000)
 
+    const onNotice = (raw: unknown): void => {
+        const action = raw as { slug?: string; cardId?: string } | null
+        if (!action?.cardId || action.slug !== meta?.slug) return
+        select(action.cardId)
+        focusCard(action.cardId)
+    }
+
     const unsubscribe = ctx.on('event', onEvent)
+    const unnotice = ctx.on('notice', onNotice)
     void refresh().catch(fail)
 
     return () => {
         disposed = true
         closeTerminal()
         unsubscribe()
+        unnotice()
         stopDrag()
         window.clearInterval(ticker)
         for (const timer of pending.values()) window.clearTimeout(timer)

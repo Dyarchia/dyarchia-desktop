@@ -207,6 +207,15 @@ const TREES = [
 
 const IGNORING = { tracked: true, ignored: false }
 
+const EVENTS = [
+    { at: now - 5_400_000, cardId: 'card-7', runId: null, kind: 'created', detail: 'Parse the short id out of the --bg launch line in triage' },
+    { at: now - 5_200_000, cardId: 'card-7', runId: null, kind: 'moved', detail: 'triage to ready, by hand' },
+    { at: now - 4_900_000, cardId: 'card-7', runId: 'run-old', kind: 'claimed', detail: 'attempt 1' },
+    { at: now - 4_300_000, cardId: 'card-7', runId: 'run-old', kind: 'violation', detail: 'the turn ended with no terminal block' },
+    { at: now - 4_100_000, cardId: 'card-7', runId: 'run-live', kind: 'claimed', detail: 'attempt 2' },
+    { at: now - 900_000, cardId: 'card-7', runId: null, kind: 'commented', detail: 'user: try the .cmd shim as well' }
+]
+
 const DIAGNOSTICS = [
     { slug: 'dyarchia', cardId: 'card-8', problem: 'blocked and waiting on you for 15m' },
     { slug: '', cardId: null, problem: 'liveness unknown: claude agents --json answered nothing' }
@@ -602,6 +611,10 @@ const ctx = {
         if (channel === 'reveal') {
             window.alert(`the shell would show '${args[2]}' in its folder`)
             return true
+        }
+        if (channel === 'events') {
+            const rows = structuredClone(EVENTS)
+            return args[1] ? rows.filter((row) => row.cardId === args[1]) : rows
         }
         if (channel === 'diagnostics') {
             const found = structuredClone(DIAGNOSTICS)

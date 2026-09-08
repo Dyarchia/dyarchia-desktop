@@ -926,13 +926,30 @@ State     one JSON file        dozens of cards, filtered and sorted in memory.
                                Atomic write by temp file plus rename
 ```
 
-**There is no second tier, and an earlier version of this section promised one.** It was going
+```text
+TIER      FORMAT               WHY
+--------  -------------------  --------------------------------------------------
+Decisions JSONL per board       one line per thing the BOARD decided: created,
+                                moved, promoted, claimed, blocked, violation,
+                                crashed, gave_up, block_loop, commented,
+                                attached, deleted. Append only, rotated at 2 MB.
+                                It is what makes a card explicable after the fact
+```
+
+**There is no THIRD tier, and an earlier version of this section promised one.** It was going
 to be a JSONL per run, "our copy of transcript-derived events", so a run stayed explicable
 after the CLI forgot its session. That is a second transcript store next to the one Claude
 Code already keeps, and keeping it is the board doing the runtime's job. What a board keeps is
 what a board knows: the run row on the card, with its outcome, summary, tokens, artifacts,
-branch and error. The history tab reads the CLI's transcript live and says so when it is no
-longer there.
+branch and error, and the decision log above, which is the board's own reasoning and nobody
+else's. The history tab reads the CLI's transcript live and says so when it is no longer
+there.
+
+The difference is worth stating once, because the two look alike from a distance. The
+transcript is what the MODEL said and did, it is large, and Claude Code owns it. The decision
+log is what the BOARD did about it, it is one short line per transition, and nothing else
+records it. Losing the first costs a reading of the work; losing the second means nobody can
+say why a card is where it is.
 
 Claude Code stores its own sessions as `.jsonl` files, one per session, and that is the copy.
 
@@ -1001,6 +1018,8 @@ The registry and the per-board trees, under `app.getPath('userData')`:
 ```text
 kanban/boards.json                            registry: slug, name, workdir, archived, order
 kanban/dispatcher.json                        the lease: which process is sweeping, see 13
+kanban/boards/<slug>/events.jsonl             the board's decisions, one line each, 7.2
+kanban/boards/<slug>/events.1.jsonl           the previous 2 MB of them
 kanban/boards/<slug>/board.json               that board's cards
 kanban/boards/<slug>/board.bak.<n>.json       rotated copies, newest is 0
 kanban/boards/<slug>/attachments/<cardId>/    artifacts harvested from a run, durable
@@ -1650,6 +1669,10 @@ tool_result               collapsed result, with an error indicator
 result                    closing row with cost, duration and outcome
 ```
 
+A third tab, **board**, shows the decision log of 7.2 for that card: what the board did and
+when, in one line each. It is the tab that answers "why is this card here", where history
+answers "what did the worker do".
+
 Repaint coalescing at 140ms, and pinning to the bottom only when already at the bottom, are
 solved in `plugin-eforoi` for streamed answers; copy that.
 
@@ -2009,6 +2032,7 @@ packages/plugin-kanban/
     src/board.ts                 one board: load, atomic save, queries, transitions
     src/dispatch.ts              the tick, reconciliation, promotion, dispatch
     src/lease.ts                 which process is the dispatcher, and for how long
+    src/events.ts                the decision log: append, rotate, read back
     src/worker.ts                argv, spawn, transcript parsing
     src/agents.ts                wrapper over agents --json, logs, stop, rm
     src/ptyhost.ts               the pty in a utilityProcess, modelled on

@@ -33,6 +33,14 @@ interface IgnoreState {
     ignored: boolean
 }
 
+interface BoardEvent {
+    at: number
+    cardId: string
+    runId: string | null
+    kind: string
+    detail: string
+}
+
 interface Diagnostic {
     slug: string
     cardId: string | null
@@ -164,7 +172,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     let terminal: Attached | null = null
     let terminalFor = ''
-    let tab: 'terminal' | 'history' = 'terminal'
+    let tab: 'terminal' | 'history' | 'board' = 'terminal'
     let drawnId: string | null = null
     let drawnRev = -1
 
@@ -843,6 +851,35 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .catch((thrown: unknown) => failOn(card.id, thrown))
     }
 
+    const paintEvents = (card: Card, into: HTMLElement): void => {
+        void invoke<BoardEvent[]>('events', meta?.slug, card.id)
+            .then((rows) => {
+                if (!into.isConnected) return
+                into.replaceChildren()
+                if (!rows.length) {
+                    into.appendChild(
+                        el('div', 'dya-empty kanban-empty', 'the board has decided nothing about this card yet')
+                    )
+                    return
+                }
+                for (const row of rows) into.appendChild(eventRow(row))
+                into.scrollTop = into.scrollHeight
+            })
+            .catch((thrown: unknown) => failOn(card.id, thrown))
+    }
+
+    const eventRow = (row: BoardEvent): HTMLElement => {
+        const node = el('div', 'kanban-row-entry')
+        node.dataset.kind = row.kind
+        const head = el('div', 'kanban-row-head')
+        head.append(
+            el('span', 'dya-badge dya-badge--soft', row.kind.replace('_', ' ')),
+            el('span', 'kanban-card-note', `${when(row.at)}${row.detail ? ` · ${row.detail}` : ''}`)
+        )
+        node.append(head)
+        return node
+    }
+
     const historyRow = (row: HistoryRow): HTMLElement => {
         const node = el('div', 'kanban-row-entry')
         node.dataset.kind = row.kind
@@ -879,7 +916,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const syncTerminal = (card: Card): void => {
         const run = card.runs[card.runs.length - 1]
         const live = shown(card) === 'running' && run !== undefined
-        const key = run ? `${tab}:${card.id}:${run.runId}` : ''
+        const key = tab === 'board' ? `board:${card.id}:${card.rev}` : run ? `${tab}:${card.id}:${run.runId}` : ''
 
         if (key === terminalFor) return
         closeTerminal()
@@ -887,6 +924,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         terminalFor = key
         stage.hidden = false
+
+        if (tab === 'board') {
+            const list = el('div', 'kanban-history')
+            stage.replaceChildren(list)
+            paintEvents(card, list)
+            return
+        }
 
         if (tab === 'history' || !live) {
             const list = el('div', 'kanban-history')
@@ -931,7 +975,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const tabs = el('div', 'dya-tabs kanban-tabs')
         tabs.setAttribute('role', 'tablist')
-        for (const name of ['terminal', 'history'] as const) {
+        for (const name of ['terminal', 'history', 'board'] as const) {
             const button = el('button', 'dya-tab', name)
             button.type = 'button'
             button.setAttribute('role', 'tab')

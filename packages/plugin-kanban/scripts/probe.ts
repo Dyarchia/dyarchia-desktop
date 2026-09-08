@@ -6,6 +6,7 @@ import * as boards from '../src/boards.js'
 import { adopt } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
+import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
 import { brief } from '../src/worker.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
@@ -292,6 +293,28 @@ async function attachments(): Promise<void> {
     check('and a card with none says nothing', brief(card, [], 'C:\\workspace', false).includes('## Attachments'), false)
 }
 
+async function eventLog(): Promise<void> {
+    console.log('\nthe board says what it decided')
+    const rows = parseEvents(
+        '{"at":1,"cardId":"a","runId":null,"kind":"created","detail":"one"}\nnot json at all\n{"at":2,"cardId":"b","runId":null,"kind":"moved","detail":"two"}\n'
+    )
+    check('a broken line is skipped, not fatal', rows.length, 2)
+    check('and the good ones survive it', [rows[0].kind, rows[1].kind], ['created', 'moved'])
+
+    const card = await board.createCard('probe', { title: 'watched' })
+    await board.updateCard('probe', card.id, { priority: 3 })
+    await board.comment('probe', card.id, 'a note', 'user')
+    await record('probe', card.id, 'claimed', 'attempt 1', 'run-1')
+
+    const mine = await readEvents('probe', card.id)
+    check('every decision landed', mine.map((row) => row.kind), ['created', 'edited', 'commented', 'claimed'])
+    check('the run id rides along where there is one', mine[3].runId, 'run-1')
+    check('and the detail is kept', mine[1].detail, 'priority')
+
+    const everything = await readEvents('probe')
+    check('the board log holds more than one card', everything.length > mine.length, true)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -302,6 +325,7 @@ await housekeeping()
 await followups()
 await leases()
 await attachments()
+await eventLog()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

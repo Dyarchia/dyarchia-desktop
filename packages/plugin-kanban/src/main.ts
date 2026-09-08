@@ -8,6 +8,7 @@ import { nextName, reclaim } from './artifacts.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
 import * as dispatch from './dispatch.js'
+import * as events from './events.js'
 import { rules } from './rules.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
@@ -251,6 +252,11 @@ export function activate(ctx: PluginMainContext): void {
         await rm(join(boards.attachmentsRoot(target, cardId), file), { force: true })
         changed(target)
         return card
+    })
+
+    ctx.handle('events', async (slug, id) => {
+        const target = await open(String(slug))
+        return events.read(target, id ? String(id) : undefined)
     })
 
     ctx.handle('diagnostics', () => dispatch.diagnose())

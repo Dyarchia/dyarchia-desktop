@@ -78,6 +78,10 @@ Artifacts                what a run declares is copied out of the workspace befo
                          workspace is reclaimed, and shown on the run as a chip that
                          opens it on disk. A declared artifact that is not there is a
                          violation, not a completion
+Decisions                every transition the board makes is one line in a per-board
+                         log, read back in the drawer's board tab: created, moved,
+                         promoted, claimed, blocked, violation, crashed, gave up,
+                         block loop, commented, attached, deleted
 History                  the transcript as readable rows in the drawer, beside the
                          terminal: prose, thinking, tool calls with a one-line argument
                          summary, results that expand, and a closing turn row
@@ -204,6 +208,7 @@ kanban/boards.json                          the registry
 kanban/dispatcher.json                      the lease naming the process that sweeps
 kanban/boards/<slug>/board.json             that board's cards
 kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
+kanban/boards/<slug>/events.jsonl           the board's decisions, rotated at 2 MB
 kanban/boards/<slug>/attachments/<cardId>/  files given to the card and artifacts
                                             harvested from its runs, removed with it
 ```
@@ -235,6 +240,7 @@ board         createCard    updateCard    moveCard       deleteCard     comment
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
 attachments   reveal        worktrees     removeWorktree
 ignoreState   addIgnore     addAttachments              removeAttachment
+events        the board's decisions, for one card or for the whole board
 attach        negotiates a MessagePort for the pty, never terminal data
 event         broadcast, a discriminated union the renderer filters by slug
 ```

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
+import * as events from './events.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed } from './rules.js'
 import type {
@@ -155,6 +156,7 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
 
     file.cards.push(card)
     await save(slug, file)
+    await events.record(slug, card.id, 'created', `${card.title} in ${card.status}`)
     return card
 }
 
@@ -182,6 +184,7 @@ export async function updateCard(slug: string, id: string, patch: CardPatch): Pr
 
     touch(card)
     await save(slug, file)
+    await events.record(slug, card.id, 'edited', Object.keys(patch).join(', '))
     return card
 }
 
@@ -208,9 +211,11 @@ export async function moveCard(slug: string, id: string, rev: number, to: Status
         card.blockRecurrences = 0
     }
 
+    const from = card.status
     card.status = to
     touch(card)
     await save(slug, file)
+    await events.record(slug, card.id, 'moved', `${from} to ${to}, by hand`)
     return card
 }
 
@@ -227,6 +232,7 @@ export async function unblock(slug: string, id: string, rev: number): Promise<Ca
     card.sourcePhase = null
     touch(card)
     await save(slug, file)
+    await events.record(slug, card.id, 'unblocked', `returned to ${card.status}`)
     return card
 }
 
@@ -243,6 +249,7 @@ export async function deleteCard(slug: string, id: string): Promise<boolean> {
 
     await reclaim(attachmentsRoot(slug, id), boardRoot(slug))
     await reclaim(join(workspacesRoot(slug), id), workspacesRoot(slug))
+    await events.record(slug, id, 'deleted', card.title)
     return true
 }
 
@@ -259,6 +266,7 @@ export async function attach(slug: string, id: string, added: Attachment[]): Pro
 
     touch(card)
     await save(slug, file)
+    await events.record(slug, id, 'attached', added.map((entry) => entry.name).join(', '))
     return card
 }
 
@@ -268,6 +276,7 @@ export async function detach(slug: string, id: string, name: string): Promise<Ca
     card.attachments = card.attachments.filter((entry) => entry.name !== name)
     touch(card)
     await save(slug, file)
+    await events.record(slug, id, 'detached', name)
     return card
 }
 
@@ -285,6 +294,7 @@ export async function comment(
     card.comments.push({ at: Date.now(), author, text: body })
     touch(card)
     await save(slug, file)
+    await events.record(slug, id, 'commented', `${author}: ${body.slice(0, 120)}`)
     return card
 }
 
@@ -296,6 +306,7 @@ export async function promote(slug: string, now: number): Promise<boolean> {
         if (card.status === 'todo' && card.parents.length && !blockedBy(file, card).length) {
             card.status = 'ready'
             touch(card)
+            await events.record(slug, card.id, 'promoted', 'every parent closed')
             changed = true
             continue
         }
@@ -303,6 +314,7 @@ export async function promote(slug: string, now: number): Promise<boolean> {
             card.status = 'ready'
             card.scheduledFor = null
             touch(card)
+            await events.record(slug, card.id, 'promoted', 'its time arrived')
             changed = true
         }
     }

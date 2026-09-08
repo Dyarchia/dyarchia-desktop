@@ -6,6 +6,7 @@ import { harvest, reclaim, strays } from './artifacts.js'
 import type { SessionRecord } from './agents.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
+import * as events from './events.js'
 import * as lease from './lease.js'
 import { isClosed } from './rules.js'
 import * as worker from './worker.js'
@@ -80,7 +81,7 @@ function land(card: Card, status: Status): void {
     card.updatedAt = Date.now()
 }
 
-function block(card: Card, kind: BlockKind, from: 'ready' | 'review'): void {
+function block(slug: string, card: Card, kind: BlockKind, from: 'ready' | 'review'): void {
     card.blockRecurrences = card.lastBlockKind === kind ? card.blockRecurrences + 1 : 1
     card.lastBlockKind = kind
 
@@ -90,12 +91,14 @@ function block(card: Card, kind: BlockKind, from: 'ready' | 'review'): void {
         card.lastBlockKind = null
         card.blockRecurrences = 0
         land(card, 'triage')
+        void events.record(slug, card.id, 'block_loop', `blocked on ${kind} twice, sent to triage`)
         return
     }
 
     card.blockKind = kind
     card.sourcePhase = from
     land(card, 'blocked')
+    void events.record(slug, card.id, 'blocked', kind)
 }
 
 export async function adopt(
@@ -160,10 +163,11 @@ async function resolve(
             })
             card.consecutiveFailures += 1
             if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
-                block(card, 'capability', 'ready')
+                block(meta.slug, card, 'capability', 'ready')
             } else {
                 land(card, 'ready')
             }
+            void events.record(meta.slug, card.id, 'violation', `declared but missing: ${names}`, run.runId)
             sink.runEnded(meta.slug, card.id, 'violation')
             return
         }
@@ -182,12 +186,19 @@ async function resolve(
                 if (!gone) run.error = 'the scratch workspace could not be removed'
             }
             land(card, run.worktree ? 'review' : 'done')
+            void events.record(
+                meta.slug,
+                card.id,
+                'completed',
+                declared.summary.slice(0, 160),
+                run.runId
+            )
         } else if (declared.blockKind === 'dependency') {
             card.blockKind = null
             card.sourcePhase = 'ready'
             land(card, 'todo')
         } else {
-            block(card, declared.blockKind ?? 'needs_input', 'ready')
+            block(meta.slug, card, declared.blockKind ?? 'needs_input', 'ready')
         }
         sink.runEnded(meta.slug, card.id, run.outcome ?? 'completed')
         return
@@ -198,8 +209,9 @@ async function resolve(
         close(run, 'violation', progress.lastText.slice(0, 400) || null, 'no terminal block')
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
-        if (card.protocolViolations >= VIOLATIONS) block(card, 'capability', 'ready')
+        if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'ready')
         else land(card, 'ready')
+        void events.record(meta.slug, card.id, 'violation', 'the turn ended with no terminal block', run.runId)
         sink.runEnded(meta.slug, card.id, 'violation')
         return
     }
@@ -219,8 +231,16 @@ async function resolve(
     }
 
     const limit = card.maxRetries ?? RETRIES
-    if (card.consecutiveFailures >= limit) block(card, 'transient', 'ready')
+    const spent = card.consecutiveFailures >= limit
+    if (spent) block(meta.slug, card, 'transient', 'ready')
     else land(card, 'ready')
+    void events.record(
+        meta.slug,
+        card.id,
+        spent ? 'gave_up' : 'crashed',
+        run.error ?? 'the worker is gone',
+        run.runId
+    )
     sink.runEnded(meta.slug, card.id, 'crashed')
 }
 
@@ -283,7 +303,8 @@ async function reconcile(
                 null,
                 overrun ? `past its ${cap}s runtime cap` : 'alive but silent for an hour'
             )
-            block(card, 'transient', 'ready')
+            block(meta.slug, card, 'transient', 'ready')
+            void events.record(meta.slug, card.id, 'stopped', run.error ?? '', run.runId)
             sink.runEnded(meta.slug, card.id, 'stopped')
             changed = true
             continue
@@ -353,6 +374,7 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
     card.rev += 1
     card.updatedAt = Date.now()
     await board.save(meta.slug, file)
+    await events.record(meta.slug, card.id, 'claimed', `attempt ${card.runs.length}`, runId)
     sink.boardChanged(meta.slug)
 
     const place = workspace(meta, card)
@@ -377,10 +399,11 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
         close(run, 'crashed', null, error instanceof Error ? error.message : String(error))
         card.consecutiveFailures += 1
         if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
-            block(card, 'capability', 'ready')
+            block(meta.slug, card, 'capability', 'ready')
         } else {
             land(card, 'ready')
         }
+        void events.record(meta.slug, card.id, 'crashed', run.error ?? 'the launch failed', runId)
         sink.runEnded(meta.slug, card.id, 'crashed')
     }
 

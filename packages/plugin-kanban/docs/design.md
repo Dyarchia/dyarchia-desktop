@@ -1639,6 +1639,39 @@ Permission prompts are answered there too, natively. An earlier draft specified 
 permission row with approve and deny buttons, fed by a print-only flag. That is unnecessary
 once the worker is a real session, and it is gone.
 
+**The agent's screen has a floor of about 79 columns, and a side drawer is narrower than that.**
+Measured on 2026-09-08 by attaching to a real waiting session through node-pty at a range of
+sizes and reading the widest line the CLI drew:
+
+```text
+PTY COLUMNS   WIDEST LINE DRAWN
+-----------   ------------------------------------------------------------
+60            200   the TUI gives up on reflowing and draws at its default
+70            190   the same
+76            176   the same
+79             92   it fits: the pane's width plus escape residue
+80             93   fits
+100           113   fits
+120           133   fits
+```
+
+Below the floor the agent draws lines three times wider than the pane, every one of them
+wraps, and what the operator sees is unreadable. The drawer is 330px, which at the mono size
+used here is about 45 columns, so **watching an agent in the drawer did not work at all** and
+the reason was never in the pipeline: the pty, the port, the flow control and xterm were all
+carrying the bytes correctly the whole time.
+
+Two things follow. The drawer widens to 640px while the terminal tab is showing a live run,
+which is 80 columns and change, and narrows again afterwards. And when the window is too small
+for even that, the terminal says so in words, in its own surface, and attaches by itself as
+soon as the pane grows past the floor. Never render the agent's screen into a pane that cannot
+hold it: a legible sentence beats an illegible screen.
+
+The pipeline itself is verified end to end against a real agent on the same date: attach to a
+session waiting on a permission prompt, read the prompt, type `3`, and the agent records the
+refusal, says "Interrupted, what should Claude do instead", and carries on. Watching and
+talking both work; the width was the whole of it.
+
 ### 14.2 The summary, for cards with no pty open
 
 Derived from the transcript JSONL, polled on the dispatcher tick. Cheap, and it works for every
@@ -2200,7 +2233,11 @@ Already paid for in that repo. Do not rediscover them.
    a card. Correct trade for desktop Electron; a dedicated grip is worse with a mouse.
 7. **The Windows process facts in 5.5**, especially that `os.kill(pid, 0)` is not a liveness
    query and lies in both directions.
-8. **A card body that says "artifact" can send the worker to the Artifact tool.** Measured on a
+8. **xterm 6 does not render into the DOM.** Reading `.xterm-rows` textContent to check what a
+   terminal is showing returns empty strings however well it is painting, which cost an hour
+   of chasing a rendering bug that did not exist. Look at the screen, or capture the bytes on
+   the way in.
+9. **A card body that says "artifact" can send the worker to the Artifact tool.** Measured on a
    live board: a card asking for a file to be "declared as an artifact" had the worker reach
    for the tool of that name, which needs a permission the operator was not there to give, and
    the run sat waiting. The protocol's own word is `artifacts` in the closing block, so say

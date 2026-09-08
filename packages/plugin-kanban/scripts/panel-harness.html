@@ -373,50 +373,33 @@ const heartbeat = window.setInterval(() => {
     }
 }, 5_000)
 
-const ESC = '\u001b'
-const DIM = `${ESC}[2m`
-const OFF = `${ESC}[0m`
-
-const PTY_BANNER = [
-    `${DIM} attached to session a1b2c3d4 in kanban-a1b2c3d4${OFF}`,
-    '',
-    `${ESC}[36m>${OFF} parse the short id out of the --bg launch line`,
-    '',
-    `${DIM}  Read(src/agents.ts)${OFF}`,
-    `${DIM}  Edit(src/worker.ts)${OFF}`,
-    '',
-    `${ESC}[33m Claude needs your permission to run:${OFF}`,
-    '   Bash(npx tsc -p packages/plugin-kanban)',
-    '',
-    '   1. Yes   2. Yes, and do not ask again   3. No',
-    ''
-]
-
-const PTY_CHATTER = [
-    `${DIM}  Bash(npx tsc -p packages/plugin-kanban)${OFF}`,
-    `${DIM}  Read(src/dispatch.ts)${OFF}`,
-    `${DIM}  thinking${OFF}`,
-    `${DIM}  Edit(src/dispatch.ts)${OFF}`
-]
+const CAPTURE = fetch('/packages/plugin-kanban/scripts/attach-capture.txt').then((response) =>
+    response.ok ? response.text() : ''
+)
 
 const fakePty = (port) => {
     let opened = false
-    let chatter = 0
     let line = ''
     const send = (text) => port.postMessage({ t: 'data', d: text })
 
-    const beat = window.setInterval(() => {
-        if (!opened) return
-        send(`${PTY_CHATTER[chatter % PTY_CHATTER.length]}\r\n`)
-        chatter += 1
-    }, 4_000)
+    const replay = async () => {
+        const raw = await CAPTURE
+        if (!raw) {
+            send('\r\n  no capture at scripts/attach-capture.txt\r\n')
+            return
+        }
+        for (let at = 0; at < raw.length; at += 512) {
+            send(raw.slice(at, at + 512))
+            await new Promise((resume) => setTimeout(resume, 25))
+        }
+    }
 
     port.onmessage = (event) => {
         const message = event.data
         if (message.t === 'resize') {
             if (opened) return
             opened = true
-            send(`${PTY_BANNER.join('\r\n')}\r\n`)
+            void replay()
             return
         }
         if (message.t === 'in') {
@@ -426,11 +409,11 @@ const fakePty = (port) => {
                 line = ''
                 send('\r\n')
                 if (answer === '1' || answer === '2') {
-                    send(`${ESC}[32m  allowed${OFF}\r\n${DIM}  Bash(npx tsc -p packages/plugin-kanban)${OFF}\r\n`)
+                    send('\u001b[32m  allowed\u001b[0m\r\n')
                 } else if (answer === '3') {
-                    send(`${ESC}[31m  refused${OFF}\r\n${DIM}  looking for another way${OFF}\r\n`)
+                    send('\u001b[31m  refused\u001b[0m\r\n')
                 } else {
-                    send(`${DIM}  heard: ${answer}${OFF}\r\n`)
+                    send(`\u001b[2m  heard: ${answer}\u001b[0m\r\n`)
                 }
                 return
             }
@@ -444,10 +427,7 @@ const fakePty = (port) => {
             send(data)
             return
         }
-        if (message.t === 'detach') {
-            window.clearInterval(beat)
-            port.close()
-        }
+        if (message.t === 'detach') port.close()
     }
 }
 

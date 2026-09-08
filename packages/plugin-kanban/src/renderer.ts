@@ -916,6 +916,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const syncTerminal = (card: Card): void => {
         const run = card.runs[card.runs.length - 1]
         const live = shown(card) === 'running' && run !== undefined
+        drawer.dataset.wide = String(tab === 'terminal' && live)
         const key = tab === 'board' ? `board:${card.id}:${card.rev}` : run ? `${tab}:${card.id}:${run.runId}` : ''
 
         if (key === terminalFor) return

@@ -24,45 +24,7 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-### 1.1 One AppData question is left, and it cannot be measured from here
-
-The shell used for every measurement in design.md section 5 runs inside the Claude desktop
-app, which is an MSIX package, so its writes to `AppData\Roaming` are redirected into
-`AppData\Local\Packages\Claude_<id>\LocalCache\Roaming\`. Verified by writing a marker through
-one path and reading it back through the other.
-
-This already produced one wrong conclusion. Section 5.11 originally said the CLI refuses any
-working directory under AppData; the counter-example was in the transcript directory names all
-along, where sessions had been running happily under
-`AppData\Local\Packages\Claude_<id>\LocalCache\Roaming\dyarchia\...`. The section now says
-what was observed and marks the cause unresolved.
-
-Two things follow, and neither is urgent:
-
-- **The scratch-workspace failure has no established cause.** The evidence points at a
-  virtualization mismatch between the process that created the directory and the process that
-  resolved it, not at a policy. It may not reproduce at all on a machine where dyarchia is
-  launched normally. The fix stands on its own reasoning — a scratch workspace is a temporary
-  directory and belongs in the temp directory — so nothing is blocked.
-- **Every other AppData-shaped or path-shaped measurement is suspect** until re-taken outside
-  the container, including anything about where userData really is.
-
-Re-measured on 2026-09-08 against a dyarchia the operator had launched with `pnpm dev`, and
-design.md 5.11 now records the result. The redirect turned out to cover reads as well as
-writes, proven by reading a `DevToolsActivePort` naming a browser guid from the previous day
-while the live app exposed a different one. `~/.claude` is outside the redirect, so every
-transcript-based and session-based fact in section 5 stands as measured.
-
-What is left of this entry is one question, and it is the narrow one: **does the CLI accept a
-working directory under userData when both the process that creates it and the process that
-resolves it are outside a container?** It cannot be answered from a shell inside the Claude
-desktop app, because that shell has no way to write to the real AppData. Nothing depends on
-the answer: scratch workspaces live in tmpdir for reasons of their own.
-
-Done looks like: that one command run from an ordinary terminal, and 5.11's OPEN line replaced
-by what it says.
-
-### 1.2 The transcript copy of section 7.2 does not exist
+### 1.1 The transcript copy of section 7.2 does not exist
 
 The design has two storage tiers: the board as one JSON file, and a JSONL per run that is "our
 copy of transcript-derived events", which is what makes a run explicable after the CLI has
@@ -77,7 +39,7 @@ Done looks like: the dispatcher tees what it parses into `kanban/boards/<slug>/r
 the history tab falls back to it, and it is rotated by size. Section 20 already lists
 "the transcript copy grows without bound" as the risk to answer at the same time.
 
-### 1.3 Two dyarchia processes would fight over one board
+### 1.2 Two dyarchia processes would fight over one board
 
 Section 13 asks for a single elected dispatcher with a lease. There is none. It does not bite
 today because a plugin main module is imported once per app process, so one running dyarchia is
@@ -87,7 +49,7 @@ be a second dispatcher on the same files, and both would claim.
 Done looks like: a lease file next to the board with an expiry, stolen only when the holder is
 verified dead. Cheap now, and the alternative is double-dispatching real work.
 
-### 1.4 Errors are a single strip that the next error overwrites
+### 1.3 Errors are a single strip that the next error overwrites
 
 `fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
 a card is not attached to that card, and a second error erases the first. A run's `error` field
@@ -150,6 +112,20 @@ A dollar figure          10.2. There is no cost in USD anywhere in a transcript,
 The executor abstraction 21.5. Deliberately not built. Keep Claude-specific knowledge in
                          agents.ts and worker.ts and extract an interface from two real
                          implementations, not one
+A board-side commit      BUILT, MEASURED WORKING, AND REMOVED. A run that finishes with
+                         uncommitted work leaves an empty branch, and the dispatcher was
+                         committing it. The worktree, the session and the branch are the
+                         CLI's, the agent runs in Claude Code, and a board that quietly
+                         commits in the operator's repository is doing somebody else's job.
+                         Nothing is lost by declining: neither the plugin nor `claude rm`
+                         removes a dirty worktree, so the work stays and the board says so.
+                         design.md 5.7
+The last AppData         Whether the CLI accepts a working directory under userData when
+question                 both the process that creates it and the one that resolves it are
+                         outside a package container. It cannot be measured from these
+                         sessions, nothing in the plugin depends on it since scratch
+                         workspaces live in tmpdir, and it was being carried in section 1
+                         as if it were work. design.md 5.11 keeps the OPEN line
 ```
 
 

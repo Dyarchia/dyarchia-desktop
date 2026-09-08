@@ -521,15 +521,19 @@ it run `git commit`. The same is true of running the tests it was asked to run. 
 work needs commands has to say so in its permission mode, which is the reason that control is
 per card and now reachable from the drawer.
 
-So the board does not depend on it. When a run completes in a worktree, the dispatcher commits
-whatever it left, with a message naming the card and the run and saying plainly that the board
-committed it. A clean worktree is left alone. If the commit fails, the reason goes on the run
-and a comment goes on the card, which the next run reads in its brief.
+**The board does not commit on the worker's behalf, and that was decided after building it.**
+A dispatcher that committed whatever a run left was written, measured working end to end, and
+then removed: the worktree, the session and the branch belong to the CLI, the agent is the one
+running in it, and a board that quietly makes commits in the operator's repository has stopped
+being a board. Nothing is lost by declining. Neither this plugin nor `claude rm` will remove a
+worktree that holds uncommitted changes, so the work stays exactly where the worker left it and
+the board's job is to SAY so: the card sits in review, and the worktrees menu reads "it holds
+changes nobody committed". The operator decides, with the terminal drawer right there to tell
+the worker to commit, or the permission mode on the card to let it commit unattended next time.
 
-The whole circle, measured end to end on a live board: the worker edited a tracked file and
-could not commit it, the board committed it on the worker's branch, the operator merged that
-branch, and the board then unlocked and removed the worktree and deleted the branch, with the
-work surviving in the project.
+The circle it does own, measured end to end on a live board: the worker's branch was merged by
+the operator, and the board then unlocked the worktree, removed it, and deleted the branch,
+with the work surviving in the project.
 
 `claude rm` turns out to apply the same two rules, which is a good sign for them. Cleaning up
 the five sessions that live board had produced, it removed three and refused two, in its own

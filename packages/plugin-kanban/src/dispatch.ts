@@ -123,27 +123,6 @@ export async function adopt(
     })
 }
 
-async function sweepIntoCommit(card: Card, run: Run): Promise<void> {
-    if (!run.worktree) return
-
-    const message = [
-        `kanban: ${card.title}`,
-        '',
-        'The run finished with these changes uncommitted, so the board committed them.',
-        `run ${run.runId}`
-    ].join('\n')
-
-    const swept = await worktrees.commitAll(run.worktree, message)
-    if (!swept.error) return
-
-    run.error = swept.error
-    card.comments.push({
-        at: Date.now(),
-        author: 'agent',
-        text: `The last run left work uncommitted and the board could not commit it either: ${swept.error}. Commit on the branch yourself next time.`
-    })
-}
-
 async function resolve(
     file: BoardFile,
     meta: BoardMeta,
@@ -199,7 +178,6 @@ async function resolve(
                 const gone = await reclaim(workspace(meta, card), boards.workspacesRoot(meta.slug))
                 if (!gone) run.error = 'the scratch workspace could not be removed'
             }
-            if (run.worktree) await sweepIntoCommit(card, run)
             land(card, run.worktree ? 'review' : 'done')
         } else if (declared.blockKind === 'dependency') {
             card.blockKind = null

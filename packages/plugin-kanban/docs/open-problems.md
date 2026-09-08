@@ -24,22 +24,7 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-### 1.1 The transcript copy of section 7.2 does not exist
-
-The design has two storage tiers: the board as one JSON file, and a JSONL per run that is "our
-copy of transcript-derived events", which is what makes a run explicable after the CLI has
-forgotten it. Only the first is built. The history tab reads the CLI's own transcript live, so
-a run whose session is deleted, or whose transcript is rotated away by the CLI, loses its
-history entirely.
-
-The `runs/` directory this was going to live in was being created empty on every save and has
-been removed until it is used.
-
-Done looks like: the dispatcher tees what it parses into `kanban/boards/<slug>/runs/<runId>.jsonl`,
-the history tab falls back to it, and it is rotated by size. Section 20 already lists
-"the transcript copy grows without bound" as the risk to answer at the same time.
-
-### 1.2 Two dyarchia processes would fight over one board
+### 1.1 Two dyarchia processes would fight over one board
 
 Section 13 asks for a single elected dispatcher with a lease. There is none. It does not bite
 today because a plugin main module is imported once per app process, so one running dyarchia is
@@ -49,7 +34,7 @@ be a second dispatcher on the same files, and both would claim.
 Done looks like: a lease file next to the board with an expiry, stolen only when the holder is
 verified dead. Cheap now, and the alternative is double-dispatching real work.
 
-### 1.3 Errors are a single strip that the next error overwrites
+### 1.2 Errors are a single strip that the next error overwrites
 
 `fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
 a card is not attached to that card, and a second error erases the first. A run's `error` field
@@ -120,6 +105,12 @@ A board-side commit      BUILT, MEASURED WORKING, AND REMOVED. A run that finish
                          Nothing is lost by declining: neither the plugin nor `claude rm`
                          removes a dirty worktree, so the work stays and the board says so.
                          design.md 5.7
+The transcript copy      7.2 promised a JSONL per run, our own copy of transcript-derived
+                         events, so a run stayed explicable after the CLI forgot its
+                         session. Dropped: Claude Code already keeps that file, and a
+                         second transcript store is the board doing the runtime's job.
+                         The card keeps the run row, which is what a board knows, and the
+                         history tab reads the CLI's file live. design.md 7.2 and 14.3
 The last AppData         Whether the CLI accepts a working directory under userData when
 question                 both the process that creates it and the one that resolves it are
                          outside a package container. It cannot be measured from these

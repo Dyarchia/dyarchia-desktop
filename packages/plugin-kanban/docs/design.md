@@ -924,11 +924,17 @@ TIER      FORMAT               WHY
 --------  -------------------  --------------------------------------------------
 State     one JSON file        dozens of cards, filtered and sorted in memory.
                                Atomic write by temp file plus rename
-Events    JSONL per run        append only. It is the stream output tee'd to disk,
-                               so it is both the live feed and the audit trail
 ```
 
-Claude Code stores its own sessions the same way, as `.jsonl` files.
+**There is no second tier, and an earlier version of this section promised one.** It was going
+to be a JSONL per run, "our copy of transcript-derived events", so a run stayed explicable
+after the CLI forgot its session. That is a second transcript store next to the one Claude
+Code already keeps, and keeping it is the board doing the runtime's job. What a board keeps is
+what a board knows: the run row on the card, with its outcome, summary, tokens, artifacts,
+branch and error. The history tab reads the CLI's transcript live and says so when it is no
+longer there.
+
+Claude Code stores its own sessions as `.jsonl` files, one per session, and that is the copy.
 
 ### 7.3 The card id is ours, the session id is the CLI's
 
@@ -996,7 +1002,6 @@ The registry and the per-board trees, under `app.getPath('userData')`:
 kanban/boards.json                            registry: slug, name, workdir, archived, order
 kanban/boards/<slug>/board.json               that board's cards
 kanban/boards/<slug>/board.bak.<n>.json       rotated copies, newest is 0
-kanban/boards/<slug>/runs/<runId>.jsonl       our copy of transcript-derived events
 kanban/boards/<slug>/attachments/<cardId>/    artifacts harvested from a run, durable
 <tmpdir>/dyarchia-kanban/<slug>/<cardId>/     scratch workspace, deleted on completion.
                                               NOT under userData: see 5.11
@@ -1626,6 +1631,10 @@ result                    closing row with cost, duration and outcome
 Repaint coalescing at 140ms, and pinning to the bottom only when already at the bottom, are
 solved in `plugin-eforoi` for streamed answers; copy that.
 
+The transcript is the CLI's file and the board does not copy it, see 7.2. A run whose session
+the CLI has forgotten has no history to show, and the tab says that rather than pretending: the
+card still carries the run row, which is what the board knew about it.
+
 ### 14.4 Comments, and why they still exist
 
 The comment thread is not made redundant by the terminal. It is the channel that survives the
@@ -1957,7 +1966,7 @@ packages/plugin-kanban/
     src/boards.ts                the registry, slug validation, per-board paths
     src/board.ts                 one board: load, atomic save, queries, transitions
     src/dispatch.ts              the tick, reconciliation, promotion, dispatch
-    src/worker.ts                argv, spawn, stream parsing, JSONL tee
+    src/worker.ts                argv, spawn, transcript parsing
     src/agents.ts                wrapper over agents --json, logs, stop, rm
     src/ptyhost.ts               the pty in a utilityProcess, modelled on
                                  plugin-terminal's. CJS, since utilityProcess.fork
@@ -2143,7 +2152,7 @@ Cost climbs unseen                        accumulated cost shown on the card, an
                                           stop-loss and not a cap
 Board and sessions diverge                agents --json is authority every tick, and
                                           the board never contradicts what it sees
-The transcript copy grows without bound   rotate by size, purge runs of archived cards
+The transcript copy grows without bound   NOT A RISK ANY MORE: there is no copy, see 7.2
 The app closes with work running          nothing to do: sessions are detached and
                                           survive by design. Say so in the UI once
                                           the job-object probe of 5.5 confirms it on

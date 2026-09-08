@@ -779,7 +779,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 if (!into.isConnected) return
                 into.replaceChildren()
                 if (!rows.length) {
-                    into.appendChild(el('div', 'dya-empty kanban-empty', 'nothing recorded yet'))
+                    into.appendChild(el('div', 'dya-empty kanban-empty', 'no transcript for this run: the CLI keeps that file, and it is gone'))
                     return
                 }
                 const stick = into.scrollTop + into.clientHeight >= into.scrollHeight - 8

@@ -24,17 +24,7 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-### 1.1 Two dyarchia processes would fight over one board
-
-Section 13 asks for a single elected dispatcher with a lease. There is none. It does not bite
-today because a plugin main module is imported once per app process, so one running dyarchia is
-one dispatcher however many windows it has. A second copy of the app on the same machine would
-be a second dispatcher on the same files, and both would claim.
-
-Done looks like: a lease file next to the board with an expiry, stolen only when the holder is
-verified dead. Cheap now, and the alternative is double-dispatching real work.
-
-### 1.2 Errors are a single strip that the next error overwrites
+### 1.1 Errors are a single strip that the next error overwrites
 
 `fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
 a card is not attached to that card, and a second error erases the first. A run's `error` field
@@ -172,6 +162,9 @@ the rest in silence                          in a comment on the
 A stopped session read as alive, so a        liveness answers from   design.md 5.13
 stopped card sat in running for ever         two measured sets, and
                                              'unknown' otherwise
+Two copies of the app were two dispatchers   a lease renewed every   design.md 13
+on the same board files                      tick, taken only when
+                                             it is three ticks stale
 A pty that never started said nothing:       attach waits for the    src/main.ts
 the host's 'failed' reply had no listener    host's own answer
 A completed run left an EMPTY branch:        the brief says COMMIT,   design.md 5.7

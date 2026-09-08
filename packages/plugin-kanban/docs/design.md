@@ -1000,6 +1000,7 @@ The registry and the per-board trees, under `app.getPath('userData')`:
 
 ```text
 kanban/boards.json                            registry: slug, name, workdir, archived, order
+kanban/dispatcher.json                        the lease: which process is sweeping, see 13
 kanban/boards/<slug>/board.json               that board's cards
 kanban/boards/<slug>/board.bak.<n>.json       rotated copies, newest is 0
 kanban/boards/<slug>/attachments/<cardId>/    artifacts harvested from a run, durable
@@ -1551,8 +1552,19 @@ dedicated machine.
 Three requirements that are easy to miss:
 
 - **Kill the tree, not the process.** The CLI spawns git, node and shells.
-- **Elect a single dispatcher.** Two dyarchia windows are two tick loops on one board. Use a
-  lease row with an expiry, stolen only when the holder is verified dead.
+- **Elect a single dispatcher.** Two dyarchia windows are one tick loop, because a plugin main
+  module is imported once per app process. Two copies of the app are two loops on the same
+  files. `kanban/dispatcher.json` holds the lease: an owner id minted per process, the pid for
+  a human reading it, and the time it was last renewed. The tick renews it; a process that does
+  not hold it does not sweep at all, and says so in the health strip. It is taken only when it
+  is free or older than 90 seconds, which is three idle ticks.
+
+  **Expiry is the verification.** 5.5 measured that a pid check lies in both directions on
+  Windows, so "the holder is verified dead" cannot mean asking about its process; it means the
+  holder has not renewed in three ticks, which is the only thing that matters here. The write
+  is read back afterwards to see who won, and there is a window between the read and the write
+  where both processes can believe they took it. The consequence is bounded, one duplicated
+  claim at worst, and it is smaller than the one it replaces, which was every tick of both.
 - **Probe the job object at startup and surface it.** Whether background sessions survive the
   app closing depends on flags that must be read at runtime, see 5.5. Do not promise durability
   that has not been verified on that machine.
@@ -1966,6 +1978,7 @@ packages/plugin-kanban/
     src/boards.ts                the registry, slug validation, per-board paths
     src/board.ts                 one board: load, atomic save, queries, transitions
     src/dispatch.ts              the tick, reconciliation, promotion, dispatch
+    src/lease.ts                 which process is the dispatcher, and for how long
     src/worker.ts                argv, spawn, transcript parsing
     src/agents.ts                wrapper over agents --json, logs, stop, rm
     src/ptyhost.ts               the pty in a utilityProcess, modelled on

@@ -43,7 +43,9 @@ Drag                     pointer events, ghost, insertion indicator, autoscroll,
                          accept and refuse washes, Escape to cancel
 Keyboard                 roving tabindex, arrows, Ctrl with arrows to move a card
                          to the nearest legal status, Enter to open, live region
-Dispatch                 a tick sweeps every board, reconciles running cards against
+Dispatch                 one elected process sweeps, holding a lease it renews on every
+                         tick; another copy of the app watches and does not claim. The
+                         tick reconciles running cards against
                          `claude agents --json` with three-valued liveness, promotes,
                          and claims. 1 card per board, 2 across all of them
 Worker                   a real `claude --bg` session in a git worktree of the project,
@@ -184,6 +186,7 @@ Under `app.getPath('userData')`, one directory per board:
 
 ```text
 kanban/boards.json                          the registry
+kanban/dispatcher.json                      the lease naming the process that sweeps
 kanban/boards/<slug>/board.json             that board's cards
 kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
 kanban/boards/<slug>/attachments/<cardId>/  artifacts harvested from a run, removed

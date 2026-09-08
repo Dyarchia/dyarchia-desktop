@@ -6,6 +6,7 @@ import * as boards from '../src/boards.js'
 import { adopt } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { strays } from '../src/artifacts.js'
+import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
 import { ours, parseList, same } from '../src/worktrees.js'
 import type { SessionRecord } from '../src/agents.js'
@@ -249,6 +250,25 @@ async function followups(): Promise<void> {
     check('and they are named by title', parent.comments[0].text.includes('followup 12'), true)
 }
 
+async function leases(): Promise<void> {
+    console.log('\nonly one dispatcher claims')
+    const now = Date.now()
+    check('an empty file is taken', decide(null, 'me', now), 'take')
+    check('our own lease is renewed', decide({ owner: 'me', pid: 1, at: now - 1000 }, 'me', now), 'renew')
+    check('a fresh lease of anothers is waited on', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now), 'wait')
+    check('a stale one is taken', decide({ owner: 'you', pid: 2, at: now - TTL_MS - 1 }, 'me', now), 'take')
+
+    check('the first process holds it', await hold('first', now), true)
+    check('and it is written down', (await readLease())?.owner, 'first')
+    check('a second process does not', await hold('second', now), false)
+    check('the first keeps it', (await readLease())?.owner, 'first')
+    check('the second takes it once it goes stale', await hold('second', now + TTL_MS + 1), true)
+    await drop('first')
+    check('a holder that is not us drops nothing', (await readLease())?.owner, 'second')
+    await drop('second')
+    check('and the holder can drop its own', await readLease(), null)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -257,6 +277,7 @@ terminals()
 await machine()
 await housekeeping()
 await followups()
+await leases()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

@@ -6,6 +6,7 @@ import { harvest, reclaim, strays } from './artifacts.js'
 import type { SessionRecord } from './agents.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
+import * as lease from './lease.js'
 import { isClosed } from './rules.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
@@ -44,12 +45,14 @@ export interface Sink {
 }
 
 const BOOTED = Date.now()
+const OWNER = randomUUID()
 
 let timer: NodeJS.Timeout | null = null
 let ticking = false
 let cursor = 0
 let survived = false
 let prunedAt = 0
+let holding = true
 let housekeeping: Diagnostic[] = []
 
 function current(card: Card): Run | null {
@@ -488,6 +491,14 @@ export async function diagnose(): Promise<Diagnostic[]> {
         }
     }
 
+    if (!holding) {
+        found.push({
+            slug: '',
+            cardId: null,
+            problem: 'another dyarchia holds the dispatcher, so this one is watching, not claiming'
+        })
+    }
+
     if (survived) {
         found.push({
             slug: '',
@@ -503,6 +514,9 @@ export async function sweep(sink: Sink): Promise<void> {
     if (ticking) return
     ticking = true
     try {
+        holding = await lease.hold(OWNER, Date.now()).catch(() => true)
+        if (!holding) return
+
         await prune().catch(() => undefined)
         const sessions = await agents.snapshot()
         const open = (await boards.list()).filter((entry) => !entry.archived)
@@ -555,6 +569,7 @@ export function begin(sink: Sink): () => void {
     return () => {
         if (timer) clearInterval(timer)
         timer = null
+        void lease.drop(OWNER).catch(() => undefined)
     }
 }
 

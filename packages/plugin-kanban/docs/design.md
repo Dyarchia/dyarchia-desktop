@@ -1699,6 +1699,19 @@ log of 7.2, which is there to be read, not in a notice, which interrupts. The ru
 the list short is that a notice is for a moment when the board needs the operator, not for
 every moment the board is busy.
 
+Verified on 2026-09-09 against a running dyarchia with a real worker: the card was dispatched,
+the worker stopped at a permission prompt, and the notice arrived ONCE with the card and the
+board in it. The toast rendered with the plugin name, the title, the body and its dismiss
+control, and activating it selected the card, opened the drawer and focused it.
+
+**An OS notification is checkable on Windows without a person watching.** The window had no
+focus, so the shell raised one, and Windows records the app the first time it does:
+
+
+
+That key exists only because a toast was shown under that AppUserModelId, and that id is the
+one the shell sets at startup. No key, no notification.
+
 ### 14.2 The summary, for cards with no pty open
 
 Derived from the transcript JSONL, polled on the dispatcher tick. Cheap, and it works for every

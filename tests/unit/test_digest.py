@@ -137,7 +137,7 @@ def test_a_report_older_than_the_sweep_is_not_this_week_s_news(tmp_path: Path) -
     """A run that finds nothing writes nothing, so the report on disk can be weeks old.
 
     Reading it back as the latest run is how a target that did not change reaches the next step as
-    if it had. It happened: claude-api-docs-es was handed to the follow-up with 105 pages from a
+    if it had. It happened: a target was handed to the follow-up with 105 pages of change from a
     sweep three days earlier.
     """
     settings = Settings(data_dir=tmp_path)

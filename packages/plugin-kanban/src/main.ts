@@ -8,6 +8,7 @@ import * as boards from './boards.js'
 import * as dispatch from './dispatch.js'
 import { rules } from './rules.js'
 import * as worker from './worker.js'
+import * as worktrees from './worktrees.js'
 import type { BoardDraft, BoardMeta, BoardPayload, Card, CardDraft, CardPatch, Status } from './types.js'
 
 let host: UtilityProcess | null = null
@@ -179,6 +180,24 @@ export function activate(ctx: PluginMainContext): void {
     })
 
     ctx.handle('diagnostics', () => dispatch.diagnose())
+
+    ctx.handle('worktrees', async (slug) => dispatch.inventory(await boards.find(String(slug))))
+
+    ctx.handle('removeWorktree', async (slug, path) => {
+        const meta = await boards.find(String(slug))
+        const found = (await dispatch.inventory(meta)).find((tree) =>
+            worktrees.same(tree.path, String(path))
+        )
+        if (!found) throw new Error('that worktree is not on this board any more')
+        if (found.live) throw new Error('a worker is still using that worktree')
+        if (!found.landed) throw new Error('that worktree holds commits nothing has landed')
+        await worktrees.remove(meta.workdir, found.path, found.branch)
+        return true
+    })
+
+    ctx.handle('ignoreState', async (slug) => worktrees.state((await boards.find(String(slug))).workdir))
+
+    ctx.handle('addIgnore', async (slug) => worktrees.ignore((await boards.find(String(slug))).workdir))
 
     ctx.handle('unblock', async (slug, id, rev) => {
         const target = await open(String(slug))

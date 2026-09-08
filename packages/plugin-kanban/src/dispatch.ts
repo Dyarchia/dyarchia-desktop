@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as agents from './agents.js'
-import { harvest, reclaim } from './artifacts.js'
+import { harvest, reclaim, strays } from './artifacts.js'
 import type { SessionRecord } from './agents.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
+import { isClosed } from './rules.js'
 import * as worker from './worker.js'
+import * as worktrees from './worktrees.js'
 import type { BlockKind, BoardFile, BoardMeta, Card, Run, Status } from './types.js'
 
 const BUSY_MS = 5_000
@@ -20,6 +22,7 @@ const GUARD_MS = 60_000
 const SILENT_MS = 60 * 60_000
 const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
+const PRUNE_MS = 10 * 60_000
 
 export interface CardProgress {
     slug: string
@@ -45,6 +48,8 @@ let timer: NodeJS.Timeout | null = null
 let ticking = false
 let cursor = 0
 let survived = false
+let prunedAt = 0
+let housekeeping: Diagnostic[] = []
 
 function current(card: Card): Run | null {
     return card.runs.length ? card.runs[card.runs.length - 1] : null
@@ -371,8 +376,69 @@ export interface Diagnostic {
     problem: string
 }
 
+export function held(cards: Card[]): string[] {
+    const paths: string[] = []
+    for (const card of cards) {
+        if (card.status !== 'running') continue
+        const run = current(card)
+        if (run?.worktree) paths.push(run.worktree)
+    }
+    return paths
+}
+
+export async function inventory(meta: BoardMeta): Promise<worktrees.Worktree[]> {
+    const live = held(await board.cards(meta.slug))
+    return (await worktrees.list(meta.workdir)).map((tree) => ({
+        ...tree,
+        live: live.some((path) => worktrees.same(path, tree.path))
+    }))
+}
+
+async function prune(): Promise<void> {
+    const now = Date.now()
+    if (now - prunedAt < PRUNE_MS) return
+    prunedAt = now
+
+    const all = await boards.list()
+
+    for (const meta of all) {
+        const keep = new Set(
+            (await board.cards(meta.slug)).filter((card) => !isClosed(card.status)).map((card) => card.id)
+        )
+        const root = boards.workspacesRoot(meta.slug)
+        for (const name of await strays(root, keep)) await reclaim(join(root, name), root)
+    }
+
+    const parent = boards.workspacesParent()
+    const known = new Set(all.map((meta) => meta.slug))
+    for (const name of await strays(parent, known)) await reclaim(join(parent, name), parent)
+
+    const notes: Diagnostic[] = []
+    for (const meta of all.filter((entry) => !entry.archived)) {
+        const ignoring = await worktrees.state(meta.workdir)
+        if (ignoring.tracked && !ignoring.ignored) {
+            notes.push({
+                slug: meta.slug,
+                cardId: null,
+                problem: 'this project does not ignore .claude/worktrees, so a run shows up in its git status'
+            })
+        }
+
+        const landed = (await inventory(meta)).filter((tree) => tree.landed && !tree.live)
+        if (landed.length) {
+            notes.push({
+                slug: meta.slug,
+                cardId: null,
+                problem: `${landed.length} landed worktree${landed.length === 1 ? '' : 's'} can be removed`
+            })
+        }
+    }
+
+    housekeeping = notes
+}
+
 export async function diagnose(): Promise<Diagnostic[]> {
-    const found: Diagnostic[] = []
+    const found: Diagnostic[] = [...housekeeping]
     const now = Date.now()
     const sessions = await agents.snapshot()
     const open = (await boards.list()).filter((entry) => !entry.archived)
@@ -427,6 +493,7 @@ export async function sweep(sink: Sink): Promise<void> {
     if (ticking) return
     ticking = true
     try {
+        await prune().catch(() => undefined)
         const sessions = await agents.snapshot()
         const open = (await boards.list()).filter((entry) => !entry.archived)
         if (!open.length) return

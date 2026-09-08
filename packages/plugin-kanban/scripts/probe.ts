@@ -1,10 +1,12 @@
-import { mkdtempSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
 import { liveness, parseLaunch } from '../src/agents.js'
+import { strays } from '../src/artifacts.js'
 import { parseTerminal } from '../src/worker.js'
+import { ours, parseList, same } from '../src/worktrees.js'
 import type { SessionRecord } from '../src/agents.js'
 
 let passed = 0
@@ -174,12 +176,59 @@ async function machine(): Promise<void> {
     check('and the card is in triage', sent.status, 'triage')
 }
 
+const PORCELAIN = [
+    'worktree C:/Users/x/project',
+    'HEAD 28e1456aa',
+    'branch refs/heads/develop',
+    '',
+    'worktree C:/Users/x/project/.claude/worktrees/kanban-a1b2c3d4',
+    'HEAD fc7cf1abb',
+    'branch refs/heads/worktree-kanban-a1b2c3d4',
+    '',
+    'worktree C:/Users/x/elsewhere/detached',
+    'HEAD 0110b14cc',
+    'detached',
+    ''
+].join('\n')
+
+async function housekeeping(): Promise<void> {
+    console.log('\nworktrees the board left behind')
+    const listed = parseList(PORCELAIN)
+    check('every worktree is read', listed.length, 3)
+    check('the branch loses its refs prefix', listed[1].branch, 'worktree-kanban-a1b2c3d4')
+    check('a detached worktree has no branch', listed[2].branch, null)
+    check('and it still has a head', listed[2].head, '0110b14cc')
+
+    const project = 'C:\\Users\\x\\project'
+    check('a worktree of ours is claimed', ours(project, listed[1].path), true)
+    check('the checkout itself is not', ours(project, project), false)
+    check('nor is one outside it', ours(project, listed[2].path), false)
+    check('a path is matched across separators', same(listed[1].path, join(project, '.claude', 'worktrees', 'kanban-a1b2c3d4')), true)
+
+    console.log('\nnothing keeps a workspace it has no card for')
+    const root = mkdtempSync(join(tmpdir(), 'kanban-strays-'))
+    for (const name of ['live', 'gone', 'also-gone']) mkdirSync(join(root, name))
+    writeFileSync(join(root, 'a-file'), 'not a workspace')
+    check('only the directories with no card are stray', (await strays(root, new Set(['live']))).sort(), ['also-gone', 'gone'])
+    check('a file is never a stray workspace', (await strays(root, new Set())).includes('a-file'), false)
+
+    console.log('\ndeleting a card takes its attachments')
+    const orphan = await board.createCard('probe', { title: 'has an artifact' })
+    const kept = boards.attachmentsRoot('probe', orphan.id)
+    mkdirSync(kept, { recursive: true })
+    writeFileSync(join(kept, 'report.md'), '# a run wrote this')
+    check('the attachment is there', existsSync(join(kept, 'report.md')), true)
+    await board.deleteCard('probe', orphan.id)
+    check('and it goes with the card', existsSync(kept), false)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
 launches()
 terminals()
 await machine()
+await housekeeping()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

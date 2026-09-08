@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
-import { boardPath, boardRoot, writeAtomic } from './boards.js'
+import { reclaim } from './artifacts.js'
+import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed } from './rules.js'
 import type { BoardFile, Card, CardDraft, CardPatch, Comment, Status } from './types.js'
 
@@ -226,6 +227,9 @@ export async function deleteCard(slug: string, id: string): Promise<boolean> {
 
     file.cards = file.cards.filter((entry) => entry.id !== id)
     await save(slug, file)
+
+    await reclaim(attachmentsRoot(slug, id), boardRoot(slug))
+    await reclaim(join(workspacesRoot(slug), id), workspacesRoot(slug))
     return true
 }
 

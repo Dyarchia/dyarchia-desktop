@@ -18,6 +18,21 @@ interface HistoryRow {
     error: boolean
 }
 
+interface Worktree {
+    path: string
+    branch: string | null
+    head: string | null
+    landed: boolean
+    dirty: boolean
+    ahead: number
+    live: boolean
+}
+
+interface IgnoreState {
+    tracked: boolean
+    ignored: boolean
+}
+
 interface Diagnostic {
     slug: string
     cardId: string | null
@@ -41,6 +56,7 @@ const ICON =
 
 const SLOW_MS = 1200
 const PIN = 'kanban:board:'
+const WORKTREES = '#worktrees'
 
 interface CardNode {
     root: HTMLElement
@@ -431,8 +447,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         create.addEventListener('click', () => {
             void invoke<BoardMeta>('createBoard', { name: name.value, slug: '', workdir: dir.value })
-                .then((created) => {
+                .then(async (created) => {
                     write(pinKey, created.slug)
+                    await offerIgnore(created)
                     return refresh()
                 })
                 .catch(fail)
@@ -463,11 +480,26 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             leaves: [{ label: 'new board', value: '' }]
         })
 
+        if (meta) {
+            rows.push({
+                key: WORKTREES,
+                label: 'worktrees',
+                group: 'this board',
+                direct: true,
+                note: 'what every run left behind in the project',
+                leaves: [{ label: 'worktrees', value: WORKTREES }]
+            })
+        }
+
         openMenu({
             anchor,
             rows,
             filter: 'filter boards',
             onPick: (row) => {
+                if (row.key === WORKTREES) {
+                    openWorktreeMenu(anchor)
+                    return
+                }
                 if (!row.key) {
                     meta = null
                     columns.clear()
@@ -482,6 +514,65 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 void refresh().catch(fail)
             }
         })
+    }
+
+    const worktreeNote = (tree: Worktree): string => {
+        if (tree.live) return 'a worker is in it'
+        if (tree.landed) return tree.dirty ? 'landed, with uncommitted changes' : 'landed, removable'
+        return `${tree.ahead} commit${tree.ahead === 1 ? '' : 's'} nothing has landed`
+    }
+
+    const openWorktreeMenu = (anchor: HTMLElement): void => {
+        void invoke<Worktree[]>('worktrees', meta?.slug)
+            .then((trees) => {
+                if (!trees.length) {
+                    say('this project holds no worktree from this board')
+                    return
+                }
+
+                openMenu({
+                    anchor,
+                    rows: trees.map((tree) => ({
+                        key: tree.path,
+                        label: tree.branch ?? tree.path,
+                        group: worktreeNote(tree),
+                        direct: true,
+                        note: tree.path,
+                        leaves: [{ label: tree.branch ?? tree.path, value: tree.path }]
+                    })),
+                    filter: 'filter worktrees',
+                    onPick: (row) => {
+                        const tree = trees.find((entry) => entry.path === row.key)
+                        if (!tree) return
+                        const name = tree.branch ?? tree.path
+                        if (tree.live || !tree.landed) {
+                            say(`${name} cannot go yet: ${worktreeNote(tree)}`)
+                            return
+                        }
+                        if (!window.confirm(`Remove ${name}? Its commits are already in the project, and its working tree goes with it.`)) {
+                            return
+                        }
+                        void invoke('removeWorktree', meta?.slug, tree.path)
+                            .then(() => {
+                                say(`${name} removed`)
+                                return refresh()
+                            })
+                            .catch(fail)
+                    }
+                })
+            })
+            .catch(fail)
+    }
+
+    const offerIgnore = async (created: BoardMeta): Promise<void> => {
+        const state = await invoke<IgnoreState>('ignoreState', created.slug).catch(() => null)
+        if (!state?.tracked || state.ignored) return
+
+        const asked = window.confirm(
+            `Every run leaves a worktree under .claude/worktrees inside ${created.workdir}, and that project does not ignore it, so it will show up in git status. Exclude it? Only this clone is changed and no tracked file is touched.`
+        )
+        if (!asked) return
+        await invoke('addIgnore', created.slug).catch(fail)
     }
 
     const openMoveMenu = (id: string, anchor: HTMLElement): void => {

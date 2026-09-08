@@ -999,6 +999,48 @@ a cross-board link would break the isolation that makes boards worth having.
 Write atomically: write `board.json.tmp`, rotate the previous copy, then `rename`, which is
 atomic on NTFS within a volume.
 
+### 8.3 What reclaims each store
+
+Three stores grow as the board is used, and each one has an owner that empties it. Written
+down because the first build had three creators and no remover, which is how a board that has
+run fifty cards leaves fifty working trees in the operator's repository.
+
+```text
+STORE                                        CREATED BY          RECLAIMED BY
+-------------------------------------------  ------------------  ---------------------
+kanban/boards/<slug>/attachments/<cardId>/   a harvested run     deleteCard, with the
+                                                                 card it belonged to
+<tmpdir>/dyarchia-kanban/<slug>/<cardId>/    a scratch run       a completed scratch
+                                                                 run, deleteCard, and
+                                                                 the prune sweep once
+                                                                 the card is closed or
+                                                                 gone
+<tmpdir>/dyarchia-kanban/<slug>/             the first scratch   the prune sweep, once
+                                             run on that board   the board is gone
+<repo>/.claude/worktrees/kanban-<8>          every run on a git  THE OPERATOR, through
+                                             project             the worktrees menu
+```
+
+The worktree is the one the plugin will not reclaim on its own, and that is deliberate. It
+holds commits, and a commit that is not in the project yet is work; nothing here decides on the
+operator's behalf that work can go. So the board reports rather than acts: the menu lists every
+worktree under `<workdir>/.claude/worktrees` with its branch, whether that branch is an
+ancestor of the project's HEAD, how many commits are not landed, and whether a worker is in it.
+Only a landed one can be removed, and removal is `git worktree remove` followed by `git branch
+-d`, both of which refuse rather than force. The landed check lives in `worktrees.remove`, not
+only in the channel, because `worktree remove` succeeds before `branch -d` fails: a caller that
+checked nothing would take the working tree and leave the branch.
+
+The prune sweep runs on the dispatcher's tick, at most every ten minutes, and only ever removes
+a temporary workspace whose card is closed or no longer exists. A blocked card keeps its
+workspace, because that is evidence the operator may still want.
+
+`.claude/worktrees` also has to be invisible to the project's own git, or a run puts untracked
+files in the operator's `git status`. The board offers to exclude it when it is created and
+says so again in the health strip, and it writes to `.git/info/exclude` rather than to
+`.gitignore`: the worktree directory is an artifact of this machine's tooling, not a convention
+the project's collaborators agreed to, so no tracked file is touched.
+
 ## 9. State machine
 
 ```text
@@ -1515,6 +1557,14 @@ attach            invoke     negotiates a MessagePort for the pty, see 14.1.
 detach            invoke     releases the pty view, leaving the session running
 runEvents         invoke     transcript records so far, to fill the history tab
 diagnostics       invoke     current board health problems
+worktrees         invoke     every worktree this board left in the project, with
+                             its branch, whether it has landed, how many commits
+                             are not landed, and whether a worker is in it
+removeWorktree    invoke     confirmation. Refuses a worktree that is live or
+                             that holds commits nothing has landed
+ignoreState       invoke     whether the project is a git checkout, and whether
+                             it already ignores .claude/worktrees
+addIgnore         invoke     the state after excluding it, see 8.3
 event             broadcast  everything that changes
 ```
 
@@ -1804,10 +1854,13 @@ packages/plugin-kanban/
     src/terminal.ts              the drawer's terminal view and MessagePort handling
     src/drag.ts                  pointer gesture, measurement, indicator, autoscroll
     src/menu.ts                  a LOCAL COPY of plugin-eforoi's, see below
+    src/worktrees.ts             what a run leaves in the project: listing, merge
+                                 state, removal, and the local git exclude
     src/styles.ts                the stylesheet
     src/types.ts                 shared types
     scripts/probe.ts             headless harness, mirror plugin-eforoi's
-    scripts/board-harness.html   panel harness with a fake ctx, needed for the drag
+    scripts/panel-harness.html   panel harness with a fake ctx: the drag, and a
+                                 faked dispatcher, pty and transcript
 ```
 
 The manifest declares `main`, not `python`, and therefore carries no `channels` key: that key

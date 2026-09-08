@@ -1,4 +1,4 @@
-import { copyFile, mkdir, rm, stat } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { isAbsolute, join, normalize, relative } from 'node:path'
 import { attachmentsRoot } from './boards.js'
 
@@ -50,6 +50,13 @@ export async function harvest(
     }
 
     return { kept, missing }
+}
+
+export async function strays(root: string, keep: Set<string>): Promise<string[]> {
+    const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
+    return entries
+        .filter((entry) => entry.isDirectory() && !keep.has(entry.name))
+        .map((entry) => entry.name)
 }
 
 export async function reclaim(workspace: string, root: string): Promise<boolean> {

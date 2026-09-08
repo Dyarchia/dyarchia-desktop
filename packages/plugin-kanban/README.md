@@ -66,6 +66,12 @@ Artifacts                what a run declares is copied out of the workspace befo
 History                  the transcript as readable rows in the drawer, beside the
                          terminal: prose, thinking, tool calls with a one-line argument
                          summary, results that expand, and a closing turn row
+Housekeeping             every store the board fills has something that empties it:
+                         attachments go with their card, temporary workspaces are swept
+                         once their card is closed or gone, and the worktrees a run
+                         leaves are listed with their merge state so the operator can
+                         remove the ones that landed. .claude/worktrees is offered to
+                         the project's local git exclude when the board is created
 ```
 
 There is deliberately no way to move a card to `done` by hand. `done` means a worker finished.
@@ -111,9 +117,10 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 51 checks over slug validation, three-valued liveness, both
-parsers, dependency cycles, rev fencing, promotion, unblock and scheduled cards. It writes to
-a temp userData and takes about a second. Everything it covers is everything that does not
+node, no window and no IPC. 63 checks over slug validation, three-valued liveness, both
+parsers, dependency cycles, rev fencing, promotion, unblock, scheduled cards, the worktree
+listing and what a deleted card takes with it. It writes to a temp userData and takes about a
+second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
 A **main module change needs the whole app restarted**, not a window reload. The shell's watch
@@ -169,8 +176,13 @@ Under `app.getPath('userData')`, one directory per board:
 kanban/boards.json                          the registry
 kanban/boards/<slug>/board.json             that board's cards
 kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
-kanban/boards/<slug>/attachments/<cardId>/  artifacts harvested from a run
+kanban/boards/<slug>/attachments/<cardId>/  artifacts harvested from a run, removed
+                                            with the card
 ```
+
+Section 8.3 of the design says what empties each of these. The one thing the plugin never
+reclaims on its own is a worktree, because it holds commits: the worktrees menu lists them
+with their merge state and removes only the ones that have landed.
 
 Scratch workspaces are the exception and live at `<tmpdir>/dyarchia-kanban/<slug>/<cardId>`,
 NOT under userData. Section 2.2 of the design calls a scratch workspace "a fresh temporary
@@ -193,7 +205,8 @@ slug first, because there is no ambient current board in the main module.
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
 dispatchNow   stopCard      unblock       runEvents      diagnostics
-attachments   reveal
+attachments   reveal        worktrees     removeWorktree
+ignoreState   addIgnore
 attach        negotiates a MessagePort for the pty, never terminal data
 event         broadcast, a discriminated union the renderer filters by slug
 ```

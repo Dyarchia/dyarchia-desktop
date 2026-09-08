@@ -47,8 +47,12 @@ export function boardPath(slug: string): string {
     return join(boardRoot(slug), 'board.json')
 }
 
+export function workspacesParent(): string {
+    return join(tmpdir(), 'dyarchia-kanban')
+}
+
 export function workspacesRoot(slug: string): string {
-    return join(tmpdir(), 'dyarchia-kanban', assertSlug(slug))
+    return join(workspacesParent(), assertSlug(slug))
 }
 
 export function attachmentsRoot(slug: string, cardId: string): string {

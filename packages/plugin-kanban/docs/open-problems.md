@@ -25,38 +25,7 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-### 1.1 Nothing prunes worktrees, attachments or temp workspaces
-
-Three stores grow forever and nothing reclaims them.
-
-```text
-STORE                                        WHO CREATES IT        WHO REMOVES IT
--------------------------------------------  --------------------  --------------
-<repo>/.claude/worktrees/kanban-<8>          every run on a git    NOBODY
-                                             project
-kanban/boards/<slug>/attachments/<cardId>/   every harvested run   NOBODY, not even
-                                                                   deleteCard
-<tmpdir>/dyarchia-kanban/<slug>/<cardId>/    every scratch run     only a COMPLETED
-                                                                   scratch run
-```
-
-The worktree one is the sharpest: `claude rm` refuses a session whose worktree holds unmerged
-commits, which is correct of it, so a board that runs fifty cards leaves fifty branches and
-fifty working trees in the operator's repository. The board knows the branch, so it can say
-which are landed and offer to remove those.
-
-A worktree also lands *inside* the operator's checkout, at `.claude/worktrees/`, and that path
-is not in dyarchia's `.gitignore`. A run on this repository therefore puts untracked files in
-`git status` while it works, which is noise at best and something committed by accident at
-worst.
-
-Done looks like: `deleteCard` removes that card's attachments; a sweep removes temp workspaces
-with no live card; the panel lists worktree branches with their merge state and can remove the
-ones that are landed; and `.claude/` is ignored by any repository a board points at, which the
-board can offer to do when it creates the board. Lives in `src/artifacts.ts`, `src/board.ts`
-and `src/dispatch.ts`.
-
-### 1.2 Every measurement on this machine was taken inside a package container
+### 1.1 Every measurement on this machine was taken inside a package container
 
 The shell used for every measurement in design.md section 5 runs inside the Claude desktop
 app, which is an MSIX package, so its writes to `AppData\Roaming` are redirected into
@@ -82,7 +51,7 @@ Two things follow, and neither is urgent:
 Done looks like: the handful of path-dependent claims re-measured from a plainly launched
 dyarchia, and section 5 annotated with which ones held.
 
-### 1.3 A worker filing more than ten followups loses the rest in silence
+### 1.2 A worker filing more than ten followups loses the rest in silence
 
 `adopt` in `src/dispatch.ts` takes `followups.slice(0, 10)`. A worker that finds fifteen
 problems has five dropped with nothing said anywhere. The cap is right; the silence is not.
@@ -90,7 +59,7 @@ problems has five dropped with nothing said anywhere. The cap is right; the sile
 Done looks like: the extras are named in a comment on the card, or the cap is lifted and the
 board deals with the volume.
 
-### 1.4 The transcript copy of section 7.2 does not exist
+### 1.3 The transcript copy of section 7.2 does not exist
 
 The design has two storage tiers: the board as one JSON file, and a JSONL per run that is "our
 copy of transcript-derived events", which is what makes a run explicable after the CLI has
@@ -105,7 +74,7 @@ Done looks like: the dispatcher tees what it parses into `kanban/boards/<slug>/r
 the history tab falls back to it, and it is rotated by size. Section 20 already lists
 "the transcript copy grows without bound" as the risk to answer at the same time.
 
-### 1.5 Two dyarchia processes would fight over one board
+### 1.4 Two dyarchia processes would fight over one board
 
 Section 13 asks for a single elected dispatcher with a lease. There is none. It does not bite
 today because a plugin main module is imported once per app process, so one running dyarchia is
@@ -115,7 +84,7 @@ be a second dispatcher on the same files, and both would claim.
 Done looks like: a lease file next to the board with an expiry, stolen only when the holder is
 verified dead. Cheap now, and the alternative is double-dispatching real work.
 
-### 1.6 Errors are a single strip that the next error overwrites
+### 1.5 Errors are a single strip that the next error overwrites
 
 `fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
 a card is not attached to that card, and a second error erases the first. A run's `error` field
@@ -123,6 +92,7 @@ is shown in the drawer, but a refused move or a failed invoke is not.
 
 Done looks like: the error belongs to the thing it happened to, and the strip is a summary of
 what is currently wrong rather than a scratchpad.
+
 
 ## 2. Surfaces the data model has and the panel does not
 
@@ -251,4 +221,15 @@ setup form rendered at full height           of this file
 The harness covered phases 1 and 2 only,     a faked dispatcher,     README, section 2
 so the drawer could only be exercised by a   pty, transcript and
 real agent                                   diagnostics
+Attachments and temp workspaces were         deleteCard takes both,  design.md 8.3
+created by every run and removed by          and a prune sweep on
+nobody                                       the tick takes the rest
+Fifty runs left fifty worktrees, with        a worktrees menu with   design.md 8.3
+nothing that could even name them            merge state, removing
+                                             only what landed
+.claude/worktrees put untracked files in     an offer to write it    design.md 8.3
+the operator's git status                    into .git/info/exclude
+worktree remove succeeded before branch      the landed check moved  src/worktrees.ts
+-d refused, so an unlanded branch could      inside worktrees.remove
+lose its working tree
 ```

@@ -198,6 +198,14 @@ const HISTORY = [
     }
 ]
 
+const TREES = [
+    { path: `${WORKTREES}\\kanban-a1b2c3d4`, branch: 'worktree-kanban-a1b2c3d4', head: 'dac7c46', landed: false, dirty: false, ahead: 3, live: true },
+    { path: `${WORKTREES}\\kanban-ff90ab12`, branch: 'worktree-kanban-ff90ab12', head: '8fad1cb', landed: true, dirty: false, ahead: 0, live: false },
+    { path: `${WORKTREES}\\kanban-77de0091`, branch: 'worktree-kanban-77de0091', head: 'cc6f422', landed: false, dirty: true, ahead: 2, live: false }
+]
+
+const IGNORING = { tracked: true, ignored: false }
+
 const DIAGNOSTICS = [
     { slug: 'dyarchia', cardId: 'card-8', problem: 'blocked and waiting on you for 15m' },
     { slug: '', cardId: null, problem: 'liveness unknown: claude agents --json answered nothing' }
@@ -452,6 +460,19 @@ const ctx = {
             if (!board) throw new Error(`no board '${args[0]}'`)
             return structuredClone({ board, cards, rules: RULES, now: Date.now() })
         }
+        if (channel === 'createBoard') {
+            const created = {
+                slug: `board-${REGISTRY.length}`,
+                name: String(args[0].name ?? '').trim() || 'a new board',
+                workdir: args[0].workdir,
+                archived: false,
+                createdAt: Date.now(),
+                order: REGISTRY.length
+            }
+            REGISTRY.push(created)
+            emit({ type: 'boards:changed' })
+            return created
+        }
         if (channel === 'createCard') {
             seq += 1
             const card = {
@@ -538,7 +559,35 @@ const ctx = {
             window.alert(`the shell would show '${args[2]}' in its folder`)
             return true
         }
-        if (channel === 'diagnostics') return structuredClone(DIAGNOSTICS)
+        if (channel === 'diagnostics') {
+            const found = structuredClone(DIAGNOSTICS)
+            if (!IGNORING.ignored) {
+                found.push({
+                    slug: 'dyarchia',
+                    cardId: null,
+                    problem: 'this project does not ignore .claude/worktrees, so a run shows up in its git status'
+                })
+            }
+            const landed = TREES.filter((tree) => tree.landed && !tree.live).length
+            if (landed) {
+                found.push({ slug: 'dyarchia', cardId: null, problem: `${landed} landed worktree can be removed` })
+            }
+            return found
+        }
+        if (channel === 'worktrees') return structuredClone(TREES)
+        if (channel === 'removeWorktree') {
+            const index = TREES.findIndex((tree) => tree.path === args[1])
+            if (index < 0) throw new Error('that worktree is not on this board any more')
+            if (TREES[index].live) throw new Error('a worker is still using that worktree')
+            if (!TREES[index].landed) throw new Error('that worktree holds commits nothing has landed')
+            TREES.splice(index, 1)
+            return true
+        }
+        if (channel === 'ignoreState') return { ...IGNORING }
+        if (channel === 'addIgnore') {
+            IGNORING.ignored = true
+            return { ...IGNORING }
+        }
         if (channel === 'attach') {
             const request = args[0]
             const card = byId(request.cardId)

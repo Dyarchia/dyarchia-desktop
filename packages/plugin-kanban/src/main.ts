@@ -1,18 +1,29 @@
 import { app, dialog, ipcMain, MessageChannelMain, shell, utilityProcess } from 'electron'
 import type { UtilityProcess } from 'electron'
-import { join } from 'node:path'
+import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
+import { basename, join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 import * as agents from './agents.js'
-import { reclaim } from './artifacts.js'
+import { nextName, reclaim } from './artifacts.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
 import * as dispatch from './dispatch.js'
 import { rules } from './rules.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
-import type { BoardDraft, BoardMeta, BoardPayload, Card, CardDraft, CardPatch, Status } from './types.js'
+import type {
+    Attachment,
+    BoardDraft,
+    BoardMeta,
+    BoardPayload,
+    Card,
+    CardDraft,
+    CardPatch,
+    Status
+} from './types.js'
 
 const ATTACH_TIMEOUT_MS = 10_000
+const ATTACHMENT_LIMIT = 25 * 1024 * 1024
 
 let host: UtilityProcess | null = null
 
@@ -191,8 +202,55 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('reveal', async (slug, id, name) => {
         const target = await open(String(slug))
-        shell.showItemInFolder(join(boards.attachmentsRoot(target, String(id)), String(name)))
+        const file = boards.assertFileName(String(name))
+        shell.showItemInFolder(join(boards.attachmentsRoot(target, String(id)), file))
         return true
+    })
+
+    ctx.handle('addAttachments', async (slug, id) => {
+        const target = await open(String(slug))
+        const cardId = String(id)
+
+        const picked = await dialog.showOpenDialog({
+            title: 'Give this card a file',
+            properties: ['openFile', 'multiSelections']
+        })
+        if (picked.canceled || !picked.filePaths.length) return null
+
+        const root = boards.attachmentsRoot(target, cardId)
+        await mkdir(root, { recursive: true })
+        const taken = new Set(await readdir(root).catch(() => []))
+
+        const added: Attachment[] = []
+        const refused: string[] = []
+
+        for (const source of picked.filePaths) {
+            const info = await stat(source).catch(() => null)
+            if (!info?.isFile()) continue
+            if (info.size > ATTACHMENT_LIMIT) {
+                refused.push(basename(source))
+                continue
+            }
+            const name = nextName(taken, boards.assertFileName(basename(source)))
+            await copyFile(source, join(root, name))
+            taken.add(name)
+            added.push({ name, bytes: info.size, at: Date.now() })
+        }
+
+        const card = added.length ? await board.attach(target, cardId, added) : null
+        if (card) changed(target)
+        return { card, refused }
+    })
+
+    ctx.handle('removeAttachment', async (slug, id, name) => {
+        const target = await open(String(slug))
+        const cardId = String(id)
+        const file = boards.assertFileName(String(name))
+
+        const card = await board.detach(target, cardId, file)
+        await rm(join(boards.attachmentsRoot(target, cardId), file), { force: true })
+        changed(target)
+        return card
     })
 
     ctx.handle('diagnostics', () => dispatch.diagnose())

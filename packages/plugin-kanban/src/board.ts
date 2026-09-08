@@ -4,7 +4,15 @@ import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed } from './rules.js'
-import type { BoardFile, Card, CardDraft, CardPatch, Comment, Status } from './types.js'
+import type {
+    Attachment,
+    BoardFile,
+    Card,
+    CardDraft,
+    CardPatch,
+    Comment,
+    Status
+} from './types.js'
 
 const VERSION = 1
 const BACKUPS = 3
@@ -131,6 +139,7 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
         permissionMode: draft.permissionMode ?? 'acceptEdits',
         scheduledFor: draft.scheduledFor ?? null,
         parents,
+        attachments: [],
         runs: [],
         comments: [],
         consecutiveFailures: 0,
@@ -235,6 +244,31 @@ export async function deleteCard(slug: string, id: string): Promise<boolean> {
     await reclaim(attachmentsRoot(slug, id), boardRoot(slug))
     await reclaim(join(workspacesRoot(slug), id), workspacesRoot(slug))
     return true
+}
+
+export async function attach(slug: string, id: string, added: Attachment[]): Promise<Card> {
+    const file = await load(slug)
+    const card = find(file, id)
+    const held = new Set(card.attachments.map((entry) => entry.name))
+
+    for (const entry of added) {
+        if (held.has(entry.name)) continue
+        card.attachments.push(entry)
+        held.add(entry.name)
+    }
+
+    touch(card)
+    await save(slug, file)
+    return card
+}
+
+export async function detach(slug: string, id: string, name: string): Promise<Card> {
+    const file = await load(slug)
+    const card = find(file, id)
+    card.attachments = card.attachments.filter((entry) => entry.name !== name)
+    touch(card)
+    await save(slug, file)
+    return card
 }
 
 export async function comment(

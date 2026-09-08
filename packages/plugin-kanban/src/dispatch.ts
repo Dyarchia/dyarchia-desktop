@@ -362,7 +362,12 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
             .map((id) => file.cards.find((entry) => entry.id === id))
             .filter((entry): entry is Card => Boolean(entry))
 
-        const started = await worker.start(card, parents, runId, place)
+        const held = card.attachments.map((file) => ({
+            name: file.name,
+            path: join(boards.attachmentsRoot(meta.slug, card.id), file.name)
+        }))
+
+        const started = await worker.start(card, parents, runId, place, held)
         run.sessionId = started.sessionId
         run.shortId = started.shortId
         run.headBefore = started.headBefore

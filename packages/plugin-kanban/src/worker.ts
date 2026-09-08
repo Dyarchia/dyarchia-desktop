@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import * as agents from './agents.js'
 import type { BlockKind, Card } from './types.js'
 
@@ -66,7 +66,8 @@ export function brief(
     card: Card,
     parents: Card[],
     workspace: string,
-    isolated: boolean
+    isolated: boolean,
+    attachments: { name: string; path: string }[] = []
 ): string {
     const lines: string[] = []
 
@@ -85,6 +86,13 @@ export function brief(
             'learn here reaches them.',
             ''
         )
+    }
+
+    if (attachments.length) {
+        lines.push('## Attachments', '')
+        lines.push('These files were given to this card. Read them where they are:', '')
+        for (const file of attachments) lines.push(`- \`${file.path}\``)
+        lines.push('')
     }
 
     if (card.comments.length) {
@@ -149,7 +157,8 @@ export async function start(
     card: Card,
     parents: Card[],
     runId: string,
-    workspace: string
+    workspace: string,
+    attachments: { name: string; path: string }[] = []
 ): Promise<Started> {
     const path = await agents.binary()
     if (!path) throw new Error('claude is not on PATH')
@@ -165,17 +174,23 @@ export async function start(
     const isolate = (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
     const predicted = isolate ? join(workspace, '.claude', 'worktrees', isolate) : workspace
 
-    const text = brief(card, parents, predicted, isolate !== null)
+    const text = brief(card, parents, predicted, isolate !== null, attachments)
     await writeFile(briefPath, text, 'utf-8')
     const prompt =
         text.length <= INLINE_LIMIT
             ? text
             : `Read ${briefPath} and do what it says. It is your whole brief.`
 
+    const dirs = [workspace]
+    for (const file of attachments) {
+        const holder = dirname(file.path)
+        if (!dirs.includes(holder)) dirs.push(holder)
+    }
+
     const argv = agents.launchArgv({
         name: card.title.slice(0, 60),
         permissionMode: card.permissionMode,
-        addDir: workspace,
+        addDirs: dirs,
         model: card.model,
         effort: card.effort,
         worktree: isolate,

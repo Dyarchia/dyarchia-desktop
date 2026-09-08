@@ -71,6 +71,9 @@ Errors                   an error belongs to the thing it happened to. A card th
                          refuses an operation is outlined and says why in its drawer;
                          the strip at the bottom carries board-level failures and,
                          otherwise, a count of the cards in trouble
+Attachments              files the operator gives a card, listed in the drawer with
+                         their size, handed to the worker by absolute path with the
+                         holding directory added to the session, 25 MB a file
 Artifacts                what a run declares is copied out of the workspace before the
                          workspace is reclaimed, and shown on the run as a chip that
                          opens it on disk. A declared artifact that is not there is a
@@ -201,8 +204,8 @@ kanban/boards.json                          the registry
 kanban/dispatcher.json                      the lease naming the process that sweeps
 kanban/boards/<slug>/board.json             that board's cards
 kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
-kanban/boards/<slug>/attachments/<cardId>/  artifacts harvested from a run, removed
-                                            with the card
+kanban/boards/<slug>/attachments/<cardId>/  files given to the card and artifacts
+                                            harvested from its runs, removed with it
 ```
 
 Section 8.3 of the design says what empties each of these. The one thing the plugin never
@@ -231,7 +234,7 @@ boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
 attachments   reveal        worktrees     removeWorktree
-ignoreState   addIgnore
+ignoreState   addIgnore     addAttachments              removeAttachment
 attach        negotiates a MessagePort for the pty, never terminal data
 event         broadcast, a discriminated union the renderer filters by slug
 ```

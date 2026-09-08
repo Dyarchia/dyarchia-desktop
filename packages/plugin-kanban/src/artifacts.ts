@@ -52,6 +52,20 @@ export async function harvest(
     return { kept, missing }
 }
 
+export function nextName(taken: Set<string>, name: string): string {
+    if (!taken.has(name)) return name
+
+    const dot = name.lastIndexOf('.')
+    const stem = dot > 0 ? name.slice(0, dot) : name
+    const extension = dot > 0 ? name.slice(dot) : ''
+
+    for (let attempt = 2; attempt < 1000; attempt += 1) {
+        const candidate = `${stem}-${attempt}${extension}`
+        if (!taken.has(candidate)) return candidate
+    }
+    return `${stem}-${Date.now()}${extension}`
+}
+
 export async function strays(root: string, keep: Set<string>): Promise<string[]> {
     const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
     return entries

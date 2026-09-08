@@ -8,7 +8,7 @@ import type { MenuRow } from './menu.js'
 import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
-import type { BoardMeta, BoardPayload, Card, KanbanEvent, Rules, Status } from './types.js'
+import type { Attachment, BoardMeta, BoardPayload, Card, KanbanEvent, Rules, Status } from './types.js'
 
 interface HistoryRow {
     at: number
@@ -112,6 +112,12 @@ function ago(from: number, now: number): string {
     if (minutes < 60) return `${minutes}m`
     const hours = Math.round(minutes / 60)
     return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`
+}
+
+function size(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function tokens(count: number): string {
@@ -1079,6 +1085,61 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         )
         settingsGroup.appendChild(settings)
 
+        const filesGroup = el('div', 'kanban-group')
+        filesGroup.append(el('span', 'dya-label', 'files'))
+        const files = el('div', 'kanban-parents')
+
+        for (const file of card.attachments ?? []) {
+            const holder = el('span', 'kanban-file')
+            const open = el('button', 'dya-chip', `${file.name} · ${size(file.bytes)}`)
+            open.type = 'button'
+            open.title = 'show this file on disk'
+            open.addEventListener('click', () => {
+                void invoke('reveal', meta?.slug, card.id, file.name).catch((thrown: unknown) =>
+                    failOn(card.id, thrown)
+                )
+            })
+            const drop = el('button', 'dya-key', '×')
+            drop.type = 'button'
+            drop.title = `remove ${file.name} from this card`
+            drop.disabled = card.locked
+            drop.addEventListener('click', () => {
+                if (!window.confirm(`Remove ${file.name}? The file goes from the card and from disk.`)) {
+                    return
+                }
+                void invoke('removeAttachment', meta?.slug, card.id, file.name)
+                    .then(() => {
+                        solved(card.id)
+                        return refresh()
+                    })
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
+            })
+            holder.append(open, drop)
+            files.appendChild(holder)
+        }
+
+        const addFile = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add files')
+        addFile.type = 'button'
+        addFile.disabled = card.locked
+        addFile.addEventListener('click', () => {
+            void invoke<{ card: Card | null; refused: string[] } | null>(
+                'addAttachments',
+                meta?.slug,
+                card.id
+            )
+                .then((answer) => {
+                    if (!answer) return undefined
+                    if (answer.refused.length) {
+                        failOn(card.id, `too big to attach, 25 MB is the cap: ${answer.refused.join(', ')}`)
+                    } else {
+                        solved(card.id)
+                    }
+                    return refresh()
+                })
+                .catch((thrown: unknown) => failOn(card.id, thrown))
+        })
+        filesGroup.append(files, addFile)
+
         const depsGroup = el('div', 'kanban-group')
         depsGroup.append(el('span', 'dya-label', 'depends on'))
         const parents = el('div', 'kanban-parents')
@@ -1259,6 +1320,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             problemRow,
             titleGroup,
             bodyGroup,
+            filesGroup,
             priorityGroup,
             settingsGroup,
             depsGroup,

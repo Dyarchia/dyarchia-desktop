@@ -243,6 +243,12 @@ export const STYLES = `
     color: var(--dya-text-3);
 }
 
+.kanban-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
 .kanban-parents {
     display: flex;
     flex-wrap: wrap;

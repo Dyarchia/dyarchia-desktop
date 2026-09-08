@@ -201,13 +201,14 @@ export function parseLaunch(stdout: string, sessions: SessionRecord[] | null): L
 export function launchArgv(options: {
     name: string
     permissionMode: string
-    addDir: string
+    addDirs: string[]
     model: string | null
     effort: string | null
     worktree: string | null
     prompt: string
 }): string[] {
-    const args = ['--bg', '--permission-mode', options.permissionMode, '--add-dir', options.addDir]
+    const args = ['--bg', '--permission-mode', options.permissionMode]
+    for (const dir of options.addDirs) args.push('--add-dir', dir)
     if (options.worktree) args.push('--worktree', options.worktree)
     if (options.model) args.push('--model', options.model)
     if (options.effort) args.push('--effort', options.effort)

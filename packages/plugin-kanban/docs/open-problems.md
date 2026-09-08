@@ -66,9 +66,6 @@ Both are recorded in the README as debts and belong upstream rather than here.
 ## 4. Deferred or dropped on purpose
 
 ```text
-Inbound attachments      2.1 wants files bound to a card and handed to the worker as
-                         absolute paths. Only run-produced artifacts are built. Deferred,
-                         and worth doing before goal mode
 Automatic reviewer       2.5, deferred. Approve and request-changes are manual buttons
 Goal mode                2.5, phase 6
 Auto-decompose           2.5, phase 6
@@ -157,6 +154,9 @@ the rest in silence                          in a comment on the
 A stopped session read as alive, so a        liveness answers from   design.md 5.13
 stopped card sat in running for ever         two measured sets, and
                                              'unknown' otherwise
+A card could not carry its own source        files attached to a     design.md 2.1
+material: only run-produced artifacts        card, handed to the
+existed                                      worker by absolute path
 One strip took every error and the next      an error belongs to     design.md 16.1.1
 one erased it                                the card it happened
                                              to; the strip counts

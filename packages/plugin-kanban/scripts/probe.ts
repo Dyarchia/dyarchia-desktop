@@ -5,7 +5,8 @@ import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
 import { adopt } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
-import { strays } from '../src/artifacts.js'
+import { nextName, strays } from '../src/artifacts.js'
+import { brief } from '../src/worker.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
 import { ours, parseList, same } from '../src/worktrees.js'
@@ -269,6 +270,28 @@ async function leases(): Promise<void> {
     check('and the holder can drop its own', await readLease(), null)
 }
 
+async function attachments(): Promise<void> {
+    console.log('\nfiles given to a card')
+    check('a free name is used as it is', nextName(new Set(), 'report.md'), 'report.md')
+    check('a taken one is numbered', nextName(new Set(['report.md']), 'report.md'), 'report-2.md')
+    check('and it keeps counting', nextName(new Set(['report.md', 'report-2.md']), 'report.md'), 'report-3.md')
+    check('a name with no extension still works', nextName(new Set(['LICENSE']), 'LICENSE'), 'LICENSE-2')
+    check('a dotfile is not split at its dot', nextName(new Set(['.env']), '.env'), '.env-2')
+
+    check('a plain file name passes', boards.assertFileName('report.md'), 'report.md')
+    for (const bad of ['../escape.md', 'a/b.md', 'a\\b.md', '..', '', 'x*.md']) {
+        await refuses(`refuses ${JSON.stringify(bad)}`, async () => boards.assertFileName(bad), 'file name')
+    }
+
+    const card = await board.createCard('probe', { title: 'has files' })
+    const text = brief(card, [], 'C:\\workspace', false, [
+        { name: 'spec.pdf', path: 'C:\\attachments\\spec.pdf' }
+    ])
+    check('the brief names the file', text.includes('C:\\attachments\\spec.pdf'), true)
+    check('under its own heading', text.includes('## Attachments'), true)
+    check('and a card with none says nothing', brief(card, [], 'C:\\workspace', false).includes('## Attachments'), false)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -278,6 +301,7 @@ await machine()
 await housekeeping()
 await followups()
 await leases()
+await attachments()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

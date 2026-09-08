@@ -119,6 +119,7 @@ const cards = TITLES.map(([status, title], index) => ({
     permissionMode: 'acceptEdits',
     scheduledFor: null,
     parents: index === 2 ? ['card-0'] : [],
+    attachments: index === 0 ? [{ name: 'spec.pdf', bytes: 482_311, at: now - 3_600_000 }] : [],
     runs: index === 7 ? [structuredClone(LIVE_RUN)] : index === 9 ? [structuredClone(PAST_RUN)] : [],
     comments: index === 8 ? [{ at: now - 900000, author: 'agent', text: 'Waiting on a permission prompt nobody is attached to.' }] : [],
     consecutiveFailures: 0,
@@ -582,6 +583,21 @@ const ctx = {
         if (channel === 'runEvents') {
             const card = byId(args[1])
             return card?.runs.length ? structuredClone(HISTORY) : []
+        }
+        if (channel === 'addAttachments') {
+            const card = byId(args[1])
+            const added = [{ name: `given-${card.attachments.length + 1}.md`, bytes: 2048, at: Date.now() }]
+            card.attachments.push(...added)
+            touch(card)
+            changed()
+            return { card, refused: card.attachments.length > 2 ? ['enormous.bin'] : [] }
+        }
+        if (channel === 'removeAttachment') {
+            const card = byId(args[1])
+            card.attachments = card.attachments.filter((file) => file.name !== args[2])
+            touch(card)
+            changed()
+            return card
         }
         if (channel === 'reveal') {
             window.alert(`the shell would show '${args[2]}' in its folder`)

@@ -66,6 +66,13 @@ export function assertSlug(slug: string): string {
     return value
 }
 
+export function assertFileName(name: string): string {
+    const value = String(name ?? '').trim()
+    if (!value || value === '.' || value === '..') throw new Error('that is not a file name')
+    if (/[\\/:*?"<>|]/.test(value)) throw new Error(`'${value}' is not a file name`)
+    return value
+}
+
 export function slugify(name: string): string {
     const base = name
         .toLowerCase()

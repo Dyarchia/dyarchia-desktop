@@ -1079,6 +1079,7 @@ interface Card {
     permissionMode: string
     scheduledFor: number | null
     parents: string[]
+    attachments: Attachment[]
     runs: Run[]
     comments: { at: number; author: 'user' | 'agent'; text: string }[]
     consecutiveFailures: number
@@ -1104,6 +1105,15 @@ is what makes the block-loop guard work.
 board's `workdir`. When set it must be absolute; a relative path is refused at dispatch,
 because the resolution base would be the dispatcher's rather than the operator's, which is a
 confused-deputy vector.
+
+`attachments` are the files the operator gave the card, as opposed to the ones a run produced.
+Both live under `attachments/<cardId>/`, and a name that would collide gets numbered rather
+than overwriting, so a run harvesting `report.md` never lands on the `report.md` somebody
+attached. The name is validated as a file name before it is joined to a path, for the same
+reason the slug is: it arrives from the renderer. The worker is told about them in its brief,
+by absolute path, and the directory holding them is passed with `--add-dir` so the CLI will
+let it read them. 25 MB per file, and anything larger is refused by name rather than silently
+skipped.
 
 `parents` may only name cards on the same board. Enforced on write, not merely by convention:
 a cross-board link would break the isolation that makes boards worth having.

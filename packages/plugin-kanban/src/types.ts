@@ -33,6 +33,12 @@ export interface Run {
     headBefore: string | null
 }
 
+export interface Attachment {
+    name: string
+    bytes: number
+    at: number
+}
+
 export interface Comment {
     at: number
     author: 'user' | 'agent'
@@ -56,6 +62,7 @@ export interface Card {
     permissionMode: string
     scheduledFor: number | null
     parents: string[]
+    attachments: Attachment[]
     runs: Run[]
     comments: Comment[]
     consecutiveFailures: number
@@ -114,7 +121,9 @@ export interface CardDraft {
     parents?: string[]
 }
 
-export type CardPatch = Partial<Omit<Card, 'id' | 'rev' | 'runs' | 'comments' | 'createdAt'>>
+export type CardPatch = Partial<
+    Omit<Card, 'id' | 'rev' | 'runs' | 'comments' | 'attachments' | 'createdAt'>
+>
 
 export interface BoardDraft {
     slug: string

@@ -57,7 +57,11 @@ Worker                   a real `claude --bg` session in a git worktree of the p
                          watched through its transcript
 Terminal                 `claude attach` in a pty, in a utilityProcess, over a
                          MessagePort. The operator watches and answers permission
-                         prompts in the agent's own interface
+                         prompts in the agent's own interface. The drawer widens to
+                         640px while it is open, because the agent's screen needs 80
+                         columns and refuses to reflow below about 79; under that the
+                         terminal says so instead of drawing an unreadable screen, and
+                         attaches by itself when the pane grows
 Failure handling         crash, protocol violation, runtime cap, silence past a four
                          hour run, circuit breaker, respawn guard, block routing by
                          kind, and a block-loop guard that sends a card to triage
@@ -191,6 +195,10 @@ stopCard, unblock    the real outcomes: a stop is a crash with no evidence and t
 a refusal            renaming a card to anything starting with ! is refused, which
                      is how the error paths are driven without a broken main module
 ```
+
+The pty replays `scripts/attach-capture.txt`, which is a real recording of `claude attach`
+against a session waiting on a permission prompt, captured at 100 columns. That is what makes
+the width floor and the answer path testable with no agent and no spend.
 
 The one path it cannot fake is `reveal`, which only says what the shell would have opened.
 

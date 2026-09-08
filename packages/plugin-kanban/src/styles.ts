@@ -182,11 +182,17 @@ export const STYLES = `
 
 .kanban-drawer {
     flex: 0 0 330px;
+    transition: flex-basis var(--dya-dur-fast) var(--dya-ease);
     min-height: 0;
     display: flex;
     flex-direction: column;
     border-left: var(--dya-border-width) solid var(--dya-hairline);
     background: var(--dya-chassis);
+}
+
+.kanban-drawer[data-wide='true'] {
+    flex-basis: 640px;
+    max-width: 55%;
 }
 
 .kanban-drawer-head {

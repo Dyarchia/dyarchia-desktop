@@ -22,6 +22,8 @@ const ANSI: ITheme = {
     brightWhite: '#f4f4f6'
 }
 
+const MIN_COLS = 80
+
 type HostMessage = { t: 'data'; d: string } | { t: 'exit'; code: number }
 
 interface Announcement {
@@ -60,18 +62,47 @@ export function openTerminal(
 
     let port: MessagePort | null = null
     let disposed = false
+    let asked = false
+    let toldAt = 0
     const attachId = crypto.randomUUID()
 
     const fit = new FitAddon()
     terminal.loadAddon(fit)
     terminal.open(container)
 
+    const tooNarrow = (): void => {
+        if (toldAt === terminal.cols) return
+        toldAt = terminal.cols
+        terminal.reset()
+        terminal.write(
+            [
+                '',
+                `  This pane is ${terminal.cols} columns wide.`,
+                `  The agent draws its own screen and needs ${MIN_COLS}.`,
+                '',
+                '  Widen the panel and it attaches by itself.',
+                ''
+            ].join('\r\n')
+        )
+    }
+
     const resize = (): void => {
         if (container.clientWidth < 1 || container.clientHeight < 1) return
         fit.fit()
-        port?.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
+        if (port) {
+            port.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
+            return
+        }
+        if (terminal.cols < MIN_COLS) {
+            tooNarrow()
+            return
+        }
+        if (!asked) {
+            toldAt = 0
+            terminal.reset()
+            ask()
+        }
     }
-    resize()
 
     const stopThemeWatch = ctx.onThemeChange(() => {
         terminal.options.theme = theme()
@@ -106,13 +137,18 @@ export function openTerminal(
         port.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
     }
 
-    window.addEventListener('message', onAnnouncement)
-    void ctx
-        .invoke('attach', { slug, cardId, attachId, cols: terminal.cols, rows: terminal.rows })
-        .catch((error: unknown) => {
-            window.removeEventListener('message', onAnnouncement)
-            onFail(error instanceof Error ? error.message : String(error))
-        })
+    function ask(): void {
+        asked = true
+        window.addEventListener('message', onAnnouncement)
+        void ctx
+            .invoke('attach', { slug, cardId, attachId, cols: terminal.cols, rows: terminal.rows })
+            .catch((error: unknown) => {
+                window.removeEventListener('message', onAnnouncement)
+                onFail(error instanceof Error ? error.message : String(error))
+            })
+    }
+
+    resize()
 
     const onInput = terminal.onData((data) => port?.postMessage({ t: 'in', d: data }))
 

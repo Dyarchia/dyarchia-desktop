@@ -24,15 +24,10 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-### 1.1 Errors are a single strip that the next error overwrites
-
-`fail()` in `src/renderer.ts` writes the last error into one element. An error that happened on
-a card is not attached to that card, and a second error erases the first. A run's `error` field
-is shown in the drawer, but a refused move or a failed invoke is not.
-
-Done looks like: the error belongs to the thing it happened to, and the strip is a summary of
-what is currently wrong rather than a scratchpad.
-
+**Nothing.** Every entry this section has held is in section 5 with its evidence, or in section
+4 with the reason it was dropped. That is a statement about this register, not about the
+plugin: section 2 lists what is unproven rather than broken, and section 3 the debts owed
+upstream. A problem found while building goes here the same day.
 
 ## 2. Unproven rather than broken
 
@@ -162,6 +157,9 @@ the rest in silence                          in a comment on the
 A stopped session read as alive, so a        liveness answers from   design.md 5.13
 stopped card sat in running for ever         two measured sets, and
                                              'unknown' otherwise
+One strip took every error and the next      an error belongs to     design.md 16.1.1
+one erased it                                the card it happened
+                                             to; the strip counts
 Two copies of the app were two dispatchers   a lease renewed every   design.md 13
 on the same board files                      tick, taken only when
                                              it is three ticks stale

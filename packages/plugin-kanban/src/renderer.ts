@@ -211,26 +211,67 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         live.textContent = text
     }
 
-    const fail = (reason: unknown): void => {
-        const message = reason instanceof Error ? reason.message : String(reason)
-        error.textContent = message
-        error.hidden = false
-        say(message)
+    const problems = new Map<string, string>()
+    let boardProblem: string | null = null
+
+    const reason = (thrown: unknown): string =>
+        thrown instanceof Error ? thrown.message : String(thrown)
+
+    const paintProblems = (): void => {
+        if (boardProblem) {
+            error.textContent = boardProblem
+        } else if (problems.size === 1) {
+            const [id, problem] = [...problems][0]
+            error.textContent = `${cardById(id)?.title ?? 'a card'}: ${problem}`
+        } else if (problems.size) {
+            error.textContent = `${problems.size} cards have a problem`
+        } else {
+            error.textContent = ''
+        }
+        error.hidden = error.textContent === ''
+    }
+
+    const fail = (thrown: unknown): void => {
+        boardProblem = reason(thrown)
+        say(boardProblem)
+        paintProblems()
+    }
+
+    const failOn = (id: string | undefined, thrown: unknown): void => {
+        if (!id) {
+            fail(thrown)
+            return
+        }
+        const problem = reason(thrown)
+        problems.set(id, problem)
+        say(`${cardById(id)?.title ?? 'a card'}: ${problem}`)
+        const card = cardById(id)
+        if (card) paintCard(card)
+        if (selected === id) {
+            drawnRev = -1
+            paintDrawer()
+        }
+        paintProblems()
+    }
+
+    const solved = (id: string): void => {
+        if (!problems.delete(id)) return
+        const card = cardById(id)
+        if (card) paintCard(card)
+        paintProblems()
     }
 
     const clearError = (): void => {
-        error.hidden = true
-        error.textContent = ''
+        boardProblem = null
+        paintProblems()
     }
 
     const cardById = (id: string): Card | undefined => cards.find((card) => card.id === id)
 
     const shown = (card: Card): Status => optimistic.get(card.id) ?? card.status
 
-    const invoke = async <T>(channel: string, ...args: unknown[]): Promise<T> => {
-        clearError()
-        return (await ctx.invoke(channel, ...args)) as T
-    }
+    const invoke = async <T>(channel: string, ...args: unknown[]): Promise<T> =>
+        (await ctx.invoke(channel, ...args)) as T
 
     const buildColumn = (status: Status, label: string): Column => {
         const shell = el('section', 'dya-card kanban-column')
@@ -312,6 +353,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         node.root.dataset.locked = String(card.locked)
         node.root.dataset.waiting = String(live?.waiting === true)
         node.root.dataset.selected = String(selected === card.id)
+        node.root.dataset.problem = String(problems.has(card.id))
         node.root.dataset.rev = String(card.rev)
         node.root.setAttribute('aria-label', `${card.title}, ${status}`)
         return node
@@ -394,6 +436,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 columns.set(status, buildColumn(status, rules.labels[status]))
             }
         }
+
+        for (const id of [...problems.keys()]) {
+            if (!cards.some((card) => card.id === id)) problems.delete(id)
+        }
+        clearError()
 
         setup.hidden = true
         main.hidden = false
@@ -748,14 +795,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .then((updated) => {
                 settle(id)
                 optimistic.delete(id)
+                solved(id)
                 say(`${updated.title} moved to ${updated.status}`)
                 return refresh()
             })
-            .catch((reason: unknown) => {
+            .catch((thrown: unknown) => {
                 settle(id)
                 optimistic.delete(id)
                 reconcile()
-                fail(reason)
+                failOn(id, thrown)
             })
     }
 
@@ -786,7 +834,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 for (const row of rows) into.appendChild(historyRow(row))
                 if (stick) into.scrollTop = into.scrollHeight
             })
-            .catch(fail)
+            .catch((thrown: unknown) => failOn(card.id, thrown))
     }
 
     const historyRow = (row: HistoryRow): HTMLElement => {
@@ -843,9 +891,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const view = el('div', 'kanban-terminal')
         stage.replaceChildren(view)
-        terminal = openTerminal(ctx, view, meta?.slug ?? '', card.id, (reason) => {
+        terminal = openTerminal(ctx, view, meta?.slug ?? '', card.id, (thrown) => {
             closeTerminal()
-            fail(reason)
+            failOn(card.id, thrown)
         })
     }
 
@@ -898,6 +946,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         head.append(heading, el('span', 'kanban-spacer'), tabs, close)
 
         const body = el('div', 'kanban-drawer-body')
+
+        const problem = problems.get(card.id)
+        const problemRow = el('div', 'kanban-problem')
+        problemRow.hidden = problem === undefined
+        if (problem) problemRow.textContent = problem
 
         const titleGroup = el('div', 'kanban-group')
         titleGroup.append(el('span', 'dya-label', 'title'))
@@ -990,7 +1043,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         browse.addEventListener('click', () => {
             void invoke<string | null>('pickWorkdir')
                 .then((picked) => (picked ? patch(card.id, { workdir: picked }) : undefined))
-                .catch(fail)
+                .catch((thrown: unknown) => failOn(card.id, thrown))
         })
         const overrideRow = el('div', 'kanban-row')
         overrideRow.append(override, browse)
@@ -1065,8 +1118,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const value = note.value.trim()
             if (!value) return
             void invoke('comment', meta?.slug, card.id, value)
-                .then(() => refresh())
-                .catch(fail)
+                .then(() => {
+                    solved(card.id)
+                    return refresh()
+                })
+                .catch((thrown: unknown) => failOn(card.id, thrown))
         })
         notesGroup.appendChild(note)
 
@@ -1100,7 +1156,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     file.type = 'button'
                     file.title = 'show this artifact on disk'
                     file.addEventListener('click', () => {
-                        void invoke('reveal', meta?.slug, card.id, name).catch(fail)
+                        void invoke('reveal', meta?.slug, card.id, name).catch((thrown: unknown) =>
+                            failOn(card.id, thrown)
+                        )
                     })
                     row.append(file)
                 }
@@ -1132,7 +1190,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                             () => refresh()
                         )
                     })
-                    .catch(fail)
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
             })
             row.append(at, park)
             scheduleGroup.appendChild(row)
@@ -1147,10 +1205,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             back.addEventListener('click', () => {
                 void invoke<Card>('unblock', meta?.slug, card.id, card.rev)
                     .then((next) => {
+                        solved(card.id)
                         say(`${next.title} returned to ${next.status}`)
                         return refresh()
                     })
-                    .catch(fail)
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
             })
             actions.append(back)
         }
@@ -1171,8 +1230,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             stop.addEventListener('click', () => {
                 if (!window.confirm(`Stop the worker on '${card.title}'? Its conversation is kept.`)) return
                 void invoke('stopCard', meta?.slug, card.id)
-                    .then(() => refresh())
-                    .catch(fail)
+                    .then(() => {
+                        solved(card.id)
+                        return refresh()
+                    })
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
             })
             actions.append(stop)
         }
@@ -1185,14 +1247,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             if (!window.confirm(`Delete '${card.title}'? Its history goes with it.`)) return
             void invoke('deleteCard', meta?.slug, card.id)
                 .then(() => {
+                    problems.delete(card.id)
                     select(null)
                     return refresh()
                 })
-                .catch(fail)
+                .catch((thrown: unknown) => failOn(card.id, thrown))
         })
         actions.append(moveButton, remove)
 
         body.append(
+            problemRow,
             titleGroup,
             bodyGroup,
             priorityGroup,
@@ -1233,8 +1297,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const patch = (id: string, body: Record<string, unknown>): void => {
         void invoke('updateCard', meta?.slug, id, body)
-            .then(() => refresh())
-            .catch(fail)
+            .then(() => {
+                solved(id)
+                return refresh()
+            })
+            .catch((thrown: unknown) => failOn(id, thrown))
     }
 
     const add = (): void => {

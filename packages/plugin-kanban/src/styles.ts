@@ -126,6 +126,7 @@ export const STYLES = `
 .kanban-card[data-dragging='true'] { opacity: 0.35; }
 .kanban-card[data-pending='true'] { opacity: 0.6; cursor: progress; }
 .kanban-card[data-locked='true'] { cursor: default; }
+.kanban-card[data-problem='true'] { border-color: var(--dya-danger); }
 
 .kanban-card-title {
     font-family: var(--dya-font-mono);
@@ -274,6 +275,18 @@ export const STYLES = `
     font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-danger);
+}
+
+.kanban-problem {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-danger);
+    padding: var(--dya-space-2);
+    border-radius: var(--dya-radius);
+    background: var(--dya-sunken);
+    overflow-wrap: anywhere;
 }
 
 .kanban-menu {

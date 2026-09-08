@@ -1789,6 +1789,26 @@ archived    idle             out of play
 `danger` is reserved for an error inside a run, never for a board state. If `blocked` were red,
 a board with three cards awaiting an answer would look like a fire.
 
+### 16.1.1 An error belongs to the thing it happened to
+
+The first build had one strip at the bottom of the panel and wrote every failure into it. Two
+things follow that are both wrong: an error about a card is not attached to that card, so
+nothing on the board shows which one is in trouble, and the second error erases the first.
+
+```text
+WHERE IT LIVES        WHAT SHOWS IT
+--------------------  --------------------------------------------------------
+a card                the card is outlined in --dya-danger and the drawer says
+                      what happened, above the title field
+the board             the strip, for anything with no card behind it: the
+                      registry, the tick, the worktrees menu
+```
+
+The strip is a summary of what is currently wrong, not a scratchpad. One card in trouble and
+it names the card and the problem; several and it says how many. A card problem clears when
+the same card's next operation succeeds, and a problem for a card that has gone clears on the
+next refresh.
+
 ### 16.2 Where the transition rule lives
 
 Duplicating the table in both halves guarantees drift. Asking the main module on every

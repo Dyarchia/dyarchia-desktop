@@ -529,6 +529,9 @@ const ctx = {
             return card
         }
         if (channel === 'updateCard') {
+            if (String(args[2].title ?? '').startsWith('!')) {
+                throw new Error('the harness refuses a title that starts with !, so the error path can be driven')
+            }
             const card = byId(args[1])
             Object.assign(card, args[2])
             if (card.status === 'scheduled' && card.scheduledFor && card.scheduledFor <= Date.now()) {

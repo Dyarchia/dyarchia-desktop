@@ -60,7 +60,12 @@ Failure handling         crash, protocol violation, runtime cap, silence past a 
 Fan-out                  `followups` in the terminal block become child cards gated
                          on the card that proposed them
 Health                   a strip in the bar naming what is wrong: cards waiting on
-                         you, cards claimable and never claimed, liveness unknown
+                         you, cards claimable and never claimed, liveness unknown,
+                         and which process holds the dispatcher
+Errors                   an error belongs to the thing it happened to. A card that
+                         refuses an operation is outlined and says why in its drawer;
+                         the strip at the bottom carries board-level failures and,
+                         otherwise, a count of the cards in trouble
 Artifacts                what a run declares is copied out of the workspace before the
                          workspace is reclaimed, and shown on the run as a chip that
                          opens it on disk. A declared artifact that is not there is a
@@ -171,6 +176,8 @@ diagnostics          two problems, so the health strip and its menu are populate
 stopCard, unblock    the real outcomes: a stop is a crash with no evidence and the
                      card returns to ready; an unblock returns it to its source
                      phase, or to todo while parents are open
+a refusal            renaming a card to anything starting with ! is refused, which
+                     is how the error paths are driven without a broken main module
 ```
 
 The one path it cannot fake is `reveal`, which only says what the shell would have opened.

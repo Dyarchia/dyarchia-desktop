@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { DockviewApi } from 'dockview-react'
 import { DockLayout } from './layout/DockLayout'
+import { Notices } from './components/Notices'
 import { TopBar } from './components/TopBar'
 import { basePanelId, getRegisteredPanels, onRegistryChange } from './panels/registry'
 import { loadPlugins } from './plugins/host'
@@ -85,6 +86,7 @@ export function App(): React.JSX.Element {
                     </div>
                 )}
             </div>
+            <Notices />
         </div>
     )
 }

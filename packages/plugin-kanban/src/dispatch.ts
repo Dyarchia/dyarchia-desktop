@@ -43,6 +43,42 @@ export interface Sink {
     boardChanged(slug: string): void
     cardProgress(progress: CardProgress): void
     runEnded(slug: string, cardId: string, outcome: string): void
+    notify(notice: { title: string; body: string; action: { slug: string; cardId: string } }): void
+}
+
+const waiting = new Set<string>()
+
+function tell(
+    sink: Sink,
+    meta: BoardMeta,
+    card: Card,
+    title: string,
+    body: string
+): void {
+    sink.notify({
+        title,
+        body: `${meta.name} · ${body}`.slice(0, 400),
+        action: { slug: meta.slug, cardId: card.id }
+    })
+}
+
+function ended(sink: Sink, meta: BoardMeta, card: Card, run: Run): void {
+    waiting.delete(card.id)
+
+    const said = run.summary ?? run.error ?? ''
+    if (run.outcome === 'completed') {
+        tell(sink, meta, card, `${card.title} is ready for review`, said || 'the worker finished')
+        return
+    }
+    if (run.outcome === 'blocked') {
+        tell(sink, meta, card, `${card.title} is blocked`, said || (card.blockKind ?? 'it needs you'))
+        return
+    }
+    if (run.outcome === 'violation') {
+        tell(sink, meta, card, `${card.title} broke the protocol`, said || 'no terminal block')
+        return
+    }
+    tell(sink, meta, card, `${card.title} stopped without finishing`, said || 'the worker is gone')
 }
 
 const BOOTED = Date.now()
@@ -168,6 +204,7 @@ async function resolve(
                 land(card, 'ready')
             }
             void events.record(meta.slug, card.id, 'violation', `declared but missing: ${names}`, run.runId)
+            ended(sink, meta, card, run)
             sink.runEnded(meta.slug, card.id, 'violation')
             return
         }
@@ -200,6 +237,7 @@ async function resolve(
         } else {
             block(meta.slug, card, declared.blockKind ?? 'needs_input', 'ready')
         }
+        ended(sink, meta, card, run)
         sink.runEnded(meta.slug, card.id, run.outcome ?? 'completed')
         return
     }
@@ -212,6 +250,7 @@ async function resolve(
         if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'ready')
         else land(card, 'ready')
         void events.record(meta.slug, card.id, 'violation', 'the turn ended with no terminal block', run.runId)
+        ended(sink, meta, card, run)
         sink.runEnded(meta.slug, card.id, 'violation')
         return
     }
@@ -241,6 +280,7 @@ async function resolve(
         run.error ?? 'the worker is gone',
         run.runId
     )
+    ended(sink, meta, card, run)
     sink.runEnded(meta.slug, card.id, 'crashed')
 }
 
@@ -305,10 +345,18 @@ async function reconcile(
             )
             block(meta.slug, card, 'transient', 'ready')
             void events.record(meta.slug, card.id, 'stopped', run.error ?? '', run.runId)
+            ended(sink, meta, card, run)
             sink.runEnded(meta.slug, card.id, 'stopped')
             changed = true
             continue
         }
+
+        const asking = agents.waiting(session)
+        if (asking && !waiting.has(card.id)) {
+            waiting.add(card.id)
+            tell(sink, meta, card, `${card.title} is waiting on you`, 'the worker is asking for permission')
+        }
+        if (!asking) waiting.delete(card.id)
 
         sink.cardProgress({
             slug: meta.slug,
@@ -319,7 +367,7 @@ async function reconcile(
             inputTokens: progress?.inputTokens ?? 0,
             outputTokens: progress?.outputTokens ?? 0,
             startedAt: run.startedAt,
-            waiting: agents.waiting(session)
+            waiting: asking
         })
     }
 
@@ -404,6 +452,7 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
             land(card, 'ready')
         }
         void events.record(meta.slug, card.id, 'crashed', run.error ?? 'the launch failed', runId)
+        ended(sink, meta, card, run)
         sink.runEnded(meta.slug, card.id, 'crashed')
     }
 

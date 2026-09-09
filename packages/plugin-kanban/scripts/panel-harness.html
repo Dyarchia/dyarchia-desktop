@@ -286,8 +286,28 @@ const progressOf = (card, run, step) => ({
 })
 
 let completions = 0
+let verdicts = 0
+
+const judge = (card, run) => {
+    verdicts += 1
+    if (verdicts % 2 === 1) {
+        closeRun(run, 'completed', 'The branch does what the card asked, and the probe covers it.', null)
+        card.consecutiveFailures = 0
+        card.protocolViolations = 0
+        land(card, 'done')
+    } else {
+        closeRun(run, 'completed', 'The parser is right but nothing covers the truncated block. Add that case and say so.', null)
+        card.comments.push({ at: Date.now(), author: 'agent', text: run.summary })
+        land(card, 'ready')
+    }
+    emit({ type: 'run:ended', slug: 'dyarchia', cardId: card.id, outcome: 'completed' })
+}
 
 const finish = (card, run) => {
+    if (run.kind === 'review') {
+        judge(card, run)
+        return
+    }
     completions += 1
     if (completions % 2 === 1) {
         closeRun(run, 'completed', 'Parsed the short id out of the launch line and covered both invocation shapes in the probe.', null)
@@ -327,15 +347,17 @@ const walk = (card, run, index) => {
     later(() => walk(card, run, index + 1), step.ms)
 }
 
-const startRun = (card) => {
+const startRun = (card, kind = 'implement') => {
     seq += 1
     const short = `b${String(seq).padStart(3, '0')}cd${seq}`
+    const review = kind === 'review'
     const run = {
         runId: `run-${seq}`,
+        kind,
         sessionId: crypto.randomUUID(),
         shortId: short,
-        worktree: `${WORKTREES}\\kanban-${short}`,
-        branch: `worktree-kanban-${short}`,
+        worktree: review ? null : `${WORKTREES}\\kanban-${short}`,
+        branch: review ? null : `worktree-kanban-${short}`,
         startedAt: Date.now(),
         endedAt: null,
         outcome: null,
@@ -552,6 +574,12 @@ const ctx = {
         }
         if (channel === 'dispatchNow') {
             tick()
+            return true
+        }
+        if (channel === 'reviewCard') {
+            const card = byId(args[1])
+            if (card.status !== 'review') throw new Error('that card is not waiting for a review')
+            startRun(card, 'review')
             return true
         }
         if (channel === 'stopCard') {

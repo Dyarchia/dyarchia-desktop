@@ -15,8 +15,13 @@ export type Outcome = 'completed' | 'blocked' | 'crashed' | 'stopped' | 'violati
 
 export type WorkspaceKind = 'scratch' | 'dir'
 
+export type RunKind = 'implement' | 'review'
+
+export type Verdict = 'approved' | 'changes'
+
 export interface Run {
     runId: string
+    kind: RunKind
     sessionId: string | null
     shortId: string | null
     worktree: string | null

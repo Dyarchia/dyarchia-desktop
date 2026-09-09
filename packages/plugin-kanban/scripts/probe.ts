@@ -7,11 +7,12 @@ import { adopt } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
-import { brief } from '../src/worker.js'
+import { brief, reviewBrief } from '../src/worker.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
 import { ours, parseList, same } from '../src/worktrees.js'
 import type { SessionRecord } from '../src/agents.js'
+import type { Run } from '../src/types.js'
 
 let passed = 0
 let failed = 0
@@ -112,6 +113,22 @@ function terminals(): void {
         parseTerminal('===KANBAN===\n{"outcome":"blocked","followups":[{"title":"t","body":"b"}],"summary":"s"}')
             ?.summary,
         's'
+    )
+    check('no verdict is no verdict', parseTerminal(good)?.verdict, null)
+    check(
+        'a review approves',
+        parseTerminal('===KANBAN===\n{"outcome":"completed","verdict":"approved"}')?.verdict,
+        'approved'
+    )
+    check(
+        'a review asks for changes',
+        parseTerminal('===KANBAN===\n{"outcome":"completed","verdict":"changes"}')?.verdict,
+        'changes'
+    )
+    check(
+        'a verdict nobody defined is no verdict',
+        parseTerminal('===KANBAN===\n{"outcome":"completed","verdict":"lgtm"}')?.verdict,
+        null
     )
 }
 
@@ -315,6 +332,55 @@ async function eventLog(): Promise<void> {
     check('the board log holds more than one card', everything.length > mine.length, true)
 }
 
+
+async function reviews(): Promise<void> {
+    console.log('\nthe review run')
+
+    const judged: Run = {
+        runId: 'r1',
+        kind: 'implement',
+        sessionId: 's1',
+        shortId: 'abc',
+        worktree: 'C:\\project\\.claude\\worktrees\\kanban-r1',
+        branch: 'kanban-r1',
+        startedAt: 1,
+        endedAt: 2,
+        outcome: 'completed',
+        summary: 'rewrote the parser',
+        artifacts: [],
+        kept: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        error: null,
+        headBefore: 'abc1234'
+    }
+
+    const card = await board.createCard('probe', { title: 'reviewed', body: 'make it fast' })
+    const text = reviewBrief(card, judged, 'C:\\project')
+    check('the reviewer is told what was asked', text.includes('make it fast'), true)
+    check('and what the implementer said', text.includes('rewrote the parser'), true)
+    check('it is pointed at the branch', text.includes('kanban-r1'), true)
+    check('with the range that is the change', text.includes('git diff abc1234..kanban-r1'), true)
+    check('it works in the project, not a worktree', text.includes('Your working directory is `C:\\project`'), true)
+    check('and it is asked for a verdict', text.includes('"verdict": "approved" | "changes"'), true)
+
+    const nothing = reviewBrief(card, { ...judged, branch: null, headBefore: null }, 'C:\\project')
+    check('a run with no branch is judged where it stands', nothing.includes('There is no branch'), true)
+
+    board.forget('old')
+    mkdirSync(boards.boardRoot('old'), { recursive: true })
+    writeFileSync(
+        boards.boardPath('old'),
+        JSON.stringify({
+            version: 1,
+            cards: [{ ...card, id: 'aged', runs: [{ ...judged, kind: undefined }] }]
+        }),
+        'utf-8'
+    )
+    const aged = await board.cards('old')
+    check('a run written before kinds existed reads as an implementation', aged[0].runs[0].kind, 'implement')
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -325,6 +391,7 @@ await housekeeping()
 await followups()
 await leases()
 await attachments()
+await reviews()
 await eventLog()
 
 console.log(`\n${passed} passed, ${failed} failed`)

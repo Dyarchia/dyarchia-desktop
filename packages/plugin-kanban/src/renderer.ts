@@ -1246,10 +1246,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                           : run.outcome === 'blocked'
                             ? 'warning'
                             : 'idle'
+                const kind = run.kind === 'review' ? 'review · ' : ''
                 const label = el(
                     'span',
                     'kanban-card-note',
-                    `${run.outcome ?? 'running'} · ${tokens(run.inputTokens + run.outputTokens)} tok · ${ago(run.startedAt, clock)}`
+                    `${kind}${run.outcome ?? 'running'} · ${tokens(run.inputTokens + run.outputTokens)} tok · ${ago(run.startedAt, clock)}`
                 )
                 row.append(dot, label)
                 if (run.branch) {
@@ -1327,7 +1328,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const changes = el('button', 'dya-button dya-button--quiet dya-button--sm', 'request changes')
             changes.type = 'button'
             changes.addEventListener('click', () => move(card.id, 'ready'))
-            actions.append(approve, changes)
+            const ask = el('button', 'dya-button dya-button--quiet dya-button--sm', 'ask a reviewer')
+            ask.type = 'button'
+            ask.title = 'starts a second session that reads the branch and judges it'
+            ask.addEventListener('click', () => {
+                void invoke('reviewCard', meta?.slug, card.id)
+                    .then(() => {
+                        say(`a reviewer is reading ${card.title}`)
+                        return refresh()
+                    })
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
+            })
+            actions.append(approve, changes, ask)
         }
 
         if (shown(card) === 'running') {

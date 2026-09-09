@@ -24,10 +24,32 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**Nothing.** Every entry this section has held is in section 5 with its evidence, or in section
-4 with the reason it was dropped. That is a statement about this register, not about the
-plugin: section 2 lists what is unproven rather than broken, and section 3 the debts owed
-upstream. A problem found while building goes here the same day.
+**A review run does not wait for the per-board cap.** `dispatch.review` starts the reviewer the
+moment the button is pressed, so a board whose cap is one card can hold two running sessions:
+the one the dispatcher claimed and the one the operator asked for. It is deliberate and it is
+not free.
+
+- The alternative was refusing the button while the board is busy, and a card reaches `review`
+  exactly when the dispatcher is most likely to have claimed the next one, so the refusal would
+  be the common case rather than the rare one.
+- The reading that makes it consistent: the cap governs what the dispatcher spends on its own,
+  not what the operator asks for by hand. Nothing enforces that reading in code.
+- **Done looks like** the configurable caps of the reference system-parity.md section 5 landing with a
+  decision written into them: either a review counts against the cap, or the cap gets a second
+  number for what an operator may add on top. `dispatch.ts`, `PER_BOARD` and `review`.
+
+**"A reviewer does not edit" is enforced by the brief and by nothing else.** A review run
+inherits the card's permission mode, which defaults to `acceptEdits`, and it runs in the
+operator's own checkout rather than in a worktree. The brief tells it to read and judge; a
+model that decides to fix what it found can.
+
+- `plan` is already one of the modes a card can carry, so the CLI takes it, and it is the
+  mechanism that would make the sentence true rather than polite.
+- What is NOT known is whether a `--bg` session in plan mode finishes a judgement or stalls
+  asking to leave plan mode. Nothing here has measured it, and a reviewer that stalls is worse
+  than a reviewer that could have edited.
+- **Done looks like** that measurement, and then either launching reviews in `plan` or writing
+  down why not. `worker.start`, the `reviewing` branch.
 
 ## 2. Unproven rather than broken
 
@@ -38,9 +60,15 @@ The stall detector          Its thresholds are an hour of silence past a four
                             hour run. Only its guard conditions have been read;
                             it has never fired. Verifying it honestly means
                             either waiting or making the thresholds injectable
-`sourcePhase` = 'review'    A card can only be blocked out of a run, and a run
-                            only starts from ready, so the arm is written and
-                            unreachable until an automatic reviewer exists
+`sourcePhase` = 'review'    Reachable since 2026-09-09: a review run that blocks
+                            sets it, and unblock returns the card to review. Written
+                            and read, never yet fired by a real reviewer
+The verdict path            The probe covers the parser and the brief. The four
+                            routes of design.md 10.6.3 are read but not exercised:
+                            `resolveReview` needs a board, a sink and a transcript
+                            to drive, and no real reviewer has judged a real branch
+                            yet. Proving it means a card that completes in a
+                            worktree and the drawer's third button
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"
@@ -66,7 +94,11 @@ Both are recorded in the README as debts and belong upstream rather than here.
 ## 4. Deferred or dropped on purpose
 
 ```text
-Automatic reviewer       2.5, deferred. Approve and request-changes are manual buttons
+Automatic reviewer       2.5, still deferred, but narrower since 2026-09-09: a reviewer
+                         can be asked for with a button, and what stays unbuilt is the
+                         board-level setting that would spend one on every completed
+                         run. design.md 10.6.4 says why it waits for the manual path to
+                         be watched working
 Goal mode                2.5, phase 6
 Auto-decompose           2.5, phase 6
 Swarm                    2.8, phase 7, and it should NOT be built next: over a single

@@ -12,6 +12,7 @@ export type EventKind =
     | 'promoted'
     | 'claimed'
     | 'completed'
+    | 'reviewed'
     | 'blocked'
     | 'unblocked'
     | 'violation'

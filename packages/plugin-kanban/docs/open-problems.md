@@ -24,10 +24,18 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**Nothing.** Every entry this section has held is in section 5 with its evidence, or in section
-4 with the reason it was dropped. That is a statement about this register, not about the
-plugin: section 2 lists what is unproven rather than broken, and section 3 the debts owed
-upstream. A problem found while building goes here the same day.
+**"A reviewer does not edit" is enforced by the brief and by nothing else.** A review run
+inherits the card's permission mode, which defaults to `acceptEdits`, and it runs in the
+operator's own checkout rather than in a worktree. The brief tells it to read and judge; a
+model that decides to fix what it found can.
+
+- `plan` is already one of the modes a card can carry, so the CLI takes it, and it is the
+  mechanism that would make the sentence true rather than polite.
+- What is NOT known is whether a `--bg` session in plan mode finishes a judgement or stalls
+  asking to leave plan mode. Nothing here has measured it, and a reviewer that stalls is worse
+  than a reviewer that could have edited.
+- **Done looks like** that measurement, and then either launching reviews in `plan` or writing
+  down why not. `worker.start`, the `reviewing` branch.
 
 ## 2. Unproven rather than broken
 
@@ -38,9 +46,24 @@ The stall detector          Its thresholds are an hour of silence past a four
                             hour run. Only its guard conditions have been read;
                             it has never fired. Verifying it honestly means
                             either waiting or making the thresholds injectable
-`sourcePhase` = 'review'    A card can only be blocked out of a run, and a run
-                            only starts from ready, so the arm is written and
-                            unreachable until an automatic reviewer exists
+`sourcePhase` = 'review'    Reachable since 2026-09-09: a review run that blocks
+                            sets it, and unblock returns the card to review. Written
+                            and read, never yet fired by a real reviewer
+The verdict path            The probe covers the parser and the brief. The four
+                            routes of design.md 10.6.3 are read but not exercised:
+                            `resolveReview` needs a board, a sink and a transcript
+                            to drive, and no real reviewer has judged a real branch
+                            yet. Proving it means a card that completes in a
+                            worktree and the drawer's third button
+The caps against a real     The numbers are read every tick and the probe covers
+dispatcher                  what they accept, but no board has been watched
+                            refusing to claim because a cap said so, and 0 has
+                            never paused a real run
+The watch view against      Verified in the panel harness, over fake boards: the
+real boards                 view renders, a paused board is tagged, and a live row
+                            opens its card with the pty attached. What the harness
+                            cannot show is two REAL boards, whose events and cards
+                            are read from disk on every refresh
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"
@@ -66,7 +89,11 @@ Both are recorded in the README as debts and belong upstream rather than here.
 ## 4. Deferred or dropped on purpose
 
 ```text
-Automatic reviewer       2.5, deferred. Approve and request-changes are manual buttons
+Automatic reviewer       2.5, still deferred, but narrower since 2026-09-09: a reviewer
+                         can be asked for with a button, and what stays unbuilt is the
+                         board-level setting that would spend one on every completed
+                         run. design.md 10.6.4 says why it waits for the manual path to
+                         be watched working
 Goal mode                2.5, phase 6
 Auto-decompose           2.5, phase 6
 Swarm                    2.8, phase 7, and it should NOT be built next: over a single
@@ -125,6 +152,12 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+A review run starts outside the per-board    the caps became         design.md 13
+cap, and nothing said whether that was a     settable, and the       and 10.6.6
+decision or an accident                      decision is written
+                                             into the form: caps
+                                             bind the dispatcher's
+                                             claim, not the hand
 createCard accepted any slug and created a   every card channel      commit 2784ca7
 board the registry had never heard of        resolves the board
 The drawer mounted xterm on a detached node  open after the drawer   commit 2784ca7

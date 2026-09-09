@@ -25,9 +25,12 @@ plugins.
 - [8. Data model](#8-data-model)
 - [9. State machine](#9-state-machine)
 - [10. The worker](#10-the-worker)
+- [10.6 The review run](#106-the-review-run)
 - [11. Termination and the evidence ladder](#11-termination-and-the-evidence-ladder)
 - [12. Failure taxonomy](#12-failure-taxonomy)
+- [12.4 Several cards at once](#124-several-cards-at-once)
 - [13. The dispatcher](#13-the-dispatcher)
+- [13.1 The dispatcher, seen](#131-the-dispatcher-seen)
 - [14. Watch and talk](#14-watch-and-talk)
 - [15. IPC contract](#15-ipc-contract)
 - [16. The renderer](#16-the-renderer)
@@ -173,12 +176,15 @@ Block loop guard       after N cycles of block, unblock, same block kind, the ca
 ```text
 CAPABILITY            WHAT IT MEANS                                     STATUS
 --------------------  ------------------------------------------------  ----------
-Same-card review      a card moves to review with a summary; a          IN SCOPE
-                      reviewer approves or requests changes, which      phase 4
-                      returns it to the implementer WITHOUT counting
+Same-card review      a card moves to review with a summary; a          BUILT
+                      reviewer approves or requests changes, which      by hand,
+                      returns it to the implementer WITHOUT counting    phase 4
                       as a block
-Automatic reviewer    a reviewer is dispatched automatically            DEFERRED
-                                                                        opt-in later
+An agent reviewer     a review run: an ordinary run with a reviewer     BUILT
+                      brief and a verdict in its terminal block         2026-09-09,
+                                                                        see 10.6
+Automatic reviewer    every completed card gets one without asking      DEFERRED
+                                                                        after 10.6
 Goal mode             a judge evaluates each turn against the card's    DEFERRED
                       title and body as acceptance criteria and feeds   phase 6
                       a continuation prompt back into the same
@@ -1196,7 +1202,7 @@ scheduled   parked waiting on a time, not on a person           no
 ready       ready with no blockers                              YES
 running     a worker holds it                                   no
 blocked     stopped, waiting on a person                        no
-review      work done, awaiting review                          no
+review      work done, awaiting review                          ON ASK
 done        closed                                              no
 archived    off the board, terminal                             no
 ```
@@ -1211,6 +1217,7 @@ stateDiagram-v2
     ready --> scheduled
     ready --> running: dispatcher claim
     running --> review: work done
+    review --> running: a reviewer is asked for
     running --> done: completed
     running --> blocked: needs a person
     running --> todo: dependency block
@@ -1219,8 +1226,9 @@ stateDiagram-v2
     blocked --> review: unblock, source was review
     blocked --> todo: unblock, parents still open
     blocked --> triage: block-loop guard
-    review --> done: approved
-    review --> ready: changes requested
+    review --> done: approved, by an operator or a verdict
+    review --> ready: changes requested, by either
+    review --> blocked: the reviewer could not judge
     done --> archived
     blocked --> archived
     archived --> [*]
@@ -1393,6 +1401,135 @@ The consequence for whoever writes cards, human or machine: **every shared decis
 stamped into every card that needs it.** A naming scheme, a schema, a file format or an API
 shape agreed on one card is invisible to its siblings.
 
+## 10.6 The review run
+
+A card that finishes inside a worktree lands in `review` because there is a branch for a
+person to land. That person used to be the only reviewer there is: two buttons, approve and
+request changes, and no way to ask an agent to look first. This section is the design for
+that. It was written before any of it was built, and **built on 2026-09-09** exactly as
+written except for one thing, which is 10.6.6.
+
+### 10.6.1 What a reviewer is here
+
+Not a role, not a profile, not a second identity. **A review run is an ordinary run with a
+different brief and one extra thing it may declare.** Everything that already exists applies
+unchanged: it is a real `claude --bg` session, it is watched through its transcript, it is
+answerable in the drawer, its liveness is the same three-valued answer, and it ends with the
+same terminal block.
+
+Three things make it different, and they are the whole design:
+
+```text
+WHAT                WHY
+------------------  --------------------------------------------------------------
+It does not get a   a reviewer reads and reports; it does not edit. So it launches
+worktree            in the project directory with no `-w`, and the branch it is
+                    judging is named in its brief. This also sidesteps the question
+                    of whether `-w` on an existing worktree name reuses it, which
+                    has never been measured
+Its brief is the    the card, what the implementer said it did, the branch, and the
+implementer's work  instruction to judge that work rather than to continue it
+It may declare a    `verdict` in the terminal block, and nothing else in the
+verdict             protocol changes
+```
+
+### 10.6.2 The protocol change, which is one optional field
+
+```json
+{ "outcome": "completed" | "blocked",
+  "verdict": "approved" | "changes",
+  "blockKind": "needs_input" | "capability" | "transient" | "dependency" | null,
+  "summary": "what was judged, and what is wrong with it",
+  "artifacts": [],
+  "followups": [] }
+```
+
+`verdict` is read **only** on a run the board dispatched as a review, and ignored everywhere
+else, so an implementer that emits it changes nothing. A review run that completes without a
+verdict is a protocol violation like any other missing field: the board does not guess, and
+`changes` is not a safe default because it would send work back for no stated reason.
+
+The alternative considered and rejected: reusing `outcome: blocked` with
+`blockKind: needs_input` to mean "changes requested". It reads as if a human is needed when
+the reviewer has already said exactly what to do, and it would feed the block-loop counter, so
+two rounds of ordinary review feedback would send the card to triage. A verdict is not a block.
+
+### 10.6.3 Where the card goes
+
+```text
+VERDICT / OUTCOME       CARD GOES TO   AND
+----------------------  -------------  -----------------------------------------
+completed, approved     done           the branch is still the operator's to
+                                       land; approving is a judgement, not a merge
+completed, changes      ready          the reviewer's summary is appended as an
+                                       agent comment, so the next implementer run
+                                       reads it in its brief. NO failure counter
+                                       moves: review feedback is not a failure
+blocked, any kind       blocked        with `sourcePhase: 'review'`, which is what
+                                       finally makes that arm reachable. Unblocking
+                                       returns the card to review, not to ready
+crashed or violation    review         the card stays where it was. A reviewer that
+                                       fell over has not judged anything, and the
+                                       existing retry budget applies
+```
+
+The `sourcePhase: 'review'` arm has been dead code since phase 4, written for exactly this and
+unreachable because a card could only be blocked out of an implementation run. This is the
+first thing that blocks out of a review.
+
+### 10.6.4 Who asks for it
+
+**A button, first.** The drawer's review actions become three: approve, request changes, and
+ask a reviewer. Nothing is dispatched automatically, because a reviewer is a second session
+per card and the operator should decide to spend it.
+
+A board-level "review every card automatically" setting is the obvious next step and belongs
+in the board settings that already exist, but it is deliberately not in the first cut: a
+setting that spends money on every completed run should be added once the manual path has been
+watched working.
+
+### 10.6.5 What it costs to build
+
+```text
+Run gains `kind: 'implement' | 'review'`, defaulted for old rows on read
+Card gains nothing
+worker.start gains a way to launch with no worktree, which the reviewer uses
+worker.brief gains a reviewer brief: the card, the branch, the implementer's
+    summary, and the shape of the verdict
+parseTerminal gains one optional field
+dispatch.resolve gains the four rows of 10.6.3, ahead of its existing routing
+The drawer gains one button and the run row shows which kind it was
+```
+
+Nothing else moves. In particular the dispatcher's caps, the claim, the liveness reading, the
+harvest and the worktree rules are all untouched: a review run is claimed, watched and closed
+by the same machinery as any other.
+
+### 10.6.6 What the build changed, and it is one thing
+
+**A review does not queue.** The claim reads one status, `ready`, and the card that wants a
+reviewer is in `review`; 10.6.5 forbids Card a new field, so there is nowhere to write "a
+review is pending" that the claim could read. The three ways out were a status, a field, or
+starting the run when the button is pressed, and the button won: a card reaches `review`
+exactly when the dispatcher is most likely to have claimed the next one, so refusing the
+button while the board is busy would be the common case rather than the rare one.
+
+What that costs is a board whose cap is one card holding two running sessions, and the
+reading that makes it consistent is that the cap governs what the dispatcher spends on its
+own, not what the operator asks for by hand. Nothing enforces that reading in code, so it is
+section 1 of [open-problems.md](open-problems.md) until the configurable caps land and decide
+it.
+
+Everything else in 10.6.5 is literal. `claim` and `review` share one `launch`, so a review is
+briefed, watched, reconciled, stopped and closed by the same code as an implementation, and
+the only branch between them is the brief, the missing worktree and the four rows of 10.6.3.
+
+One thing 10.6.1 says is not yet true of the mechanism: "it does not edit" is the brief's
+instruction, not the runtime's. A review inherits the card's permission mode and runs in the
+operator's checkout, so a model that decides to fix what it found can. `plan` is the mode that
+would make it true, and whether a background session in plan mode finishes a judgement has
+never been measured here. It is section 1 of [open-problems.md](open-problems.md).
+
 ## 11. Termination and the evidence ladder
 
 The obvious design has the worker announce completion in its output. That is a cooperation
@@ -1546,6 +1683,29 @@ successfully inside a short guard window. Emit a diagnostic and leave it claimab
 another chance on a later tick. This exists because a 401 does not fix itself in five seconds,
 and a dispatcher without this guard will burn the whole board against a bad credential.
 
+### 12.4 Several cards at once
+
+A board with forty cards is one where every lifecycle verb wants a selection, and the
+reference system gives each of its verbs a list of ids for exactly that reason. Three
+decisions make it fit here rather than bolting a second board on the side:
+
+- **A mark is not a selection.** The drawer already owns `selected`, one card, and it is the
+  thing that opens a session. Marks are a separate set: Ctrl-click toggles one, Shift-click
+  takes a range down a column, a plain click clears them and goes back to the drawer. Nothing
+  about one card's drawer changes because five are marked.
+- **The verbs offered are the ones every marked card can do.** The move menu is the
+  INTERSECTION of the transition table over the marks, so a selection holding a running card
+  offers nothing and says so on the button, rather than offering a move that will half fail.
+- **A batch is one write, and a refusal is per card.** `moveCards` and `deleteCards` take the
+  whole list, apply what they can against one loaded board file, save once and answer
+  `{ done, refused }` with a reason per refusal. Doing it as N calls from the renderer would
+  rotate the board's backups N times, which is how a batch delete quietly destroys the
+  backup history it might be needed to undo.
+
+Dependencies make the delete case less obvious than it looks: a parent whose child is also
+marked can go, and a parent whose child is not cannot. Since refusing one card can strand
+another that was only legal because of it, the check runs to a fixpoint rather than once.
+
 ## 13. The dispatcher
 
 A timer in the main module, sweeping **every board** on each tick. Every 5 seconds while any
@@ -1578,6 +1738,22 @@ global       default 2. The real protection. Without it, five boards at 2 each w
 The reference system defaults to unlimited, which is only defensible when the executor is a
 dedicated machine.
 
+Both are **settable as of 2026-09-09**, and three things fell out of making them so:
+
+- **The per-board cap lives on the board, the global one does not.** `BoardMeta` gains
+  `maxRunning: number | null`, where null means "the default", so a board written before this
+  reads as one rather than as zero. The global cap has no board to live on, so it is
+  `kanban/settings.json` beside the registry, one number, read once per tick.
+- **0 is a cap, and it means paused.** Nothing new is claimed and what is already running
+  finishes, which is the thing an operator actually wants when a laptop is busy and archiving
+  the board would be a lie. A paused board says so in the health strip, and it stops claiming
+  the "claimable and never claimed" diagnostic, which would otherwise accuse the operator of
+  a stall they asked for.
+- **The caps bind the dispatcher's claim, not the operator's hand.** A review asked for with
+  the drawer's button starts whatever the caps say, which is the reading 10.6.6 wrote down and
+  this is where it becomes a decision rather than an accident. The settings copy says so in
+  the form, because a number that silently does not mean what it says is worse than no number.
+
 Three requirements that are easy to miss:
 
 - **Kill the tree, not the process.** The CLI spawns git, node and shells.
@@ -1597,6 +1773,42 @@ Three requirements that are easy to miss:
 - **Probe the job object at startup and surface it.** Whether background sessions survive the
   app closing depends on flags that must be read at runtime, see 5.5. Do not promise durability
   that has not been verified on that machine.
+
+### 13.1 The dispatcher, seen
+
+The health strip says what is wrong. It does not say what is happening, and on a machine
+running two agents across two boards those are different questions. The `watch` button in the
+bar answers the second one, over **every board at once**, which is the half of watching the
+agents that a single board's columns cannot show:
+
+```text
+WHAT IT SHOWS          READ FROM
+---------------------  ---------------------------------------------------------
+running of the cap     the settings of 13, and the running cards of every board
+per board              its cap, how many are running against it, and the backlog
+                       split into ready, blocked, in review and waiting. A board
+                       whose cap is 0 is tagged paused
+running now            one row per live run: the card, its board, whether it is a
+                       review, how long it has been going, the tool it last
+                       reached for, its tokens, and whether it is waiting on you
+problems               `diagnose`, unfiltered, because this view is not about one
+                       board
+recent decisions       the last two dozen rows of every board's event log, merged
+                       and newest first
+```
+
+**A row is a way in, not a readout.** Clicking a running run closes the view, switches to that
+card's board if it is not the one on screen, selects the card and opens its drawer, which
+attaches to the session. That is the whole point: see that something is waiting on you, and be
+talking to it in two clicks.
+
+It is read once when opened and then kept live by the same `card:progress` broadcasts the
+board uses, patched in place, so watching costs nothing per tick that the board was not
+already paying. Anything the broadcasts cannot carry, a run ending or a card moving, refetches
+the whole shape, throttled to one read every two seconds. One consequence to expect: the tool
+column is empty for the first few seconds of watching, because the tool a run last reached for
+is not written to disk, and the view learns it from the next progress broadcast rather than by
+opening transcripts of its own.
 
 ## 14. Watch and talk
 
@@ -2174,6 +2386,11 @@ PHASE  DELIVERS                                                  STATE
                                                                   a graph
   7    Swarm, if 2.8 still argues for it                          one command, one graph
 ```
+
+The parity work is not in this table, because a row of
+[the reference system-parity.md](the reference system-parity.md) section 2 is a decision about what to copy rather than a
+phase of the build. All of it that survived that sorting landed on 2026-09-09: the review run
+of 10.6, several cards at once of 12.4, the settable caps of 13 and the watch view of 13.1.
 
 What is not built, not proven or plain wrong at any moment lives in
 [open-problems.md](open-problems.md) rather than here, because a list of gaps kept in two

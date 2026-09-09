@@ -7,11 +7,12 @@ import { adopt } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
-import { brief } from '../src/worker.js'
+import { brief, reviewBrief } from '../src/worker.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
 import { ours, parseList, same } from '../src/worktrees.js'
 import type { SessionRecord } from '../src/agents.js'
+import type { Card, Run } from '../src/types.js'
 
 let passed = 0
 let failed = 0
@@ -112,6 +113,22 @@ function terminals(): void {
         parseTerminal('===KANBAN===\n{"outcome":"blocked","followups":[{"title":"t","body":"b"}],"summary":"s"}')
             ?.summary,
         's'
+    )
+    check('no verdict is no verdict', parseTerminal(good)?.verdict, null)
+    check(
+        'a review approves',
+        parseTerminal('===KANBAN===\n{"outcome":"completed","verdict":"approved"}')?.verdict,
+        'approved'
+    )
+    check(
+        'a review asks for changes',
+        parseTerminal('===KANBAN===\n{"outcome":"completed","verdict":"changes"}')?.verdict,
+        'changes'
+    )
+    check(
+        'a verdict nobody defined is no verdict',
+        parseTerminal('===KANBAN===\n{"outcome":"completed","verdict":"lgtm"}')?.verdict,
+        null
     )
 }
 
@@ -238,7 +255,7 @@ async function followups(): Promise<void> {
     const parent = await board.createCard('probe', { title: 'a run with opinions' })
     file.cards.push(parent)
 
-    const proposed = Array.from({ length: 12 }, (unused, index) => ({
+    const proposed = Array.from({ length: 12 }, (_, index) => ({
         title: `followup ${index + 1}`,
         body: 'found while working'
     }))
@@ -315,6 +332,147 @@ async function eventLog(): Promise<void> {
     check('the board log holds more than one card', everything.length > mine.length, true)
 }
 
+
+async function reviews(): Promise<void> {
+    console.log('\nthe review run')
+
+    const judged: Run = {
+        runId: 'r1',
+        kind: 'implement',
+        sessionId: 's1',
+        shortId: 'abc',
+        worktree: 'C:\\project\\.claude\\worktrees\\kanban-r1',
+        branch: 'kanban-r1',
+        startedAt: 1,
+        endedAt: 2,
+        outcome: 'completed',
+        summary: 'rewrote the parser',
+        artifacts: [],
+        kept: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        error: null,
+        headBefore: 'abc1234'
+    }
+
+    const card = await board.createCard('probe', { title: 'reviewed', body: 'make it fast' })
+    const text = reviewBrief(card, judged, 'C:\\project')
+    check('the reviewer is told what was asked', text.includes('make it fast'), true)
+    check('and what the implementer said', text.includes('rewrote the parser'), true)
+    check('it is pointed at the branch', text.includes('kanban-r1'), true)
+    check('with the range that is the change', text.includes('git diff abc1234..kanban-r1'), true)
+    check('it works in the project, not a worktree', text.includes('Your working directory is `C:\\project`'), true)
+    check('and it is asked for a verdict', text.includes('"verdict": "approved" | "changes"'), true)
+
+    const nothing = reviewBrief(card, { ...judged, branch: null, headBefore: null }, 'C:\\project')
+    check('a run with no branch is judged where it stands', nothing.includes('There is no branch'), true)
+
+    board.forget('old')
+    mkdirSync(boards.boardRoot('old'), { recursive: true })
+    writeFileSync(
+        boards.boardPath('old'),
+        JSON.stringify({
+            version: 1,
+            cards: [{ ...card, id: 'aged', runs: [{ ...judged, kind: undefined }] }]
+        }),
+        'utf-8'
+    )
+    const aged = await board.cards('old')
+    check('a run written before kinds existed reads as an implementation', aged[0].runs[0].kind, 'implement')
+}
+
+async function caps(): Promise<void> {
+    console.log('\nconcurrency caps')
+
+    check('a cap is a whole number', boards.assertCap(3), 3)
+    check('zero is a cap, and it means paused', boards.assertCap(0), 0)
+    check('a numeric string is one too', boards.assertCap('2'), 2)
+    await refuses('a negative cap', async () => boards.assertCap(-1), 'cannot be negative')
+    await refuses('a fractional cap', async () => boards.assertCap(1.5), 'whole number')
+    await refuses('a cap that is not a number', async () => boards.assertCap('lots'), 'whole number')
+    await refuses('a cap past the ceiling', async () => boards.assertCap(11), 'as high as this goes')
+
+    check('a board starts on the default', (await boards.find('probe')).maxRunning, null)
+    check('and the default is one', boards.PER_BOARD, 1)
+
+    const raised = await boards.update('probe', { maxRunning: 3 })
+    check('a board can carry its own cap', raised.maxRunning, 3)
+    check('and it survives a read', (await boards.find('probe')).maxRunning, 3)
+
+    const renamed = await boards.update('probe', { name: 'probe' })
+    check('a patch that says nothing about it leaves it alone', renamed.maxRunning, 3)
+    check('and null puts it back on the default', (await boards.update('probe', { maxRunning: null })).maxRunning, null)
+    await refuses('a board cap past the ceiling', () => boards.update('probe', { maxRunning: 99 }), 'as high as this goes')
+
+    check('the global cap defaults to two', (await boards.settings()).maxRunning, boards.GLOBAL)
+    check('it can be changed', (await boards.saveSettings({ maxRunning: 4 })).maxRunning, 4)
+    check('and read back', (await boards.settings()).maxRunning, 4)
+    check('an empty patch keeps it', (await boards.saveSettings({})).maxRunning, 4)
+    await refuses('a global cap that is not one', () => boards.saveSettings({ maxRunning: -2 }), 'cannot be negative')
+    await boards.saveSettings({ maxRunning: boards.GLOBAL })
+
+    const counted = board.tally(await board.cards('probe'))
+    check('the tally counts every status it is given', counted.done + counted.ready + counted.todo > 0, true)
+    check('a status nothing is in counts zero, not undefined', counted.archived, 0)
+    check('and the tally has a row per status', Object.keys(counted).length, 9)
+}
+
+async function bulk(): Promise<void> {
+    console.log('\nseveral cards at once')
+
+    const meta = await boards.create({ slug: 'bulk', name: 'bulk', workdir: tmpdir() })
+    check('a second board for the bulk verbs', meta.slug, 'bulk')
+
+    const one = await board.createCard('bulk', { title: 'one', status: 'triage' })
+    const two = await board.createCard('bulk', { title: 'two', status: 'triage' })
+    const three = await board.createCard('bulk', { title: 'three', status: 'ready' })
+
+    const moved = await board.moveCards(
+        'bulk',
+        [
+            { id: one.id, rev: one.rev },
+            { id: two.id, rev: two.rev },
+            { id: three.id, rev: three.rev }
+        ],
+        'todo'
+    )
+    check('the legal ones move', moved.done.length, 2)
+    check('and the illegal one says why', moved.refused[0]?.why.includes('cannot go from ready to todo'), true)
+    check('the board agrees', (await board.cards('bulk')).filter((card) => card.status === 'todo').length, 2)
+
+    const stale = await board.moveCards('bulk', [{ id: one.id, rev: 0 }], 'ready')
+    check('a stale rev is refused in a batch too', stale.refused[0]?.why.includes('changed while'), true)
+    check('and nothing moved', stale.done.length, 0)
+
+    const same = await board.cards('bulk')
+    const already = same.find((card) => card.id === one.id) as Card
+    check(
+        'moving a card where it already is is not a refusal',
+        (await board.moveCards('bulk', [{ id: already.id, rev: already.rev }], 'todo')).done.length,
+        1
+    )
+
+    const parent = await board.createCard('bulk', { title: 'parent' })
+    const child = await board.createCard('bulk', { title: 'child', parents: [parent.id] })
+
+    const half = await board.deleteCards('bulk', [parent.id])
+    check('a parent alone will not go', half.done.length, 0)
+    check('and it says who holds it', half.refused[0]?.why.includes("'child' depends"), true)
+
+    const both = await board.deleteCards('bulk', [parent.id, child.id])
+    check('a parent goes with its child', both.done.length, 2)
+    check('and the board is smaller', (await board.cards('bulk')).some((card) => card.id === parent.id), false)
+
+    const locked = await board.cards('bulk')
+    const held = locked[0]
+    held.locked = true
+    await board.save('bulk', await board.load('bulk'))
+    const refusedLock = await board.deleteCards('bulk', [held.id])
+    check('a card with a live worker is never deleted', refusedLock.refused[0]?.why.includes('live worker'), true)
+
+    check('an empty batch does nothing and says nothing', (await board.deleteCards('bulk', [])).done.length, 0)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -325,6 +483,9 @@ await housekeeping()
 await followups()
 await leases()
 await attachments()
+await caps()
+await bulk()
+await reviews()
 await eventLog()
 
 console.log(`\n${passed} passed, ${failed} failed`)

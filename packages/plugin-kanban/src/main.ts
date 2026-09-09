@@ -20,6 +20,7 @@ import type {
     Card,
     CardDraft,
     CardPatch,
+    Settings,
     Status
 } from './types.js'
 
@@ -82,6 +83,14 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('boards', () => boards.list())
 
+    ctx.handle('settings', () => boards.settings())
+
+    ctx.handle('updateSettings', async (raw) => {
+        const saved = await boards.saveSettings(raw as Partial<Settings>)
+        await dispatch.force(sink)
+        return saved
+    })
+
     ctx.handle('pickWorkdir', async () => {
         const picked = await dialog.showOpenDialog({
             title: 'Choose the project directory',
@@ -97,8 +106,10 @@ export function activate(ctx: PluginMainContext): void {
     })
 
     ctx.handle('updateBoard', async (slug, raw) => {
-        const updated = await boards.update(String(slug), raw as Partial<BoardDraft>)
+        const patch = raw as Partial<BoardDraft>
+        const updated = await boards.update(String(slug), patch)
         registryChanged()
+        if (patch.maxRunning !== undefined) await dispatch.force(sink)
         return updated
     })
 
@@ -156,6 +167,25 @@ export function activate(ctx: PluginMainContext): void {
         return card
     })
 
+    ctx.handle('moveCards', async (slug, raw, to) => {
+        const target = await open(String(slug))
+        const wanted = (raw as { id: string; rev: number }[]).map((entry) => ({
+            id: String(entry.id),
+            rev: Number(entry.rev)
+        }))
+        const result = await board.moveCards(target, wanted, to as Status)
+        await board.promote(target, Date.now())
+        changed(target)
+        return result
+    })
+
+    ctx.handle('deleteCards', async (slug, raw) => {
+        const target = await open(String(slug))
+        const result = await board.deleteCards(target, (raw as unknown[]).map(String))
+        changed(target)
+        return result
+    })
+
     ctx.handle('deleteCard', async (slug, id) => {
         const target = await open(String(slug))
         const done = await board.deleteCard(target, String(id))
@@ -172,6 +202,13 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('dispatchNow', async () => {
         await dispatch.force(sink)
+        return true
+    })
+
+    ctx.handle('reviewCard', async (slug, id) => {
+        const target = await open(String(slug))
+        await dispatch.review(await boards.find(target), String(id), sink)
+        changed(target)
         return true
     })
 
@@ -261,6 +298,8 @@ export function activate(ctx: PluginMainContext): void {
     })
 
     ctx.handle('diagnostics', () => dispatch.diagnose())
+
+    ctx.handle('overview', () => dispatch.overview())
 
     ctx.handle('worktrees', async (slug) => dispatch.inventory(await boards.find(String(slug))))
 

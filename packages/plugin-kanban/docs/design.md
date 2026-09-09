@@ -29,6 +29,7 @@ plugins.
 - [11. Termination and the evidence ladder](#11-termination-and-the-evidence-ladder)
 - [12. Failure taxonomy](#12-failure-taxonomy)
 - [13. The dispatcher](#13-the-dispatcher)
+- [13.1 The dispatcher, seen](#131-the-dispatcher-seen)
 - [14. Watch and talk](#14-watch-and-talk)
 - [15. IPC contract](#15-ipc-contract)
 - [16. The renderer](#16-the-renderer)
@@ -1748,6 +1749,42 @@ Three requirements that are easy to miss:
 - **Probe the job object at startup and surface it.** Whether background sessions survive the
   app closing depends on flags that must be read at runtime, see 5.5. Do not promise durability
   that has not been verified on that machine.
+
+### 13.1 The dispatcher, seen
+
+The health strip says what is wrong. It does not say what is happening, and on a machine
+running two agents across two boards those are different questions. The `watch` button in the
+bar answers the second one, over **every board at once**, which is the half of watching the
+agents that a single board's columns cannot show:
+
+```text
+WHAT IT SHOWS          READ FROM
+---------------------  ---------------------------------------------------------
+running of the cap     the settings of 13, and the running cards of every board
+per board              its cap, how many are running against it, and the backlog
+                       split into ready, blocked, in review and waiting. A board
+                       whose cap is 0 is tagged paused
+running now            one row per live run: the card, its board, whether it is a
+                       review, how long it has been going, the tool it last
+                       reached for, its tokens, and whether it is waiting on you
+problems               `diagnose`, unfiltered, because this view is not about one
+                       board
+recent decisions       the last two dozen rows of every board's event log, merged
+                       and newest first
+```
+
+**A row is a way in, not a readout.** Clicking a running run closes the view, switches to that
+card's board if it is not the one on screen, selects the card and opens its drawer, which
+attaches to the session. That is the whole point: see that something is waiting on you, and be
+talking to it in two clicks.
+
+It is read once when opened and then kept live by the same `card:progress` broadcasts the
+board uses, patched in place, so watching costs nothing per tick that the board was not
+already paying. Anything the broadcasts cannot carry, a run ending or a card moving, refetches
+the whole shape, throttled to one read every two seconds. One consequence to expect: the tool
+column is empty for the first few seconds of watching, because the tool a run last reached for
+is not written to disk, and the view learns it from the next progress broadcast rather than by
+opening transcripts of its own.
 
 ## 14. Watch and talk
 

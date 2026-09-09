@@ -254,6 +254,37 @@ const on = (channel, listener) => {
 const send = (channel, payload) => (listeners.get(channel) ?? new Set()).forEach((listener) => listener(payload))
 const emit = (event) => send('event', event)
 window.notice = (cardId) => send('notice', { slug: 'dyarchia', cardId })
+const problems = () => {
+    const found = structuredClone(DIAGNOSTICS)
+    if (SETTINGS.maxRunning === 0) {
+        found.push({
+            slug: '',
+            cardId: null,
+            problem: 'every board is paused: the cap across all of them is 0, so nothing is claimed'
+        })
+    }
+    if ((REGISTRY[0].maxRunning ?? 1) === 0) {
+        found.push({
+            slug: 'dyarchia',
+            cardId: null,
+            problem: 'this board is paused: its cap is 0, so nothing new is claimed'
+        })
+    }
+    if (!IGNORING.ignored) {
+        found.push({
+            slug: 'dyarchia',
+            cardId: null,
+            problem: 'this project does not ignore .claude/worktrees, so a run shows up in its git status'
+        })
+    }
+    const landed = TREES.filter((tree) => tree.landed && !tree.live).length
+    if (landed) {
+        found.push({ slug: 'dyarchia', cardId: null, problem: `${landed} landed worktree can be removed` })
+    }
+return found
+    return found
+}
+
 const byId = (id) => cards.find((card) => card.id === id)
 const changed = () => emit({ type: 'board:changed', slug: 'dyarchia' })
 
@@ -641,25 +672,65 @@ const ctx = {
             window.alert(`the shell would show '${args[2]}' in its folder`)
             return true
         }
+        if (channel === 'overview') {
+            const running = cards.filter((card) => card.status === 'running')
+            const counts = {}
+            for (const status of RULES.order) counts[status] = 0
+            for (const card of cards) counts[card.status] += 1
+            const empty = {}
+            for (const status of RULES.order) empty[status] = 0
+            return {
+                at: Date.now(),
+                holding: true,
+                across: SETTINGS.maxRunning,
+                running: running.length,
+                boards: [
+                    {
+                        slug: 'dyarchia',
+                        name: REGISTRY[0].name,
+                        cap: REGISTRY[0].maxRunning ?? 1,
+                        running: running.length,
+                        counts
+                    },
+                    { slug: 'notes', name: REGISTRY[1].name, cap: 1, running: 0, counts: empty }
+                ],
+                runs: running.map((card) => {
+                    const run = card.runs[card.runs.length - 1]
+                    const step = SCRIPT[3]
+                    return {
+                        slug: 'dyarchia',
+                        board: REGISTRY[0].name,
+                        cardId: card.id,
+                        title: card.title,
+                        runId: run.runId,
+                        kind: run.kind ?? 'implement',
+                        startedAt: run.startedAt,
+                        state: step.state,
+                        tool: step.tool,
+                        inputTokens: run.inputTokens,
+                        outputTokens: run.outputTokens,
+                        waiting: run.runId === 'run-live'
+                    }
+                }),
+                decisions: structuredClone(EVENTS)
+                    .map((row) => ({
+                        slug: 'dyarchia',
+                        board: REGISTRY[0].name,
+                        at: row.at,
+                        cardId: row.cardId,
+                        title: byId(row.cardId)?.title ?? row.cardId,
+                        kind: row.kind,
+                        detail: row.detail
+                    }))
+                    .sort((a, b) => b.at - a.at),
+                problems: problems()
+            }
+        }
         if (channel === 'events') {
             const rows = structuredClone(EVENTS)
             return args[1] ? rows.filter((row) => row.cardId === args[1]) : rows
         }
-        if (channel === 'diagnostics') {
-            const found = structuredClone(DIAGNOSTICS)
-            if (!IGNORING.ignored) {
-                found.push({
-                    slug: 'dyarchia',
-                    cardId: null,
-                    problem: 'this project does not ignore .claude/worktrees, so a run shows up in its git status'
-                })
-            }
-            const landed = TREES.filter((tree) => tree.landed && !tree.live).length
-            if (landed) {
-                found.push({ slug: 'dyarchia', cardId: null, problem: `${landed} landed worktree can be removed` })
-            }
-            return found
-        }
+        if (channel === 'diagnostics') return problems()
         if (channel === 'worktrees') return structuredClone(TREES)
         if (channel === 'removeWorktree') {
             const index = TREES.findIndex((tree) => tree.path === args[1])

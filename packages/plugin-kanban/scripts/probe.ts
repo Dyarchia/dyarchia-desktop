@@ -410,6 +410,11 @@ async function caps(): Promise<void> {
     check('an empty patch keeps it', (await boards.saveSettings({})).maxRunning, 4)
     await refuses('a global cap that is not one', () => boards.saveSettings({ maxRunning: -2 }), 'cannot be negative')
     await boards.saveSettings({ maxRunning: boards.GLOBAL })
+
+    const counted = board.tally(await board.cards('probe'))
+    check('the tally counts every status it is given', counted.done + counted.ready + counted.todo > 0, true)
+    check('a status nothing is in counts zero, not undefined', counted.archived, 0)
+    check('and the tally has a row per status', Object.keys(counted).length, 9)
 }
 
 console.log('kanban probe')

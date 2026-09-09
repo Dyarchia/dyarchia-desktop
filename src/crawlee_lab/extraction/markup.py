@@ -9,8 +9,10 @@ Fenced code blocks are left exactly as they are. On a documentation site an HTML
 fence is the content, and stripping tags there would corrupt what the page is trying to teach.
 
 The other direction lives here too. A page whose code samples carry no `pre` and no `code` gives
-article extraction nothing to recognise, and the samples are dropped as layout; they are put back
-before extraction runs, which is the only point at which they still exist.
+article extraction nothing to recognise, and the samples are dropped as layout; a sample of a single
+line is recognised and then flattened into inline code, which stalls the fence of the block after
+it. Both are corrected before extraction runs, which is the only point at which the block still
+exists.
 """
 
 from __future__ import annotations
@@ -31,6 +33,8 @@ _GLUED_FENCE = re.compile(r'^(?!\s*[`~]{3,}\s*$)(.*?)([`~]{3,})\s*$')
 _CODE_LINE_BODY = r'<div\s[^>]*\bdata-code-line\b[^>]*>(.*?)</div\s*>'
 _CODE_LINE = re.compile(_CODE_LINE_BODY, re.DOTALL | re.IGNORECASE)
 _CODE_LINE_RUN = re.compile(rf'(?:{_CODE_LINE_BODY}\s*)+', re.DOTALL | re.IGNORECASE)
+_PRE_BLOCK = re.compile(r'(<pre\b[^>]*>)(.*?)(</pre\s*>)', re.DOTALL | re.IGNORECASE)
+_CODE_CLOSE = re.compile(r'</code\s*>\s*$', re.IGNORECASE)
 _BLANK_RUN = re.compile(r'\n{3,}')
 _SPACE_RUN = re.compile(r'[ \t]{2,}')
 _MAX_INDENT = 3
@@ -340,14 +344,40 @@ def restore_line_split_code(html: str) -> str:
     `pre` is where extraction stops stripping. A page that marks its code up properly has no such
     run and comes back unchanged.
 
-    The block ends on a newline of its own. Without it a one-line sample comes back as inline code
-    rather than as a fenced block, and the fence of the block after it is then glued to the end of
-    that line, where no parser can see it. On the same five recipes that cost another 26 lines of
-    code and left 48 stranded delimiters across the corpus.
+    A run of one line is left to `block_single_line_code`, which is what keeps it a block.
     """
     return _CODE_LINE_RUN.sub(_replace_code_line_run, html)
 
 
 def _replace_code_line_run(match: re.Match[str]) -> str:
-    lines = _CODE_LINE.findall(match.group(0))
-    return '<pre><code>' + '\n'.join(lines) + '\n</code></pre>'
+    return '<pre><code>' + '\n'.join(_CODE_LINE.findall(match.group(0))) + '</code></pre>'
+
+
+def block_single_line_code(html: str) -> str:
+    """Give a one-line code sample a second line, so extraction keeps it a block.
+
+    A `pre` holding a single line comes back as inline code rather than as a fenced block, and the
+    opening fence of the block after it is then glued to the end of that line, where no parser can
+    see it. Everything from there reads inverted: the page's prose is stored as code and its code as
+    prose. Measured 2026-09-09 across mistral-docs, where 26 pages were in that state, holding 444
+    lines of prose inside a fence between them; one had 16 of its 31 code lines loose and 12 lines
+    of prose fenced.
+
+    The newline goes inside the innermost `code` element where there is one, not merely before the
+    closing `pre`. Publishers wrap the sample as `pre > code > span`, and a newline outside the
+    `code` leaves the sample inline: it stops the glue and nothing else.
+
+    Only a single-line block is touched, because that is the only one that degrades. Padding every
+    `pre` also rewrites the ones inside a table cell, which moved 27 lines of the Gemini API
+    reference for no gain.
+    """
+    return _PRE_BLOCK.sub(_pad_single_line, html)
+
+
+def _pad_single_line(match: re.Match[str]) -> str:
+    opening, body, closing = match.groups()
+    if '\n' in _ANY_TAG.sub('', body).strip():
+        return match.group(0)
+    if _CODE_CLOSE.search(body):
+        return opening + _CODE_CLOSE.sub('\n</code>', body) + closing
+    return opening + body + '\n' + closing

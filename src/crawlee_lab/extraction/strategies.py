@@ -8,7 +8,12 @@ from typing import Any
 import trafilatura
 
 from crawlee_lab.extraction.dom import DomAdapter, read_fields
-from crawlee_lab.extraction.markup import clean_if_markup, repair_glued_fences, restore_line_split_code
+from crawlee_lab.extraction.markup import (
+    block_single_line_code,
+    clean_if_markup,
+    repair_glued_fences,
+    restore_line_split_code,
+)
 from crawlee_lab.models import ExtractionMode, RunSpec, ScrapedItem, utcnow
 
 
@@ -37,10 +42,12 @@ def main_content(html: str, url: str) -> str | None:
 
     Code blocks are rebuilt before extraction rather than after, because by the time extraction has
     run the code is already gone: a sample split into one bare `div` per line carries no `pre` and
-    no `code` for extraction to recognise, and the lot is dropped as layout.
+    no `code` for extraction to recognise, and the lot is dropped as layout. A block of one line is
+    then given a second one, because that is the block extraction turns into inline code and glues
+    the next fence to.
     """
     extracted = trafilatura.extract(
-        restore_line_split_code(html),
+        block_single_line_code(restore_line_split_code(html)),
         url=url,
         output_format='markdown',
         include_links=True,

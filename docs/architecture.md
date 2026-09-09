@@ -147,8 +147,16 @@ renderer that splits a code sample into one bare `div` per line publishes no `pr
 the sample is indistinguishable from layout and is dropped whole: five Claude Cookbook recipes
 carried 1,411 lines of code between them and 134 survived. `extraction.markup` rebuilds such a run
 into the one `pre` it was meant to be, before extraction rather than after, because afterwards there
-is nothing left to repair. The block is given a closing newline, since a single-line `pre` comes
-back as inline code and glues the next block's fence to the end of its line.
+is nothing left to repair.
+
+A fourth is the same defect from the publisher's side, and it was found by asking whether the other
+HTML-extracted corpora had the third one. A `pre` holding a single line is rendered as inline code,
+and the opening fence of the block after it is glued to the end of that line. 26 mistral-docs pages
+were inverted from that point on, with 444 lines of prose sitting inside a fence between them, and
+the page it hit hardest had 16 of its 31 code lines loose. Giving the block a second line prevents
+it. The newline belongs inside the innermost `code` element, since publishers nest `pre > code >
+span` and a newline outside the `code` stops the glue while leaving the sample inline: half a
+repair, and one that reads as fixed.
 
 Extraction from HTML has a failure of its own, and it is corrected where it is made rather than
 where it is noticed. Collapsing a paragraph and the code block after it onto one line leaves a fence

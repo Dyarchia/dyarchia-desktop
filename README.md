@@ -114,12 +114,18 @@ outright and the invocation is kept, because where a widget stood is worth knowi
 hundred lines that built it are not. Code fences are exempt: a page teaching JavaScript is a page
 whose `export const` is the lesson.
 
-Code blocks are rebuilt before extraction rather than repaired after it. A renderer that emits one
-bare `div` per line of a sample offers no `pre` and no `code` for extraction to recognise, so it
-drops the sample as layout: five Claude Cookbook recipes carried 1,411 lines of code between them
-and extraction kept 134. Such a run of lines is rewritten as the one `pre` it was meant to be, which
-brought the same five to 1,305. A page that marks its code up properly has no such run and is not
-touched.
+Code blocks are rebuilt before extraction rather than repaired after it, in two passes over the
+HTML. A renderer that emits one bare `div` per line of a sample offers no `pre` and no `code` for
+extraction to recognise, so it drops the sample as layout: five Claude Cookbook recipes carried
+1,411 lines of code between them and extraction kept 134. Such a run of lines is rewritten as the
+one `pre` it was meant to be, which brought the same five to 1,305.
+
+A block holding a single line is then given a second one, because extraction renders a one-line
+`pre` as inline code and glues the opening fence of the block after it to the end of that line. 26
+mistral-docs pages were inverted from that point on, with 444 lines of prose fenced between them;
+afterwards, none. The newline goes inside the innermost `code` element, since a newline outside it
+stops the glue and leaves the sample inline. A page that marks its code up properly is not touched
+by either pass.
 
 Markdown extracted from HTML is repaired before it is stored. Extraction can close a paragraph and
 open the code block after it on one line, which leaves a fence delimiter no parser can see and

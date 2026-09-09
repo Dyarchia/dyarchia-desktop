@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from crawlee_lab.extraction.markup import (
+    block_single_line_code,
     clean_embedded_markup,
     clean_if_markup,
     ends_inside_a_fence,
@@ -385,15 +386,6 @@ def test_a_blank_line_inside_the_block_is_kept() -> None:
     ]
 
 
-def test_a_one_line_block_still_ends_on_a_line_of_its_own() -> None:
-    """Extraction renders a single-line pre as inline code, and then glues the fence of the block
-    after it to the end of that line, where no parser can see it. 48 lines of the cookbook arrived
-    that way before the block was given a closing newline."""
-    restored = restore_line_split_code('<div data-code-line="">%pip install anthropic</div>')
-
-    assert restored == '<pre><code>%pip install anthropic\n</code></pre>'
-
-
 def test_two_separate_blocks_do_not_merge_into_one() -> None:
     """Consecutive runs are only consecutive because the prose between them was stripped first."""
     page = '<div data-code-line="">one</div><p>and then</p><div data-code-line="">two</div>'
@@ -406,6 +398,45 @@ def test_a_page_that_marks_its_code_up_properly_is_untouched() -> None:
     page = '<p>Run it:</p><pre><code>import anthropic</code></pre>'
 
     assert restore_line_split_code(page) == page
+
+
+def test_a_one_line_block_is_given_a_second_line() -> None:
+    """Extraction renders a single-line pre as inline code, and then glues the fence of the block
+    after it to the end of that line, where no parser can see it. Everything from there reads
+    inverted. 26 mistral-docs pages were in that state."""
+    page = '<pre><code>%pip install mistralai</code></pre>'
+
+    assert block_single_line_code(page) == '<pre><code>%pip install mistralai\n</code></pre>'
+
+
+def test_the_newline_goes_inside_the_code_element_not_after_it() -> None:
+    """Publishers wrap the sample as pre > code > span. A newline outside the code stops the glue
+    and leaves the sample inline, which is half a repair: on one page that was 20 lines fenced
+    instead of 31."""
+    page = '<pre style="x"><code class="y"><span>import os</span></code></pre>'
+    padded = '<pre style="x"><code class="y"><span>import os</span>\n</code></pre>'
+
+    assert block_single_line_code(page) == padded
+
+
+def test_a_pre_without_a_code_element_is_padded_at_its_end() -> None:
+    """Not every publisher nests one, and the block still has to survive."""
+    assert block_single_line_code('<pre>import os</pre>') == '<pre>import os\n</pre>'
+
+
+def test_a_block_that_already_has_two_lines_is_left_alone() -> None:
+    """Padding every pre also rewrites the ones inside a table cell, which moved 27 lines of the
+    Gemini API reference for no gain."""
+    page = '<pre><code>import os\nimport sys</code></pre>'
+
+    assert block_single_line_code(page) == page
+
+
+def test_a_line_split_run_of_one_line_survives_the_pair() -> None:
+    """The two passes run in order and the rebuilt block is a single-line pre like any other."""
+    rebuilt = restore_line_split_code('<div data-code-line="">%pip install anthropic</div>')
+
+    assert block_single_line_code(rebuilt) == '<pre><code>%pip install anthropic\n</code></pre>'
 
 
 BALANCED_BUT_INVERTED = """# Entity extraction

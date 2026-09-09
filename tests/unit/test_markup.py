@@ -10,6 +10,7 @@ from crawlee_lab.extraction.markup import (
     lines_outside_fences,
     looks_like_markup,
     repair_glued_fences,
+    restore_line_split_code,
     strip_component_definitions,
 )
 
@@ -342,3 +343,66 @@ def test_a_definition_that_never_closes_costs_nothing() -> None:
     worth more than no page at all."""
     runaway = '# Title\n\nexport const Broken = () => {\n  const opener = `{`;\n\nProse below.\n'
     assert strip_component_definitions(runaway) == runaway
+
+
+LINE_SPLIT_CODE = (
+    '<p>First, install the libraries:</p>'
+    '<div class="font-mono" style="tab-size:4">'
+    '<div data-code-line="" class="min-h-[1lh]">%pip install anthropic</div>'
+    '<div data-code-line="" class="min-h-[1lh]">import anthropic</div>'
+    '<div data-code-line="" class="min-h-[1lh]"></div>'
+    '<div data-code-line="" class="min-h-[1lh]">client = <span class="tok">anthropic</span>.Anthropic()</div>'
+    '</div>'
+    '<p>Then call it.</p>'
+)
+
+
+def test_a_code_block_split_into_one_div_per_line_becomes_a_pre() -> None:
+    """The Claude Cookbook renders notebook cells this way. Without a pre or a code element the
+    sample is indistinguishable from layout, and article extraction drops every line of it."""
+    restored = restore_line_split_code(LINE_SPLIT_CODE)
+
+    assert '<pre><code>%pip install anthropic\nimport anthropic' in restored
+    assert 'data-code-line' not in restored
+    assert restored.count('<pre>') == 1
+
+
+def test_the_highlighting_inside_a_line_is_carried_through() -> None:
+    """A pre is where extraction stops stripping, so what is inside it costs nothing to keep."""
+    assert '<span class="tok">anthropic</span>.Anthropic()' in restore_line_split_code(LINE_SPLIT_CODE)
+
+
+def test_a_blank_line_inside_the_block_is_kept() -> None:
+    """Losing it would run two statements together and change what the sample says."""
+    restored = restore_line_split_code(LINE_SPLIT_CODE)
+    body = restored[restored.index('<pre><code>') + len('<pre><code>') : restored.index('</code></pre>')]
+
+    assert body.splitlines() == [
+        '%pip install anthropic',
+        'import anthropic',
+        '',
+        'client = <span class="tok">anthropic</span>.Anthropic()',
+    ]
+
+
+def test_a_one_line_block_still_ends_on_a_line_of_its_own() -> None:
+    """Extraction renders a single-line pre as inline code, and then glues the fence of the block
+    after it to the end of that line, where no parser can see it. 48 lines of the cookbook arrived
+    that way before the block was given a closing newline."""
+    restored = restore_line_split_code('<div data-code-line="">%pip install anthropic</div>')
+
+    assert restored == '<pre><code>%pip install anthropic\n</code></pre>'
+
+
+def test_two_separate_blocks_do_not_merge_into_one() -> None:
+    """Consecutive runs are only consecutive because the prose between them was stripped first."""
+    page = '<div data-code-line="">one</div><p>and then</p><div data-code-line="">two</div>'
+
+    assert restore_line_split_code(page).count('<pre>') == 2
+
+
+def test_a_page_that_marks_its_code_up_properly_is_untouched() -> None:
+    """Every other target extracted from HTML has a pre already, and must not be rewritten."""
+    page = '<p>Run it:</p><pre><code>import anthropic</code></pre>'
+
+    assert restore_line_split_code(page) == page

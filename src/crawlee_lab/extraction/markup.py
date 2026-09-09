@@ -7,6 +7,10 @@ pixel would read as a content change.
 
 Fenced code blocks are left exactly as they are. On a documentation site an HTML example inside a
 fence is the content, and stripping tags there would corrupt what the page is trying to teach.
+
+The other direction lives here too. A page whose code samples carry no `pre` and no `code` gives
+article extraction nothing to recognise, and the samples are dropped as layout; they are put back
+before extraction runs, which is the only point at which they still exist.
 """
 
 from __future__ import annotations
@@ -24,6 +28,9 @@ _TAGGED_LINE = re.compile(r'<[a-zA-Z/]')
 _COMPONENT_DEFINITION = re.compile(r'^export\s+(const|default|function)\b')
 _MARKDOWN_HEADING = re.compile(r'^#{1,6}\s')
 _GLUED_FENCE = re.compile(r'^(?!\s*[`~]{3,}\s*$)(.*?)([`~]{3,})\s*$')
+_CODE_LINE_BODY = r'<div\s[^>]*\bdata-code-line\b[^>]*>(.*?)</div\s*>'
+_CODE_LINE = re.compile(_CODE_LINE_BODY, re.DOTALL | re.IGNORECASE)
+_CODE_LINE_RUN = re.compile(rf'(?:{_CODE_LINE_BODY}\s*)+', re.DOTALL | re.IGNORECASE)
 _BLANK_RUN = re.compile(r'\n{3,}')
 _SPACE_RUN = re.compile(r'[ \t]{2,}')
 _MAX_INDENT = 3
@@ -300,3 +307,30 @@ def clean_if_markup(text: str) -> str:
     """
     text = strip_component_definitions(text)
     return clean_embedded_markup(text) if looks_like_markup(text) else text
+
+
+def restore_line_split_code(html: str) -> str:
+    """Rebuild code blocks that a renderer split into one plain `div` per line.
+
+    Article extraction finds a code sample by its `pre` or `code` element. A renderer that emits
+    one bare `div` per line instead offers neither, so the sample is indistinguishable from layout
+    and the article comes back with the prose and none of the code. Measured 2026-09-09 on the
+    Claude Cookbook, whose recipes are notebooks rendered this way: five recipes carried 1,411
+    lines of code between them and extraction kept 134.
+
+    The run of lines is rewritten as the one `pre` it was always meant to be, before extraction
+    runs. Inner markup is carried through untouched, because syntax highlighting lives there and a
+    `pre` is where extraction stops stripping. A page that marks its code up properly has no such
+    run and comes back unchanged.
+
+    The block ends on a newline of its own. Without it a one-line sample comes back as inline code
+    rather than as a fenced block, and the fence of the block after it is then glued to the end of
+    that line, where no parser can see it. On the same five recipes that cost another 26 lines of
+    code and left 48 stranded delimiters across the corpus.
+    """
+    return _CODE_LINE_RUN.sub(_replace_code_line_run, html)
+
+
+def _replace_code_line_run(match: re.Match[str]) -> str:
+    lines = _CODE_LINE.findall(match.group(0))
+    return '<pre><code>' + '\n'.join(lines) + '\n</code></pre>'

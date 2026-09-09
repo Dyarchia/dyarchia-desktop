@@ -57,7 +57,8 @@ rewriting; both landed in the engine and both are now available to every target.
     extraction.boilerplate  Removal of the header and footer every page     nothing
                             of a run shares
     extraction.markup       Cleaning of markup embedded in documents        nothing
-                            that arrive as markdown
+                            that arrive as markdown, and repair of the
+                            code blocks HTML extraction cannot see
     extraction.frontmatter  Splitting a metadata block off a document       nothing
                             so the corpus judges only its prose
     profiles.schema         On-disk profile shape                           models
@@ -140,6 +141,14 @@ because it is mostly prose; no amount of tag-stripping reaches a `useMemo` call 
 definition is removed outright and its invocation kept, so a reader still learns that a widget stood
 there. A code fence again exempts everything inside it, since a page teaching JavaScript is a page
 whose `export const` is the lesson.
+
+A third gap is not extraction misreading a page but a page giving extraction nothing to read. A
+renderer that splits a code sample into one bare `div` per line publishes no `pre` and no `code`, so
+the sample is indistinguishable from layout and is dropped whole: five Claude Cookbook recipes
+carried 1,411 lines of code between them and 134 survived. `extraction.markup` rebuilds such a run
+into the one `pre` it was meant to be, before extraction rather than after, because afterwards there
+is nothing left to repair. The block is given a closing newline, since a single-line `pre` comes
+back as inline code and glues the next block's fence to the end of its line.
 
 Extraction from HTML has a failure of its own, and it is corrected where it is made rather than
 where it is noticed. Collapsing a paragraph and the code block after it onto one line leaves a fence

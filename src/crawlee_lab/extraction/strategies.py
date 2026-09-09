@@ -8,7 +8,7 @@ from typing import Any
 import trafilatura
 
 from crawlee_lab.extraction.dom import DomAdapter, read_fields
-from crawlee_lab.extraction.markup import clean_if_markup, repair_glued_fences
+from crawlee_lab.extraction.markup import clean_if_markup, repair_glued_fences, restore_line_split_code
 from crawlee_lab.models import ExtractionMode, RunSpec, ScrapedItem, utcnow
 
 
@@ -34,9 +34,13 @@ def main_content(html: str, url: str) -> str | None:
     where it is made. Documents fetched as markdown from a publisher never pass through this
     function: those are stored as published, and repairing somebody else's document would break
     the one promise a snapshot makes.
+
+    Code blocks are rebuilt before extraction rather than after, because by the time extraction has
+    run the code is already gone: a sample split into one bare `div` per line carries no `pre` and
+    no `code` for extraction to recognise, and the lot is dropped as layout.
     """
     extracted = trafilatura.extract(
-        html,
+        restore_line_split_code(html),
         url=url,
         output_format='markdown',
         include_links=True,

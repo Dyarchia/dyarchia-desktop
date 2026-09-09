@@ -5,7 +5,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from crawlee_lab.cli import history_hint
+from euripontida_crawlee.cli import history_hint
 
 
 def repository(path: Path) -> Path:

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from crawlee_lab.config import Settings
-from crawlee_lab.runtime import STORAGE_ENV, use_private_storage
+from euripontida_crawlee.config import Settings
+from euripontida_crawlee.runtime import STORAGE_ENV, use_private_storage
 
 
 def test_a_run_gets_a_working_directory_of_its_own(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

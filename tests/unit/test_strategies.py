@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from crawlee_lab.extraction.dom import SoupAdapter
-from crawlee_lab.extraction.strategies import RawPage, build_item, markdown_title
-from crawlee_lab.models import ExtractionMode, RunSpec
+from euripontida_crawlee.extraction.dom import SoupAdapter
+from euripontida_crawlee.extraction.strategies import RawPage, build_item, markdown_title
+from euripontida_crawlee.models import ExtractionMode, RunSpec
 
 PAGE_URL = 'https://shop.example/catalogue/index.html'
 

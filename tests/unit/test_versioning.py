@@ -8,19 +8,19 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from crawlee_lab.errors import CrawleeLabError
-from crawlee_lab.models import PageStatus
-from crawlee_lab.versioning.diffing import (
+from euripontida_crawlee.errors import CrawleeLabError
+from euripontida_crawlee.models import PageStatus
+from euripontida_crawlee.versioning.diffing import (
     ChangeKind,
     compare,
     is_reordering,
     load_report,
     save_report,
 )
-from crawlee_lab.versioning.hashing import content_hash, normalise
-from crawlee_lab.versioning.manifest import PageRecord, RunManifest, load_manifest, save_manifest
-from crawlee_lab.versioning.report import render_markdown, summary_line
-from crawlee_lab.versioning.vcs import commit_path, repository_root
+from euripontida_crawlee.versioning.hashing import content_hash, normalise
+from euripontida_crawlee.versioning.manifest import PageRecord, RunManifest, load_manifest, save_manifest
+from euripontida_crawlee.versioning.report import render_markdown, summary_line
+from euripontida_crawlee.versioning.vcs import commit_path, repository_root
 
 
 def record(url: str, sha: str, status: PageStatus = PageStatus.OK) -> PageRecord:

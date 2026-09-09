@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from crawlee_lab.config import Settings
-from crawlee_lab.locking import RoundInProgressError, hold, holder
+from euripontida_crawlee.config import Settings
+from euripontida_crawlee.locking import RoundInProgressError, hold, holder
 
 CHILD = """
 import sys, time
 sys.path.insert(0, {src!r})
-from crawlee_lab.config import Settings
-from crawlee_lab.locking import hold
+from euripontida_crawlee.config import Settings
+from euripontida_crawlee.locking import hold
 
 settings = Settings(output_dir={output!r})
 with hold({key!r}, 'the child', settings):

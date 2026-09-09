@@ -1,6 +1,6 @@
 # Architecture
 
-How crawlee-lab is put together, and the reasoning behind the parts that are not obvious.
+How euripontida-crawlee is put together, and the reasoning behind the parts that are not obvious.
 
 ## Index
 
@@ -239,7 +239,7 @@ adds is duration. Without it, a target keeps its current state and the report of
 run; with it, every change acquires a date and an author trail.
 
 The corpora are versioned, but not here. They live in their own repository alongside this one, which
-is what `CRAWLEE_LAB_DATA_DIR` and `CRAWLEE_LAB_PROFILES_DIR` point at, and the tool's own history
+is what `EURIPONTIDA_CRAWLEE_DATA_DIR` and `EURIPONTIDA_CRAWLEE_PROFILES_DIR` point at, and the tool's own history
 stays a history of the tool. The two sides share no import: one names a directory, the other holds
 it.
 

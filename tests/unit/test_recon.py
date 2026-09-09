@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import httpx
 
-from crawlee_lab.models import CrawlerKind
-from crawlee_lab.recon import Recon, _check_markdown_variant
+from euripontida_crawlee.models import CrawlerKind
+from euripontida_crawlee.recon import Recon, _check_markdown_variant
 
 URL = 'https://site.example/page'
 

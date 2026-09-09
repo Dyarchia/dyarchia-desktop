@@ -1,4 +1,4 @@
-# crawlee-lab
+# euripontida-crawlee
 
 On-demand web scraping toolkit built on Crawlee for Python. Point it at a URL and it scrapes. Freeze
 a run that worked into a reusable profile. Snapshot any target to track how its content changes.
@@ -18,19 +18,19 @@ uv run playwright install chromium
 Look before you leap. `inspect` reports what a crawl against a target would have to deal with:
 
 ```bash
-uv run crawlee-lab inspect https://code.claude.com/docs/en/overview
+uv run euripontida-crawlee inspect https://code.claude.com/docs/en/overview
 ```
 
 Scrape a page with no configuration at all:
 
 ```bash
-uv run crawlee-lab crawl https://code.claude.com/docs/en/overview
+uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview
 ```
 
 Pull specific fields, follow links, write CSV:
 
 ```bash
-uv run crawlee-lab crawl https://code.claude.com/docs/en/overview \
+uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
     --crawler parsel \
     --select title=h1 \
     --depth 2 \
@@ -42,16 +42,16 @@ uv run crawlee-lab crawl https://code.claude.com/docs/en/overview \
 Freeze that run and replay it later:
 
 ```bash
-uv run crawlee-lab crawl https://code.claude.com/docs/en/overview \
+uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
     --select title=h1 --save-profile my-site
-uv run crawlee-lab crawl --profile my-site
+uv run euripontida-crawlee crawl --profile my-site
 ```
 
 Track a target over time:
 
 ```bash
-uv run crawlee-lab crawl --profile claude-docs --snapshot --commit
-uv run crawlee-lab diff claude-docs --unified
+uv run euripontida-crawlee crawl --profile claude-docs --snapshot --commit
+uv run euripontida-crawlee diff claude-docs --unified
 ```
 
 ## Commands
@@ -68,7 +68,7 @@ uv run crawlee-lab diff claude-docs --unified
     profiles     List the profiles this project knows about
     version      Print the installed version
 
-Run `uv run crawlee-lab crawl --help` for the full option list.
+Run `uv run euripontida-crawlee crawl --help` for the full option list.
 
 ## Choosing a crawler
 
@@ -145,7 +145,7 @@ target is actually holding, grouped by the path that holds each page and ordered
 sections that are paying their way are separated from the ones that are only bulk:
 
 ```bash
-uv run crawlee-lab urls openai-docs --depth 1
+uv run euripontida-crawlee urls openai-docs --depth 1
 ```
 
     section                                   pages       size   share
@@ -173,9 +173,9 @@ pages hold the previous text, so every run reports what was added, removed and m
 is on disk, committed or not.
 
 Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
-and every run's output sit in their own checkout alongside it, which `CRAWLEE_LAB_DATA_DIR`,
-`CRAWLEE_LAB_PROFILES_DIR` and `CRAWLEE_LAB_OUTPUT_DIR` point at; Crawlee's working directory is
-scratch and goes to a temporary path through `CRAWLEE_LAB_STORAGE_DIR`. All four accept absolute
+and every run's output sit in their own checkout alongside it, which `EURIPONTIDA_CRAWLEE_DATA_DIR`,
+`EURIPONTIDA_CRAWLEE_PROFILES_DIR` and `EURIPONTIDA_CRAWLEE_OUTPUT_DIR` point at; Crawlee's working directory is
+scratch and goes to a temporary path through `EURIPONTIDA_CRAWLEE_STORAGE_DIR`. All four accept absolute
 paths. The matching entries in `.gitignore` are guards rather than homes: they catch a run started
 without a `.env`, which would otherwise drop a corpus back into the tool's tree. See `.env.example`.
 
@@ -190,7 +190,7 @@ files untouched.
 ## Corpora
 
 Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
-lives on the machine that crawls it; the package ships `claude-docs` under `src/crawlee_lab/sites/`
+lives on the machine that crawls it; the package ships `claude-docs` under `src/euripontida_crawlee/sites/`
 as the worked example, and `docs/profiles.md` documents the format. The example does not ask to be
 snapshotted: it is present in every corpus repository, so one that asked would enrol itself in
 every unattended round on the machine. The nine this toolkit was built against, in the group
@@ -261,8 +261,8 @@ change; it does not raise the exit code, because nothing it says did. Three of t
 notification on one real sweep and told nobody anything.
 
 ```bash
-uv run crawlee-lab watch
-uv run crawlee-lab watch claude-docs claude-code-docs
+uv run euripontida-crawlee watch
+uv run euripontida-crawlee watch claude-docs claude-code-docs
 ```
 
 A run covers one corpus repository. `--group` narrows it further, to the profiles inside that
@@ -295,7 +295,7 @@ finish, for whatever reason, leaves the week unmarked, and an unmarked week is a
 logon; without a limit that is not a retry but a loop, and it will spend an hour crawling every time
 the machine is turned on.
 
-Every task carries a name, `labs-docs` by default, and lives under the `\crawlee-lab\` folder of the
+Every task carries a name, `labs-docs` by default, and lives under the `\euripontida-crawlee\` folder of the
 Task Scheduler. The name keys the log and the record of the last week swept, so rounds over
 different corpora sit side by side without taking each other's turn. `-Group` is what a round
 covers; naming profiles instead covers exactly those:
@@ -317,14 +317,14 @@ neither is prose:
 
 - `WATCH.json`, beside `WATCH.md`, holding the same verdict the exit code carries plus, per target,
   its counts and the path to its change report.
-- `crawlee-lab digest`, which bundles the last snapshot's changes into one document: what changed,
+- `euripontida-crawlee digest`, which bundles the last snapshot's changes into one document: what changed,
   the diff, and the file holding each page's current text. The diff says what moved; the file says
   what the page now claims, and a step that only sees the diff writes a changelog instead of an
   answer.
 
 ```bash
-uv run crawlee-lab digest --changed --group docs-labs --out digest.md
-uv run crawlee-lab digest xai-docs --json
+uv run euripontida-crawlee digest --changed --group docs-labs --out digest.md
+uv run euripontida-crawlee digest xai-docs --json
 ```
 
 `scripts/watch.ps1 -OnChange <script>` closes the loop: on exit 10, and only then, it writes the

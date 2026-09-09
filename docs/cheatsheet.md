@@ -1,7 +1,7 @@
 # Cheatsheet
 
-Every command and every option of crawlee-lab on one page. Generated against the installed CLI, not
-from memory. Regenerate any section with `uv run crawlee-lab <command> --help`.
+Every command and every option of euripontida-crawlee on one page. Generated against the installed CLI, not
+from memory. Regenerate any section with `uv run euripontida-crawlee <command> --help`.
 
 ## Index
 
@@ -52,7 +52,7 @@ There are no commit hooks. The checks run when you ask for them, in
 ## 3. crawl
 
 ```text
-crawlee-lab crawl [OPTIONS] [URLS]...
+euripontida-crawlee crawl [OPTIONS] [URLS]...
 ```
 
 URLs are optional when `--profile` is given. Anything typed on the command line overrides the
@@ -125,7 +125,7 @@ Output and history.
 ## 4. inspect
 
 ```text
-crawlee-lab inspect [--render] URL
+euripontida-crawlee inspect [--render] URL
 ```
 
     Option      Meaning
@@ -144,7 +144,7 @@ only for `guide/page.html.md` would have said it has none.
 ## 5. diff
 
 ```text
-crawlee-lab diff [OPTIONS] NAME
+euripontida-crawlee diff [OPTIONS] NAME
 ```
 
     Option           Value      Default    Meaning
@@ -164,7 +164,7 @@ git -C ../crawlee-lab-data diff HEAD~1 -- data/docs-labs/claude-docs/CHANGES.md
 ## 6. digest
 
 ```text
-crawlee-lab digest [OPTIONS] [NAMES...]
+euripontida-crawlee digest [OPTIONS] [NAMES...]
 ```
 
     Option        Value    Default   Meaning
@@ -193,15 +193,15 @@ the report left on disk can be weeks old; when `WATCH.json` shows a sweep newer 
 target is reported as unchanged and its stale pages are not carried forward.
 
 ```bash
-crawlee-lab digest --changed --group docs-labs --out digest.md
-crawlee-lab digest xai-docs --json
-crawlee-lab digest --no-diffs --limit 10
+euripontida-crawlee digest --changed --group docs-labs --out digest.md
+euripontida-crawlee digest xai-docs --json
+euripontida-crawlee digest --no-diffs --limit 10
 ```
 
 ## 7. watch
 
 ```text
-crawlee-lab watch [OPTIONS] [NAMES...]
+euripontida-crawlee watch [OPTIONS] [NAMES...]
 ```
 
     Option      Value    Default    Meaning
@@ -233,8 +233,8 @@ On Windows:
 .\scripts\watch.ps1                                  # sweep, log, notify only if 10 or 1
 .\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs
 .\scripts\register-watch-task.ps1 -Name labs-docs -Unregister
-Start-ScheduledTask -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
-Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\crawlee-lab\'
+Start-ScheduledTask -TaskName 'labs-docs' -TaskPath '\euripontida-crawlee\'
+Get-ScheduledTaskInfo -TaskName 'labs-docs' -TaskPath '\euripontida-crawlee\'
 ```
 
     Parameter       Applies to             Meaning                                 Default
@@ -272,17 +272,17 @@ outside this toolkit. See `scripts/on-change.example.ps1`.
 ## 8. profiles
 
 ```text
-crawlee-lab profiles
+euripontida-crawlee profiles
 ```
 
-Lists every profile, from `profiles/*.yaml` and from `src/crawlee_lab/sites/*.py`, with its crawler,
+Lists every profile, from `profiles/*.yaml` and from `src/euripontida_crawlee/sites/*.py`, with its crawler,
 target and description. The target is the profile's first start URL, or its first sitemap when it is
 sitemap-driven.
 
 ## 9. urls
 
 ```text
-crawlee-lab urls [NAMES...] [OPTIONS]
+euripontida-crawlee urls [NAMES...] [OPTIONS]
 ```
 
 Reads the manifest of every named target back and reports what it is holding, grouped by the path
@@ -310,7 +310,7 @@ target that has never been snapshotted exits 1 and says so.
 ## 10. state
 
 ```text
-crawlee-lab state [OPTIONS]
+euripontida-crawlee state [OPTIONS]
 ```
 
     Option         Value   Default        Meaning
@@ -328,15 +328,15 @@ describes the latest sweep. The JSON names every root, so nothing has to derive 
 convention either.
 
 ```bash
-crawlee-lab state
-crawlee-lab state --repository ../crawlee-lab-data --repository ../crawlee-salesforce-data
-crawlee-lab state --json
+euripontida-crawlee state
+euripontida-crawlee state --repository ../crawlee-lab-data --repository ../crawlee-salesforce-data
+euripontida-crawlee state --json
 ```
 
 ## 11. version
 
 ```text
-crawlee-lab version
+euripontida-crawlee version
 ```
 
 ## 12. Selector syntax
@@ -371,45 +371,45 @@ PowerShell, where the pattern is passed through untouched. Quoting the pattern d
 
 ## 14. Environment variables
 
-Read from the environment or from a `.env` file. All are prefixed `CRAWLEE_LAB_`.
+Read from the environment or from a `.env` file. All are prefixed `EURIPONTIDA_CRAWLEE_`.
 
     Variable                                Default
     ------------------------------------    ----------------------------------
-    CRAWLEE_LAB_USER_AGENT                  crawlee-lab/0.1 (+...)
-    CRAWLEE_LAB_MIN_CONCURRENCY             1
-    CRAWLEE_LAB_DESIRED_CONCURRENCY         3
-    CRAWLEE_LAB_MAX_CONCURRENCY             8
-    CRAWLEE_LAB_MAX_REQUESTS_PER_MINUTE     60
-    CRAWLEE_LAB_MAX_REQUEST_RETRIES         3
-    CRAWLEE_LAB_REQUEST_TIMEOUT_SECONDS     60
-    CRAWLEE_LAB_RESPECT_ROBOTS              true
-    CRAWLEE_LAB_MIN_SUCCESS_RATE            0.9
-    CRAWLEE_LAB_MIN_COVERAGE                0.5
-    CRAWLEE_LAB_HEADLESS                    true
-    CRAWLEE_LAB_DATA_DIR                    data
-    CRAWLEE_LAB_OUTPUT_DIR                  output
-    CRAWLEE_LAB_PROFILES_DIR                profiles
+    EURIPONTIDA_CRAWLEE_USER_AGENT                  euripontida-crawlee/0.1 (+...)
+    EURIPONTIDA_CRAWLEE_MIN_CONCURRENCY             1
+    EURIPONTIDA_CRAWLEE_DESIRED_CONCURRENCY         3
+    EURIPONTIDA_CRAWLEE_MAX_CONCURRENCY             8
+    EURIPONTIDA_CRAWLEE_MAX_REQUESTS_PER_MINUTE     60
+    EURIPONTIDA_CRAWLEE_MAX_REQUEST_RETRIES         3
+    EURIPONTIDA_CRAWLEE_REQUEST_TIMEOUT_SECONDS     60
+    EURIPONTIDA_CRAWLEE_RESPECT_ROBOTS              true
+    EURIPONTIDA_CRAWLEE_MIN_SUCCESS_RATE            0.9
+    EURIPONTIDA_CRAWLEE_MIN_COVERAGE                0.5
+    EURIPONTIDA_CRAWLEE_HEADLESS                    true
+    EURIPONTIDA_CRAWLEE_DATA_DIR                    data
+    EURIPONTIDA_CRAWLEE_OUTPUT_DIR                  output
+    EURIPONTIDA_CRAWLEE_PROFILES_DIR                profiles
 
 ## 15. Where files land
 
     Path                            Root                        Contents
     ----------------------------    ------------------------    ----------------------------------
-    <profiles>/<name>.yaml          CRAWLEE_LAB_PROFILES_DIR    Saved profiles
-    <data>/<name>/pages/**          CRAWLEE_LAB_DATA_DIR        Snapshot payloads
-    <data>/<name>/manifest.json     CRAWLEE_LAB_DATA_DIR        Every URL with its status and hash
-    <data>/<name>/changes.json      CRAWLEE_LAB_DATA_DIR        Last change report, machine readable
-    <data>/<name>/CHANGES.md        CRAWLEE_LAB_DATA_DIR        Last change report, with diffs
-    <data>/WATCH.md                 CRAWLEE_LAB_DATA_DIR        Last sweep across every target
-    <data>/WATCH.json               CRAWLEE_LAB_DATA_DIR        The same sweep, as data
-    <data>/<group>/**               CRAWLEE_LAB_DATA_DIR        The same, for a grouped target
-    <output>/<name>.json            CRAWLEE_LAB_OUTPUT_DIR      Run output in the chosen formats
-    <output>/<name>/*.md            CRAWLEE_LAB_OUTPUT_DIR      One file per page, markdown format
-    <output>/<group>/<name>.jsonl   CRAWLEE_LAB_OUTPUT_DIR      Run output for a grouped target
-    <output>/watch-<name>.log       CRAWLEE_LAB_OUTPUT_DIR      One line per sweep of that task
-    <output>/watch-<name>.out       CRAWLEE_LAB_OUTPUT_DIR      That sweep's own output, as it arrives
-    <output>/watch-<name>.week      CRAWLEE_LAB_OUTPUT_DIR      The week, attempts, whether it finished
-    <output>/digest-<name>.md       CRAWLEE_LAB_OUTPUT_DIR      What -OnChange is handed, when it runs
-    <storage>/run-<pid>/            CRAWLEE_LAB_STORAGE_DIR     Crawlee's working directory, per run
+    <profiles>/<name>.yaml          EURIPONTIDA_CRAWLEE_PROFILES_DIR    Saved profiles
+    <data>/<name>/pages/**          EURIPONTIDA_CRAWLEE_DATA_DIR        Snapshot payloads
+    <data>/<name>/manifest.json     EURIPONTIDA_CRAWLEE_DATA_DIR        Every URL with its status and hash
+    <data>/<name>/changes.json      EURIPONTIDA_CRAWLEE_DATA_DIR        Last change report, machine readable
+    <data>/<name>/CHANGES.md        EURIPONTIDA_CRAWLEE_DATA_DIR        Last change report, with diffs
+    <data>/WATCH.md                 EURIPONTIDA_CRAWLEE_DATA_DIR        Last sweep across every target
+    <data>/WATCH.json               EURIPONTIDA_CRAWLEE_DATA_DIR        The same sweep, as data
+    <data>/<group>/**               EURIPONTIDA_CRAWLEE_DATA_DIR        The same, for a grouped target
+    <output>/<name>.json            EURIPONTIDA_CRAWLEE_OUTPUT_DIR      Run output in the chosen formats
+    <output>/<name>/*.md            EURIPONTIDA_CRAWLEE_OUTPUT_DIR      One file per page, markdown format
+    <output>/<group>/<name>.jsonl   EURIPONTIDA_CRAWLEE_OUTPUT_DIR      Run output for a grouped target
+    <output>/watch-<name>.log       EURIPONTIDA_CRAWLEE_OUTPUT_DIR      One line per sweep of that task
+    <output>/watch-<name>.out       EURIPONTIDA_CRAWLEE_OUTPUT_DIR      That sweep's own output, as it arrives
+    <output>/watch-<name>.week      EURIPONTIDA_CRAWLEE_OUTPUT_DIR      The week, attempts, whether it finished
+    <output>/digest-<name>.md       EURIPONTIDA_CRAWLEE_OUTPUT_DIR      What -OnChange is handed, when it runs
+    <storage>/run-<pid>/            EURIPONTIDA_CRAWLEE_STORAGE_DIR     Crawlee's working directory, per run
 
 None of those roots is this checkout. The corpora, the profiles and the output live in a sibling
 repository, where the first two are tracked and the third is deliberately not; the working directory
@@ -422,19 +422,19 @@ repository owns the data directory.
 Scout a target before writing anything:
 
 ```bash
-uv run crawlee-lab inspect https://site.example/docs/intro
+uv run euripontida-crawlee inspect https://site.example/docs/intro
 ```
 
 Grab one page as clean markdown:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/article --extract auto --format md
+uv run euripontida-crawlee crawl https://site.example/article --extract auto --format md
 ```
 
 Extract structured fields across a catalogue:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/catalogue/ \
+uv run euripontida-crawlee crawl https://site.example/catalogue/ \
     --crawler parsel \
     --select title=h1 \
     --select price=.price \
@@ -448,7 +448,7 @@ uv run crawlee-lab crawl https://site.example/catalogue/ \
 Scrape a page that only exists after JavaScript runs:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/app/listing \
+uv run euripontida-crawlee crawl https://site.example/app/listing \
     --crawler playwright \
     --select rows='all:.row .label'
 ```
@@ -456,46 +456,46 @@ uv run crawlee-lab crawl https://site.example/app/listing \
 Harvest structured data instead of prose:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/product/1 --extract jsonld
+uv run euripontida-crawlee crawl https://site.example/product/1 --extract jsonld
 ```
 
 Collect every link on a page:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/ --extract links
+uv run euripontida-crawlee crawl https://site.example/ --extract links
 ```
 
 Freeze a working run and replay it:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/ --select title=h1 --save-profile my-site
-uv run crawlee-lab crawl --profile my-site --max-pages 10
+uv run euripontida-crawlee crawl https://site.example/ --select title=h1 --save-profile my-site
+uv run euripontida-crawlee crawl --profile my-site --max-pages 10
 ```
 
 Track a documentation site over time:
 
 ```bash
-uv run crawlee-lab crawl --profile claude-docs --commit
-uv run crawlee-lab diff claude-docs --unified
+uv run euripontida-crawlee crawl --profile claude-docs --commit
+uv run euripontida-crawlee diff claude-docs --unified
 ```
 
 Go slower on a fragile target:
 
 ```bash
-uv run crawlee-lab crawl https://site.example/ --concurrency 1 --rate 10 --depth 2
+uv run euripontida-crawlee crawl https://site.example/ --concurrency 1 --rate 10 --depth 2
 ```
 
 Scrape something you own, ignoring its robots.txt:
 
 ```bash
-uv run crawlee-lab crawl https://staging.mysite.internal/ --ignore-robots
+uv run euripontida-crawlee crawl https://staging.mysite.internal/ --ignore-robots
 ```
 
 Find the bulk in a corpus and cut it out:
 
 ```bash
-uv run crawlee-lab urls my-site --depth 1
-uv run crawlee-lab urls my-site --list | grep /blog/
+uv run euripontida-crawlee urls my-site --depth 1
+uv run euripontida-crawlee urls my-site --list | grep /blog/
 ```
 
 Remove the section from the profile's `include`, or add it to `exclude`, then re-run the crawl. The
@@ -509,5 +509,5 @@ uv run ruff format .
 uv run mypy
 uv run pytest -m "not browser"
 uv run pytest
-uv run pytest --cov=crawlee_lab --cov-report=term-missing
+uv run pytest --cov=euripontida_crawlee --cov-report=term-missing
 ```

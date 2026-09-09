@@ -12,7 +12,7 @@
     page in full instead of inferring it from the diff.
 
     Everything here is the part you own: which model, which prompt, where the answer goes, and
-    whether a document gets rewritten or a message gets sent. Nothing in crawlee-lab needs a key.
+    whether a document gets rewritten or a message gets sent. Nothing in euripontida-crawlee needs a key.
 
 .PARAMETER Digest
     Path to the digest the sweep wrote. Passed positionally by watch.ps1.

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from crawlee_lab.config import Settings
-from crawlee_lab.errors import RunAbortedError
-from crawlee_lab.models import FailureRecord, RunSpec, ScrapedItem
-from crawlee_lab.storage.snapshots import churn_warnings, take_snapshot
-from crawlee_lab.versioning.diffing import ChangeKind, ChangeReport, PageChange
+from euripontida_crawlee.config import Settings
+from euripontida_crawlee.errors import RunAbortedError
+from euripontida_crawlee.models import FailureRecord, RunSpec, ScrapedItem
+from euripontida_crawlee.storage.snapshots import churn_warnings, take_snapshot
+from euripontida_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
 
 BASE = 'https://site.example/docs/'
 

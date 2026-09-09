@@ -15,8 +15,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from crawlee_lab.cli import app
-from crawlee_lab.config import get_settings
+from euripontida_crawlee.cli import app
+from euripontida_crawlee.config import get_settings
 
 runner = CliRunner()
 
@@ -36,9 +36,9 @@ def output(result: object) -> str:
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """Point every configured path at a temporary directory for the duration of one test."""
-    monkeypatch.setenv('CRAWLEE_LAB_OUTPUT_DIR', str(tmp_path / 'output'))
-    monkeypatch.setenv('CRAWLEE_LAB_DATA_DIR', str(tmp_path / 'data'))
-    monkeypatch.setenv('CRAWLEE_LAB_PROFILES_DIR', str(tmp_path / 'profiles'))
+    monkeypatch.setenv('EURIPONTIDA_CRAWLEE_OUTPUT_DIR', str(tmp_path / 'output'))
+    monkeypatch.setenv('EURIPONTIDA_CRAWLEE_DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setenv('EURIPONTIDA_CRAWLEE_PROFILES_DIR', str(tmp_path / 'profiles'))
     monkeypatch.chdir(tmp_path)
     get_settings.cache_clear()
     yield tmp_path

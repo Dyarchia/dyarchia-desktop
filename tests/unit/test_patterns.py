@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from crawlee_lab.patterns import to_matcher, to_matchers
+from euripontida_crawlee.patterns import to_matcher, to_matchers
 
 DOCS_URL = 'https://site.example/docs/guide/intro.html'
 

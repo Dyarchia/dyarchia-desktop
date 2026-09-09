@@ -9,8 +9,8 @@ from threading import Thread
 
 import pytest
 
-from crawlee_lab.config import Settings
-from crawlee_lab.models import RunSpec
+from euripontida_crawlee.config import Settings
+from euripontida_crawlee.models import RunSpec
 
 FIXTURES = Path(__file__).parent / 'fixtures'
 

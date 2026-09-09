@@ -3,7 +3,7 @@
     Sweep every tracked target once and notify only when something needs a human.
 
 .DESCRIPTION
-    The wrapper a scheduled task calls. It runs `crawlee-lab watch`, appends the run to a log, and
+    The wrapper a scheduled task calls. It runs `euripontida-crawlee watch`, appends the run to a log, and
     raises a desktop notification only when the sweep found a change or could not vouch for itself.
     A quiet sweep stays quiet: a monitor that speaks every day stops being read.
 
@@ -157,15 +157,15 @@ if ($Repository) {
             throw "$corpus does not look like a corpus repository: no $required directory"
         }
     }
-    $env:CRAWLEE_LAB_DATA_DIR = Join-Path $corpus 'data'
-    $env:CRAWLEE_LAB_PROFILES_DIR = Join-Path $corpus 'profiles'
-    $env:CRAWLEE_LAB_OUTPUT_DIR = Join-Path $corpus 'output'
+    $env:EURIPONTIDA_CRAWLEE_DATA_DIR = Join-Path $corpus 'data'
+    $env:EURIPONTIDA_CRAWLEE_PROFILES_DIR = Join-Path $corpus 'profiles'
+    $env:EURIPONTIDA_CRAWLEE_OUTPUT_DIR = Join-Path $corpus 'output'
 }
 
 # The log belongs wherever the run's other output goes, which the environment may have moved.
-$configuredOutput = $env:CRAWLEE_LAB_OUTPUT_DIR
+$configuredOutput = $env:EURIPONTIDA_CRAWLEE_OUTPUT_DIR
 if ([string]::IsNullOrWhiteSpace($configuredOutput)) {
-    $configuredOutput = Get-DotEnvValue -Path (Join-Path $projectRoot '.env') -Key 'CRAWLEE_LAB_OUTPUT_DIR'
+    $configuredOutput = Get-DotEnvValue -Path (Join-Path $projectRoot '.env') -Key 'EURIPONTIDA_CRAWLEE_OUTPUT_DIR'
 }
 if ([string]::IsNullOrWhiteSpace($configuredOutput)) {
     $logDirectory = Join-Path $projectRoot 'output'
@@ -301,7 +301,7 @@ function Set-WindowTitle {
     param([string]$Phase)
 
     try {
-        $Host.UI.RawUI.WindowTitle = "crawlee-lab: $Name, $Phase"
+        $Host.UI.RawUI.WindowTitle = "euripontida-crawlee: $Name, $Phase"
     }
     catch {
         Write-Log "window title unavailable: $($_.Exception.Message)"
@@ -320,7 +320,7 @@ if ($OncePerWeek -and $state -and $state.week -eq $week) {
     if ($attempts -ge $MaxAttempts) {
         Write-Log "skipped: $week has had $attempts attempts that did not finish, and is given up on"
         if (-not $state.notified) {
-            Show-Notification -Title 'crawlee-lab: the week could not be swept' `
+            Show-Notification -Title 'euripontida-crawlee: the week could not be swept' `
                 -Message "$Name gave up on $week after $attempts attempts that did not finish"
             Write-SweepState $weekFile $week $attempts $false $true
         }
@@ -335,17 +335,17 @@ if ($OncePerWeek) {
 
 Set-Location $projectRoot
 
-$arguments = @('run', 'crawlee-lab', 'watch')
+$arguments = @('run', 'euripontida-crawlee', 'watch')
 if ($Profiles.Count -gt 0) { $arguments += $Profiles }
 elseif ($Group) { $arguments += @('--group', $Group) }
 if ($Commit) { $arguments += '--commit' }
 
 $covers = if ($Group) { "group $Group" } elseif ($Profiles.Count -gt 0) { $Profiles -join ', ' } else { 'every snapshot profile' }
-$corpus = if ($env:CRAWLEE_LAB_DATA_DIR) { $env:CRAWLEE_LAB_DATA_DIR } else { $logDirectory }
+$corpus = if ($env:EURIPONTIDA_CRAWLEE_DATA_DIR) { $env:EURIPONTIDA_CRAWLEE_DATA_DIR } else { $logDirectory }
 
 Set-WindowTitle "sweeping $covers ($week)"
 Write-Host ''
-Write-Host 'crawlee-lab: the weekly documentation sweep'
+Write-Host 'euripontida-crawlee: the weekly documentation sweep'
 Write-Host "  round    $Name, $covers, week $week"
 Write-Host "  corpus   $corpus"
 Write-Host "  log      $logFile"
@@ -385,7 +385,7 @@ elseif ($code -eq 30 -and $OncePerWeek) {
 if ($code -eq 10) {
     Set-WindowTitle 'writing the digest'
     $digestFile = Join-Path $logDirectory "digest-$Name.md"
-    $digestArguments = @('run', 'crawlee-lab', 'digest', '--changed', '--out', $digestFile)
+    $digestArguments = @('run', 'euripontida-crawlee', 'digest', '--changed', '--out', $digestFile)
     if ($Profiles.Count -gt 0) { $digestArguments += $Profiles }
     elseif ($Group) { $digestArguments += @('--group', $Group) }
 
@@ -410,7 +410,7 @@ if ($code -eq 10) {
         if ($followUp -ne 0) {
             # A follow-up that fails quietly is the failure mode this whole script exists to avoid.
             Write-Log "on-change failed with $followUp"
-            Show-Notification -Title 'crawlee-lab: the follow-up failed' `
+            Show-Notification -Title 'euripontida-crawlee: the follow-up failed' `
                 -Message "$OnChange exited with $followUp. The digest is at $digestFile"
         }
         else {
@@ -422,11 +422,11 @@ if ($code -eq 10) {
 Set-WindowTitle "finished ($code)"
 
 switch ($code) {
-    10 { Show-Notification -Title 'crawlee-lab: a tracked site changed' -Message $headline }
+    10 { Show-Notification -Title 'euripontida-crawlee: a tracked site changed' -Message $headline }
     0 { }
     # Another round held the group. Nothing failed and nothing is owed a human, so it stays quiet.
     30 { }
-    default { Show-Notification -Title 'crawlee-lab: the sweep failed' -Message $headline }
+    default { Show-Notification -Title 'euripontida-crawlee: the sweep failed' -Message $headline }
 }
 
 exit $code

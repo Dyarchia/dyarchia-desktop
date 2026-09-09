@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from crawlee_lab.extraction.markup import (
+from euripontida_crawlee.extraction.markup import (
     block_single_line_code,
     clean_embedded_markup,
     clean_if_markup,

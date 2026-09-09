@@ -8,18 +8,18 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from crawlee_lab import registry
-from crawlee_lab.config import Settings
-from crawlee_lab.crawlers.factory import build_crawler
-from crawlee_lab.errors import ConfigurationError, ProfileError
-from crawlee_lab.models import CrawlerKind, ExtractionMode, RunSpec
-from crawlee_lab.profiles.loader import (
+from euripontida_crawlee import registry
+from euripontida_crawlee.config import Settings
+from euripontida_crawlee.crawlers.factory import build_crawler
+from euripontida_crawlee.errors import ConfigurationError, ProfileError
+from euripontida_crawlee.models import CrawlerKind, ExtractionMode, RunSpec
+from euripontida_crawlee.profiles.loader import (
     load_profile_file,
     save_profile,
     save_profile_file,
     save_profile_text,
 )
-from crawlee_lab.profiles.schema import ProfileSpec
+from euripontida_crawlee.profiles.schema import ProfileSpec
 
 MINIMAL = """
 description: A demo target

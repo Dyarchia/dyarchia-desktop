@@ -18,7 +18,7 @@
     corpus: nine targets and about 2,780 pages take some 26 minutes, and the largest group about
     40. Three hours is that with room, not a guess.
 
-    Each sweep gets its own name under the `\crawlee-lab\` folder of the Task Scheduler, so several
+    Each sweep gets its own name under the `\euripontida-crawlee\` folder of the Task Scheduler, so several
     sweeps over different profiles can coexist. The name also keys the wrapper's log and its record
     of which week has been swept, so two tasks must never share one: they would take each other's
     turn and only one of them would ever run.
@@ -27,7 +27,7 @@
     replaces the task of the same name rather than adding a second one.
 
 .PARAMETER Name
-    The name the task appears under, inside the `\crawlee-lab\` folder. Defaults to 'labs-docs',
+    The name the task appears under, inside the `\euripontida-crawlee\` folder. Defaults to 'labs-docs',
     which sweeps every profile that asks for snapshots.
 
 .PARAMETER Profiles
@@ -86,7 +86,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$taskPath = '\crawlee-lab\'
+$taskPath = '\euripontida-crawlee\'
 
 if ($Unregister) {
     Unregister-ScheduledTask -TaskName $Name -TaskPath $taskPath -Confirm:$false

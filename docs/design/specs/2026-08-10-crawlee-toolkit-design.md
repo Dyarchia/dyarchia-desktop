@@ -1,4 +1,4 @@
-# Design: crawlee-lab, an on-demand scraping toolkit built on Crawlee for Python
+# Design: euripontida-crawlee, an on-demand scraping toolkit built on Crawlee for Python
 
 Date: 2026-08-10
 Status: approved
@@ -82,7 +82,7 @@ crawlee/
     profiles/
         books-toscrape.yaml
         quotes-js.yaml
-    src/crawlee_lab/
+    src/euripontida_crawlee/
         cli.py
         config.py
         models.py
@@ -126,13 +126,13 @@ ignored.
 Ad-hoc, with nothing configured:
 
 ```bash
-uv run crawlee-lab crawl https://example.com --depth 2 --extract auto --format jsonl
+uv run euripontida-crawlee crawl https://example.com --depth 2 --extract auto --format jsonl
 ```
 
 Ad-hoc with field selection on the fly:
 
 ```bash
-uv run crawlee-lab crawl https://example.com/products \
+uv run euripontida-crawlee crawl https://example.com/products \
     --select name=h1 \
     --select price=".price" \
     --follow "/products/*"
@@ -141,21 +141,21 @@ uv run crawlee-lab crawl https://example.com/products \
 Reconnaissance before attacking a new target:
 
 ```bash
-uv run crawlee-lab inspect https://example.com
+uv run euripontida-crawlee inspect https://example.com
 ```
 
 Promoting a run into a reusable profile:
 
 ```bash
-uv run crawlee-lab crawl https://example.com --select name=h1 --save-profile my-site
-uv run crawlee-lab crawl --profile my-site
+uv run euripontida-crawlee crawl https://example.com --select name=h1 --save-profile my-site
+uv run euripontida-crawlee crawl --profile my-site
 ```
 
 Versioning and change report:
 
 ```bash
-uv run crawlee-lab crawl --profile claude-docs --snapshot
-uv run crawlee-lab diff claude-docs
+uv run euripontida-crawlee crawl --profile claude-docs --snapshot
+uv run euripontida-crawlee diff claude-docs
 ```
 
 ## Components

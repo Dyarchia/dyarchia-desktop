@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from crawlee_lab.urls import (
+from euripontida_crawlee.urls import (
     apply_suffix,
     collapse_slashes,
     snapshot_relative_path,

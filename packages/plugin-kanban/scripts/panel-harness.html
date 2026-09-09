@@ -41,9 +41,11 @@ const RULES = {
 }
 
 const REGISTRY = [
-    { slug: 'dyarchia', name: 'dyarchia-desktop', workdir: 'C:\\Users\\Usuario\\ai-department\\dyarchia', archived: false, createdAt: 0, order: 0 },
-    { slug: 'notes', name: 'notes', workdir: 'C:\\Users\\Usuario\\ai-department\\notes', archived: false, createdAt: 0, order: 1 }
+    { slug: 'dyarchia', name: 'dyarchia-desktop', workdir: 'C:\\Users\\Usuario\\ai-department\\dyarchia', archived: false, createdAt: 0, order: 0, maxRunning: null },
+    { slug: 'notes', name: 'notes', workdir: 'C:\\Users\\Usuario\\ai-department\\notes', archived: false, createdAt: 0, order: 1, maxRunning: null }
 ]
+
+const SETTINGS = { maxRunning: 2 }
 
 const TITLES = [
     ['triage', 'Decide whether the pty host is a utilityProcess or a thread'],
@@ -378,7 +380,8 @@ const startRun = (card, kind = 'implement') => {
 }
 
 const tick = () => {
-    if (cards.some((card) => card.status === 'running')) return
+    const cap = Math.min(REGISTRY[0].maxRunning ?? 1, SETTINGS.maxRunning)
+    if (cards.filter((card) => card.status === 'running').length >= cap) return
     const next = cards
         .filter((card) => card.status === 'ready' && !card.locked)
         .sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)[0]
@@ -471,6 +474,11 @@ const ctx = {
     },
     invoke: async (channel, ...args) => {
         if (channel === 'boards') return REGISTRY
+        if (channel === 'settings') return { ...SETTINGS }
+        if (channel === 'updateSettings') {
+            if (args[0].maxRunning !== undefined) SETTINGS.maxRunning = Number(args[0].maxRunning)
+            return { ...SETTINGS }
+        }
         if (channel === 'pickWorkdir') return 'C:\\Users\\Usuario\\ai-department\\dyarchia'
         if (channel === 'board') {
             const board = REGISTRY.find((entry) => entry.slug === args[0])
@@ -484,7 +492,8 @@ const ctx = {
                 workdir: args[0].workdir,
                 archived: false,
                 createdAt: Date.now(),
-                order: REGISTRY.length
+                order: REGISTRY.length,
+                maxRunning: null
             }
             REGISTRY.push(created)
             emit({ type: 'boards:changed' })
@@ -497,6 +506,13 @@ const ctx = {
             if (!name) throw new Error('the board needs a name')
             board.name = name
             if (args[1].workdir !== undefined) board.workdir = args[1].workdir
+            if (args[1].maxRunning !== undefined) {
+                const cap = args[1].maxRunning === null ? null : Number(args[1].maxRunning)
+                if (cap !== null && (!Number.isInteger(cap) || cap < 0 || cap > 10)) {
+                    throw new Error('a cap is a whole number of cards, 0 to 10')
+                }
+                board.maxRunning = cap
+            }
             emit({ type: 'boards:changed' })
             return board
         }

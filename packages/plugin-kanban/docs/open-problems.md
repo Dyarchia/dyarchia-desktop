@@ -24,20 +24,6 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**A review run does not wait for the per-board cap.** `dispatch.review` starts the reviewer the
-moment the button is pressed, so a board whose cap is one card can hold two running sessions:
-the one the dispatcher claimed and the one the operator asked for. It is deliberate and it is
-not free.
-
-- The alternative was refusing the button while the board is busy, and a card reaches `review`
-  exactly when the dispatcher is most likely to have claimed the next one, so the refusal would
-  be the common case rather than the rare one.
-- The reading that makes it consistent: the cap governs what the dispatcher spends on its own,
-  not what the operator asks for by hand. Nothing enforces that reading in code.
-- **Done looks like** the configurable caps of the reference system-parity.md section 5 landing with a
-  decision written into them: either a review counts against the cap, or the cap gets a second
-  number for what an operator may add on top. `dispatch.ts`, `PER_BOARD` and `review`.
-
 **"A reviewer does not edit" is enforced by the brief and by nothing else.** A review run
 inherits the card's permission mode, which defaults to `acceptEdits`, and it runs in the
 operator's own checkout rather than in a worktree. The brief tells it to read and judge; a
@@ -157,6 +143,12 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+A review run starts outside the per-board    the caps became         design.md 13
+cap, and nothing said whether that was a     settable, and the       and 10.6.6
+decision or an accident                      decision is written
+                                             into the form: caps
+                                             bind the dispatcher's
+                                             claim, not the hand
 createCard accepted any slug and created a   every card channel      commit 2784ca7
 board the registry had never heard of        resolves the board
 The drawer mounted xterm on a detached node  open after the drawer   commit 2784ca7

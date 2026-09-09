@@ -1713,6 +1713,22 @@ global       default 2. The real protection. Without it, five boards at 2 each w
 The reference system defaults to unlimited, which is only defensible when the executor is a
 dedicated machine.
 
+Both are **settable as of 2026-09-09**, and three things fell out of making them so:
+
+- **The per-board cap lives on the board, the global one does not.** `BoardMeta` gains
+  `maxRunning: number | null`, where null means "the default", so a board written before this
+  reads as one rather than as zero. The global cap has no board to live on, so it is
+  `kanban/settings.json` beside the registry, one number, read once per tick.
+- **0 is a cap, and it means paused.** Nothing new is claimed and what is already running
+  finishes, which is the thing an operator actually wants when a laptop is busy and archiving
+  the board would be a lie. A paused board says so in the health strip, and it stops claiming
+  the "claimable and never claimed" diagnostic, which would otherwise accuse the operator of
+  a stall they asked for.
+- **The caps bind the dispatcher's claim, not the operator's hand.** A review asked for with
+  the drawer's button starts whatever the caps say, which is the reading 10.6.6 wrote down and
+  this is where it becomes a decision rather than an accident. The settings copy says so in
+  the form, because a number that silently does not mean what it says is worse than no number.
+
 Three requirements that are easy to miss:
 
 - **Kill the tree, not the process.** The CLI spawns git, node and shells.

@@ -224,6 +224,8 @@ export const STYLES = `
 
 .kanban-row > .dya-field { flex: 1; min-width: 0; }
 
+.kanban-row > .kanban-cap { flex: 0 0 4rem; }
+
 .kanban-body-field {
     min-height: 128px;
     resize: vertical;

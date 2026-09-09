@@ -20,6 +20,7 @@ import type {
     Card,
     CardDraft,
     CardPatch,
+    Settings,
     Status
 } from './types.js'
 
@@ -82,6 +83,14 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('boards', () => boards.list())
 
+    ctx.handle('settings', () => boards.settings())
+
+    ctx.handle('updateSettings', async (raw) => {
+        const saved = await boards.saveSettings(raw as Partial<Settings>)
+        await dispatch.force(sink)
+        return saved
+    })
+
     ctx.handle('pickWorkdir', async () => {
         const picked = await dialog.showOpenDialog({
             title: 'Choose the project directory',
@@ -97,8 +106,10 @@ export function activate(ctx: PluginMainContext): void {
     })
 
     ctx.handle('updateBoard', async (slug, raw) => {
-        const updated = await boards.update(String(slug), raw as Partial<BoardDraft>)
+        const patch = raw as Partial<BoardDraft>
+        const updated = await boards.update(String(slug), patch)
         registryChanged()
+        if (patch.maxRunning !== undefined) await dispatch.force(sink)
         return updated
     })
 

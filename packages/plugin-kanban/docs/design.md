@@ -28,6 +28,7 @@ plugins.
 - [10.6 The review run](#106-the-review-run)
 - [11. Termination and the evidence ladder](#11-termination-and-the-evidence-ladder)
 - [12. Failure taxonomy](#12-failure-taxonomy)
+- [12.4 Several cards at once](#124-several-cards-at-once)
 - [13. The dispatcher](#13-the-dispatcher)
 - [13.1 The dispatcher, seen](#131-the-dispatcher-seen)
 - [14. Watch and talk](#14-watch-and-talk)
@@ -1681,6 +1682,29 @@ Do not relaunch a card whose previous run ended in a quota or auth error, or tha
 successfully inside a short guard window. Emit a diagnostic and leave it claimable; it gets
 another chance on a later tick. This exists because a 401 does not fix itself in five seconds,
 and a dispatcher without this guard will burn the whole board against a bad credential.
+
+### 12.4 Several cards at once
+
+A board with forty cards is one where every lifecycle verb wants a selection, and the
+reference system gives each of its verbs a list of ids for exactly that reason. Three
+decisions make it fit here rather than bolting a second board on the side:
+
+- **A mark is not a selection.** The drawer already owns `selected`, one card, and it is the
+  thing that opens a session. Marks are a separate set: Ctrl-click toggles one, Shift-click
+  takes a range down a column, a plain click clears them and goes back to the drawer. Nothing
+  about one card's drawer changes because five are marked.
+- **The verbs offered are the ones every marked card can do.** The move menu is the
+  INTERSECTION of the transition table over the marks, so a selection holding a running card
+  offers nothing and says so on the button, rather than offering a move that will half fail.
+- **A batch is one write, and a refusal is per card.** `moveCards` and `deleteCards` take the
+  whole list, apply what they can against one loaded board file, save once and answer
+  `{ done, refused }` with a reason per refusal. Doing it as N calls from the renderer would
+  rotate the board's backups N times, which is how a batch delete quietly destroys the
+  backup history it might be needed to undo.
+
+Dependencies make the delete case less obvious than it looks: a parent whose child is also
+marked can go, and a parent whose child is not cannot. Since refusing one card can strand
+another that was only legal because of it, the check runs to a fixpoint rather than once.
 
 ## 13. The dispatcher
 

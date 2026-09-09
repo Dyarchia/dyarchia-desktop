@@ -167,6 +167,25 @@ export function activate(ctx: PluginMainContext): void {
         return card
     })
 
+    ctx.handle('moveCards', async (slug, raw, to) => {
+        const target = await open(String(slug))
+        const wanted = (raw as { id: string; rev: number }[]).map((entry) => ({
+            id: String(entry.id),
+            rev: Number(entry.rev)
+        }))
+        const result = await board.moveCards(target, wanted, to as Status)
+        await board.promote(target, Date.now())
+        changed(target)
+        return result
+    })
+
+    ctx.handle('deleteCards', async (slug, raw) => {
+        const target = await open(String(slug))
+        const result = await board.deleteCards(target, (raw as unknown[]).map(String))
+        changed(target)
+        return result
+    })
+
     ctx.handle('deleteCard', async (slug, id) => {
         const target = await open(String(slug))
         const done = await board.deleteCard(target, String(id))

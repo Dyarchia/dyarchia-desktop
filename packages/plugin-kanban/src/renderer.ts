@@ -186,6 +186,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     let tab: 'terminal' | 'history' | 'board' = 'terminal'
     let drawnId: string | null = null
     let drawnRev = -1
+    const marked = new Set<string>()
+    let lastMark: string | null = null
     let watching = false
     let overview: Overview | null = null
     let watchTimer = 0
@@ -225,6 +227,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const stage = el('div', 'kanban-stage')
     stage.hidden = true
 
+    const marks = el('div', 'dya-bar kanban-marks')
+    marks.hidden = true
+
     const setup = el('div', 'kanban-setup')
     setup.hidden = true
 
@@ -238,7 +243,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     error.hidden = true
 
     main.append(board, drawer)
-    root.append(bar, main, setup, watch, error, live)
+    root.append(bar, marks, main, setup, watch, error, live)
     container.appendChild(root)
 
     const say = (text: string): void => {
@@ -348,7 +353,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.addEventListener('focus', () => {
             focused = card.id
         })
-        shell.addEventListener('click', () => select(card.id))
+        shell.addEventListener('click', (event) => {
+            if (event.ctrlKey || event.metaKey) {
+                event.preventDefault()
+                toggleMark(card.id)
+                return
+            }
+            if (event.shiftKey) {
+                event.preventDefault()
+                markThrough(card.id)
+                return
+            }
+            if (marked.size) clearMarks()
+            select(card.id)
+        })
         shell.addEventListener('dblclick', () => select(card.id))
 
         return { root: shell, title, dot, note }
@@ -387,6 +405,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         node.root.dataset.locked = String(card.locked)
         node.root.dataset.waiting = String(live?.waiting === true)
         node.root.dataset.selected = String(selected === card.id)
+        node.root.dataset.marked = String(marked.has(card.id))
         node.root.dataset.problem = String(problems.has(card.id))
         node.root.dataset.rev = String(card.rev)
         node.root.setAttribute('aria-label', `${card.title}, ${status}`)
@@ -440,6 +459,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
 
         meter.textContent = meta ? `${meta.name} · ${cards.length} cards · ${meta.workdir}` : ''
+        paintMarks()
         paintDrawer()
     }
 
@@ -474,6 +494,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         for (const id of [...problems.keys()]) {
             if (!cards.some((card) => card.id === id)) problems.delete(id)
         }
+        for (const id of [...marked]) {
+            if (!cards.some((card) => card.id === id)) marked.delete(id)
+        }
         clearError()
 
         setup.hidden = true
@@ -487,6 +510,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const renderAbsence = (missing: string | null): void => {
         if (watching) closeWatch()
+        if (marked.size) clearMarks()
+        marks.hidden = true
         main.hidden = true
         bar.hidden = registry.length === 0
         boardButton.textContent = 'board'
@@ -808,6 +833,148 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         )
         if (!asked) return
         await invoke('addIgnore', created.slug).catch(fail)
+    }
+
+    const markable = (): Card[] => cards.filter((card) => marked.has(card.id))
+
+    function paintMarks(): void {
+        for (const [id, node] of nodes) node.root.dataset.marked = String(marked.has(id))
+
+        const chosen = markable()
+        marks.hidden = chosen.length === 0
+        marks.replaceChildren()
+        if (!chosen.length) return
+
+        const table = rules
+        const targets = table
+            ? table.order.filter((status) =>
+                  chosen.every((card) => table.allow[shown(card)].includes(status))
+              )
+            : []
+
+        const count = el('span', 'kanban-card-note', `${chosen.length} selected`)
+        const moveAll = el('button', 'dya-button dya-button--sm', 'move')
+        moveAll.type = 'button'
+        moveAll.disabled = targets.length === 0
+        moveAll.title = targets.length
+            ? 'the states every selected card may go to'
+            : 'these cards have no state they can all go to'
+        moveAll.addEventListener('click', () => {
+            if (!table) return
+            openMenu({
+                anchor: moveAll,
+                rows: targets.map((status) => ({
+                    key: status,
+                    label: table.labels[status],
+                    group: `move ${chosen.length} to`,
+                    direct: true,
+                    leaves: [{ label: table.labels[status], value: status }]
+                })),
+                filter: 'filter states',
+                onPick: (row) => bulkMove(row.key as Status)
+            })
+        })
+
+        const removeAll = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete')
+        removeAll.type = 'button'
+        removeAll.addEventListener('click', () => bulkDelete())
+
+        const clear = el('button', 'dya-button dya-button--quiet dya-button--sm', 'clear')
+        clear.type = 'button'
+        clear.addEventListener('click', () => clearMarks())
+
+        marks.append(count, el('span', 'kanban-spacer'), moveAll, removeAll, clear)
+    }
+
+    function clearMarks(): void {
+        marked.clear()
+        lastMark = null
+        paintMarks()
+    }
+
+    function toggleMark(id: string): void {
+        if (marked.has(id)) marked.delete(id)
+        else {
+            marked.add(id)
+            lastMark = id
+        }
+        paintMarks()
+    }
+
+    function markThrough(id: string): void {
+        const card = cardById(id)
+        const from = lastMark ? cardById(lastMark) : null
+        if (!card || !from || shown(from) !== shown(card)) {
+            toggleMark(id)
+            return
+        }
+
+        const here = columnCards(shown(card))
+        const a = here.findIndex((entry) => entry.id === from.id)
+        const b = here.findIndex((entry) => entry.id === card.id)
+        if (a < 0 || b < 0) {
+            toggleMark(id)
+            return
+        }
+        for (const entry of here.slice(Math.min(a, b), Math.max(a, b) + 1)) marked.add(entry.id)
+        lastMark = id
+        paintMarks()
+    }
+
+    const told = (verb: string, result: { done: string[]; refused: { id: string; why: string }[] }): void => {
+        const first = result.refused[0]
+        const name = first ? (cardById(first.id)?.title ?? 'a card') : ''
+        if (!result.refused.length) {
+            say(`${result.done.length} ${verb}`)
+            return
+        }
+        if (!result.done.length) {
+            say(`nothing ${verb}. ${name}: ${first.why}`)
+            return
+        }
+        say(`${result.done.length} ${verb}, ${result.refused.length} refused. ${name}: ${first.why}`)
+    }
+
+    function bulkMove(to: Status): void {
+        const wanted = markable().map((card) => ({ id: card.id, rev: card.rev }))
+        if (!wanted.length) return
+        void invoke<{ done: string[]; refused: { id: string; why: string }[] }>(
+            'moveCards',
+            meta?.slug,
+            wanted,
+            to
+        )
+            .then((result) => {
+                for (const id of result.done) marked.delete(id)
+                told(`moved to ${to}`, result)
+                return refresh()
+            })
+            .catch((thrown: unknown) => fail(thrown))
+    }
+
+    function bulkDelete(): void {
+        const chosen = markable()
+        if (!chosen.length) return
+        const warning =
+            `Delete ${chosen.length} cards? Their run history and every artifact those runs left go ` +
+            'with them, and none of that is recoverable.'
+        if (!window.confirm(warning)) return
+
+        void invoke<{ done: string[]; refused: { id: string; why: string }[] }>(
+            'deleteCards',
+            meta?.slug,
+            chosen.map((card) => card.id)
+        )
+            .then((result) => {
+                for (const id of result.done) {
+                    marked.delete(id)
+                    problems.delete(id)
+                    if (selected === id) select(null)
+                }
+                told('deleted', result)
+                return refresh()
+            })
+            .catch((thrown: unknown) => fail(thrown))
     }
 
     const openMoveMenu = (id: string, anchor: HTMLElement): void => {
@@ -1572,6 +1739,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return
         }
 
+        if (event.key === 'x' || (event.key === ' ' && event.ctrlKey)) {
+            event.preventDefault()
+            toggleMark(card.id)
+            return
+        }
+
+        if (event.key === 'Escape' && marked.size) {
+            event.preventDefault()
+            clearMarks()
+            return
+        }
+
         if (event.key === 'm' || event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
             event.preventDefault()
             const node = nodes.get(card.id)
@@ -1808,6 +1987,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const openWatch = (): void => {
         watching = true
         watchButton.textContent = 'board'
+        marks.hidden = true
         main.hidden = true
         setup.hidden = true
         watch.hidden = false
@@ -1820,6 +2000,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         watchButton.textContent = 'watch'
         watch.hidden = true
         main.hidden = meta === null
+        marks.hidden = marked.size === 0
         watch.replaceChildren()
         overview = null
         if (watchTimer) {

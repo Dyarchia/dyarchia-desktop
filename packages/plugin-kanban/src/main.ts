@@ -280,6 +280,8 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('diagnostics', () => dispatch.diagnose())
 
+    ctx.handle('overview', () => dispatch.overview())
+
     ctx.handle('worktrees', async (slug) => dispatch.inventory(await boards.find(String(slug))))
 
     ctx.handle('removeWorktree', async (slug, path) => {

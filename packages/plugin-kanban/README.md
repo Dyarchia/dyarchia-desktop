@@ -79,7 +79,12 @@ Fan-out                  `followups` in the terminal block become child cards ga
                          on the card that proposed them
 Health                   a strip in the bar naming what is wrong: cards waiting on
                          you, cards claimable and never claimed, liveness unknown,
-                         and which process holds the dispatcher
+                         a paused board, and which process holds the dispatcher
+Watch                    the `watch` button: every board at once, with what is running
+                         against each cap, the backlog behind it, what every live run
+                         is doing right now, and the last two dozen decisions across
+                         all of them. A running row is a way in: it opens that card on
+                         its own board with the session attached
 Notices                  the five moments the board needs you reach you when you are
                          not looking: a worker waiting on a permission prompt, and a
                          run that completed, blocked, broke the protocol or stopped.
@@ -168,10 +173,10 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 134 checks over slug validation, three-valued liveness, both
+node, no window and no IPC. 137 checks over slug validation, three-valued liveness, both
 parsers and the verdict, dependency cycles, rev fencing, promotion, unblock, scheduled cards,
-the worktree listing, both briefs, both concurrency caps, and what a deleted card takes with
-it. It writes to a temp userData and takes about a
+the worktree listing, both briefs, both concurrency caps, the status tally, and what a deleted
+card takes with it. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
@@ -207,7 +212,10 @@ attach               a MessagePort pty that prints a permission prompt, echoes w
                      is typed, answers 1, 2 and 3 differently, and keeps chattering
 runEvents            nine canned rows covering all five kinds, including a tool
                      result that is an error
-diagnostics          two problems, so the health strip and its menu are populated
+diagnostics          two problems, so the health strip and its menu are populated,
+                     plus a paused board when a cap is set to 0
+overview             the watch view over two boards, one of them empty, with the
+                     live run, the canned decision log and those same problems
 reviewCard           a review run with no worktree, ending in a verdict: approved
                      into done, then changes requested into ready with the reviewer's
                      summary left as a comment
@@ -271,6 +279,8 @@ boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
 settings      updateSettings              the global concurrency cap, which has no board
+overview      every board at once, for the watch view: caps, backlog, live runs,
+              problems and the merged decision log
 reviewCard    starts a review run on a card that is in review, at once
 attachments   reveal        worktrees     removeWorktree
 ignoreState   addIgnore     addAttachments              removeAttachment
@@ -318,6 +328,10 @@ RULE                        WHY
                             transition: its transform is written every frame
 .kanban-sr                  a screen-reader-only region for the live announcements.
                             The system has no such class. See section 6
+.kanban-watch-run           a row in the watch view is a BUTTON, because it is a way
+                            into the card and its session rather than a readout, and
+                            a button is what a keyboard expects to reach. The rule
+                            strips the button chrome and gives it the row layout
 .kanban-stage               the drawer's terminal band, on --dya-surface-1 because
                             xterm computes its own contrast and has to know what it
                             is drawing on

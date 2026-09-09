@@ -14,9 +14,11 @@ import type {
     BoardPayload,
     Card,
     KanbanEvent,
+    Overview,
     Rules,
     Settings,
-    Status
+    Status,
+    WatchRun
 } from './types.js'
 
 interface HistoryRow {
@@ -184,6 +186,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     let tab: 'terminal' | 'history' | 'board' = 'terminal'
     let drawnId: string | null = null
     let drawnRev = -1
+    let watching = false
+    let overview: Overview | null = null
+    let watchTimer = 0
 
     const root = el('div', 'kanban')
 
@@ -199,12 +204,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const tickButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'dispatch')
     tickButton.type = 'button'
     tickButton.title = 'sweep every board now instead of waiting for the tick'
+    const watchButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'watch')
+    watchButton.type = 'button'
+    watchButton.title = 'every board at once: what is running, what is queued, what was decided'
     const spacer = el('span', 'kanban-spacer')
     const healthButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'health')
     healthButton.type = 'button'
     healthButton.hidden = true
     const meter = el('span', 'kanban-meta')
-    bar.append(boardButton, titleField, addButton, tickButton, spacer, healthButton, meter)
+    bar.append(boardButton, titleField, addButton, tickButton, watchButton, spacer, healthButton, meter)
 
     const main = el('div', 'kanban-main')
     const board = el('div', 'kanban-board')
@@ -220,6 +228,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const setup = el('div', 'kanban-setup')
     setup.hidden = true
 
+    const watch = el('div', 'kanban-watch')
+    watch.hidden = true
+
     const live = el('div', 'kanban-sr')
     live.setAttribute('aria-live', 'polite')
 
@@ -227,7 +238,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     error.hidden = true
 
     main.append(board, drawer)
-    root.append(bar, main, setup, error, live)
+    root.append(bar, main, setup, watch, error, live)
     container.appendChild(root)
 
     const say = (text: string): void => {
@@ -466,7 +477,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         clearError()
 
         setup.hidden = true
-        main.hidden = false
+        main.hidden = watching
+        watch.hidden = !watching
         bar.hidden = false
         boardButton.textContent = meta.name
         reconcile()
@@ -474,6 +486,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const renderAbsence = (missing: string | null): void => {
+        if (watching) closeWatch()
         main.hidden = true
         bar.hidden = registry.length === 0
         boardButton.textContent = 'board'
@@ -1601,6 +1614,26 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const event = raw as KanbanEvent | CardProgress | { type: string; slug: string; cardId: string }
         const kind = (event as { type: string }).type
 
+        if (watching) {
+            if (kind === 'card:progress' && overview) {
+                const live = event as CardProgress
+                const run = overview.runs.find(
+                    (entry) => entry.slug === live.slug && entry.cardId === live.cardId
+                )
+                if (run) {
+                    run.state = live.state
+                    run.tool = live.tool
+                    run.inputTokens = live.inputTokens
+                    run.outputTokens = live.outputTokens
+                    run.waiting = live.waiting
+                    clock = Date.now()
+                    paintWatch()
+                    return
+                }
+            }
+            restock()
+        }
+
         if (kind === 'boards:changed') {
             void refresh().catch(fail)
             return
@@ -1629,6 +1662,14 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     boardButton.addEventListener('click', () => openBoardMenu(boardButton))
+    watchButton.addEventListener('click', () => {
+        if (watching) {
+            closeWatch()
+            void refresh().catch(fail)
+            return
+        }
+        openWatch()
+    })
     healthButton.addEventListener('click', () => showHealth())
     tickButton.addEventListener('click', () => {
         void invoke('dispatchNow')
@@ -1640,6 +1681,160 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (event.key === 'Enter') add()
     })
     board.addEventListener('keydown', onBoardKey)
+
+    const watchRow = (run: WatchRun): HTMLElement => {
+        const row = el('button', 'kanban-watch-run')
+        row.type = 'button'
+        row.title = 'open this card, and its session'
+
+        const dot = el('span', 'kanban-dot')
+        dot.dataset.tone = run.waiting ? 'warning' : 'accent'
+
+        const said = [
+            run.board,
+            run.kind === 'review' ? 'review' : null,
+            ago(run.startedAt, clock),
+            run.tool ?? run.state,
+            `${tokens(run.inputTokens + run.outputTokens)} tok`
+        ]
+            .filter(Boolean)
+            .join(' · ')
+
+        row.append(dot, el('span', 'dya-text', run.title), el('span', 'kanban-card-note', said))
+        if (run.waiting) row.append(el('span', 'dya-tag', 'waiting on you'))
+
+        row.addEventListener('click', () => {
+            const target = run.slug
+            const card = run.cardId
+            closeWatch()
+            if (target === meta?.slug) {
+                select(card)
+                focusCard(card)
+                return
+            }
+            write(pinKey, target)
+            void refresh()
+                .then(() => {
+                    select(card)
+                    focusCard(card)
+                })
+                .catch(fail)
+        })
+        return row
+    }
+
+    const paintWatch = (): void => {
+        if (!overview) return
+        const shape = overview
+        const holder = el('div', 'kanban-watch-body')
+
+        const head = el('div', 'kanban-row')
+        head.append(
+            el('span', 'dya-text', `${shape.running} running of ${shape.across}`),
+            el(
+                'span',
+                'kanban-card-note',
+                `across every board · ` +
+                    `${shape.holding ? 'this window is the dispatcher' : 'another window holds the dispatcher'}` +
+                    `${shape.across === 0 ? ' · everything is paused' : ''}`
+            )
+        )
+        holder.append(head)
+
+        const boardsGroup = el('div', 'kanban-group')
+        boardsGroup.append(el('span', 'dya-label', 'boards'))
+        for (const entry of shape.boards) {
+            const row = el('div', 'kanban-run')
+            const dot = el('span', 'kanban-dot')
+            dot.dataset.tone = entry.running ? 'accent' : 'idle'
+            const queued = [
+                `${entry.running}/${entry.cap} running`,
+                `${entry.counts.ready} ready`,
+                `${entry.counts.blocked} blocked`,
+                `${entry.counts.review} in review`,
+                `${entry.counts.todo + entry.counts.triage + entry.counts.scheduled} waiting`
+            ].join(' · ')
+            row.append(dot, el('span', 'dya-text', entry.name), el('span', 'kanban-card-note', queued))
+            if (entry.cap === 0) row.append(el('span', 'dya-tag', 'paused'))
+            boardsGroup.appendChild(row)
+        }
+        holder.appendChild(boardsGroup)
+
+        const runsGroup = el('div', 'kanban-group')
+        runsGroup.append(el('span', 'dya-label', 'running now'))
+        if (!shape.runs.length) {
+            runsGroup.appendChild(el('div', 'dya-empty', 'nothing is running'))
+        }
+        for (const run of shape.runs) runsGroup.appendChild(watchRow(run))
+        holder.appendChild(runsGroup)
+
+        if (shape.problems.length) {
+            const problemGroup = el('div', 'kanban-group')
+            problemGroup.append(el('span', 'dya-label', 'problems'))
+            for (const entry of shape.problems) {
+                const row = el('div', 'kanban-run')
+                const dot = el('span', 'kanban-dot')
+                dot.dataset.tone = 'warning'
+                const where = shape.boards.find((board) => board.slug === entry.slug)?.name ?? 'this machine'
+                row.append(dot, el('span', 'dya-text', where), el('span', 'kanban-card-note', entry.problem))
+                problemGroup.appendChild(row)
+            }
+            holder.appendChild(problemGroup)
+        }
+
+        const log = el('div', 'kanban-group')
+        log.append(el('span', 'dya-label', 'recent decisions'))
+        if (!shape.decisions.length) log.appendChild(el('div', 'dya-empty', 'nothing yet'))
+        for (const row of shape.decisions) {
+            const line = el('div', 'kanban-run')
+            line.append(
+                el('span', 'dya-tag', row.kind),
+                el('span', 'dya-text', row.title),
+                el('span', 'kanban-card-note', `${row.board} · ${when(row.at)}${row.detail ? ` · ${row.detail}` : ''}`)
+            )
+            log.appendChild(line)
+        }
+        holder.appendChild(log)
+
+        watch.replaceChildren(holder)
+    }
+
+    const loadWatch = async (): Promise<void> => {
+        overview = await invoke<Overview>('overview')
+        clock = overview.at
+        paintWatch()
+    }
+
+    const openWatch = (): void => {
+        watching = true
+        watchButton.textContent = 'board'
+        main.hidden = true
+        setup.hidden = true
+        watch.hidden = false
+        watch.replaceChildren(el('div', 'dya-empty', 'reading every board'))
+        void loadWatch().catch(fail)
+    }
+
+    function closeWatch(): void {
+        watching = false
+        watchButton.textContent = 'watch'
+        watch.hidden = true
+        main.hidden = meta === null
+        watch.replaceChildren()
+        overview = null
+        if (watchTimer) {
+            window.clearTimeout(watchTimer)
+            watchTimer = 0
+        }
+    }
+
+    const restock = (): void => {
+        if (!watching || watchTimer) return
+        watchTimer = window.setTimeout(() => {
+            watchTimer = 0
+            if (watching) void loadWatch().catch(fail)
+        }, 2_000)
+    }
 
     const health = async (): Promise<void> => {
         const found = await invoke<Diagnostic[]>('diagnostics')
@@ -1672,6 +1867,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const ticker = window.setInterval(() => {
         clock = Date.now()
         for (const card of cards) paintCard(card)
+        if (watching) paintWatch()
     }, 30_000)
 
     const onNotice = (raw: unknown): void => {
@@ -1692,6 +1888,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         unnotice()
         stopDrag()
         window.clearInterval(ticker)
+        if (watchTimer) window.clearTimeout(watchTimer)
         for (const timer of pending.values()) window.clearTimeout(timer)
         pending.clear()
         root.remove()

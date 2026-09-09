@@ -11,7 +11,17 @@ import * as lease from './lease.js'
 import { isClosed } from './rules.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
-import type { BlockKind, BoardFile, BoardMeta, Card, Run, RunKind, Status } from './types.js'
+import type {
+    BlockKind,
+    BoardFile,
+    BoardMeta,
+    Card,
+    Overview,
+    Run,
+    RunKind,
+    Status,
+    WatchRun
+} from './types.js'
 
 const BUSY_MS = 5_000
 const IDLE_MS = 30_000
@@ -697,10 +707,10 @@ async function prune(): Promise<void> {
     housekeeping = notes
 }
 
-export async function diagnose(): Promise<Diagnostic[]> {
+export async function diagnose(known?: SessionRecord[] | null): Promise<Diagnostic[]> {
     const found: Diagnostic[] = [...housekeeping]
     const now = Date.now()
-    const sessions = await agents.snapshot()
+    const sessions = known === undefined ? await agents.snapshot() : known
     const open = (await boards.list()).filter((entry) => !entry.archived)
     const across = (await boards.settings()).maxRunning
 
@@ -776,6 +786,78 @@ export async function diagnose(): Promise<Diagnostic[]> {
     }
 
     return found
+}
+
+const DECISIONS = 24
+
+export async function overview(): Promise<Overview> {
+    const sessions = await agents.snapshot()
+    const open = (await boards.list()).filter((entry) => !entry.archived)
+    const across = (await boards.settings()).maxRunning
+
+    const shape: Overview = {
+        at: Date.now(),
+        holding,
+        across,
+        running: 0,
+        boards: [],
+        runs: [],
+        decisions: [],
+        problems: await diagnose(sessions)
+    }
+
+    for (const meta of open) {
+        const cards = await board.cards(meta.slug)
+        const counts = board.tally(cards)
+        shape.boards.push({
+            slug: meta.slug,
+            name: meta.name,
+            cap: meta.maxRunning ?? boards.PER_BOARD,
+            running: counts.running,
+            counts
+        })
+        shape.running += counts.running
+
+        for (const card of cards) {
+            if (card.status !== 'running') continue
+            const run = current(card)
+            if (!run) continue
+            const session = run.sessionId ? agents.find(sessions, run.sessionId) : null
+            const live: WatchRun = {
+                slug: meta.slug,
+                board: meta.name,
+                cardId: card.id,
+                title: card.title,
+                runId: run.runId,
+                kind: run.kind,
+                startedAt: run.startedAt,
+                state: session?.state ?? 'working',
+                tool: null,
+                inputTokens: run.inputTokens,
+                outputTokens: run.outputTokens,
+                waiting: agents.waiting(session)
+            }
+            shape.runs.push(live)
+        }
+
+        const titles = new Map(cards.map((card) => [card.id, card.title]))
+        for (const row of await events.read(meta.slug, undefined, DECISIONS)) {
+            shape.decisions.push({
+                slug: meta.slug,
+                board: meta.name,
+                at: row.at,
+                cardId: row.cardId,
+                title: titles.get(row.cardId) ?? row.cardId,
+                kind: row.kind,
+                detail: row.detail
+            })
+        }
+    }
+
+    shape.runs.sort((a, b) => a.startedAt - b.startedAt)
+    shape.decisions.sort((a, b) => b.at - a.at)
+    shape.decisions = shape.decisions.slice(0, DECISIONS)
+    return shape
 }
 
 export async function sweep(sink: Sink): Promise<void> {

@@ -4,7 +4,7 @@ import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import * as events from './events.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
-import { allows, isClosed } from './rules.js'
+import { allows, isClosed, rules } from './rules.js'
 import type {
     Attachment,
     BoardFile,
@@ -15,6 +15,7 @@ import type {
     Status
 } from './types.js'
 
+const ORDER = rules().order
 const VERSION = 1
 const BACKUPS = 3
 
@@ -112,6 +113,15 @@ function assertWorkdir(workdir: string | null | undefined): string | null {
     if (workdir === undefined || workdir === null || workdir === '') return null
     if (!isAbsolute(workdir)) throw new Error(`'${workdir}' is not an absolute path`)
     return workdir
+}
+
+export function tally(cards: Card[]): Record<Status, number> {
+    const counts = Object.fromEntries(ORDER.map((status) => [status, 0])) as Record<Status, number>
+    for (const card of cards) {
+        if (counts[card.status] === undefined) continue
+        counts[card.status] += 1
+    }
+    return counts
 }
 
 export function blockedBy(file: BoardFile, card: Card): Card[] {

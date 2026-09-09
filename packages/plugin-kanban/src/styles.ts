@@ -387,6 +387,44 @@ export const STYLES = `
     color: var(--dya-text-3);
 }
 
+.kanban-watch {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-4);
+    padding: var(--dya-space-4);
+}
+
+.kanban-watch-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-4);
+    width: 100%;
+    max-width: 68rem;
+}
+
+.kanban-watch-run {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--dya-space-2);
+    padding: var(--dya-space-2);
+    border-radius: var(--dya-radius);
+}
+
+.kanban-watch-run:hover { background: var(--dya-surface-2); }
+.kanban-watch-run:focus-visible { box-shadow: var(--dya-elev-focus); }
+
 .kanban-card[data-waiting='true'] { border-color: var(--dya-warning); }
 
 .xterm .xterm-viewport { background-color: transparent !important; }

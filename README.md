@@ -123,8 +123,13 @@ touched.
 
 Markdown extracted from HTML is repaired before it is stored. Extraction can close a paragraph and
 open the code block after it on one line, which leaves a fence delimiter no parser can see and
-inverts every fence that follows, so a page's prose is read as code and its code as prose. Both
-repairs refuse to act unless they demonstrably work, and a document fetched as markdown from its
+inverts every fence that follows, so a page's prose is read as code and its code as prose. A page
+where that happened twice is inverted and balanced at once, which is why the repair attempts every
+document rather than only the ones that end mid-fence: 50 such lines were sitting in the corpora,
+nearly all of them read as healthy because their delimiters paired up. 49 are repaired; the one that
+is not sits on a page broken for another reason, and a guess there is worth less than the break.
+
+Both repairs refuse to act unless they demonstrably work, and a document fetched as markdown from its
 publisher is never touched by either: that one is stored as published.
 
 ## Deciding what is worth keeping

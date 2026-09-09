@@ -113,24 +113,41 @@ def repair_glued_fences(text: str) -> str:
     opposite of what it is: the page's prose is treated as code, and the page's code as prose. On
     `ai.google.dev` this swallowed the closing section of seventeen pages.
 
-    The repair is refused unless it works. A document whose fences already balance is returned
-    untouched, and so is one that stays unbalanced afterwards, because a page that is merely broken
-    is worth more than a page that has been guessed at.
-    """
-    if not ends_inside_a_fence(fence_states(text)):
-        return text
+    A balanced document is not a correct one. Where the glued delimiters come in pairs the document
+    balances and is inverted all the same, and the check that used to return early on a balanced
+    document read every one of those as healthy: 36 lines across 29 mistral-docs pages, 10 across
+    five on `ai.google.dev`. Every document is therefore attempted, and the result is kept only if
+    it balances, which is what still refuses a split that would leave the page worse than it was
+    found. One cookbook page is refused on exactly that ground and stays broken.
 
+    A line the document believes is inside a code block is never split. ````python\\n(.*?)\\n```` is a
+    regular expression a page about parsing markdown puts in a sample, and splitting it would
+    corrupt what the page teaches. That belief is only as good as the fences it rests on, which is
+    why the split runs to a fixed point rather than once: repairing the first glued line is what
+    reveals that the second one was never inside a block either. The loop needs no bound of its own.
+    A pass either changes nothing and stops, or splits a line into prose plus a delimiter on its own,
+    and neither half can be split again: the delimiter is a bare fence, which is excluded, and the
+    prose cannot end in a backtick because the split takes the whole trailing run.
+    """
+    current = text
+    while (candidate := _split_glued_lines(current)) != current:
+        current = candidate
+
+    return current if not ends_inside_a_fence(fence_states(current)) else text
+
+
+def _split_glued_lines(text: str) -> str:
+    """One pass: every glued delimiter the document currently believes is outside a block."""
     repaired: list[str] = []
-    for line in text.splitlines():
-        match = _GLUED_FENCE.match(line)
+    for line, state in zip(text.splitlines(), fence_states(text), strict=True):
+        match = _GLUED_FENCE.match(line) if state is FenceState.OUTSIDE else None
         if match and match.group(1).strip():
             repaired.append(match.group(1).rstrip())
             repaired.append(match.group(2))
         else:
             repaired.append(line)
 
-    candidate = '\n'.join(repaired) + ('\n' if text.endswith('\n') else '')
-    return candidate if not ends_inside_a_fence(fence_states(candidate)) else text
+    return '\n'.join(repaired) + ('\n' if text.endswith('\n') else '')
 
 
 def strip_component_definitions(text: str) -> str:

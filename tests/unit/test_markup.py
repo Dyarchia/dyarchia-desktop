@@ -406,3 +406,43 @@ def test_a_page_that_marks_its_code_up_properly_is_untouched() -> None:
     page = '<p>Run it:</p><pre><code>import anthropic</code></pre>'
 
     assert restore_line_split_code(page) == page
+
+
+BALANCED_BUT_INVERTED = """# Entity extraction
+
+To focus on specific entity types: ```
+system_prompt: 'Extract only person names.'
+```
+To include relationships: ```
+system_prompt: 'Extract entities and their relationships.'
+```
+You can also change the model.
+"""
+
+
+def test_a_page_whose_glued_fences_come_in_pairs_is_repaired_too() -> None:
+    """The delimiters pair up, so the document balances and every earlier check called it healthy,
+    while the prose between the blocks was stored as code. 22 gemini-docs pages sat like this."""
+    assert not ends_inside_a_fence(fence_states(BALANCED_BUT_INVERTED))
+    assert 'To include relationships: ' not in lines_outside_fences(BALANCED_BUT_INVERTED)
+
+    repaired = repair_glued_fences(BALANCED_BUT_INVERTED)
+    outside = lines_outside_fences(repaired)
+
+    assert 'To focus on specific entity types:' in outside
+    assert 'To include relationships:' in outside
+    assert 'You can also change the model.' in outside
+    assert "system_prompt: 'Extract only person names.'" not in outside
+
+
+def test_a_sample_that_ends_in_backticks_is_not_split() -> None:
+    """A page about parsing markdown puts a fence inside its own code, and splitting the line would
+    corrupt the lesson."""
+    page = "# Parsing\n\n```python\npattern = re.compile(r'```python\n(.*?)\n```')\n```\n\nDone.\n"
+
+    assert repair_glued_fences(page) == page
+
+
+def test_a_document_with_nothing_glued_is_returned_as_it_was() -> None:
+    """Attempting every document must not mean rewriting every document."""
+    assert repair_glued_fences(PROSE_PAGE) == PROSE_PAGE

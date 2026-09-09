@@ -153,8 +153,15 @@ back as inline code and glues the next block's fence to the end of its line.
 Extraction from HTML has a failure of its own, and it is corrected where it is made rather than
 where it is noticed. Collapsing a paragraph and the code block after it onto one line leaves a fence
 delimiter mid-line, which no parser can see; from there every delimiter reads as the opposite of
-what it is, and the page's prose is stored as code. Both repairs refuse to act unless the result is
-demonstrably better than the input, and neither touches a document fetched as markdown from its
+what it is, and the page's prose is stored as code. Two of those on one page pair up, so the
+document balances while staying inverted, and the check that returned early on a balanced document
+read most of the 50 such lines the corpora held as healthy. Every document is attempted now, and
+the split runs to a fixed point, because repairing the first glued line is what reveals the second
+was never inside a block either. 49 of the 50 are repaired; the one that is not sits on a page
+broken for another reason, where the result would not balance either way.
+
+Both repairs refuse to act unless the result is demonstrably better than the input, and neither
+touches a document fetched as markdown from its
 publisher: that one is stored as published, which is the only promise a snapshot of it makes.
 
 ## 5. Crawlee behaviours that had to be handled

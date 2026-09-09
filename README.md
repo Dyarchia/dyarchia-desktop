@@ -182,7 +182,7 @@ Profiles are not tracked by git. A profile describes somebody's corpus rather th
 lives on the machine that crawls it; the package ships `claude-docs` under `src/crawlee_lab/sites/`
 as the worked example, and `docs/profiles.md` documents the format. The example does not ask to be
 snapshotted: it is present in every corpus repository, so one that asked would enrol itself in
-every unattended round on the machine. The eight this toolkit was built against, in the group
+every unattended round on the machine. The nine this toolkit was built against, in the group
 `docs-labs`:
 
     Profile                Target                          Pages
@@ -190,10 +190,11 @@ every unattended round on the machine. The eight this toolkit was built against,
     claude-docs            claude.com/docs                   194
     claude-code-docs       code.claude.com                   170
     claude-api-docs        platform.claude.com               678
+    claude-cookbook        platform.claude.com, HTML          96
     openai-docs            developers.openai.com             541
     chatgpt-docs           learn.chatgpt.com, Codex          257
     gemini-docs            ai.google.dev, HTML               225
-    xai-docs               docs.x.ai, Grok                   175
+    xai-docs               docs.x.ai, Grok                   176
     mistral-docs           docs.mistral.ai, HTML             443
 
 Every corpus is English only. A publisher's other locales are a translation of pages already
@@ -202,12 +203,18 @@ Keeping them out is a rule about these corpora rather than about the toolkit: it
 `include` anchored at the first path segment, or an `exclude` on the locale, in each profile that
 needs one.
 
-All but two fetch the markdown variant the site publishes, so the snapshot is the document rather
-than an extractor's reading of it. `ai.google.dev` publishes none, and `docs.mistral.ai` publishes
-one for two of its eight sections, so `gemini-docs` and `mistral-docs` are extracted from HTML
-instead. Both were kept only after two runs hashed identically, which is the test an extractor's
-reading has to pass and a published document does not. Page counts are from the last run of each and
-move every week.
+All but three fetch the markdown variant the site publishes, so the snapshot is the document rather
+than an extractor's reading of it. `ai.google.dev` publishes none, `docs.mistral.ai` publishes one
+for two of its eight sections, and the cookbook answers 404 with an application shell at every
+suffix, so `gemini-docs`, `mistral-docs` and `claude-cookbook` are extracted from HTML instead. Each
+was kept only after two runs hashed identically, which is the test an extractor's reading has to
+pass and a published document does not.
+
+`claude-cookbook` is a second target on `platform.claude.com` rather than a section of
+`claude-api-docs`, because the recipes appear in no sitemap that target reads and publish no
+markdown twin. They are in a sitemap of their own, declared in `robots.txt` and nowhere else.
+
+Page counts are from the last run of each and move every week.
 
 Each group is a folder and a round: its profiles share `<data>/<group>/`, `<output>/<group>/` and
 one weekly sweep. A corpus on a neighbouring topic gets its own group, and with it its own folder

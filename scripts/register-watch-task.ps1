@@ -15,7 +15,7 @@
     The execution time limit is generous on purpose. A sweep that the scheduler kills leaves the
     week unfinished, and an unfinished week is attempted again; a limit set below what a sweep
     actually takes therefore turns one weekly round into one round per logon. Measured on this
-    corpus: nine targets and about 2,550 pages take some 25 minutes, and the largest group about
+    corpus: nine targets and about 2,780 pages take some 26 minutes, and the largest group about
     40. Three hours is that with room, not a guess.
 
     Each sweep gets its own name under the `\crawlee-lab\` folder of the Task Scheduler, so several

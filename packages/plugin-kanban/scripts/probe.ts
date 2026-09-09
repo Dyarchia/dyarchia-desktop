@@ -255,7 +255,7 @@ async function followups(): Promise<void> {
     const parent = await board.createCard('probe', { title: 'a run with opinions' })
     file.cards.push(parent)
 
-    const proposed = Array.from({ length: 12 }, (unused, index) => ({
+    const proposed = Array.from({ length: 12 }, (_, index) => ({
         title: `followup ${index + 1}`,
         body: 'found while working'
     }))

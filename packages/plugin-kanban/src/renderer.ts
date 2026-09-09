@@ -9,7 +9,6 @@ import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
 import type {
-    Attachment,
     BoardMeta,
     BoardPayload,
     Card,

@@ -31,7 +31,9 @@ Code.
 
 ## 1. What is built
 
-Phases 0 to 5 of the design's section 18.
+Phases 0 to 5 of the design's section 18, and every row of
+[docs/the reference system-parity.md](docs/the reference system-parity.md) section 2 that was going to be built: the review
+run, the settable caps, the watch view and the batch verbs.
 
 ```text
 AREA                     STATE

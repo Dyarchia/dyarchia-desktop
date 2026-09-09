@@ -31,7 +31,9 @@ Code.
 
 ## 1. What is built
 
-Phases 0 to 5 of the design's section 18.
+Phases 0 to 5 of the design's section 18, and every row of
+[docs/the reference system-parity.md](docs/the reference system-parity.md) section 2 that was going to be built: the review
+run, the settable caps, the watch view and the batch verbs.
 
 ```text
 AREA                     STATE
@@ -47,12 +49,21 @@ Panel                    one panel per board, pinned in localStorage by the
 Drag                     pointer events, ghost, insertion indicator, autoscroll,
                          accept and refuse washes, Escape to cancel
 Keyboard                 roving tabindex, arrows, Ctrl with arrows to move a card
-                         to the nearest legal status, Enter to open, live region
+                         to the nearest legal status, Enter to open, x to mark,
+                         Escape to clear the marks, live region
+Several at once          Ctrl-click marks a card and Shift-click marks a range down a
+                         column. A strip under the bar then offers the states EVERY
+                         marked card may go to, and one delete for all of them. Each
+                         batch is one write, and a card that refuses says why without
+                         taking the others down
 Dispatch                 one elected process sweeps, holding a lease it renews on every
                          tick; another copy of the app watches and does not claim. The
                          tick reconciles running cards against
                          `claude agents --json` with three-valued liveness, promotes,
-                         and claims. 1 card per board, 2 across all of them
+                         and claims. 1 card per board and 2 across all of them by
+                         default, both settable per board and globally. The caps bind
+                         the claim, not the operator: a reviewer asked for by hand
+                         starts regardless
 Worker                   a real `claude --bg` session in a git worktree of the project,
                          watched through its transcript
 Terminal                 `claude attach` in a pty, in a utilityProcess, over a
@@ -66,11 +77,22 @@ Failure handling         crash, protocol violation, runtime cap, silence past a 
                          hour run, circuit breaker, respawn guard, block routing by
                          kind, and a block-loop guard that sends a card to triage
                          after it blocks the same way twice
+Review                   a card in review is approved or sent back by the operator, or
+                         handed to a reviewer: a second session with no worktree, in the
+                         project itself, briefed with the card and the branch. It
+                         answers with `verdict` in its terminal block, and approving
+                         is a judgement rather than a merge: the branch is still the
+                         operator's to land
 Fan-out                  `followups` in the terminal block become child cards gated
                          on the card that proposed them
 Health                   a strip in the bar naming what is wrong: cards waiting on
                          you, cards claimable and never claimed, liveness unknown,
-                         and which process holds the dispatcher
+                         a paused board, and which process holds the dispatcher
+Watch                    the `watch` button: every board at once, with what is running
+                         against each cap, the backlog behind it, what every live run
+                         is doing right now, and the last two dozen decisions across
+                         all of them. A running row is a way in: it opens that card on
+                         its own board with the session attached
 Notices                  the five moments the board needs you reach you when you are
                          not looking: a worker waiting on a permission prompt, and a
                          run that completed, blocked, broke the protocol or stopped.
@@ -98,7 +120,10 @@ Card settings            per card, from the drawer: permission mode, model, effo
                          workspace kind, a working directory override, a runtime cap
                          and a retry limit, all disabled while a worker holds the card
 Board settings           rename, re-point, archive and delete, the last two refusing
-                         while a card on that board is running
+                         while a card on that board is running, and the two concurrency
+                         caps: how many workers this board may run at once and how many
+                         across every board. 0 pauses, and a paused board says so in the
+                         health strip
 Housekeeping             every store the board fills has something that empties it:
                          attachments go with their card, temporary workspaces are swept
                          once their card is closed or gone, and the worktrees a run
@@ -107,8 +132,9 @@ Housekeeping             every store the board fills has something that empties 
                          the project's local git exclude when the board is created
 ```
 
-There is deliberately no way to move a card to `done` by hand. `done` means a worker finished.
-See section 9 of the design.
+`done` is reached from `review` and nowhere else, by an operator who approves or a reviewer
+whose verdict is `approved`. No other column offers it, and nothing skips review. See section 9
+of the design.
 
 
 ## 1.1 What a worker actually is
@@ -155,9 +181,10 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 63 checks over slug validation, three-valued liveness, both
-parsers, dependency cycles, rev fencing, promotion, unblock, scheduled cards, the worktree
-listing and what a deleted card takes with it. It writes to a temp userData and takes about a
+node, no window and no IPC. 150 checks over slug validation, three-valued liveness, both
+parsers and the verdict, dependency cycles, rev fencing, promotion, unblock, scheduled cards,
+the worktree listing, both briefs, both concurrency caps, the status tally, both batch verbs,
+and what a deleted card takes with it. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
@@ -193,7 +220,15 @@ attach               a MessagePort pty that prints a permission prompt, echoes w
                      is typed, answers 1, 2 and 3 differently, and keeps chattering
 runEvents            nine canned rows covering all five kinds, including a tool
                      result that is an error
-diagnostics          two problems, so the health strip and its menu are populated
+diagnostics          two problems, so the health strip and its menu are populated,
+                     plus a paused board when a cap is set to 0
+overview             the watch view over two boards, one of them empty, with the
+                     live run, the canned decision log and those same problems
+reviewCard           a review run with no worktree, ending in a verdict: approved
+                     into done, then changes requested into ready with the reviewer's
+                     summary left as a comment
+moveCards            the real batch answer: the legal ones move, the rest come back
+deleteCards          with the reason, and a card with a live worker is never deleted
 stopCard, unblock    the real outcomes: a stop is a crash with no evidence and the
                      card returns to ready; an unblock returns it to its source
                      phase, or to todo while parents are open
@@ -218,6 +253,8 @@ Under `app.getPath('userData')`, one directory per board:
 
 ```text
 kanban/boards.json                          the registry
+kanban/settings.json                        the one setting that has no board: the cap
+                                            across all of them
 kanban/dispatcher.json                      the lease naming the process that sweeps
 kanban/boards/<slug>/board.json             that board's cards
 kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
@@ -250,7 +287,13 @@ slug first, because there is no ambient current board in the main module.
 ```text
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
+moveCards     deleteCards                 the same two verbs over a selection, each one
+                                          write, answering { done, refused }
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
+settings      updateSettings              the global concurrency cap, which has no board
+overview      every board at once, for the watch view: caps, backlog, live runs,
+              problems and the merged decision log
+reviewCard    starts a review run on a card that is in review, at once
 attachments   reveal        worktrees     removeWorktree
 ignoreState   addIgnore     addAttachments              removeAttachment
 events        the board's decisions, for one card or for the whole board
@@ -297,6 +340,14 @@ RULE                        WHY
                             transition: its transform is written every frame
 .kanban-sr                  a screen-reader-only region for the live announcements.
                             The system has no such class. See section 6
+.kanban-card[data-marked]    the multi-selection wash, on --dya-accent-soft, which is
+                            the only card state that is a fill rather than a border:
+                            selected, problem and marked can all be true at once and
+                            two borders cannot
+.kanban-watch-run           a row in the watch view is a BUTTON, because it is a way
+                            into the card and its session rather than a readout, and
+                            a button is what a keyboard expects to reach. The rule
+                            strips the button chrome and gives it the row layout
 .kanban-stage               the drawer's terminal band, on --dya-surface-1 because
                             xterm computes its own contrast and has to know what it
                             is drawing on
@@ -305,6 +356,10 @@ RULE                        WHY
                             scrollbar and background match the system; they target
                             xterm's classes, not dya-* ones
 ```
+
+`user-select: none` sits on the card because shift-click marks a range, and a shift-click on
+text is a text selection: without it the range gesture paints the board orange. The drawer is
+where the selectable text lives.
 
 `touch-action: none` sits on the whole card rather than on a grip. That disables touch panning
 of a column that starts on a card, which is the correct trade for a desktop Electron app and

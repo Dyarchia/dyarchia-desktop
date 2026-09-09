@@ -4,7 +4,7 @@ import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import * as events from './events.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
-import { allows, isClosed } from './rules.js'
+import { allows, isClosed, rules } from './rules.js'
 import type {
     Attachment,
     BoardFile,
@@ -15,6 +15,7 @@ import type {
     Status
 } from './types.js'
 
+const ORDER = rules().order
 const VERSION = 1
 const BACKUPS = 3
 
@@ -24,6 +25,13 @@ function empty(): BoardFile {
     return { version: VERSION, cards: [] }
 }
 
+function restore(card: Card): Card {
+    for (const run of card.runs ?? []) {
+        if (run.kind !== 'review') run.kind = 'implement'
+    }
+    return card
+}
+
 export async function load(slug: string): Promise<BoardFile> {
     const held = cache.get(slug)
     if (held) return held
@@ -31,7 +39,9 @@ export async function load(slug: string): Promise<BoardFile> {
     let file = empty()
     try {
         const parsed = JSON.parse(await readFile(boardPath(slug), 'utf-8')) as BoardFile
-        if (Array.isArray(parsed?.cards)) file = { version: VERSION, cards: parsed.cards }
+        if (Array.isArray(parsed?.cards)) {
+            file = { version: VERSION, cards: parsed.cards.map(restore) }
+        }
     } catch {
         file = empty()
     }
@@ -103,6 +113,15 @@ function assertWorkdir(workdir: string | null | undefined): string | null {
     if (workdir === undefined || workdir === null || workdir === '') return null
     if (!isAbsolute(workdir)) throw new Error(`'${workdir}' is not an absolute path`)
     return workdir
+}
+
+export function tally(cards: Card[]): Record<Status, number> {
+    const counts = Object.fromEntries(ORDER.map((status) => [status, 0])) as Record<Status, number>
+    for (const card of cards) {
+        if (counts[card.status] === undefined) continue
+        counts[card.status] += 1
+    }
+    return counts
 }
 
 export function blockedBy(file: BoardFile, card: Card): Card[] {
@@ -188,13 +207,12 @@ export async function updateCard(slug: string, id: string, patch: CardPatch): Pr
     return card
 }
 
-export async function moveCard(slug: string, id: string, rev: number, to: Status): Promise<Card> {
-    const file = await load(slug)
+function applyMove(file: BoardFile, id: string, rev: number, to: Status): Status | null {
     const card = find(file, id)
 
     if (card.rev !== rev) throw new Error('that card changed while you were moving it')
     if (card.locked) throw new Error('that card has a live worker')
-    if (card.status === to) return card
+    if (card.status === to) return null
     if (!allows(card.status, to)) throw new Error(`a card cannot go from ${card.status} to ${to}`)
 
     if (to === 'ready' && blockedBy(file, card).length) {
@@ -214,9 +232,53 @@ export async function moveCard(slug: string, id: string, rev: number, to: Status
     const from = card.status
     card.status = to
     touch(card)
+    return from
+}
+
+export async function moveCard(slug: string, id: string, rev: number, to: Status): Promise<Card> {
+    const file = await load(slug)
+    const from = applyMove(file, id, rev, to)
+    const card = find(file, id)
+    if (from === null) return card
+
     await save(slug, file)
     await events.record(slug, card.id, 'moved', `${from} to ${to}, by hand`)
     return card
+}
+
+export interface Bulk {
+    done: string[]
+    refused: { id: string; why: string }[]
+}
+
+function why(error: unknown): string {
+    return error instanceof Error ? error.message : String(error)
+}
+
+export async function moveCards(
+    slug: string,
+    wanted: { id: string; rev: number }[],
+    to: Status
+): Promise<Bulk> {
+    const file = await load(slug)
+    const result: Bulk = { done: [], refused: [] }
+    const moved: [string, string][] = []
+
+    for (const entry of wanted) {
+        try {
+            const from = applyMove(file, entry.id, entry.rev, to)
+            result.done.push(entry.id)
+            if (from !== null) moved.push([entry.id, `${from} to ${to}, by hand`])
+        } catch (error) {
+            result.refused.push({ id: entry.id, why: why(error) })
+        }
+    }
+
+    if (moved.length) {
+        await save(slug, file)
+        for (const [id, detail] of moved) await events.record(slug, id, 'moved', detail)
+    }
+    return result
 }
 
 export async function unblock(slug: string, id: string, rev: number): Promise<Card> {
@@ -236,21 +298,66 @@ export async function unblock(slug: string, id: string, rev: number): Promise<Ca
     return card
 }
 
-export async function deleteCard(slug: string, id: string): Promise<boolean> {
-    const file = await load(slug)
+function applyDelete(file: BoardFile, id: string, going: Set<string>): Card {
     const card = find(file, id)
     if (card.locked) throw new Error('that card has a live worker')
 
-    const child = file.cards.find((entry) => entry.parents.includes(id))
+    const child = file.cards.find((entry) => entry.parents.includes(id) && !going.has(entry.id))
     if (child) throw new Error(`'${child.title}' depends on that card`)
 
     file.cards = file.cards.filter((entry) => entry.id !== id)
-    await save(slug, file)
+    return card
+}
 
-    await reclaim(attachmentsRoot(slug, id), boardRoot(slug))
-    await reclaim(join(workspacesRoot(slug), id), workspacesRoot(slug))
-    await events.record(slug, id, 'deleted', card.title)
+async function forgetCard(slug: string, card: Card): Promise<void> {
+    await reclaim(attachmentsRoot(slug, card.id), boardRoot(slug))
+    await reclaim(join(workspacesRoot(slug), card.id), workspacesRoot(slug))
+    await events.record(slug, card.id, 'deleted', card.title)
+}
+
+export async function deleteCard(slug: string, id: string): Promise<boolean> {
+    const file = await load(slug)
+    const card = applyDelete(file, id, new Set())
+    await save(slug, file)
+    await forgetCard(slug, card)
     return true
+}
+
+export async function deleteCards(slug: string, ids: string[]): Promise<Bulk> {
+    const file = await load(slug)
+    const result: Bulk = { done: [], refused: [] }
+    const going = new Set<string>()
+
+    for (const id of ids) {
+        try {
+            if (find(file, id).locked) throw new Error('that card has a live worker')
+            going.add(id)
+        } catch (error) {
+            result.refused.push({ id, why: why(error) })
+        }
+    }
+
+    for (let settled = false; !settled; ) {
+        settled = true
+        for (const id of [...going]) {
+            const child = file.cards.find(
+                (entry) => entry.parents.includes(id) && !going.has(entry.id)
+            )
+            if (!child) continue
+            going.delete(id)
+            result.refused.push({ id, why: `'${child.title}' depends on that card` })
+            settled = false
+        }
+    }
+
+    const gone = file.cards.filter((card) => going.has(card.id))
+    if (!gone.length) return result
+
+    file.cards = file.cards.filter((card) => !going.has(card.id))
+    await save(slug, file)
+    for (const card of gone) await forgetCard(slug, card)
+    result.done = ids.filter((id) => going.has(id))
+    return result
 }
 
 export async function attach(slug: string, id: string, added: Attachment[]): Promise<Card> {

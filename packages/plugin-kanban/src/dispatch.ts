@@ -11,12 +11,20 @@ import * as lease from './lease.js'
 import { isClosed } from './rules.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
-import type { BlockKind, BoardFile, BoardMeta, Card, Run, Status } from './types.js'
+import type {
+    BlockKind,
+    BoardFile,
+    BoardMeta,
+    Card,
+    Overview,
+    Run,
+    RunKind,
+    Status,
+    WatchRun
+} from './types.js'
 
 const BUSY_MS = 5_000
 const IDLE_MS = 30_000
-const PER_BOARD = 1
-const GLOBAL = 2
 const RETRIES = 2
 const VIOLATIONS = 3
 const RECURRENCES = 2
@@ -66,6 +74,17 @@ function ended(sink: Sink, meta: BoardMeta, card: Card, run: Run): void {
     waiting.delete(card.id)
 
     const said = run.summary ?? run.error ?? ''
+    if (run.kind === 'review' && run.outcome === 'completed') {
+        const approved = card.status === 'done'
+        tell(
+            sink,
+            meta,
+            card,
+            `${card.title} ${approved ? 'passed review' : 'needs changes'}`,
+            said || (approved ? 'the reviewer approved it' : 'the reviewer sent it back')
+        )
+        return
+    }
     if (run.outcome === 'completed') {
         tell(sink, meta, card, `${card.title} is ready for review`, said || 'the worker finished')
         return
@@ -96,11 +115,45 @@ function current(card: Card): Run | null {
     return card.runs.length ? card.runs[card.runs.length - 1] : null
 }
 
+function reviewed(card: Card): Run | null {
+    return (
+        [...card.runs]
+            .reverse()
+            .find((run) => run.kind === 'implement' && run.outcome === 'completed') ?? null
+    )
+}
+
+function blank(runId: string, kind: RunKind): Run {
+    return {
+        runId,
+        kind,
+        sessionId: null,
+        shortId: null,
+        worktree: null,
+        branch: null,
+        startedAt: Date.now(),
+        endedAt: null,
+        outcome: null,
+        summary: null,
+        artifacts: [],
+        kept: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        error: null,
+        headBefore: null
+    }
+}
+
 function workspace(meta: BoardMeta, card: Card): string {
     if (card.workspaceKind === 'scratch') {
         return join(boards.workspacesRoot(meta.slug), card.id)
     }
     return card.workdir ?? meta.workdir
+}
+
+function place(meta: BoardMeta, card: Card, run: Run): string {
+    if (run.kind === 'review') return card.workdir ?? meta.workdir
+    return run.worktree ?? workspace(meta, card)
 }
 
 function close(run: Run, outcome: Run['outcome'], summary: string | null, error: string | null): void {
@@ -165,6 +218,104 @@ export async function adopt(
     })
 }
 
+async function resolveReview(
+    file: BoardFile,
+    meta: BoardMeta,
+    card: Card,
+    run: Run,
+    sink: Sink,
+    progress: worker.Progress | null
+): Promise<void> {
+    if (progress) {
+        run.inputTokens = progress.inputTokens
+        run.outputTokens = progress.outputTokens
+    }
+
+    const say = (outcome: string): void => {
+        ended(sink, meta, card, run)
+        sink.runEnded(meta.slug, card.id, outcome)
+    }
+
+    const declared = progress?.terminal ?? null
+
+    if (declared) {
+        close(run, declared.outcome === 'completed' ? 'completed' : 'blocked', declared.summary, null)
+        if (declared.followups.length) await adopt(file, meta, card, declared.followups)
+
+        if (declared.outcome === 'blocked') {
+            block(meta.slug, card, declared.blockKind ?? 'needs_input', 'review')
+            say('blocked')
+            return
+        }
+
+        if (declared.verdict === null) {
+            card.protocolViolations += 1
+            close(run, 'violation', declared.summary, 'a review that declared no verdict')
+            if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'review')
+            else land(card, 'review')
+            void events.record(meta.slug, card.id, 'violation', 'the review declared no verdict', run.runId)
+            say('violation')
+            return
+        }
+
+        card.protocolViolations = 0
+
+        if (declared.verdict === 'approved') {
+            card.consecutiveFailures = 0
+            land(card, 'done')
+        } else {
+            card.comments.push({
+                at: Date.now(),
+                author: 'agent',
+                text:
+                    declared.summary.trim() ||
+                    'The reviewer asked for changes and said nothing about what they are.'
+            })
+            land(card, 'ready')
+        }
+
+        void events.record(
+            meta.slug,
+            card.id,
+            'reviewed',
+            `${declared.verdict}: ${declared.summary.slice(0, 140)}`,
+            run.runId
+        )
+        say('completed')
+        return
+    }
+
+    if (progress?.ended) {
+        card.protocolViolations += 1
+        close(run, 'violation', progress.lastText.slice(0, 400) || null, 'no terminal block')
+        if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'review')
+        else land(card, 'review')
+        void events.record(
+            meta.slug,
+            card.id,
+            'violation',
+            'the review ended with no terminal block',
+            run.runId
+        )
+        say('violation')
+        return
+    }
+
+    card.consecutiveFailures += 1
+    close(run, 'crashed', null, 'the reviewer is gone, and it judged nothing')
+    const spent = card.consecutiveFailures >= (card.maxRetries ?? RETRIES)
+    if (spent) block(meta.slug, card, 'transient', 'review')
+    else land(card, 'review')
+    void events.record(
+        meta.slug,
+        card.id,
+        spent ? 'gave_up' : 'crashed',
+        run.error ?? 'the reviewer is gone',
+        run.runId
+    )
+    say('crashed')
+}
+
 async function resolve(
     file: BoardFile,
     meta: BoardMeta,
@@ -173,6 +324,8 @@ async function resolve(
     sink: Sink,
     progress: worker.Progress | null
 ): Promise<void> {
+    if (run.kind === 'review') return resolveReview(file, meta, card, run, sink, progress)
+
     if (progress?.terminal) {
         const declared = progress.terminal
         close(
@@ -185,8 +338,12 @@ async function resolve(
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
 
-        const from = run.worktree ?? workspace(meta, card)
-        const picked = await harvest(meta.slug, card.id, from, declared.artifacts)
+        const picked = await harvest(
+            meta.slug,
+            card.id,
+            place(meta, card, run),
+            declared.artifacts
+        )
         run.kept = picked.kept
 
         if (declared.outcome === 'completed' && picked.missing.length) {
@@ -255,7 +412,7 @@ async function resolve(
         return
     }
 
-    const where = run.worktree ?? workspace(meta, card)
+    const where = place(meta, card, run)
     const moved = run.headBefore ? (await worker.head(where)) !== run.headBefore : false
     card.consecutiveFailures += 1
     close(
@@ -304,7 +461,7 @@ async function reconcile(
         const state = run.sessionId ? agents.liveness(sessions, run.sessionId) : 'dead'
         const session = run.sessionId ? agents.find(sessions, run.sessionId) : null
         const path = run.sessionId
-            ? await agents.transcript(run.worktree ?? workspace(meta, card), run.sessionId)
+            ? await agents.transcript(place(meta, card, run), run.sessionId)
             : null
         const progress = path ? await worker.progress(path) : null
 
@@ -389,55 +546,28 @@ function claimable(file: BoardFile, now: number): Card[] {
         .sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
 }
 
-async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
-    const file = await board.load(meta.slug)
-    const running = file.cards.filter((card) => card.status === 'running').length
-    if (running >= PER_BOARD) return false
-
-    const card = claimable(file, Date.now())[0]
-    if (!card) return false
-
-    const runId = randomUUID()
-    const run: Run = {
-        runId,
-        sessionId: null,
-        shortId: null,
-        worktree: null,
-        branch: null,
-        startedAt: Date.now(),
-        endedAt: null,
-        outcome: null,
-        summary: null,
-        artifacts: [],
-        kept: [],
-        inputTokens: 0,
-        outputTokens: 0,
-        error: null,
-        headBefore: null
-    }
-
-    card.runs.push(run)
-    card.status = 'running'
-    card.locked = true
-    card.rev += 1
-    card.updatedAt = Date.now()
-    await board.save(meta.slug, file)
-    await events.record(meta.slug, card.id, 'claimed', `attempt ${card.runs.length}`, runId)
-    sink.boardChanged(meta.slug)
-
-    const place = workspace(meta, card)
+async function launch(
+    file: BoardFile,
+    meta: BoardMeta,
+    card: Card,
+    run: Run,
+    sink: Sink,
+    where: string,
+    reviewing: Run | null
+): Promise<void> {
+    const home = run.kind === 'review' ? 'review' : 'ready'
     try {
-        if (card.workspaceKind === 'scratch') await mkdir(place, { recursive: true })
+        if (!reviewing && card.workspaceKind === 'scratch') await mkdir(where, { recursive: true })
         const parents = card.parents
             .map((id) => file.cards.find((entry) => entry.id === id))
             .filter((entry): entry is Card => Boolean(entry))
 
-        const held = card.attachments.map((file) => ({
-            name: file.name,
-            path: join(boards.attachmentsRoot(meta.slug, card.id), file.name)
+        const held = card.attachments.map((entry) => ({
+            name: entry.name,
+            path: join(boards.attachmentsRoot(meta.slug, card.id), entry.name)
         }))
 
-        const started = await worker.start(card, parents, runId, place, held)
+        const started = await worker.start(card, parents, run.runId, where, held, reviewing)
         run.sessionId = started.sessionId
         run.shortId = started.shortId
         run.headBefore = started.headBefore
@@ -447,17 +577,65 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
         close(run, 'crashed', null, error instanceof Error ? error.message : String(error))
         card.consecutiveFailures += 1
         if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
-            block(meta.slug, card, 'capability', 'ready')
+            block(meta.slug, card, 'capability', home)
         } else {
-            land(card, 'ready')
+            land(card, home)
         }
-        void events.record(meta.slug, card.id, 'crashed', run.error ?? 'the launch failed', runId)
+        void events.record(meta.slug, card.id, 'crashed', run.error ?? 'the launch failed', run.runId)
         ended(sink, meta, card, run)
         sink.runEnded(meta.slug, card.id, 'crashed')
     }
+}
 
+function take(card: Card, kind: RunKind): Run {
+    const run = blank(randomUUID(), kind)
+    card.runs.push(run)
+    card.status = 'running'
+    card.locked = true
+    card.rev += 1
+    card.updatedAt = Date.now()
+    return run
+}
+
+async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
+    const file = await board.load(meta.slug)
+    const running = file.cards.filter((card) => card.status === 'running').length
+    if (running >= (meta.maxRunning ?? boards.PER_BOARD)) return false
+
+    const card = claimable(file, Date.now())[0]
+    if (!card) return false
+
+    const run = take(card, 'implement')
+    await board.save(meta.slug, file)
+    await events.record(meta.slug, card.id, 'claimed', `attempt ${card.runs.length}`, run.runId)
+    sink.boardChanged(meta.slug)
+
+    await launch(file, meta, card, run, sink, workspace(meta, card), null)
     await board.save(meta.slug, file)
     return true
+}
+
+export async function review(meta: BoardMeta, cardId: string, sink: Sink): Promise<void> {
+    const file = await board.load(meta.slug)
+    const card = board.find(file, cardId)
+    if (card.status !== 'review') throw new Error('that card is not waiting for a review')
+
+    const judged = reviewed(card)
+    if (!judged) throw new Error('that card has no finished run for a reviewer to read')
+
+    const run = take(card, 'review')
+    await board.save(meta.slug, file)
+    await events.record(
+        meta.slug,
+        card.id,
+        'claimed',
+        `review of ${judged.branch ?? 'the working directory'}`,
+        run.runId
+    )
+    sink.boardChanged(meta.slug)
+
+    await launch(file, meta, card, run, sink, card.workdir ?? meta.workdir, judged)
+    await board.save(meta.slug, file)
 }
 
 export interface Diagnostic {
@@ -471,7 +649,9 @@ export function held(cards: Card[]): string[] {
     for (const card of cards) {
         if (card.status !== 'running') continue
         const run = current(card)
-        if (run?.worktree) paths.push(run.worktree)
+        if (!run) continue
+        const using = run.kind === 'review' ? reviewed(card) : run
+        if (using?.worktree) paths.push(using.worktree)
     }
     return paths
 }
@@ -527,16 +707,37 @@ async function prune(): Promise<void> {
     housekeeping = notes
 }
 
-export async function diagnose(): Promise<Diagnostic[]> {
+export async function diagnose(known?: SessionRecord[] | null): Promise<Diagnostic[]> {
     const found: Diagnostic[] = [...housekeeping]
     const now = Date.now()
-    const sessions = await agents.snapshot()
+    const sessions = known === undefined ? await agents.snapshot() : known
     const open = (await boards.list()).filter((entry) => !entry.archived)
+    const across = (await boards.settings()).maxRunning
+
+    if (across === 0 && open.length) {
+        found.push({
+            slug: '',
+            cardId: null,
+            problem: 'every board is paused: the cap across all of them is 0, so nothing is claimed'
+        })
+    }
 
     for (const meta of open) {
         const file = await board.load(meta.slug)
+        const cap = meta.maxRunning ?? boards.PER_BOARD
+        const paused = cap === 0 || across === 0
+
+        if (cap === 0) {
+            found.push({
+                slug: meta.slug,
+                cardId: null,
+                problem: 'this board is paused: its cap is 0, so nothing new is claimed'
+            })
+        }
+
         for (const card of file.cards) {
             if (
+                !paused &&
                 card.status === 'ready' &&
                 !board.blockedBy(file, card).length &&
                 now - card.updatedAt > STRANDED_MS
@@ -587,6 +788,78 @@ export async function diagnose(): Promise<Diagnostic[]> {
     return found
 }
 
+const DECISIONS = 24
+
+export async function overview(): Promise<Overview> {
+    const sessions = await agents.snapshot()
+    const open = (await boards.list()).filter((entry) => !entry.archived)
+    const across = (await boards.settings()).maxRunning
+
+    const shape: Overview = {
+        at: Date.now(),
+        holding,
+        across,
+        running: 0,
+        boards: [],
+        runs: [],
+        decisions: [],
+        problems: await diagnose(sessions)
+    }
+
+    for (const meta of open) {
+        const cards = await board.cards(meta.slug)
+        const counts = board.tally(cards)
+        shape.boards.push({
+            slug: meta.slug,
+            name: meta.name,
+            cap: meta.maxRunning ?? boards.PER_BOARD,
+            running: counts.running,
+            counts
+        })
+        shape.running += counts.running
+
+        for (const card of cards) {
+            if (card.status !== 'running') continue
+            const run = current(card)
+            if (!run) continue
+            const session = run.sessionId ? agents.find(sessions, run.sessionId) : null
+            const live: WatchRun = {
+                slug: meta.slug,
+                board: meta.name,
+                cardId: card.id,
+                title: card.title,
+                runId: run.runId,
+                kind: run.kind,
+                startedAt: run.startedAt,
+                state: session?.state ?? 'working',
+                tool: null,
+                inputTokens: run.inputTokens,
+                outputTokens: run.outputTokens,
+                waiting: agents.waiting(session)
+            }
+            shape.runs.push(live)
+        }
+
+        const titles = new Map(cards.map((card) => [card.id, card.title]))
+        for (const row of await events.read(meta.slug, undefined, DECISIONS)) {
+            shape.decisions.push({
+                slug: meta.slug,
+                board: meta.name,
+                at: row.at,
+                cardId: row.cardId,
+                title: titles.get(row.cardId) ?? row.cardId,
+                kind: row.kind,
+                detail: row.detail
+            })
+        }
+    }
+
+    shape.runs.sort((a, b) => a.startedAt - b.startedAt)
+    shape.decisions.sort((a, b) => b.at - a.at)
+    shape.decisions = shape.decisions.slice(0, DECISIONS)
+    return shape
+}
+
 export async function sweep(sink: Sink): Promise<void> {
     if (ticking) return
     ticking = true
@@ -598,6 +871,7 @@ export async function sweep(sink: Sink): Promise<void> {
         const sessions = await agents.snapshot()
         const open = (await boards.list()).filter((entry) => !entry.archived)
         if (!open.length) return
+        const across = (await boards.settings()).maxRunning
 
         let running = 0
         for (const meta of open) {
@@ -606,7 +880,7 @@ export async function sweep(sink: Sink): Promise<void> {
             running += (await board.cards(meta.slug)).filter((card) => card.status === 'running').length
         }
 
-        for (let step = 0; step < open.length && running < GLOBAL; step += 1) {
+        for (let step = 0; step < open.length && running < across; step += 1) {
             const meta = open[(cursor + step) % open.length]
             if (await claim(meta, sink)) {
                 running += 1

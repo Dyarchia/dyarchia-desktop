@@ -15,8 +15,13 @@ export type Outcome = 'completed' | 'blocked' | 'crashed' | 'stopped' | 'violati
 
 export type WorkspaceKind = 'scratch' | 'dir'
 
+export type RunKind = 'implement' | 'review'
+
+export type Verdict = 'approved' | 'changes'
+
 export interface Run {
     runId: string
+    kind: RunKind
     sessionId: string | null
     shortId: string | null
     worktree: string | null
@@ -83,6 +88,11 @@ export interface BoardMeta {
     archived: boolean
     createdAt: number
     order: number
+    maxRunning: number | null
+}
+
+export interface Settings {
+    maxRunning: number
 }
 
 export interface BoardFile {
@@ -129,6 +139,51 @@ export interface BoardDraft {
     slug: string
     name: string
     workdir: string
+    maxRunning?: number | null
+}
+
+export interface WatchRun {
+    slug: string
+    board: string
+    cardId: string
+    title: string
+    runId: string
+    kind: RunKind
+    startedAt: number
+    state: string
+    tool: string | null
+    inputTokens: number
+    outputTokens: number
+    waiting: boolean
+}
+
+export interface WatchBoard {
+    slug: string
+    name: string
+    cap: number
+    running: number
+    counts: Record<Status, number>
+}
+
+export interface WatchDecision {
+    slug: string
+    board: string
+    at: number
+    cardId: string
+    title: string
+    kind: string
+    detail: string
+}
+
+export interface Overview {
+    at: number
+    holding: boolean
+    across: number
+    running: number
+    boards: WatchBoard[]
+    runs: WatchRun[]
+    decisions: WatchDecision[]
+    problems: { slug: string; cardId: string | null; problem: string }[]
 }
 
 export type KanbanEvent =

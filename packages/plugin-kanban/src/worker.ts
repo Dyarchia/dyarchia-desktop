@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import * as agents from './agents.js'
-import type { BlockKind, Card } from './types.js'
+import type { BlockKind, Card, Run, Verdict } from './types.js'
 
 const MARKER = '===KANBAN==='
 const LAUNCH_TIMEOUT_MS = 60_000
@@ -13,6 +13,7 @@ const SETTLE_MS = 400
 
 export interface TerminalBlock {
     outcome: 'completed' | 'blocked'
+    verdict: Verdict | null
     blockKind: BlockKind | null
     summary: string
     artifacts: string[]
@@ -153,12 +154,93 @@ export function brief(
     return lines.join('\n')
 }
 
+export function reviewBrief(
+    card: Card,
+    reviewed: Run,
+    workspace: string,
+    attachments: { name: string; path: string }[] = []
+): string {
+    const lines: string[] = []
+
+    lines.push(`# Review: ${card.title}`, '')
+    lines.push(
+        'Another agent did this work. You are here to judge it, not to continue it, and NOT to',
+        'change it: you are in the checkout the operator works in, and nothing you write here is',
+        'wanted. Read, decide, and say what you decided.',
+        ''
+    )
+
+    lines.push('## What the card asked for', '')
+    lines.push(card.body.trim() || 'The card carried no description beyond its title.', '')
+
+    if (attachments.length) {
+        lines.push('## Attachments', '')
+        lines.push('These files were given to the card. Read them where they are:', '')
+        for (const file of attachments) lines.push(`- \`${file.path}\``)
+        lines.push('')
+    }
+
+    if (card.comments.length) {
+        lines.push('## Thread', '')
+        for (const entry of card.comments) lines.push(`**${entry.author}**: ${entry.text}`, '')
+    }
+
+    lines.push('## What the implementer says it did', '')
+    lines.push(reviewed.summary?.trim() || 'It closed without a recorded summary.', '')
+
+    lines.push('## Where the work is', '')
+    lines.push(`Your working directory is \`${workspace}\`.`, '')
+    if (reviewed.branch) {
+        lines.push(`The work is on branch \`${reviewed.branch}\`, and it is not merged.`, '')
+        if (reviewed.headBefore) {
+            lines.push('That branch started here, so this is the whole change:', '')
+            lines.push('```', `git diff ${reviewed.headBefore}..${reviewed.branch}`, '```', '')
+        }
+        if (reviewed.worktree) {
+            lines.push(`It was written in \`${reviewed.worktree}\`, which may already be gone.`, '')
+        }
+    } else {
+        lines.push('There is no branch: judge the state of the working directory itself.', '')
+    }
+
+    lines.push('## How to finish', '')
+    lines.push(
+        'Write everything in English, whatever the machine you are running on prefers.',
+        '',
+        'End your last message with a block in exactly this shape, on its own lines, and nothing',
+        'after it:',
+        '',
+        '```',
+        MARKER,
+        '{ "outcome": "completed" | "blocked",',
+        '  "verdict": "approved" | "changes",',
+        '  "blockKind": "needs_input" | "capability" | "transient" | "dependency" | null,',
+        '  "summary": "what you judged, and what is wrong with it",',
+        '  "artifacts": [],',
+        '  "followups": [ { "title": "...", "body": "..." } ] }',
+        '```',
+        '',
+        '`verdict` is the review, and a review that completes without one is a broken review: the',
+        'board will not guess it. Use `approved` when the work does what the card asked and you',
+        'would land it. Use `changes` when it does not, and then the summary is the whole brief',
+        'the next implementer gets, so write it as instructions rather than as a complaint.',
+        '',
+        'Use `blocked` only when you cannot judge at all: the branch is not there, the card does',
+        'not say enough to judge against, or a person has to decide something first. `followups`',
+        'is for the problems you found that are NOT this one to fix; each one becomes a new card.',
+        ''
+    )
+
+    return lines.join('\n')
+}
+
 export async function start(
     card: Card,
     parents: Card[],
     runId: string,
     workspace: string,
-    attachments: { name: string; path: string }[] = []
+    attachments: { name: string; path: string }[] = [],
+    reviewing: Run | null = null
 ): Promise<Started> {
     const path = await agents.binary()
     if (!path) throw new Error('claude is not on PATH')
@@ -171,10 +253,13 @@ export async function start(
     await writeFile(join(workspace, '.dyakanban', '.gitignore'), '*\n', 'utf-8')
     const briefPath = join(folder, 'brief.md')
 
-    const isolate = (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
+    const isolate =
+        !reviewing && (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
     const predicted = isolate ? join(workspace, '.claude', 'worktrees', isolate) : workspace
 
-    const text = brief(card, parents, predicted, isolate !== null, attachments)
+    const text = reviewing
+        ? reviewBrief(card, reviewing, workspace, attachments)
+        : brief(card, parents, predicted, isolate !== null, attachments)
     await writeFile(briefPath, text, 'utf-8')
     const prompt =
         text.length <= INLINE_LIMIT
@@ -188,7 +273,7 @@ export async function start(
     }
 
     const argv = agents.launchArgv({
-        name: card.title.slice(0, 60),
+        name: (reviewing ? `review: ${card.title}` : card.title).slice(0, 60),
         permissionMode: card.permissionMode,
         addDirs: dirs,
         model: card.model,
@@ -259,6 +344,10 @@ export function parseTerminal(text: string): TerminalBlock | null {
         const followups = Array.isArray(raw.followups) ? raw.followups : []
         return {
             outcome,
+            verdict:
+                raw.verdict === 'approved' || raw.verdict === 'changes'
+                    ? (raw.verdict as Verdict)
+                    : null,
             blockKind: (raw.blockKind as BlockKind) ?? null,
             summary: typeof raw.summary === 'string' ? raw.summary : '',
             artifacts: Array.isArray(raw.artifacts) ? raw.artifacts.map(String) : [],

@@ -3,7 +3,11 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
-import type { BoardDraft, BoardMeta } from './types.js'
+import type { BoardDraft, BoardMeta, Settings } from './types.js'
+
+export const PER_BOARD = 1
+export const GLOBAL = 2
+const CAP_CEILING = 10
 
 const SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/
 const RESERVED = new Set([
@@ -37,6 +41,37 @@ export function root(): string {
 
 function registryPath(): string {
     return join(root(), 'boards.json')
+}
+
+function settingsPath(): string {
+    return join(root(), 'settings.json')
+}
+
+export function assertCap(value: unknown): number {
+    const cap = typeof value === 'number' ? value : Number(value)
+    if (!Number.isInteger(cap)) throw new Error('a cap is a whole number of cards')
+    if (cap < 0) throw new Error('a cap cannot be negative; 0 pauses instead')
+    if (cap > CAP_CEILING) throw new Error(`${CAP_CEILING} at once is as high as this goes`)
+    return cap
+}
+
+export async function settings(): Promise<Settings> {
+    try {
+        const parsed = JSON.parse(await readFile(settingsPath(), 'utf-8')) as Partial<Settings>
+        return { maxRunning: assertCap(parsed?.maxRunning) }
+    } catch {
+        return { maxRunning: GLOBAL }
+    }
+}
+
+export async function saveSettings(patch: Partial<Settings>): Promise<Settings> {
+    const current = await settings()
+    const next: Settings = {
+        maxRunning: patch.maxRunning === undefined ? current.maxRunning : assertCap(patch.maxRunning)
+    }
+    await mkdir(root(), { recursive: true })
+    await writeAtomic(settingsPath(), JSON.stringify(next, null, 4))
+    return next
 }
 
 export function boardRoot(slug: string): string {
@@ -102,7 +137,12 @@ export async function list(): Promise<BoardMeta[]> {
     try {
         const parsed = JSON.parse(await readFile(registryPath(), 'utf-8')) as unknown
         if (!Array.isArray(parsed)) return []
-        return (parsed as BoardMeta[]).slice().sort((a, b) => a.order - b.order)
+        return (parsed as BoardMeta[])
+            .map((entry) => ({
+                ...entry,
+                maxRunning: typeof entry.maxRunning === 'number' ? entry.maxRunning : null
+            }))
+            .sort((a, b) => a.order - b.order)
     } catch {
         return []
     }
@@ -135,7 +175,8 @@ export async function create(draft: BoardDraft): Promise<BoardMeta> {
         workdir,
         archived: false,
         createdAt: Date.now(),
-        order: boards.length
+        order: boards.length,
+        maxRunning: draft.maxRunning === undefined || draft.maxRunning === null ? null : assertCap(draft.maxRunning)
     }
 
     await mkdir(boardRoot(slug), { recursive: true })
@@ -154,7 +195,14 @@ export async function update(slug: string, patch: Partial<BoardDraft>): Promise<
     const workdir =
         patch.workdir === undefined ? boards[index].workdir : await assertWorkdir(patch.workdir)
 
-    boards[index] = { ...boards[index], name, workdir }
+    const maxRunning =
+        patch.maxRunning === undefined
+            ? boards[index].maxRunning
+            : patch.maxRunning === null
+              ? null
+              : assertCap(patch.maxRunning)
+
+    boards[index] = { ...boards[index], name, workdir, maxRunning }
     await persist(boards)
     return boards[index]
 }

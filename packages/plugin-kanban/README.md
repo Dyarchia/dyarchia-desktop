@@ -66,6 +66,12 @@ Failure handling         crash, protocol violation, runtime cap, silence past a 
                          hour run, circuit breaker, respawn guard, block routing by
                          kind, and a block-loop guard that sends a card to triage
                          after it blocks the same way twice
+Review                   a card in review is approved or sent back by the operator, or
+                         handed to a reviewer: a second session with no worktree, in the
+                         project itself, briefed with the card and the branch. It
+                         answers with `verdict` in its terminal block, and approving
+                         is a judgement rather than a merge: the branch is still the
+                         operator's to land
 Fan-out                  `followups` in the terminal block become child cards gated
                          on the card that proposed them
 Health                   a strip in the bar naming what is wrong: cards waiting on
@@ -107,8 +113,9 @@ Housekeeping             every store the board fills has something that empties 
                          the project's local git exclude when the board is created
 ```
 
-There is deliberately no way to move a card to `done` by hand. `done` means a worker finished.
-See section 9 of the design.
+`done` is reached from `review` and nowhere else, by an operator who approves or a reviewer
+whose verdict is `approved`. No other column offers it, and nothing skips review. See section 9
+of the design.
 
 
 ## 1.1 What a worker actually is
@@ -155,9 +162,9 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 63 checks over slug validation, three-valued liveness, both
-parsers, dependency cycles, rev fencing, promotion, unblock, scheduled cards, the worktree
-listing and what a deleted card takes with it. It writes to a temp userData and takes about a
+node, no window and no IPC. 115 checks over slug validation, three-valued liveness, both
+parsers and the verdict, dependency cycles, rev fencing, promotion, unblock, scheduled cards,
+the worktree listing, both briefs, and what a deleted card takes with it. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
@@ -194,6 +201,9 @@ attach               a MessagePort pty that prints a permission prompt, echoes w
 runEvents            nine canned rows covering all five kinds, including a tool
                      result that is an error
 diagnostics          two problems, so the health strip and its menu are populated
+reviewCard           a review run with no worktree, ending in a verdict: approved
+                     into done, then changes requested into ready with the reviewer's
+                     summary left as a comment
 stopCard, unblock    the real outcomes: a stop is a crash with no evidence and the
                      card returns to ready; an unblock returns it to its source
                      phase, or to todo while parents are open
@@ -251,6 +261,7 @@ slug first, because there is no ambient current board in the main module.
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
+reviewCard    starts a review run on a card that is in review, at once
 attachments   reveal        worktrees     removeWorktree
 ignoreState   addIgnore     addAttachments              removeAttachment
 events        the board's decisions, for one card or for the whole board

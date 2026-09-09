@@ -24,6 +24,13 @@ function empty(): BoardFile {
     return { version: VERSION, cards: [] }
 }
 
+function restore(card: Card): Card {
+    for (const run of card.runs ?? []) {
+        if (run.kind !== 'review') run.kind = 'implement'
+    }
+    return card
+}
+
 export async function load(slug: string): Promise<BoardFile> {
     const held = cache.get(slug)
     if (held) return held
@@ -31,7 +38,9 @@ export async function load(slug: string): Promise<BoardFile> {
     let file = empty()
     try {
         const parsed = JSON.parse(await readFile(boardPath(slug), 'utf-8')) as BoardFile
-        if (Array.isArray(parsed?.cards)) file = { version: VERSION, cards: parsed.cards }
+        if (Array.isArray(parsed?.cards)) {
+            file = { version: VERSION, cards: parsed.cards.map(restore) }
+        }
     } catch {
         file = empty()
     }

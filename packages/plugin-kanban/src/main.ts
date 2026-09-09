@@ -175,6 +175,13 @@ export function activate(ctx: PluginMainContext): void {
         return true
     })
 
+    ctx.handle('reviewCard', async (slug, id) => {
+        const target = await open(String(slug))
+        await dispatch.review(await boards.find(target), String(id), sink)
+        changed(target)
+        return true
+    })
+
     ctx.handle('stopCard', async (slug, id) => {
         const target = String(slug)
         const { card } = await liveRun(target, String(id))

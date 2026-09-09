@@ -178,8 +178,9 @@ Same-card review      a card moves to review with a summary; a          BUILT
                       reviewer approves or requests changes, which      by hand,
                       returns it to the implementer WITHOUT counting    phase 4
                       as a block
-An agent reviewer     a review run: an ordinary run with a reviewer     DESIGNED
-                      brief and a verdict in its terminal block         see 10.6
+An agent reviewer     a review run: an ordinary run with a reviewer     BUILT
+                      brief and a verdict in its terminal block         2026-09-09,
+                                                                        see 10.6
 Automatic reviewer    every completed card gets one without asking      DEFERRED
                                                                         after 10.6
 Goal mode             a judge evaluates each turn against the card's    DEFERRED
@@ -1199,7 +1200,7 @@ scheduled   parked waiting on a time, not on a person           no
 ready       ready with no blockers                              YES
 running     a worker holds it                                   no
 blocked     stopped, waiting on a person                        no
-review      work done, awaiting review                          no
+review      work done, awaiting review                          ON ASK
 done        closed                                              no
 archived    off the board, terminal                             no
 ```
@@ -1214,6 +1215,7 @@ stateDiagram-v2
     ready --> scheduled
     ready --> running: dispatcher claim
     running --> review: work done
+    review --> running: a reviewer is asked for
     running --> done: completed
     running --> blocked: needs a person
     running --> todo: dependency block
@@ -1222,8 +1224,9 @@ stateDiagram-v2
     blocked --> review: unblock, source was review
     blocked --> todo: unblock, parents still open
     blocked --> triage: block-loop guard
-    review --> done: approved
-    review --> ready: changes requested
+    review --> done: approved, by an operator or a verdict
+    review --> ready: changes requested, by either
+    review --> blocked: the reviewer could not judge
     done --> archived
     blocked --> archived
     archived --> [*]
@@ -1399,9 +1402,10 @@ shape agreed on one card is invisible to its siblings.
 ## 10.6 The review run
 
 A card that finishes inside a worktree lands in `review` because there is a branch for a
-person to land. Today that person is the only reviewer there is: two buttons, approve and
+person to land. That person used to be the only reviewer there is: two buttons, approve and
 request changes, and no way to ask an agent to look first. This section is the design for
-that, written before any of it is built.
+that. It was written before any of it was built, and **built on 2026-09-09** exactly as
+written except for one thing, which is 10.6.6.
 
 ### 10.6.1 What a reviewer is here
 
@@ -1498,6 +1502,31 @@ The drawer gains one button and the run row shows which kind it was
 Nothing else moves. In particular the dispatcher's caps, the claim, the liveness reading, the
 harvest and the worktree rules are all untouched: a review run is claimed, watched and closed
 by the same machinery as any other.
+
+### 10.6.6 What the build changed, and it is one thing
+
+**A review does not queue.** The claim reads one status, `ready`, and the card that wants a
+reviewer is in `review`; 10.6.5 forbids Card a new field, so there is nowhere to write "a
+review is pending" that the claim could read. The three ways out were a status, a field, or
+starting the run when the button is pressed, and the button won: a card reaches `review`
+exactly when the dispatcher is most likely to have claimed the next one, so refusing the
+button while the board is busy would be the common case rather than the rare one.
+
+What that costs is a board whose cap is one card holding two running sessions, and the
+reading that makes it consistent is that the cap governs what the dispatcher spends on its
+own, not what the operator asks for by hand. Nothing enforces that reading in code, so it is
+section 1 of [open-problems.md](open-problems.md) until the configurable caps land and decide
+it.
+
+Everything else in 10.6.5 is literal. `claim` and `review` share one `launch`, so a review is
+briefed, watched, reconciled, stopped and closed by the same code as an implementation, and
+the only branch between them is the brief, the missing worktree and the four rows of 10.6.3.
+
+One thing 10.6.1 says is not yet true of the mechanism: "it does not edit" is the brief's
+instruction, not the runtime's. A review inherits the card's permission mode and runs in the
+operator's checkout, so a model that decides to fix what it found can. `plan` is the mode that
+would make it true, and whether a background session in plan mode finishes a judgement has
+never been measured here. It is section 1 of [open-problems.md](open-problems.md).
 
 ## 11. Termination and the evidence ladder
 

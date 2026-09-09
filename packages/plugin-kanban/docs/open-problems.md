@@ -55,6 +55,15 @@ The verdict path            The probe covers the parser and the brief. The four
                             to drive, and no real reviewer has judged a real branch
                             yet. Proving it means a card that completes in a
                             worktree and the drawer's third button
+The caps against a real     The numbers are read every tick and the probe covers
+dispatcher                  what they accept, but no board has been watched
+                            refusing to claim because a cap said so, and 0 has
+                            never paused a real run
+The watch view against      Verified in the panel harness, over fake boards: the
+real boards                 view renders, a paused board is tagged, and a live row
+                            opens its card with the pty attached. What the harness
+                            cannot show is two REAL boards, whose events and cards
+                            are read from disk on every refresh
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"

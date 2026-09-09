@@ -381,6 +381,37 @@ async function reviews(): Promise<void> {
     check('a run written before kinds existed reads as an implementation', aged[0].runs[0].kind, 'implement')
 }
 
+async function caps(): Promise<void> {
+    console.log('\nconcurrency caps')
+
+    check('a cap is a whole number', boards.assertCap(3), 3)
+    check('zero is a cap, and it means paused', boards.assertCap(0), 0)
+    check('a numeric string is one too', boards.assertCap('2'), 2)
+    await refuses('a negative cap', async () => boards.assertCap(-1), 'cannot be negative')
+    await refuses('a fractional cap', async () => boards.assertCap(1.5), 'whole number')
+    await refuses('a cap that is not a number', async () => boards.assertCap('lots'), 'whole number')
+    await refuses('a cap past the ceiling', async () => boards.assertCap(11), 'as high as this goes')
+
+    check('a board starts on the default', (await boards.find('probe')).maxRunning, null)
+    check('and the default is one', boards.PER_BOARD, 1)
+
+    const raised = await boards.update('probe', { maxRunning: 3 })
+    check('a board can carry its own cap', raised.maxRunning, 3)
+    check('and it survives a read', (await boards.find('probe')).maxRunning, 3)
+
+    const renamed = await boards.update('probe', { name: 'probe' })
+    check('a patch that says nothing about it leaves it alone', renamed.maxRunning, 3)
+    check('and null puts it back on the default', (await boards.update('probe', { maxRunning: null })).maxRunning, null)
+    await refuses('a board cap past the ceiling', () => boards.update('probe', { maxRunning: 99 }), 'as high as this goes')
+
+    check('the global cap defaults to two', (await boards.settings()).maxRunning, boards.GLOBAL)
+    check('it can be changed', (await boards.saveSettings({ maxRunning: 4 })).maxRunning, 4)
+    check('and read back', (await boards.settings()).maxRunning, 4)
+    check('an empty patch keeps it', (await boards.saveSettings({})).maxRunning, 4)
+    await refuses('a global cap that is not one', () => boards.saveSettings({ maxRunning: -2 }), 'cannot be negative')
+    await boards.saveSettings({ maxRunning: boards.GLOBAL })
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -391,6 +422,7 @@ await housekeeping()
 await followups()
 await leases()
 await attachments()
+await caps()
 await reviews()
 await eventLog()
 

@@ -8,7 +8,16 @@ import type { MenuRow } from './menu.js'
 import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
-import type { Attachment, BoardMeta, BoardPayload, Card, KanbanEvent, Rules, Status } from './types.js'
+import type {
+    Attachment,
+    BoardMeta,
+    BoardPayload,
+    Card,
+    KanbanEvent,
+    Rules,
+    Settings,
+    Status
+} from './types.js'
 
 interface HistoryRow {
     at: number
@@ -530,12 +539,28 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const showBoardSettings = (): void => {
         if (!meta) return
-        main.hidden = true
-        setup.hidden = false
-        setup.replaceChildren(buildBoardSettings(meta))
+        const current = meta
+        void invoke<Settings>('settings')
+            .then((across) => {
+                main.hidden = true
+                setup.hidden = false
+                setup.replaceChildren(buildBoardSettings(current, across))
+            })
+            .catch(fail)
     }
 
-    const buildBoardSettings = (current: BoardMeta): HTMLElement => {
+    const capField = (value: number, note: string): HTMLInputElement => {
+        const field = el('input', 'dya-field dya-field--sm kanban-cap')
+        field.type = 'number'
+        field.min = '0'
+        field.max = '10'
+        field.step = '1'
+        field.value = String(value)
+        field.title = note
+        return field
+    }
+
+    const buildBoardSettings = (current: BoardMeta, across: Settings): HTMLElement => {
         const form = el('div', 'kanban-setup-form')
         form.append(
             el(
@@ -565,10 +590,33 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         dirRow.append(dir, browse)
 
+        const capsLabel = el(
+            'div',
+            'dya-empty',
+            'How many workers may run at once. 0 pauses: nothing new is claimed, and what is ' +
+                'already running finishes. A reviewer you ask for by hand starts regardless.'
+        )
+        const capsRow = el('div', 'kanban-row')
+        const boardCap = capField(current.maxRunning ?? 1, 'on this board')
+        const globalCap = capField(across.maxRunning, 'across every board')
+        capsRow.append(
+            el('span', 'dya-label', 'on this board'),
+            boardCap,
+            el('span', 'dya-label', 'across every board'),
+            globalCap
+        )
+
         const save = el('button', 'dya-button', 'save')
         save.type = 'button'
         save.addEventListener('click', () => {
-            void invoke('updateBoard', current.slug, { name: name.value, workdir: dir.value })
+            void invoke('updateSettings', { maxRunning: Number(globalCap.value) })
+                .then(() =>
+                    invoke('updateBoard', current.slug, {
+                        name: name.value,
+                        workdir: dir.value,
+                        maxRunning: Number(boardCap.value)
+                    })
+                )
                 .then(() => {
                     say(`${name.value} saved`)
                     return refresh()
@@ -616,7 +664,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const actions = el('div', 'kanban-row')
         actions.append(save, back, el('span', 'kanban-spacer'), archive, remove)
 
-        form.append(name, dirRow, actions)
+        form.append(name, dirRow, capsLabel, capsRow, actions)
         return form
     }
 

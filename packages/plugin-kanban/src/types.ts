@@ -88,6 +88,11 @@ export interface BoardMeta {
     archived: boolean
     createdAt: number
     order: number
+    maxRunning: number | null
+}
+
+export interface Settings {
+    maxRunning: number
 }
 
 export interface BoardFile {
@@ -134,6 +139,7 @@ export interface BoardDraft {
     slug: string
     name: string
     workdir: string
+    maxRunning?: number | null
 }
 
 export type KanbanEvent =

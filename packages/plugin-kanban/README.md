@@ -52,7 +52,10 @@ Dispatch                 one elected process sweeps, holding a lease it renews o
                          tick; another copy of the app watches and does not claim. The
                          tick reconciles running cards against
                          `claude agents --json` with three-valued liveness, promotes,
-                         and claims. 1 card per board, 2 across all of them
+                         and claims. 1 card per board and 2 across all of them by
+                         default, both settable per board and globally. The caps bind
+                         the claim, not the operator: a reviewer asked for by hand
+                         starts regardless
 Worker                   a real `claude --bg` session in a git worktree of the project,
                          watched through its transcript
 Terminal                 `claude attach` in a pty, in a utilityProcess, over a
@@ -104,7 +107,10 @@ Card settings            per card, from the drawer: permission mode, model, effo
                          workspace kind, a working directory override, a runtime cap
                          and a retry limit, all disabled while a worker holds the card
 Board settings           rename, re-point, archive and delete, the last two refusing
-                         while a card on that board is running
+                         while a card on that board is running, and the two concurrency
+                         caps: how many workers this board may run at once and how many
+                         across every board. 0 pauses, and a paused board says so in the
+                         health strip
 Housekeeping             every store the board fills has something that empties it:
                          attachments go with their card, temporary workspaces are swept
                          once their card is closed or gone, and the worktrees a run
@@ -162,9 +168,10 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 115 checks over slug validation, three-valued liveness, both
+node, no window and no IPC. 134 checks over slug validation, three-valued liveness, both
 parsers and the verdict, dependency cycles, rev fencing, promotion, unblock, scheduled cards,
-the worktree listing, both briefs, and what a deleted card takes with it. It writes to a temp userData and takes about a
+the worktree listing, both briefs, both concurrency caps, and what a deleted card takes with
+it. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
@@ -228,6 +235,8 @@ Under `app.getPath('userData')`, one directory per board:
 
 ```text
 kanban/boards.json                          the registry
+kanban/settings.json                        the one setting that has no board: the cap
+                                            across all of them
 kanban/dispatcher.json                      the lease naming the process that sweeps
 kanban/boards/<slug>/board.json             that board's cards
 kanban/boards/<slug>/board.bak.<n>.json     three rotated copies, newest is 0
@@ -261,6 +270,7 @@ slug first, because there is no ambient current board in the main module.
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
+settings      updateSettings              the global concurrency cap, which has no board
 reviewCard    starts a review run on a card that is in review, at once
 attachments   reveal        worktrees     removeWorktree
 ignoreState   addIgnore     addAttachments              removeAttachment

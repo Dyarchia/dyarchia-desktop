@@ -15,8 +15,6 @@ import type { BlockKind, BoardFile, BoardMeta, Card, Run, RunKind, Status } from
 
 const BUSY_MS = 5_000
 const IDLE_MS = 30_000
-const PER_BOARD = 1
-const GLOBAL = 2
 const RETRIES = 2
 const VIOLATIONS = 3
 const RECURRENCES = 2
@@ -592,7 +590,7 @@ function take(card: Card, kind: RunKind): Run {
 async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
     const file = await board.load(meta.slug)
     const running = file.cards.filter((card) => card.status === 'running').length
-    if (running >= PER_BOARD) return false
+    if (running >= (meta.maxRunning ?? boards.PER_BOARD)) return false
 
     const card = claimable(file, Date.now())[0]
     if (!card) return false
@@ -704,11 +702,32 @@ export async function diagnose(): Promise<Diagnostic[]> {
     const now = Date.now()
     const sessions = await agents.snapshot()
     const open = (await boards.list()).filter((entry) => !entry.archived)
+    const across = (await boards.settings()).maxRunning
+
+    if (across === 0 && open.length) {
+        found.push({
+            slug: '',
+            cardId: null,
+            problem: 'every board is paused: the cap across all of them is 0, so nothing is claimed'
+        })
+    }
 
     for (const meta of open) {
         const file = await board.load(meta.slug)
+        const cap = meta.maxRunning ?? boards.PER_BOARD
+        const paused = cap === 0 || across === 0
+
+        if (cap === 0) {
+            found.push({
+                slug: meta.slug,
+                cardId: null,
+                problem: 'this board is paused: its cap is 0, so nothing new is claimed'
+            })
+        }
+
         for (const card of file.cards) {
             if (
+                !paused &&
                 card.status === 'ready' &&
                 !board.blockedBy(file, card).length &&
                 now - card.updatedAt > STRANDED_MS
@@ -770,6 +789,7 @@ export async function sweep(sink: Sink): Promise<void> {
         const sessions = await agents.snapshot()
         const open = (await boards.list()).filter((entry) => !entry.archived)
         if (!open.length) return
+        const across = (await boards.settings()).maxRunning
 
         let running = 0
         for (const meta of open) {
@@ -778,7 +798,7 @@ export async function sweep(sink: Sink): Promise<void> {
             running += (await board.cards(meta.slug)).filter((card) => card.status === 'running').length
         }
 
-        for (let step = 0; step < open.length && running < GLOBAL; step += 1) {
+        for (let step = 0; step < open.length && running < across; step += 1) {
             const meta = open[(cursor + step) % open.length]
             if (await claim(meta, sink)) {
                 running += 1

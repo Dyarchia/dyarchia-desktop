@@ -12,7 +12,7 @@ import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
 import { ours, parseList, same } from '../src/worktrees.js'
 import type { SessionRecord } from '../src/agents.js'
-import type { Run } from '../src/types.js'
+import type { Card, Run } from '../src/types.js'
 
 let passed = 0
 let failed = 0
@@ -417,6 +417,62 @@ async function caps(): Promise<void> {
     check('and the tally has a row per status', Object.keys(counted).length, 9)
 }
 
+async function bulk(): Promise<void> {
+    console.log('\nseveral cards at once')
+
+    const meta = await boards.create({ slug: 'bulk', name: 'bulk', workdir: tmpdir() })
+    check('a second board for the bulk verbs', meta.slug, 'bulk')
+
+    const one = await board.createCard('bulk', { title: 'one', status: 'triage' })
+    const two = await board.createCard('bulk', { title: 'two', status: 'triage' })
+    const three = await board.createCard('bulk', { title: 'three', status: 'ready' })
+
+    const moved = await board.moveCards(
+        'bulk',
+        [
+            { id: one.id, rev: one.rev },
+            { id: two.id, rev: two.rev },
+            { id: three.id, rev: three.rev }
+        ],
+        'todo'
+    )
+    check('the legal ones move', moved.done.length, 2)
+    check('and the illegal one says why', moved.refused[0]?.why.includes('cannot go from ready to todo'), true)
+    check('the board agrees', (await board.cards('bulk')).filter((card) => card.status === 'todo').length, 2)
+
+    const stale = await board.moveCards('bulk', [{ id: one.id, rev: 0 }], 'ready')
+    check('a stale rev is refused in a batch too', stale.refused[0]?.why.includes('changed while'), true)
+    check('and nothing moved', stale.done.length, 0)
+
+    const same = await board.cards('bulk')
+    const already = same.find((card) => card.id === one.id) as Card
+    check(
+        'moving a card where it already is is not a refusal',
+        (await board.moveCards('bulk', [{ id: already.id, rev: already.rev }], 'todo')).done.length,
+        1
+    )
+
+    const parent = await board.createCard('bulk', { title: 'parent' })
+    const child = await board.createCard('bulk', { title: 'child', parents: [parent.id] })
+
+    const half = await board.deleteCards('bulk', [parent.id])
+    check('a parent alone will not go', half.done.length, 0)
+    check('and it says who holds it', half.refused[0]?.why.includes("'child' depends"), true)
+
+    const both = await board.deleteCards('bulk', [parent.id, child.id])
+    check('a parent goes with its child', both.done.length, 2)
+    check('and the board is smaller', (await board.cards('bulk')).some((card) => card.id === parent.id), false)
+
+    const locked = await board.cards('bulk')
+    const held = locked[0]
+    held.locked = true
+    await board.save('bulk', await board.load('bulk'))
+    const refusedLock = await board.deleteCards('bulk', [held.id])
+    check('a card with a live worker is never deleted', refusedLock.refused[0]?.why.includes('live worker'), true)
+
+    check('an empty batch does nothing and says nothing', (await board.deleteCards('bulk', [])).done.length, 0)
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -428,6 +484,7 @@ await followups()
 await leases()
 await attachments()
 await caps()
+await bulk()
 await reviews()
 await eventLog()
 

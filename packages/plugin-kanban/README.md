@@ -47,7 +47,13 @@ Panel                    one panel per board, pinned in localStorage by the
 Drag                     pointer events, ghost, insertion indicator, autoscroll,
                          accept and refuse washes, Escape to cancel
 Keyboard                 roving tabindex, arrows, Ctrl with arrows to move a card
-                         to the nearest legal status, Enter to open, live region
+                         to the nearest legal status, Enter to open, x to mark,
+                         Escape to clear the marks, live region
+Several at once          Ctrl-click marks a card and Shift-click marks a range down a
+                         column. A strip under the bar then offers the states EVERY
+                         marked card may go to, and one delete for all of them. Each
+                         batch is one write, and a card that refuses says why without
+                         taking the others down
 Dispatch                 one elected process sweeps, holding a lease it renews on every
                          tick; another copy of the app watches and does not claim. The
                          tick reconciles running cards against
@@ -173,10 +179,10 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 137 checks over slug validation, three-valued liveness, both
+node, no window and no IPC. 150 checks over slug validation, three-valued liveness, both
 parsers and the verdict, dependency cycles, rev fencing, promotion, unblock, scheduled cards,
-the worktree listing, both briefs, both concurrency caps, the status tally, and what a deleted
-card takes with it. It writes to a temp userData and takes about a
+the worktree listing, both briefs, both concurrency caps, the status tally, both batch verbs,
+and what a deleted card takes with it. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
@@ -219,6 +225,8 @@ overview             the watch view over two boards, one of them empty, with the
 reviewCard           a review run with no worktree, ending in a verdict: approved
                      into done, then changes requested into ready with the reviewer's
                      summary left as a comment
+moveCards            the real batch answer: the legal ones move, the rest come back
+deleteCards          with the reason, and a card with a live worker is never deleted
 stopCard, unblock    the real outcomes: a stop is a crash with no evidence and the
                      card returns to ready; an unblock returns it to its source
                      phase, or to todo while parents are open
@@ -277,6 +285,8 @@ slug first, because there is no ambient current board in the main module.
 ```text
 boards        createBoard   updateBoard   archiveBoard   pickWorkdir
 board         createCard    updateCard    moveCard       deleteCard     comment
+moveCards     deleteCards                 the same two verbs over a selection, each one
+                                          write, answering { done, refused }
 deleteBoard   dispatchNow   stopCard      unblock        runEvents      diagnostics
 settings      updateSettings              the global concurrency cap, which has no board
 overview      every board at once, for the watch view: caps, backlog, live runs,
@@ -328,6 +338,10 @@ RULE                        WHY
                             transition: its transform is written every frame
 .kanban-sr                  a screen-reader-only region for the live announcements.
                             The system has no such class. See section 6
+.kanban-card[data-marked]    the multi-selection wash, on --dya-accent-soft, which is
+                            the only card state that is a fill rather than a border:
+                            selected, problem and marked can all be true at once and
+                            two borders cannot
 .kanban-watch-run           a row in the watch view is a BUTTON, because it is a way
                             into the card and its session rather than a readout, and
                             a button is what a keyboard expects to reach. The rule
@@ -340,6 +354,10 @@ RULE                        WHY
                             scrollbar and background match the system; they target
                             xterm's classes, not dya-* ones
 ```
+
+`user-select: none` sits on the card because shift-click marks a range, and a shift-click on
+text is a text selection: without it the range gesture paints the board orange. The drawer is
+where the selectable text lives.
 
 `touch-action: none` sits on the whole card rather than on a grip. That disables touch panning
 of a column that starts on a card, which is the correct trade for a desktop Electron app and

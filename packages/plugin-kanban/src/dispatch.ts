@@ -35,6 +35,7 @@ const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
 const PRUNE_MS = 10 * 60_000
 const CREDENTIAL = /401|429|quota|credit|not logged in|refresh your login/i
+const YOUNG_MS = 20_000
 
 export interface CardProgress {
     slug: string
@@ -114,6 +115,10 @@ let housekeeping: Diagnostic[] = []
 
 function current(card: Card): Run | null {
     return card.runs.length ? card.runs[card.runs.length - 1] : null
+}
+
+export function unlisted(state: agents.Liveness, startedAt: number, now: number): boolean {
+    return state === 'dead' && now - startedAt < YOUNG_MS
 }
 
 export function home(run: Run): 'ready' | 'review' {
@@ -476,8 +481,9 @@ async function reconcile(
         }
 
         const declared = progress?.terminal != null && progress.ended
+        const asOf = Date.now()
 
-        if (state === 'unknown' && !declared) continue
+        if (!declared && (state === 'unknown' || unlisted(state, run.startedAt, asOf))) continue
 
         if (declared || state === 'dead') {
             if (declared && state !== 'dead' && run.shortId) await agents.stop(run.shortId)

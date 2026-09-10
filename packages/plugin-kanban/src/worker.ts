@@ -173,6 +173,12 @@ export function reviewBrief(
         'checkout by accident, and it lets you read the branch without stopping for permission on',
         'every command. Do not try to leave it, and do not end by proposing a plan. The judgement',
         'below IS your output.',
+        '',
+        'Judge from the diff and from what the implementer says it did. Reading is free here;',
+        'RUNNING things is not, and an attempt to run the tests will stop this session dead',
+        'waiting for a person who is not there. If you cannot be sure without executing',
+        'something, that is a legitimate answer: say `changes` and name exactly what you would',
+        'have run.',
         ''
     )
 

@@ -24,13 +24,14 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**Does a background session in plan mode end with a verdict, or with a proposal?** Open since
-2026-09-10, when reviews were pinned to `plan` for the two reasons in design.md 10.6.1. Plan
-mode normally ends by asking to leave plan mode, and the reviewer brief tells it not to, but
-telling a model something is not measuring it.
+**Does a background session in plan mode end with a verdict, or with a proposal?** Half
+answered on 2026-09-10. The reads work: the first plan-mode reviewer walked the branch with
+git and never once stopped for permission, which is what pinning reviews to `plan` was for.
+What is still unmeasured is the ending, because that run was killed by the liveness race
+before it got there and the next one stopped trying to execute the tests.
 
-- If it proposes instead of judging, the run completes with no `verdict` and the board calls
-  that a protocol violation, which is the right answer to the wrong question.
+- If it proposes a plan instead of judging, the run completes with no `verdict`, and the board
+  calls that a protocol violation: the right answer to the wrong question.
 - **Done looks like** one run of the fixture in section 2 of the README reaching `approved` or
   `changes`. It costs a few cents.
 
@@ -160,6 +161,11 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+A sweep landing inside the first seconds     a run younger than      design.md 10.6.6
+of a run read "not in the agents list" as    20s that is merely
+dead and closed a healthy session as         absent is left for
+crashed. A worktree hid it for a year;       the next tick
+a review has none
 An auth failure lands in run.summary and     `guarded` reads both    design.md 12.3
 the respawn guard only read run.error, so    fields, and knows the
 a busy credential looked like an exhausted   refresh message. Two

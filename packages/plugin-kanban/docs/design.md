@@ -1539,7 +1539,22 @@ parked there and was killed by the cap having judged nothing. So a review now la
 open is whether a background session in plan mode ends with a verdict or with a proposal, and
 that is measured on the fixture rather than argued about.
 
-The same proof found the routing hole this section had left: a review run that is stopped by
+The same proof found two more things, and the first is not about reviews at all. **A run can be
+called dead before the CLI has listed it.** `liveness` reads "not in `claude agents --json`" as
+dead, and a session takes a moment to appear there; a sweep landing in that window closes a
+perfectly healthy run as crashed. It had never fired because an implementation run waits for
+its worktree to appear before the run is recorded, up to four seconds, and that delay was
+hiding the race. A review has no worktree, waits for nothing, and was killed 2.5 seconds after
+it launched while it was reading the branch. A run younger than 20 seconds that is merely
+absent from the list is now left alone for the next tick, which is what `unlisted` says.
+
+The second is the cost of plan mode, and it is worth naming: **a reviewer cannot verify by
+running anything.** The first plan-mode reviewer read the diff without a single prompt, then
+tried to run the implementer's test script to check the claim, and stopped there, because
+executing is not reading. The brief now says so and gives it the honest way out: judge from the
+diff, and if that is not enough, answer `changes` and name what you would have run.
+
+The routing hole this section had left: a review run that is stopped by
 the runtime cap is closed in `reconcile`, not in `resolveReview`, and that path sent the card
 to `blocked` with `sourcePhase: 'ready'`. Unblocking would have handed a reviewed card back to
 an implementer and lost the review in silence. Both callers now ask `home(run)`.

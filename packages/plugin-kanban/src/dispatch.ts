@@ -480,13 +480,13 @@ async function reconcile(
             run.outputTokens = progress.outputTokens
         }
 
-        const declared = progress?.terminal != null && progress.ended
+        const finished = progress?.ended === true
         const asOf = Date.now()
 
-        if (!declared && (state === 'unknown' || unlisted(state, run.startedAt, asOf))) continue
+        if (!finished && (state === 'unknown' || unlisted(state, run.startedAt, asOf))) continue
 
-        if (declared || state === 'dead') {
-            if (declared && state !== 'dead' && run.shortId) await agents.stop(run.shortId)
+        if (finished || state === 'dead') {
+            if (finished && state !== 'dead' && run.shortId) await agents.stop(run.shortId)
             await resolve(file, meta, card, run, sink, progress)
             changed = true
             continue

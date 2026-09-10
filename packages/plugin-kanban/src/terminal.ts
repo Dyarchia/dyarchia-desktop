@@ -23,6 +23,7 @@ const ANSI: ITheme = {
 }
 
 const MIN_COLS = 80
+const QUIET_MS = 1_500
 
 type HostMessage = { t: 'data'; d: string } | { t: 'exit'; code: number }
 
@@ -64,6 +65,9 @@ export function openTerminal(
     let disposed = false
     let asked = false
     let toldAt = 0
+    let drawn = false
+    let hinted = false
+    let quiet: ReturnType<typeof setTimeout> | null = null
     const attachId = crypto.randomUUID()
 
     const fit = new FitAddon()
@@ -108,10 +112,43 @@ export function openTerminal(
         terminal.options.theme = theme()
     })
 
+    const stopWaiting = (): void => {
+        if (!quiet) return
+        clearTimeout(quiet)
+        quiet = null
+    }
+
+    const waitForIt = (): void => {
+        stopWaiting()
+        quiet = setTimeout(() => {
+            quiet = null
+            if (drawn || disposed) return
+            hinted = true
+            terminal.write(
+                [
+                    '',
+                    '  Attached. The agent has not drawn anything yet.',
+                    '',
+                    '  A session that is mid-turn paints nothing until it next writes, so this',
+                    '  stays empty while it thinks. Its screen appears here by itself.',
+                    ''
+                ].join('\r\n')
+            )
+        }, QUIET_MS)
+    }
+
     const onHostMessage = (event: MessageEvent): void => {
         const message = event.data as HostMessage
         if (message.t === 'data') {
             const chars = message.d.length
+            stopWaiting()
+            if (!drawn) {
+                drawn = true
+                if (hinted) {
+                    hinted = false
+                    terminal.reset()
+                }
+            }
             terminal.write(message.d, () => port?.postMessage({ t: 'ack', n: chars }))
             return
         }
@@ -135,6 +172,7 @@ export function openTerminal(
         port = received
         port.onmessage = onHostMessage
         port.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
+        waitForIt()
     }
 
     function ask(): void {
@@ -158,6 +196,7 @@ export function openTerminal(
     return {
         dispose(): void {
             disposed = true
+            stopWaiting()
             stopThemeWatch()
             observer.disconnect()
             window.removeEventListener('message', onAnnouncement)

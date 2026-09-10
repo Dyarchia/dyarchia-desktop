@@ -216,8 +216,10 @@ card:progress        a step every second or two: starting, working, two tools, a
 run:ended            alternates the two endings a run really has: completed into
                      review with report.md harvested, and blocked on needs_input
                      with the agent's reason left as a comment
-attach               a MessagePort pty that prints a permission prompt, echoes what
-                     is typed, answers 1, 2 and 3 differently, and keeps chattering
+attach               a MessagePort pty that waits two seconds before its first byte,
+                     the way a session mid-turn does, then prints a permission
+                     prompt, echoes what is typed, answers 1, 2 and 3 differently,
+                     and keeps chattering
 runEvents            nine canned rows covering all five kinds, including a tool
                      result that is an error
 diagnostics          two problems, so the health strip and its menu are populated,
@@ -383,6 +385,11 @@ RULE                        WHY
                             into the card and its session rather than a readout, and
                             a button is what a keyboard expects to reach. The rule
                             strips the button chrome and gives it the row layout
+.kanban-terminal            the xterm host. What is worth knowing is not the rule:
+                            a pane that attaches to a session mid-turn draws NOTHING
+                            until that session next writes, so the terminal says so
+                            after a second and a half of silence and resets itself
+                            on the first byte. Measured on a real agent, twice
 .kanban-stage               the drawer's terminal band, on --dya-surface-1 because
                             xterm computes its own contrast and has to know what it
                             is drawing on

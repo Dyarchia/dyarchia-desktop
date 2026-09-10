@@ -6,6 +6,7 @@ import * as agents from './agents.js'
 import type { BlockKind, Card, Run, Verdict } from './types.js'
 
 const MARKER = '===KANBAN==='
+const REVIEW_MODE = 'plan'
 const LAUNCH_TIMEOUT_MS = 60_000
 const INLINE_LIMIT = 8_000
 const SETTLE_TRIES = 10
@@ -167,6 +168,17 @@ export function reviewBrief(
         'Another agent did this work. You are here to judge it, not to continue it, and NOT to',
         'change it: you are in the checkout the operator works in, and nothing you write here is',
         'wanted. Read, decide, and say what you decided.',
+        '',
+        'You are in PLAN MODE, and that is deliberate: it is what stops you editing the operator',
+        'checkout by accident, and it lets you read the branch without stopping for permission on',
+        'every command. Do not try to leave it, and do not end by proposing a plan. The judgement',
+        'below IS your output.',
+        '',
+        'Judge from the diff and from what the implementer says it did. Reading is free here;',
+        'RUNNING things is not, and an attempt to run the tests will stop this session dead',
+        'waiting for a person who is not there. If you cannot be sure without executing',
+        'something, that is a legitimate answer: say `changes` and name exactly what you would',
+        'have run.',
         ''
     )
 
@@ -274,7 +286,7 @@ export async function start(
 
     const argv = agents.launchArgv({
         name: (reviewing ? `review: ${card.title}` : card.title).slice(0, 60),
-        permissionMode: card.permissionMode,
+        permissionMode: reviewing ? REVIEW_MODE : card.permissionMode,
         addDirs: dirs,
         model: card.model,
         effort: card.effort,

@@ -4,6 +4,7 @@ import { stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import type { BoardDraft, BoardMeta, Settings } from './types.js'
+import { Refusal } from './refusal.js'
 
 export const PER_BOARD = 1
 export const GLOBAL = 2
@@ -49,9 +50,9 @@ function settingsPath(): string {
 
 export function assertCap(value: unknown): number {
     const cap = typeof value === 'number' ? value : Number(value)
-    if (!Number.isInteger(cap)) throw new Error('a cap is a whole number of cards')
-    if (cap < 0) throw new Error('a cap cannot be negative; 0 pauses instead')
-    if (cap > CAP_CEILING) throw new Error(`${CAP_CEILING} at once is as high as this goes`)
+    if (!Number.isInteger(cap)) throw new Refusal('a cap is a whole number of cards')
+    if (cap < 0) throw new Refusal('a cap cannot be negative; 0 pauses instead')
+    if (cap > CAP_CEILING) throw new Refusal(`${CAP_CEILING} at once is as high as this goes`)
     return cap
 }
 
@@ -96,15 +97,15 @@ export function attachmentsRoot(slug: string, cardId: string): string {
 
 export function assertSlug(slug: string): string {
     const value = String(slug ?? '')
-    if (!SLUG.test(value)) throw new Error(`'${value}' is not a valid board slug`)
-    if (RESERVED.has(value)) throw new Error(`'${value}' is a reserved device name`)
+    if (!SLUG.test(value)) throw new Refusal(`'${value}' is not a valid board slug`)
+    if (RESERVED.has(value)) throw new Refusal(`'${value}' is a reserved device name`)
     return value
 }
 
 export function assertFileName(name: string): string {
     const value = String(name ?? '').trim()
-    if (!value || value === '.' || value === '..') throw new Error('that is not a file name')
-    if (/[\\/:*?"<>|]/.test(value)) throw new Error(`'${value}' is not a file name`)
+    if (!value || value === '.' || value === '..') throw new Refusal('that is not a file name')
+    if (/[\\/:*?"<>|]/.test(value)) throw new Refusal(`'${value}' is not a file name`)
     return value
 }
 
@@ -120,10 +121,10 @@ export function slugify(name: string): string {
 
 export async function assertWorkdir(workdir: string): Promise<string> {
     const value = String(workdir ?? '').trim()
-    if (!value) throw new Error('the board needs a project directory')
-    if (!isAbsolute(value)) throw new Error(`'${value}' is not an absolute path`)
+    if (!value) throw new Refusal('the board needs a project directory')
+    if (!isAbsolute(value)) throw new Refusal(`'${value}' is not an absolute path`)
     const info = await stat(value).catch(() => null)
-    if (!info?.isDirectory()) throw new Error(`'${value}' is not an existing directory`)
+    if (!info?.isDirectory()) throw new Refusal(`'${value}' is not an existing directory`)
     return value
 }
 
@@ -155,19 +156,19 @@ async function persist(boards: BoardMeta[]): Promise<void> {
 
 export async function find(slug: string): Promise<BoardMeta> {
     const board = (await list()).find((entry) => entry.slug === slug)
-    if (!board) throw new Error(`no board '${slug}'`)
+    if (!board) throw new Refusal(`no board '${slug}'`)
     return board
 }
 
 export async function create(draft: BoardDraft): Promise<BoardMeta> {
     const name = String(draft.name ?? '').trim()
-    if (!name) throw new Error('the board needs a name')
+    if (!name) throw new Refusal('the board needs a name')
 
     const slug = assertSlug(draft.slug?.trim() ? draft.slug.trim() : slugify(name))
     const workdir = await assertWorkdir(draft.workdir)
 
     const boards = await list()
-    if (boards.some((entry) => entry.slug === slug)) throw new Error(`board '${slug}' already exists`)
+    if (boards.some((entry) => entry.slug === slug)) throw new Refusal(`board '${slug}' already exists`)
 
     const board: BoardMeta = {
         slug,
@@ -187,10 +188,10 @@ export async function create(draft: BoardDraft): Promise<BoardMeta> {
 export async function update(slug: string, patch: Partial<BoardDraft>): Promise<BoardMeta> {
     const boards = await list()
     const index = boards.findIndex((entry) => entry.slug === slug)
-    if (index < 0) throw new Error(`no board '${slug}'`)
+    if (index < 0) throw new Refusal(`no board '${slug}'`)
 
     const name = patch.name === undefined ? boards[index].name : String(patch.name).trim()
-    if (!name) throw new Error('the board needs a name')
+    if (!name) throw new Refusal('the board needs a name')
 
     const workdir =
         patch.workdir === undefined ? boards[index].workdir : await assertWorkdir(patch.workdir)
@@ -209,14 +210,14 @@ export async function update(slug: string, patch: Partial<BoardDraft>): Promise<
 
 export async function forget(slug: string): Promise<void> {
     const boards = await list()
-    if (!boards.some((entry) => entry.slug === slug)) throw new Error(`no board '${slug}'`)
+    if (!boards.some((entry) => entry.slug === slug)) throw new Refusal(`no board '${slug}'`)
     await persist(boards.filter((entry) => entry.slug !== slug))
 }
 
 export async function setArchived(slug: string, archived: boolean): Promise<BoardMeta> {
     const boards = await list()
     const index = boards.findIndex((entry) => entry.slug === slug)
-    if (index < 0) throw new Error(`no board '${slug}'`)
+    if (index < 0) throw new Refusal(`no board '${slug}'`)
 
     boards[index] = { ...boards[index], archived }
     await persist(boards)

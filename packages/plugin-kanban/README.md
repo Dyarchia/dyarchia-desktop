@@ -22,8 +22,11 @@ Code.
 - [1. What is built](#1-what-is-built)
 - [1.1 What a worker actually is](#11-what-a-worker-actually-is)
 - [2. Build and verify](#2-build-and-verify)
+- [2.1 Which permission mode to run under](#21-which-permission-mode-to-run-under)
+- [2.2 The Windows allowlist trap](#22-the-windows-allowlist-trap)
 - [3. Storage](#3-storage)
 - [4. IPC](#4-ipc)
+- [4.1 Refusals and the mark that carries them](#41-refusals-and-the-mark-that-carries-them)
 - [5. Plugin-prefixed CSS, and why each rule exists](#5-plugin-prefixed-css-and-why-each-rule-exists)
 - [6. Debts](#6-debts)
 - [docs/open-problems.md](docs/open-problems.md)
@@ -181,11 +184,12 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 164 checks over slug validation, three-valued liveness and the
+node, no window and no IPC. 192 checks over slug validation, three-valued liveness and the
 window where a new session is not listed yet, both parsers and the verdict, dependency cycles,
 rev fencing, promotion, unblock, scheduled cards, the worktree listing, both briefs, both
 concurrency caps, the respawn guard, where a stopped run goes home, the status tally, both
-batch verbs, and what a deleted card takes with it. It writes to a temp userData and takes about a
+batch verbs, what a deleted card takes with it, the fields a patch may carry, and a turn that
+finished declaring nothing. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 
@@ -276,13 +280,84 @@ the verdict                     ask a reviewer from the drawer and read what it
 ```
 
 Delete the repository, `claude rm <id>` every session it left, and delete the board when the
-answers are written down. The measurements from the run of 2026-09-10 are in design.md and in
-[open-problems.md](open-problems.md); it found two bugs, and both of them were in paths no
-probe covered because no probe can.
+answers are written down. The measurements from the runs of 2026-09-10 are in design.md and
+in [docs/open-problems.md](docs/open-problems.md); every bug they found was in a path no
+probe covered, because no probe can.
 
 Do not stub `window.dyarchia` inside the real shell instead. That object comes from
 `contextBridge` and its properties are not writable: the assignment fails silently, the real
 IPC call goes through, and a modal dialog opens on the operator's screen.
+
+
+## 2.1 Which permission mode to run under
+
+An unattended run goes on `auto`. The worker decides for itself and the CLI's safety classifier
+is the backstop, and it is the only mode that gets a commit made with nobody watching. A run you
+intend to sit in front of can go on `acceptEdits`, which applies edits without asking and then
+stops on every command, the commit included.
+
+Two modes look like shortcuts and are not:
+
+```text
+MODE                WHAT HAPPENS
+------------------  ------------------------------------------------------------
+bypassPermissions   refuses to launch under `--bg` at all. The CLI wants a
+                    one-time interactive disclaimer first and a detached session
+                    has nobody to give it, so the run never starts
+dontAsk             launches, and then denies every request it would otherwise
+                    have asked about. The worker gets through nothing that needs
+                    approval and ends its turn waiting for permission it cannot
+                    be given
+```
+
+Reviews are not the operator's choice. They are forced into `plan` so a reviewer can read the
+branch without stopping for permission, see design.md 10.6.1. Plan mode gates on whether
+something is an execution, not on whether it is harmful: measured on 2026-09-10, a real reviewer
+read the branch with git diff, git log, git show, ls and Read untouched, then stalled on a
+compound command that appended a `node -e` version probe to a chain of git reads. With a person
+present that costs one keystroke. Unattended nothing ends it: the stall detector fires only while
+the session reads 'working', a worker stopped at a prompt reads 'blocked', and the card's runtime
+cap is unset by default.
+
+The measurements behind every mode are in design.md 5.14. `manual` is unmeasured.
+
+
+## 2.2 The Windows allowlist trap
+
+A repository can pre-authorise commands for the sessions that run in it, in its own
+`.claude/settings.json`. On Windows a rule written as `Bash(...)` never fires, because the worker
+reaches for the PowerShell tool: the rule names a tool that is never asked for, and the worker
+stops for approval anyway.
+
+Measured on the proof repository of 2026-09-10. Four commands, all four covered on paper, none of
+them covered in fact:
+
+```text
+COMMAND      REQUESTED THROUGH   RULE THAT WAS MEANT TO COVER IT
+-----------  ------------------  ---------------------------------
+node         PowerShell          Bash(node:*)
+git status   PowerShell          Bash(git status:*)
+git add      PowerShell          Bash(git add:*)
+git commit   PowerShell          Bash(git commit:*)
+```
+
+Name the tool the worker actually uses:
+
+```json
+{
+    "permissions": {
+        "allow": [
+            "PowerShell(node:*)",
+            "PowerShell(git status:*)",
+            "PowerShell(git add:*)",
+            "PowerShell(git commit:*)"
+        ]
+    }
+}
+```
+
+Keep the `Bash(...)` rules beside them if the same repository is also worked from a POSIX shell.
+They cost nothing there and they cover nothing here.
 
 
 ## 3. Storage
@@ -309,7 +384,8 @@ Scratch workspaces are the exception and live at `<tmpdir>/dyarchia-kanban/<slug
 NOT under userData. Section 2.2 of the design calls a scratch workspace "a fresh temporary
 directory" and userData is not temporary, which is reason enough. It is also where a workspace
 under userData was measured to fail, though **the cause of that is not settled** and may be an
-artifact of the machine it was measured on. See design.md 5.11 and open-problems.md 1.1.
+artifact of the machine it was measured on. See design.md 5.11 and the AppData question in
+section 4 of [docs/open-problems.md](docs/open-problems.md).
 
 Written by temp file plus `rename`, which is atomic on NTFS within a volume. **The slug is a
 path segment**, so it is validated against an allowlist before it is ever joined to a path:
@@ -346,6 +422,48 @@ channel name.
 
 `moveCard` takes the card's `rev` and refuses on mismatch, which turns a stale optimistic move
 into a refusal instead of a silent clobber.
+
+
+## 4.1 Refusals and the mark that carries them
+
+A plugin handler throws for two unrelated reasons and the shell has to tell them apart. A
+deliberate refusal is an answer to the operator: the card has a live worker, the board is paused,
+the patch names a field `updateCard` does not apply. A bug is not an answer and has to keep its
+stack.
+
+The mark is what separates them. `src/refusal.ts` exports `Refusal`, which carries the property
+`dyarchiaRefusal = true`, and `isRefusal()`, which tests for that property and for nothing else.
+Every deliberate throw in `board.ts`, `boards.ts`, `main.ts` and `worktrees.ts` is a `Refusal`.
+
+**The contract is the PROPERTY, not `instanceof`.** The plugin's main module is bundled separately
+from the shell, so the two hold their own copies of any class they appear to share, and
+`instanceof` would answer false across the boundary for exactly the objects it was written to
+catch.
+
+```text
+WHERE                               WHAT IT DOES
+----------------------------------  ---------------------------------------------
+src/refusal.ts                      the class and the test, in the plugin
+apps/shell/src/main/plugins.ts      wraps every plugin handler. A refusal is
+                                    RETURNED as the value
+                                    { __dyarchiaRefused: message } instead of
+                                    being thrown, so Electron never logs it.
+                                    Anything that is not a refusal still throws
+                                    and still gets its full stack
+apps/shell/src/preload/index.ts     unwraps that envelope and rethrows a plain
+                                    Error, so every renderer call site is
+                                    unchanged
+```
+
+`attach` registers on `ipcMain` directly, because it needs the raw event to pass MessagePorts, so
+it never reaches the wrapper; it is wrapped in `main.ts` by a local helper named `refusable`.
+
+What this costs a plugin author is one habit: throw a `Refusal` for anything the operator did, and
+a plain `Error` only for what should never have happened. A deliberate refusal thrown as a bare
+`Error` reaches the operator as a crash with an Electron stack trace behind it.
+
+The probe's `refuses()` helper asserts the mark as well as the message, so every refusal check it
+already carried now covers the contract too.
 
 
 ## 5. Plugin-prefixed CSS, and why each rule exists

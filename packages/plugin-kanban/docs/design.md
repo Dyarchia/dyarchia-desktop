@@ -576,8 +576,9 @@ present, so a user who legitimately points at Bedrock or a gateway keeps their s
 
 ### 5.10 `blocked` does not mean the worker is still working
 
-Phase 4 found the one place the phase 0 reading of `state` was too generous. Three
-measurements, all on real runs:
+Phase 4 found the one place the phase 0 reading of `state` was too generous, and the
+verdict-route proof of 2026-09-10 found a fourth situation the first three did not cover. All
+four are measurements on real runs:
 
 ```text
 SITUATION                                     state       status
@@ -585,28 +586,72 @@ SITUATION                                     state       status
 a permission prompt, nobody attached          blocked     waiting
 a turn that finished cleanly                  done        idle
 a turn that finished having DECLARED a block  blocked     idle
+a turn that finished DECLARING NOTHING        blocked     idle
 ```
 
-The third is the trap. A worker that finishes by saying "a person has to decide this" leaves
-its session sitting at `blocked`, which the liveness rule reads as ALIVE, so a card whose
-worker had already said everything it was going to say stayed `running` forever. Measured: the
-card sat there through several ticks with a complete terminal block on disk.
+The third is the trap phase 4 hit. A worker that finishes by saying "a person has to decide
+this" leaves its session sitting at `blocked`, which the liveness rule reads as ALIVE, so a
+card whose worker had already said everything it was going to say stayed `running` forever.
+Measured: the card sat there through several ticks with a complete terminal block on disk.
 
-`status` does not save it either. `blocked`+`waiting` and `blocked`+`idle` are close enough
-that branching on it would be guessing about a vocabulary section 5.2 already says is not
-known to be exhaustive.
-
-**So a declared terminal block outranks liveness.** The reconciler reads the transcript first
-on every tick, and if it holds a terminal block AND the turn has ended, it resolves the card
-whatever `agents --json` says, then calls `claude stop` on the session so it does not sit idle
-holding a slot. Liveness answers "is it still working"; only the worker can say "I am
-finished", and the CLI-emitted `turn_duration` is what stops that being a bare cooperation
-contract.
-
-The rung order in section 11 is unchanged in spirit and clearer in practice:
+The fourth is the same trap with nothing on disk to climb out by, and it is worse. The turn
+ended, no terminal block was ever written, and the pair reads exactly like the third row. The
+rule that rescued the third row required a block to fire, so a turn that declared nothing fell
+past it to the bottom rung, kept its claim, and was held in `running` with no way out.
+Reproduced twice on 2026-09-10:
 
 ```text
-1. a terminal block plus a finished turn    resolve, whatever liveness says
+SESSION    f8f46bb8
+WHAT       a worker in permission mode `dontAsk` ended its turn asking for a permission it
+           could never be granted. No terminal block. `turn_duration` was written at
+           16:21:12Z
+WHAT WAS   the card was still `running` twenty one minutes later, wearing `waiting on you`
+SEEN
+
+SESSION    79bd31da
+WHAT       the OPERATOR denied a tool use from the drawer terminal, which is the interaction
+           this plugin exists to provide. The transcript records, at the same instant, `User
+           rejected tool use`, then `[Request interrupted by user for tool use]`, then a
+           `turn_duration` system entry. The denial ENDED THE TURN
+WHAT WAS   the reviewer declared nothing, the card stayed `running` and locked, and
+SEEN       `claude agents --json` reported the contradictory pair state 'working' with
+           status 'idle'
+```
+
+The second reproduction is the one that settles the shape of the rule. Denying a tool use is
+the ordinary use of the feature, not a misconfiguration reached by picking a bad permission
+mode, and on its own it pins a card in `running`.
+
+How long it stays pinned depends on a state 12.2 already says cannot be trusted, which is the
+point. The stall detector runs only while `state` reads 'working', so the two reproductions of
+the same bug have different endings: f8f46bb8 read `blocked`, which liveness calls ALIVE, and
+nothing would ever have reclaimed it; 79bd31da read 'working', so the detector would have
+ended it after an hour of silence past four hours of life, assuming that contradictory pair
+held for five hours. A bug whose recovery depends on which of two untrustworthy strings the
+CLI happens to emit is not a bug with a timeout.
+
+`status` does not save it either, and the second reproduction is the proof: `blocked`+`waiting`
+and `blocked`+`idle` are close enough that branching on them would be guessing about a
+vocabulary section 5.2 already says is not known to be exhaustive, and the denial produced
+state 'working' with status 'idle', a pair that cannot both be true. Reading liveness instead of
+reading the transcript is the mistake this section exists to name, and a contradictory pair is
+one more reason not to trust it. The fix deliberately does not branch on `status` at all.
+
+**So a finished turn outranks liveness.** The reconciler reads the transcript first on every
+tick, and if the turn has ended it resolves the card whatever `agents --json` says, then calls
+`claude stop` on the session so it does not sit idle holding a slot. The terminal block no
+longer decides whether to resolve; it decides how. A block present gives the outcome it
+declares, a block absent is a protocol violation and takes the violation path, which is bounded
+and ends in triage rather than in a card held forever. Liveness answers "is it still working";
+only the worker can say "I am finished", and the CLI-emitted `turn_duration` is what stops that
+being a bare cooperation contract, because the worker does not write it.
+
+The rung order in section 11, restated:
+
+```text
+1. a finished turn                          resolve, whatever liveness says. A terminal
+                                            block gives the outcome; no block is a
+                                            protocol violation
 2. liveness DEAD                            walk the rest of the ladder
 3. liveness ALIVE or UNKNOWN                keep the claim, touch nothing
 ```
@@ -749,6 +794,116 @@ either direction, which is what the three-valued answer was built for. This is 5
 in the other direction: there a state that meant "finished" was read as alive because the
 session was still listed, here a state that means "finished" was read as alive because the
 list was not consulted carefully enough.
+
+### 5.14 Permission modes are not interchangeable under `--bg`
+
+The card picker offers all six values the CLI accepts. For an UNATTENDED implementation run
+they are not equivalent, and two of them cannot work at all. Measured on 2026-09-10 by the
+verdict-route proof, all on the same card and the same repository:
+
+```text
+MODE                WHAT HAPPENS UNDER --bg
+------------------  --------------------------------------------------------------
+bypassPermissions   Refuses to launch. "--bg with bypassPermissions requires
+                    accepting the disclaimer first. Run `claude
+                    --dangerously-skip-permissions` once interactively." Two runs
+                    died at launch and the card blocked as `capability`
+dontAsk             Launches, then DENIES every edit and every command
+                    automatically. The worker spent 384k tokens, wrote the correct
+                    design in prose, and could not touch a file
+acceptEdits         Launches. Accepts file edits, and stops for a person on every
+                    command. Three prompts to write a test, run it, and commit
+auto                The worker decides for itself, with the safety classifier as
+                    the backstop. This is the mode for an unattended run
+plan                Reviews only, and forced by the board rather than chosen. See
+                    10.6.1
+manual              Not measured
+```
+
+`bypassPermissions` and `dontAsk` are the two traps: the first looks like the most permissive
+option and cannot start, the second sounds like "do not interrupt me" and means "refuse
+everything". Both cost a run before the reason is visible, and the reason only appears inside
+a three thousand character `run.error`.
+
+A second trap sits under `acceptEdits` on Windows. A repository can pre-authorise commands in
+its own `.claude/settings.json`, but rules written as `Bash(git commit:*)` never match,
+because on Windows the worker reaches for the **PowerShell** tool. Measured: `node`,
+`git status`, `git add` and `git commit` were all requested through PowerShell, all four were
+covered by a `Bash(...)` allowlist on paper, and none of them was covered in fact.
+
+### 5.15 Plan mode does not stop a reviewer from stalling
+
+Reviews are forced into `plan` mode by the board rather than by the card, so that a reviewer can
+read the work without stopping for permission on every `git diff`. See 10.6.1. Found on
+2026-09-10 that this holds only for as long as the reviewer sticks to reading.
+
+Plan mode gates on "is this an execution", not on "is this harmful". A real reviewer got through
+`git diff`, `git log`, `git show`, `ls` and `Read` untouched, then stopped dead on this:
+
+```text
+cd <repo> && git log --all --oneline -- package.json && echo --- && git show da44159 --stat
+&& echo --- && node -e "console.log(process.version)" 2>&1; node --version 2>&1
+```
+
+Everything in that line is read-only in effect. Nothing it does changes the repository, and
+asking node for its version is about as harmless as a command gets. It is still an execution, so
+plan mode held the whole compound command, and with it the whole review.
+
+The review brief's prose already warns the reviewer not to run things. The prose did not prevent
+it, and the reviewer was arguably not even disobeying: the brief tells it not to run the tests,
+and it did not run the tests. A version probe bundled into an otherwise read-only chain is
+exactly the case the wording does not cover.
+
+A third stall, measured later the same day, settles that the problem is wider than a bundled
+execution. Session 1d75babf stopped on this, which executes nothing at all:
+
+```text
+cd "<repo>" && git show <sha>:math.js && echo "---PKG---" &&
+    (git show <sha>:package.json 2>&1 || echo "n/a")
+```
+
+Two `git show` calls and an `echo` fallback. What plan mode cannot do is prove that a compound
+shell expression, with `||` and a subshell, is read-only, so it asks. Three reviews stalled on
+three different commands and only the first contained anything executable. The rule is
+therefore not "a reviewer that runs things stalls" but "a reviewer doing real git archaeology
+stalls", and no wording in the brief can prevent that short of forbidding compound commands,
+which is neither reasonable to ask nor reliable to obey.
+
+The honest split on how much this costs:
+
+```text
+WITH A PERSON PRESENT   an annoyance. The prompt appears in the drawer terminal and one
+                        keystroke clears it
+UNATTENDED              a real failure mode, which is the case the plugin exists for. The
+                        review waits for nobody, and nothing underneath it reclaims the
+                        card. The stall detector runs only while `state` is 'working', see
+                        12.2, and a worker stopped at a prompt reads 'blocked', which
+                        liveness calls ALIVE and which extends the claim instead of
+                        ending it. The card's runtime cap would end it and is unset by
+                        default, so the card is pinned in `running` for as long as the
+                        board runs
+```
+
+The options visible from here, none of them chosen:
+
+```text
+OPTION                         WHAT IT WOULD COST
+-----------------------------  ----------------------------------------------------------
+pre-authorise a read-only      has to be written for PowerShell as well as Bash, see the
+allowlist for review runs      Windows trap in 5.14, and an allowlist that is wrong in
+                               either direction is worse than none
+let reviews run in `auto`      gives up the property 10.6.1 was built on: a reviewer that
+with the classifier as the     cannot write. The classifier is not that guarantee
+backstop
+answer the prompt              the board would be deciding a permission question on the
+automatically for a review     operator's behalf, which nothing else in this design does
+tighten the brief to forbid    the cheapest change and the weakest. Prose already failed
+compound commands              once here
+```
+
+The decision is open. What is measured is the stall and its cost; what to do about it is not
+settled, and 5.10's fix does not address it, because a card whose worker is genuinely waiting on
+a prompt has not finished its turn.
 
 ### 5.6 What the earlier draft got wrong
 
@@ -1522,9 +1677,9 @@ button while the board is busy would be the common case rather than the rare one
 
 What that costs is a board whose cap is one card holding two running sessions, and the
 reading that makes it consistent is that the cap governs what the dispatcher spends on its
-own, not what the operator asks for by hand. Nothing enforces that reading in code, so it is
-section 1 of [open-problems.md](open-problems.md) until the configurable caps land and decide
-it.
+own, not what the operator asks for by hand. The configurable caps have since landed and
+written that reading down: section 13 says the caps bind the dispatcher's claim, not the
+operator's hand.
 
 Everything else in 10.6.5 is literal. `claim` and `review` share one `launch`, so a review is
 briefed, watched, reconciled, stopped and closed by the same code as an implementation, and
@@ -1584,13 +1739,15 @@ What the CLI does emit, and both are still signals the model cannot forge:
 ```
 
 ```text
-agents --json    state 'done' with status 'idle'   the turn finished
-                 state 'blocked' with status 'idle' a person is being waited on
-                 state 'working' with status 'busy' a turn is in flight
+agents --json    state 'done' with status 'idle'      the turn finished
+                 state 'blocked' with status 'idle'   either a person is being waited on, or
+                                                      the turn ended declaring nothing. The
+                                                      pair cannot tell the two apart, see 5.10
+                 state 'working' with status 'busy'   a turn is in flight
 ```
 
-The rebuilt ladder. Tier 2 is now two independent sources that agree, which is stronger than
-the single record it replaces, and tier 2b is new and is the most useful rung on it:
+The rebuilt ladder. Tier 2 keys on the finished turn, and what the transcript declares decides
+where tier 2 sends the card rather than whether tier 2 fires at all:
 
 ```text
 TIER  EVIDENCE                                            MEANING
@@ -1599,13 +1756,17 @@ TIER  EVIDENCE                                            MEANING
                                                            exited, which it always does.
                                                            Useful for a failed launch and
                                                            for nothing else
-  2   `agents --json` reports state 'done', AND the        authoritative completion of the
-      transcript's last record is a system/turn_duration   turn
- 2b   `agents --json` reports state 'blocked'              authoritative: a person is being
-                                                           waited on. NOT a stall, NOT a
+  2   the transcript's last record is a                    authoritative completion of the
+      system/turn_duration                                 turn, whatever `agents --json`
+                                                           says about liveness. A terminal
+                                                           block gives the outcome, and no
+                                                           block falls through to tier 3
+ 2b   `agents --json` reports state 'blocked' AND the      authoritative: a person is being
+      turn has NOT ended                                   waited on. NOT a stall, NOT a
                                                            crash, and never reclaimed
-  3   the transcript has assistant records but no          protocol violation, bounded
-      trailing turn_duration and the session is gone       retry, then block
+  3   the turn ended with no terminal block, or the        protocol violation, bounded
+      transcript has assistant records but no trailing     retry, then block
+      turn_duration and the session is gone
   4   git HEAD moved, or the tree is dirty, versus the     work happened, outcome unknown
       HEAD recorded at spawn
   5   no session id was ever parsed, or the transcript     the launch failed, or it crashed
@@ -1617,6 +1778,10 @@ Tier 2b is what the earlier draft would have got wrong in the most expensive dir
 session waiting on a permission prompt is `idle`, writes nothing, and its transcript mtime
 stops advancing, so a stall detector built on mtime alone would have terminated a healthy
 worker that was waiting for its operator. The board must read `state` before it reads a clock.
+The proof run of 2026-09-10 added the other half of that rule: `blocked` on its own does not
+mean a person is being waited on, so tier 2b holds only while the turn is still open. A turn
+that has ended is tier 2 whatever `state` says, and 5.10 carries the two reproductions that
+forced it.
 
 A marked block in the model's output still has a job, and it is the same one: it declares the
 **semantic** outcome and the artifacts. It no longer detects completion, and it never did
@@ -1677,8 +1842,9 @@ Crashed               the id is absent from agents --json and the       agents -
                       transcript has no trailing turn_duration
 Protocol violation    the turn ended but no marked terminal block is    the JSONL
                       in the assistant text
-Waiting on a person   state 'blocked'. NOT a failure and never          agents --json
-                      reclaimed: the card says so and waits
+Waiting on a person   state 'blocked' and the turn has not ended.       agents --json
+                      NOT a failure and never reclaimed: the card
+                      says so and waits
 Stalled               state 'working', but the JSONL mtime has not      the file
                       advanced in an hour and the run is older than
                       four hours
@@ -2499,10 +2665,11 @@ The headless probe covers what does not need an agent, and is the cheap half of 
 pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
-51 checks: slug validation including the reserved device names, three-valued liveness, the
-launcher parser, the terminal-block parser including a truncated block and a nested object,
-dependency cycles, rev fencing, promotion when parents close, unblock restoring the source
-phase while keeping the recurrence count, and a parked card waking at its time.
+192 checks, among them: slug validation including the reserved device names, three-valued
+liveness, the launcher parser, the terminal-block parser including a truncated block and a
+nested object, dependency cycles, rev fencing, promotion when parents close, unblock restoring
+the source phase while keeping the recurrence count, a parked card waking at its time, the
+twelve fields a patch may carry, and a turn that finished declaring nothing.
 
 ## 20. Traps
 

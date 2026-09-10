@@ -24,17 +24,6 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**Does a background session in plan mode end with a verdict, or with a proposal?** Half
-answered on 2026-09-10. The reads work: the first plan-mode reviewer walked the branch with
-git and never once stopped for permission, which is what pinning reviews to `plan` was for.
-What is still unmeasured is the ending, because that run was killed by the liveness race
-before it got there and the next one stopped trying to execute the tests.
-
-- If it proposes a plan instead of judging, the run completes with no `verdict`, and the board
-  calls that a protocol violation: the right answer to the wrong question.
-- **Done looks like** one run of the fixture in section 2 of the README reaching `approved` or
-  `changes`. It costs a few cents.
-
 **Attaching to a session that is mid-turn shows a blank pane.** Seen twice on 2026-09-10, on
 both a working implementer and a working reviewer: the pty attaches, the port is open, the
 terminal is sized and has its rows, and nothing is drawn, because `claude attach` paints what
@@ -55,24 +44,19 @@ The stall detector          Its thresholds are an hour of silence past a four
                             hour run. Only its guard conditions have been read;
                             it has never fired. Verifying it honestly means
                             either waiting or making the thresholds injectable
-`sourcePhase` = 'review'    Reachable since 2026-09-09: a review run that blocks
-                            sets it, and unblock returns the card to review. Written
-                            and read, never yet fired by a real reviewer
-The verdict path            The probe covers the parser and the brief. The four
-                            routes of design.md 10.6.3 are read but not exercised:
-                            `resolveReview` needs a board, a sink and a transcript
-                            to drive, and no real reviewer has judged a real branch
-                            yet. Proving it means a card that completes in a
-                            worktree and the drawer's third button
-The caps against a real     The numbers are read every tick and the probe covers
-dispatcher                  what they accept, but no board has been watched
-                            refusing to claim because a cap said so, and 0 has
-                            never paused a real run
-The watch view against      Verified in the panel harness, over fake boards: the
-real boards                 view renders, a paused board is tagged, and a live row
-                            opens its card with the pty attached. What the harness
-                            cannot show is two REAL boards, whose events and cards
-                            are read from disk on every refresh
+`sourcePhase` = 'review'    Reachable since 2026-09-09 and WRONG until 2026-09-10,
+                            when a stopped review proved it was being set to
+                            'ready'. Fixed and probed; no real reviewer has yet
+                            blocked its way into it
+The verdict path            HALF PROVEN on 2026-09-10: a real reviewer judged a
+                            real branch and `approved` landed the card in done,
+                            with its followup adopted. What no run has exercised
+                            yet is `changes`, the blocked route, and the missing
+                            verdict, which are the other three rows of 10.6.3
+The watch view against      Verified in the panel harness, over fake boards, and
+real boards                 the channel it reads answers correctly against a real
+                            one. Nobody has watched it with two REAL boards busy
+                            at once, which is the case its arithmetic is for
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"
@@ -161,6 +145,12 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+A background session in plan mode might      it ends with a          design.md 10.6.1
+have ended by proposing a plan rather        verdict. Measured
+than by judging, which the board would       2026-09-10: approved
+have called a protocol violation             in 56s, and it filed
+                                             a followup nobody
+                                             asked for
 A sweep landing inside the first seconds     a run younger than      design.md 10.6.6
 of a run read "not in the agents list" as    20s that is merely
 dead and closed a healthy session as         absent is left for

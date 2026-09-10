@@ -267,7 +267,9 @@ the permission path             a card whose work needs a shell command stops fo
 the terminal block              a run that finishes lands in review with its summary
                                 and its declared artifacts harvested
 the verdict                     ask a reviewer from the drawer and read what it
-                                answers
+                                answers. On 2026-09-10 it approved in 56 seconds
+                                and filed a followup that became a card, which the
+                                dispatcher then claimed on its own
 ```
 
 Delete the repository, `claude rm <id>` every session it left, and delete the board when the

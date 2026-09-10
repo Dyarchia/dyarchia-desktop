@@ -446,7 +446,10 @@ const fakePty = (port) => {
     let line = ''
     const send = (text) => port.postMessage({ t: 'data', d: text })
 
+    const MID_TURN_MS = 2_200
+
     const replay = async () => {
+        await new Promise((resume) => setTimeout(resume, MID_TURN_MS))
         const raw = await CAPTURE
         if (!raw) {
             send('\r\n  no capture at scripts/attach-capture.txt\r\n')

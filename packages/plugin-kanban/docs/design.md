@@ -1535,9 +1535,13 @@ the brief's instruction and nothing else, because a review inherited the card's 
 mode. **The proof of 2026-09-10 settled it from the other side.** A reviewer under
 `acceptEdits` stopped on its first `git diff` waiting for a human, spent its whole runtime
 parked there and was killed by the cap having judged nothing. So a review now launches in
-`plan` regardless of the card: it reads without asking, and it cannot write. What that leaves
-open is whether a background session in plan mode ends with a verdict or with a proposal, and
-that is measured on the fixture rather than argued about.
+`plan` regardless of the card: it reads without asking, and it cannot write. It was fair to ask whether a background
+session in plan mode would end by proposing a plan instead of judging, and the fixture
+answered: **it judges.** 56 seconds, `approved`, a summary that says what it checked and admits
+what it could not check, and a followup nobody asked for, naming a behaviour change the
+implementer had not mentioned. That followup became a card, was promoted when its parent
+closed, and was claimed by the dispatcher unattended, which is the whole loop closing on
+itself.
 
 The same proof found two more things, and the first is not about reviews at all. **A run can be
 called dead before the CLI has listed it.** `liveness` reads "not in `claude agents --json`" as

@@ -23,6 +23,7 @@ import type {
     Settings,
     Status
 } from './types.js'
+import { isRefusal, Refusal } from './refusal.js'
 
 const ATTACH_TIMEOUT_MS = 10_000
 const ATTACHMENT_LIMIT = 25 * 1024 * 1024
@@ -43,7 +44,7 @@ function ptyHost(): UtilityProcess {
 
 async function open(slug: string): Promise<string> {
     const meta = await boards.find(slug)
-    if (meta.archived) throw new Error(`board '${slug}' is archived`)
+    if (meta.archived) throw new Refusal(`board '${slug}' is archived`)
     return meta.slug
 }
 
@@ -54,7 +55,7 @@ async function running(slug: string): Promise<Card[]> {
 async function liveRun(slug: string, cardId: string): Promise<{ meta: BoardMeta; card: Card }> {
     const meta = await boards.find(slug)
     const card = (await board.cards(slug)).find((entry) => entry.id === cardId)
-    if (!card) throw new Error(`no card '${cardId}'`)
+    if (!card) throw new Refusal(`no card '${cardId}'`)
     return { meta, card }
 }
 
@@ -63,6 +64,15 @@ async function release(slug: string, cardId: string): Promise<void> {
     const card = (await board.cards(slug)).find((entry) => entry.id === cardId)
     const shortId = card?.runs[card.runs.length - 1]?.shortId
     if (shortId) host.postMessage({ type: 'release', shortId })
+}
+
+async function refusable<T>(work: () => Promise<T>): Promise<T | { __dyarchiaRefused: string }> {
+    try {
+        return await work()
+    } catch (error) {
+        if (!isRefusal(error)) throw error
+        return { __dyarchiaRefused: error.message }
+    }
 }
 
 export function activate(ctx: PluginMainContext): void {
@@ -116,7 +126,7 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('archiveBoard', async (slug, archived) => {
         const target = String(slug)
         if (archived !== false && (await running(target)).length) {
-            throw new Error('that board still has a card running')
+            throw new Refusal('that board still has a card running')
         }
         const updated = await boards.setArchived(target, archived !== false)
         registryChanged()
@@ -126,7 +136,7 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('deleteBoard', async (slug) => {
         const target = String(slug)
         await boards.find(target)
-        if ((await running(target)).length) throw new Error('that board still has a card running')
+        if ((await running(target)).length) throw new Refusal('that board still has a card running')
 
         await boards.forget(target)
         board.forget(target)
@@ -139,7 +149,7 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('board', async (slug): Promise<BoardPayload> => {
         const target = String(slug)
         const meta = await boards.find(target)
-        if (meta.archived) throw new Error(`board '${target}' is archived`)
+        if (meta.archived) throw new Refusal(`board '${target}' is archived`)
         await board.promote(target, Date.now())
         return { board: meta, cards: await board.cards(target), rules: rules(), now: Date.now() }
     })
@@ -216,7 +226,7 @@ export function activate(ctx: PluginMainContext): void {
         const target = String(slug)
         const { card } = await liveRun(target, String(id))
         const run = card.runs[card.runs.length - 1]
-        if (!run || run.endedAt !== null) throw new Error('that card has no live run')
+        if (!run || run.endedAt !== null) throw new Refusal('that card has no live run')
         if (run.shortId) await agents.stop(run.shortId)
         await dispatch.force(sink)
         return true
@@ -308,10 +318,10 @@ export function activate(ctx: PluginMainContext): void {
         const found = (await dispatch.inventory(meta)).find((tree) =>
             worktrees.same(tree.path, String(path))
         )
-        if (!found) throw new Error('that worktree is not on this board any more')
-        if (found.live) throw new Error('a worker is still using that worktree')
-        if (found.dirty) throw new Error('that worktree holds changes nobody committed')
-        if (!found.landed) throw new Error('that worktree holds commits nothing has landed')
+        if (!found) throw new Refusal('that worktree is not on this board any more')
+        if (found.live) throw new Refusal('a worker is still using that worktree')
+        if (found.dirty) throw new Refusal('that worktree holds changes nobody committed')
+        if (!found.landed) throw new Refusal('that worktree holds commits nothing has landed')
         await worktrees.remove(meta.workdir, found.path, found.branch)
         return true
     })
@@ -328,62 +338,64 @@ export function activate(ctx: PluginMainContext): void {
         return card
     })
 
-    ipcMain.handle('plugin:kanban:attach', async (event, ...args: unknown[]) => {
-        const { slug, cardId, attachId, cols, rows } = args[0] as {
-            slug: string
-            cardId: string
-            attachId: string
-            cols: number
-            rows: number
-        }
-
-        const { meta, card } = await liveRun(String(slug), String(cardId))
-        const run = card.runs[card.runs.length - 1]
-        if (!run?.shortId) throw new Error('that card has no session to attach to')
-
-        const path = await agents.binary()
-        if (!path) throw new Error('claude is not on PATH')
-        const call = agents.invocation(path, ['attach', run.shortId])
-
-        const { port1, port2 } = new MessageChannelMain()
-        const host = ptyHost()
-
-        const answered = new Promise<void>((resolve, reject) => {
-            const timer = setTimeout(() => {
-                host.off('message', listen)
-                reject(new Error('the pty host never answered'))
-            }, ATTACH_TIMEOUT_MS)
-
-            function listen(message: unknown): void {
-                const reply = message as { type?: string; attachId?: string; reason?: string }
-                if (reply?.attachId !== attachId) return
-                clearTimeout(timer)
-                host.off('message', listen)
-                if (reply.type === 'attached') resolve()
-                else reject(new Error(reply.reason ?? 'the pty could not start'))
+    ipcMain.handle('plugin:kanban:attach', (event, ...args: unknown[]) =>
+        refusable(async () => {
+            const { slug, cardId, attachId, cols, rows } = args[0] as {
+                slug: string
+                cardId: string
+                attachId: string
+                cols: number
+                rows: number
             }
 
-            host.on('message', listen)
+            const { meta, card } = await liveRun(String(slug), String(cardId))
+            const run = card.runs[card.runs.length - 1]
+            if (!run?.shortId) throw new Refusal('that card has no session to attach to')
+
+            const path = await agents.binary()
+            if (!path) throw new Refusal('claude is not on PATH')
+            const call = agents.invocation(path, ['attach', run.shortId])
+
+            const { port1, port2 } = new MessageChannelMain()
+            const host = ptyHost()
+
+            const answered = new Promise<void>((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    host.off('message', listen)
+                    reject(new Error('the pty host never answered'))
+                }, ATTACH_TIMEOUT_MS)
+
+                function listen(message: unknown): void {
+                    const reply = message as { type?: string; attachId?: string; reason?: string }
+                    if (reply?.attachId !== attachId) return
+                    clearTimeout(timer)
+                    host.off('message', listen)
+                    if (reply.type === 'attached') resolve()
+                    else reject(new Error(reply.reason ?? 'the pty could not start'))
+                }
+
+                host.on('message', listen)
+            })
+
+            host.postMessage(
+                {
+                    type: 'attach',
+                    attachId,
+                    shortId: run.shortId,
+                    file: call.file,
+                    args: call.args,
+                    cwd: card.workdir ?? meta.workdir,
+                    cols,
+                    rows
+                },
+                [port1]
+            )
+
+            await answered
+            event.sender.postMessage('dyarchia:port', { pluginId: 'kanban', attachId }, [port2])
+            return run.shortId
         })
-
-        host.postMessage(
-            {
-                type: 'attach',
-                attachId,
-                shortId: run.shortId,
-                file: call.file,
-                args: call.args,
-                cwd: card.workdir ?? meta.workdir,
-                cols,
-                rows
-            },
-            [port1]
-        )
-
-        await answered
-        event.sender.postMessage('dyarchia:port', { pluginId: 'kanban', attachId }, [port2])
-        return run.shortId
-    })
+    )
 
     app.on('will-quit', () => {
         stopDispatcher()

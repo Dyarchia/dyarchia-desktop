@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { appendFile, mkdir, readFile } from 'node:fs/promises'
 import { isAbsolute, join, normalize, relative, resolve } from 'node:path'
+import { Refusal } from './refusal.js'
 
 const IGNORED = '.claude/worktrees/'
 const MARKER = '# dyarchia kanban worktrees, written by the board that points here'
@@ -111,29 +112,29 @@ export async function list(workdir: string): Promise<Worktree[]> {
 }
 
 export async function remove(workdir: string, path: string, branch: string | null): Promise<void> {
-    if (!ours(workdir, path)) throw new Error('that is not a worktree this board made')
+    if (!ours(workdir, path)) throw new Refusal('that is not a worktree this board made')
 
     if (branch && !(await run(workdir, ['merge-base', '--is-ancestor', branch, 'HEAD'])).ok) {
-        throw new Error(`${branch} holds commits this project has not landed`)
+        throw new Refusal(`${branch} holds commits this project has not landed`)
     }
 
     if ((await run(path, ['status', '--porcelain'])).out.length > 0) {
-        throw new Error(`${branch ?? path} holds changes nobody committed`)
+        throw new Refusal(`${branch ?? path} holds changes nobody committed`)
     }
 
     const listed = parseList((await run(workdir, ['worktree', 'list', '--porcelain'])).out)
     const held = listed.find((entry) => same(entry.path, path))
     if (held?.locked) {
         const unlocked = await run(workdir, ['worktree', 'unlock', path])
-        if (!unlocked.ok) throw new Error(unlocked.err || `git would not unlock ${path}`)
+        if (!unlocked.ok) throw new Refusal(unlocked.err || `git would not unlock ${path}`)
     }
 
     const removed = await run(workdir, ['worktree', 'remove', path])
-    if (!removed.ok) throw new Error(removed.err || `git would not remove ${path}`)
+    if (!removed.ok) throw new Refusal(removed.err || `git would not remove ${path}`)
 
     if (branch) {
         const deleted = await run(workdir, ['branch', '-d', branch])
-        if (!deleted.ok) throw new Error(deleted.err || `the worktree is gone, ${branch} is not`)
+        if (!deleted.ok) throw new Refusal(deleted.err || `the worktree is gone, ${branch} is not`)
     }
 
     await run(workdir, ['worktree', 'prune'])
@@ -150,7 +151,7 @@ export async function ignore(workdir: string): Promise<IgnoreState> {
     if (!before.tracked || before.ignored) return before
 
     const common = await run(workdir, ['rev-parse', '--git-common-dir'])
-    if (!common.ok) throw new Error('this project has no git directory to write to')
+    if (!common.ok) throw new Refusal('this project has no git directory to write to')
 
     const gitDir = isAbsolute(common.out) ? common.out : resolve(workdir, common.out)
     const path = join(gitDir, 'info', 'exclude')

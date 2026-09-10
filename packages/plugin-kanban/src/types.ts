@@ -132,7 +132,21 @@ export interface CardDraft {
 }
 
 export type CardPatch = Partial<
-    Omit<Card, 'id' | 'rev' | 'runs' | 'comments' | 'attachments' | 'createdAt'>
+    Pick<
+        Card,
+        | 'title'
+        | 'body'
+        | 'priority'
+        | 'workdir'
+        | 'workspaceKind'
+        | 'model'
+        | 'effort'
+        | 'maxRuntimeSeconds'
+        | 'maxRetries'
+        | 'permissionMode'
+        | 'scheduledFor'
+        | 'parents'
+    >
 >
 
 export interface BoardDraft {

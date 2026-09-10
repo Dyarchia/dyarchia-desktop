@@ -242,6 +242,41 @@ the width floor and the answer path testable with no agent and no spend.
 
 The one path it cannot fake is `reveal`, which only says what the shell would have opened.
 
+**What no harness can answer is a real agent**, and the way to ask it costs a few cents. Make a
+throwaway git repository OUTSIDE AppData, with one commit and something small and wrong in it:
+
+```bash
+mkdir kanban-proof && cd kanban-proof && git init -b main
+```
+
+Point a board at it, put a card on `haiku` with a runtime cap you are willing to pay for, and
+watch it in the panel. The app has to be started from a real terminal with `pnpm dev`, never
+from an agent session, because a session inside a container measures the container's
+filesystem, and that dev server exposes CDP on 127.0.0.1:9222, which is the only honest way to
+read the board's state from outside.
+
+```text
+WHAT IT PROVES                  HOW
+------------------------------  --------------------------------------------------
+a paused board claims nothing   set the board cap to 0, dispatch, and watch the
+                                card stay in ready with no run
+watch and talk                  open the card while the worker is live: the drawer
+                                attaches, and what you type reaches the agent
+the permission path             a card whose work needs a shell command stops for
+                                approval, in the agent's own interface
+the terminal block              a run that finishes lands in review with its summary
+                                and its declared artifacts harvested
+the verdict                     ask a reviewer from the drawer and read what it
+                                answers. On 2026-09-10 it approved in 56 seconds
+                                and filed a followup that became a card, which the
+                                dispatcher then claimed on its own
+```
+
+Delete the repository, `claude rm <id>` every session it left, and delete the board when the
+answers are written down. The measurements from the run of 2026-09-10 are in design.md and in
+[open-problems.md](open-problems.md); it found two bugs, and both of them were in paths no
+probe covered because no probe can.
+
 Do not stub `window.dyarchia` inside the real shell instead. That object comes from
 `contextBridge` and its properties are not writable: the assignment fails silently, the real
 IPC call goes through, and a modal dialog opens on the operator's screen.

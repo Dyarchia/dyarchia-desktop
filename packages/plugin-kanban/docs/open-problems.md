@@ -24,18 +24,16 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**"A reviewer does not edit" is enforced by the brief and by nothing else.** A review run
-inherits the card's permission mode, which defaults to `acceptEdits`, and it runs in the
-operator's own checkout rather than in a worktree. The brief tells it to read and judge; a
-model that decides to fix what it found can.
+**Attaching to a session that is mid-turn shows a blank pane.** Seen twice on 2026-09-10, on
+both a working implementer and a working reviewer: the pty attaches, the port is open, the
+terminal is sized and has its rows, and nothing is drawn, because `claude attach` paints what
+the session next writes rather than repainting the screen it is on. To an operator that reads
+as a broken terminal on a card that says it is running.
 
-- `plan` is already one of the modes a card can carry, so the CLI takes it, and it is the
-  mechanism that would make the sentence true rather than polite.
-- What is NOT known is whether a `--bg` session in plan mode finishes a judgement or stalls
-  asking to leave plan mode. Nothing here has measured it, and a reviewer that stalls is worse
-  than a reviewer that could have edited.
-- **Done looks like** that measurement, and then either launching reviews in `plan` or writing
-  down why not. `worker.start`, the `reviewing` branch.
+- It resolves itself the moment the agent draws anything, which is why it went unnoticed until
+  a real agent was watched through a long tool call.
+- **Done looks like** the terminal saying so: a line written when the port opens and no byte
+  has arrived within a second or two, cleared by the first byte. `terminal.ts`, `openTerminal`.
 
 ## 2. Unproven rather than broken
 
@@ -46,24 +44,19 @@ The stall detector          Its thresholds are an hour of silence past a four
                             hour run. Only its guard conditions have been read;
                             it has never fired. Verifying it honestly means
                             either waiting or making the thresholds injectable
-`sourcePhase` = 'review'    Reachable since 2026-09-09: a review run that blocks
-                            sets it, and unblock returns the card to review. Written
-                            and read, never yet fired by a real reviewer
-The verdict path            The probe covers the parser and the brief. The four
-                            routes of design.md 10.6.3 are read but not exercised:
-                            `resolveReview` needs a board, a sink and a transcript
-                            to drive, and no real reviewer has judged a real branch
-                            yet. Proving it means a card that completes in a
-                            worktree and the drawer's third button
-The caps against a real     The numbers are read every tick and the probe covers
-dispatcher                  what they accept, but no board has been watched
-                            refusing to claim because a cap said so, and 0 has
-                            never paused a real run
-The watch view against      Verified in the panel harness, over fake boards: the
-real boards                 view renders, a paused board is tagged, and a live row
-                            opens its card with the pty attached. What the harness
-                            cannot show is two REAL boards, whose events and cards
-                            are read from disk on every refresh
+`sourcePhase` = 'review'    Reachable since 2026-09-09 and WRONG until 2026-09-10,
+                            when a stopped review proved it was being set to
+                            'ready'. Fixed and probed; no real reviewer has yet
+                            blocked its way into it
+The verdict path            HALF PROVEN on 2026-09-10: a real reviewer judged a
+                            real branch and `approved` landed the card in done,
+                            with its followup adopted. What no run has exercised
+                            yet is `changes`, the blocked route, and the missing
+                            verdict, which are the other three rows of 10.6.3
+The watch view against      Verified in the panel harness, over fake boards, and
+real boards                 the channel it reads answers correctly against a real
+                            one. Nobody has watched it with two REAL boards busy
+                            at once, which is the case its arithmetic is for
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"
@@ -152,6 +145,30 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+A background session in plan mode might      it ends with a          design.md 10.6.1
+have ended by proposing a plan rather        verdict. Measured
+than by judging, which the board would       2026-09-10: approved
+have called a protocol violation             in 56s, and it filed
+                                             a followup nobody
+                                             asked for
+A sweep landing inside the first seconds     a run younger than      design.md 10.6.6
+of a run read "not in the agents list" as    20s that is merely
+dead and closed a healthy session as         absent is left for
+crashed. A worktree hid it for a year;       the next tick
+a review has none
+An auth failure lands in run.summary and     `guarded` reads both    design.md 12.3
+the respawn guard only read run.error, so    fields, and knows the
+a busy credential looked like an exhausted   refresh message. Two
+capability                                   Claude Code processes
+                                             CAN contend on one
+                                             token refresh; that is
+                                             the shape it takes
+A review under acceptEdits stopped for       reviews launch in       design.md 10.6.1
+permission on its first git diff and was     `plan`, always
+killed by the cap having judged nothing
+A stopped review sent the card back to       both callers ask        design.md 10.6.6
+ready, where an implementer would claim      `home(run)`
+it and the review would be lost
 A review run starts outside the per-board    the caps became         design.md 13
 cap, and nothing said whether that was a     settable, and the       and 10.6.6
 decision or an accident                      decision is written

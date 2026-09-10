@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt } from '../src/dispatch.js'
+import { adopt, guarded, home } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
@@ -364,6 +364,8 @@ async function reviews(): Promise<void> {
     check('it works in the project, not a worktree', text.includes('Your working directory is `C:\\project`'), true)
     check('and it is asked for a verdict', text.includes('"verdict": "approved" | "changes"'), true)
 
+    check('and told it is in plan mode, so it does not try to leave it', text.includes('PLAN MODE'), true)
+
     const nothing = reviewBrief(card, { ...judged, branch: null, headBefore: null }, 'C:\\project')
     check('a run with no branch is judged where it stands', nothing.includes('There is no branch'), true)
 
@@ -473,6 +475,66 @@ async function bulk(): Promise<void> {
     check('an empty batch does nothing and says nothing', (await board.deleteCards('bulk', [])).done.length, 0)
 }
 
+async function guards(): Promise<void> {
+    console.log('\nthe respawn guard')
+
+    const now = Date.now()
+    const card = await board.createCard('bulk', { title: 'guarded' })
+    const base: Run = {
+        runId: 'g1',
+        kind: 'implement',
+        sessionId: 's',
+        shortId: 'g',
+        worktree: null,
+        branch: null,
+        startedAt: now - 600_000,
+        endedAt: now - 1_000,
+        outcome: 'crashed',
+        summary: null,
+        artifacts: [],
+        kept: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        error: null,
+        headBefore: null
+    }
+    const after = (patch: Partial<Run>): Card => ({ ...card, runs: [{ ...base, ...patch }] })
+
+    check('a live run is not guarded', guarded(after({ endedAt: null }), now), false)
+    check('a fresh success is', guarded(after({ outcome: 'completed' }), now), true)
+    check(
+        'an old success is not',
+        guarded(after({ outcome: 'completed', endedAt: now - 120_000 }), now),
+        false
+    )
+    check(
+        'a completed run that WROTE about credit is not',
+        guarded(after({ outcome: 'completed', endedAt: now - 120_000, summary: 'fixed the credit page' }), now),
+        false
+    )
+    check('a 401 in the error is', guarded(after({ error: 'HTTP 401 from the API' }), now), true)
+    check(
+        'and a login refresh in the summary is, which is where it lands',
+        guarded(
+            after({
+                outcome: 'violation',
+                error: 'no terminal block',
+                summary: 'Could not refresh your login because another Claude Code process is refreshing it'
+            }),
+            now
+        ),
+        true
+    )
+    check(
+        'an ordinary violation is not guarded',
+        guarded(after({ outcome: 'violation', error: 'no terminal block', summary: 'I forgot the block' }), now),
+        false
+    )
+
+    check('an implementation that stops goes back to ready', home(base), 'ready')
+    check('and a review goes back to review, not to an implementer', home({ ...base, kind: 'review' }), 'review')
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -485,6 +547,7 @@ await leases()
 await attachments()
 await caps()
 await bulk()
+await guards()
 await reviews()
 await eventLog()
 

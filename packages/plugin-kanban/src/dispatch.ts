@@ -34,6 +34,7 @@ const SILENT_MS = 60 * 60_000
 const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
 const PRUNE_MS = 10 * 60_000
+const CREDENTIAL = /401|429|quota|credit|not logged in|refresh your login/i
 
 export interface CardProgress {
     slug: string
@@ -113,6 +114,10 @@ let housekeeping: Diagnostic[] = []
 
 function current(card: Card): Run | null {
     return card.runs.length ? card.runs[card.runs.length - 1] : null
+}
+
+export function home(run: Run): 'ready' | 'review' {
+    return run.kind === 'review' ? 'review' : 'ready'
 }
 
 function reviewed(card: Card): Run | null {
@@ -500,7 +505,7 @@ async function reconcile(
                 null,
                 overrun ? `past its ${cap}s runtime cap` : 'alive but silent for an hour'
             )
-            block(meta.slug, card, 'transient', 'ready')
+            block(meta.slug, card, 'transient', home(run))
             void events.record(meta.slug, card.id, 'stopped', run.error ?? '', run.runId)
             ended(sink, meta, card, run)
             sink.runEnded(meta.slug, card.id, 'stopped')
@@ -532,11 +537,11 @@ async function reconcile(
     return changed
 }
 
-function guarded(card: Card, now: number): boolean {
+export function guarded(card: Card, now: number): boolean {
     const run = current(card)
     if (!run?.endedAt) return false
-    if (run.outcome === 'completed' && now - run.endedAt < GUARD_MS) return true
-    return /401|429|quota|credit|not logged in/i.test(run.error ?? '')
+    if (run.outcome === 'completed') return now - run.endedAt < GUARD_MS
+    return CREDENTIAL.test(`${run.error ?? ''}\n${run.summary ?? ''}`)
 }
 
 function claimable(file: BoardFile, now: number): Card[] {
@@ -555,7 +560,7 @@ async function launch(
     where: string,
     reviewing: Run | null
 ): Promise<void> {
-    const home = run.kind === 'review' ? 'review' : 'ready'
+    const back = home(run)
     try {
         if (!reviewing && card.workspaceKind === 'scratch') await mkdir(where, { recursive: true })
         const parents = card.parents
@@ -577,9 +582,9 @@ async function launch(
         close(run, 'crashed', null, error instanceof Error ? error.message : String(error))
         card.consecutiveFailures += 1
         if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
-            block(meta.slug, card, 'capability', home)
+            block(meta.slug, card, 'capability', back)
         } else {
-            land(card, home)
+            land(card, back)
         }
         void events.record(meta.slug, card.id, 'crashed', run.error ?? 'the launch failed', run.runId)
         ended(sink, meta, card, run)

@@ -1427,6 +1427,12 @@ worktree            in the project directory with no `-w`, and the branch it is
                     judging is named in its brief. This also sidesteps the question
                     of whether `-w` on an existing worktree name reuses it, which
                     has never been measured
+It launches in      NOT the card's mode. Measured on 2026-09-10: under `acceptEdits`
+`plan`, always      a reviewer stops for permission on its first `git diff`, and a
+                    reviewer that needs a human to approve every read is not a
+                    reviewer. Plan mode reads without asking and cannot write, which
+                    is the same requirement from both ends, and the brief says so
+                    out loud so the run does not end by proposing a plan
 Its brief is the    the card, what the implementer said it did, the branch, and the
 implementer's work  instruction to judge that work rather than to continue it
 It may declare a    `verdict` in the terminal block, and nothing else in the
@@ -1524,11 +1530,19 @@ Everything else in 10.6.5 is literal. `claim` and `review` share one `launch`, s
 briefed, watched, reconciled, stopped and closed by the same code as an implementation, and
 the only branch between them is the brief, the missing worktree and the four rows of 10.6.3.
 
-One thing 10.6.1 says is not yet true of the mechanism: "it does not edit" is the brief's
-instruction, not the runtime's. A review inherits the card's permission mode and runs in the
-operator's checkout, so a model that decides to fix what it found can. `plan` is the mode that
-would make it true, and whether a background session in plan mode finishes a judgement has
-never been measured here. It is section 1 of [open-problems.md](open-problems.md).
+One thing 10.6.1 claimed was not true of the mechanism when it landed: "it does not edit" was
+the brief's instruction and nothing else, because a review inherited the card's permission
+mode. **The proof of 2026-09-10 settled it from the other side.** A reviewer under
+`acceptEdits` stopped on its first `git diff` waiting for a human, spent its whole runtime
+parked there and was killed by the cap having judged nothing. So a review now launches in
+`plan` regardless of the card: it reads without asking, and it cannot write. What that leaves
+open is whether a background session in plan mode ends with a verdict or with a proposal, and
+that is measured on the fixture rather than argued about.
+
+The same proof found the routing hole this section had left: a review run that is stopped by
+the runtime cap is closed in `reconcile`, not in `resolveReview`, and that path sent the card
+to `blocked` with `sourcePhase: 'ready'`. Unblocking would have handed a reviewed card back to
+an implementer and lost the review in silence. Both callers now ask `home(run)`.
 
 ## 11. Termination and the evidence ladder
 

@@ -24,18 +24,26 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**"A reviewer does not edit" is enforced by the brief and by nothing else.** A review run
-inherits the card's permission mode, which defaults to `acceptEdits`, and it runs in the
-operator's own checkout rather than in a worktree. The brief tells it to read and judge; a
-model that decides to fix what it found can.
+**Does a background session in plan mode end with a verdict, or with a proposal?** Open since
+2026-09-10, when reviews were pinned to `plan` for the two reasons in design.md 10.6.1. Plan
+mode normally ends by asking to leave plan mode, and the reviewer brief tells it not to, but
+telling a model something is not measuring it.
 
-- `plan` is already one of the modes a card can carry, so the CLI takes it, and it is the
-  mechanism that would make the sentence true rather than polite.
-- What is NOT known is whether a `--bg` session in plan mode finishes a judgement or stalls
-  asking to leave plan mode. Nothing here has measured it, and a reviewer that stalls is worse
-  than a reviewer that could have edited.
-- **Done looks like** that measurement, and then either launching reviews in `plan` or writing
-  down why not. `worker.start`, the `reviewing` branch.
+- If it proposes instead of judging, the run completes with no `verdict` and the board calls
+  that a protocol violation, which is the right answer to the wrong question.
+- **Done looks like** one run of the fixture in section 2 of the README reaching `approved` or
+  `changes`. It costs a few cents.
+
+**Attaching to a session that is mid-turn shows a blank pane.** Seen twice on 2026-09-10, on
+both a working implementer and a working reviewer: the pty attaches, the port is open, the
+terminal is sized and has its rows, and nothing is drawn, because `claude attach` paints what
+the session next writes rather than repainting the screen it is on. To an operator that reads
+as a broken terminal on a card that says it is running.
+
+- It resolves itself the moment the agent draws anything, which is why it went unnoticed until
+  a real agent was watched through a long tool call.
+- **Done looks like** the terminal saying so: a line written when the port opens and no byte
+  has arrived within a second or two, cleared by the first byte. `terminal.ts`, `openTerminal`.
 
 ## 2. Unproven rather than broken
 
@@ -152,6 +160,19 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+An auth failure lands in run.summary and     `guarded` reads both    design.md 12.3
+the respawn guard only read run.error, so    fields, and knows the
+a busy credential looked like an exhausted   refresh message. Two
+capability                                   Claude Code processes
+                                             CAN contend on one
+                                             token refresh; that is
+                                             the shape it takes
+A review under acceptEdits stopped for       reviews launch in       design.md 10.6.1
+permission on its first git diff and was     `plan`, always
+killed by the cap having judged nothing
+A stopped review sent the card back to       both callers ask        design.md 10.6.6
+ready, where an implementer would claim      `home(run)`
+it and the review would be lost
 A review run starts outside the per-board    the caps became         design.md 13
 cap, and nothing said whether that was a     settable, and the       and 10.6.6
 decision or an accident                      decision is written

@@ -181,10 +181,11 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 150 checks over slug validation, three-valued liveness, both
-parsers and the verdict, dependency cycles, rev fencing, promotion, unblock, scheduled cards,
-the worktree listing, both briefs, both concurrency caps, the status tally, both batch verbs,
-and what a deleted card takes with it. It writes to a temp userData and takes about a
+node, no window and no IPC. 164 checks over slug validation, three-valued liveness and the
+window where a new session is not listed yet, both parsers and the verdict, dependency cycles,
+rev fencing, promotion, unblock, scheduled cards, the worktree listing, both briefs, both
+concurrency caps, the respawn guard, where a stopped run goes home, the status tally, both
+batch verbs, and what a deleted card takes with it. It writes to a temp userData and takes about a
 second. Everything it covers is everything that does not
 need a real agent, which is why it is worth keeping green.
 

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt, guarded, home } from '../src/dispatch.js'
+import { adopt, guarded, home, unlisted } from '../src/dispatch.js'
 import { liveness, parseLaunch } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
@@ -530,6 +530,11 @@ async function guards(): Promise<void> {
         guarded(after({ outcome: 'violation', error: 'no terminal block', summary: 'I forgot the block' }), now),
         false
     )
+
+    check('a session listed as alive is not unlisted', unlisted('alive', now - 1_000, now), false)
+    check('an unreadable snapshot is not either', unlisted('unknown', now - 1_000, now), false)
+    check('a newborn session missing from the list is', unlisted('dead', now - 2_000, now), true)
+    check('and an old one missing from it is really gone', unlisted('dead', now - 60_000, now), false)
 
     check('an implementation that stops goes back to ready', home(base), 'ready')
     check('and a review goes back to review, not to an implementer', home({ ...base, kind: 'review' }), 'review')

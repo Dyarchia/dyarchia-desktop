@@ -24,16 +24,9 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**Attaching to a session that is mid-turn shows a blank pane.** Seen twice on 2026-09-10, on
-both a working implementer and a working reviewer: the pty attaches, the port is open, the
-terminal is sized and has its rows, and nothing is drawn, because `claude attach` paints what
-the session next writes rather than repainting the screen it is on. To an operator that reads
-as a broken terminal on a card that says it is running.
-
-- It resolves itself the moment the agent draws anything, which is why it went unnoticed until
-  a real agent was watched through a long tool call.
-- **Done looks like** the terminal saying so: a line written when the port opens and no byte
-  has arrived within a second or two, cleared by the first byte. `terminal.ts`, `openTerminal`.
+**Nothing.** Every entry this section has held is in section 5 with its evidence, or in
+section 4 with the reason it was dropped. The four that the proof of 2026-09-10 put here are
+all closed. A problem found while building goes here the same day.
 
 ## 2. Unproven rather than broken
 
@@ -145,6 +138,11 @@ not be launched into                         moved to tmpdir. The       and 1.2 
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
+A pane attached to a session mid-turn        the terminal says so    README section 5
+drew nothing and read as a broken            after a second and a
+terminal on a card that said it was          half of silence, and
+running                                      resets on the first
+                                             byte
 A background session in plan mode might      it ends with a          design.md 10.6.1
 have ended by proposing a plan rather        verdict. Measured
 than by judging, which the board would       2026-09-10: approved

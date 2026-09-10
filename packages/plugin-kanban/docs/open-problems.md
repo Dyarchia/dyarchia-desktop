@@ -24,9 +24,59 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-**Nothing.** Every entry this section has held is in section 5 with its evidence, or in
-section 4 with the reason it was dropped. The four that the proof of 2026-09-10 put here are
-all closed. A problem found while building goes here the same day.
+Two, both from the verdict-route proof of 2026-09-10 (second run of that day).
+
+### 1.1 A review in plan mode stalls on an execution bundled into a read
+
+`worker.ts`, `reviewBrief` and `REVIEW_MODE`, and design.md 10.6.1, which says why reviews are
+pinned to `plan`. Done when an unattended review cannot be stopped by reaching for an
+execution, AND the design says in writing which route was taken. The route has not been
+chosen, which is what makes this open rather than merely unfixed.
+
+Reviews are forced into plan mode so they can read the branch without stopping for permission,
+and that part works: a real reviewer walked `git diff`, `git log`, `git show`, `ls` and `Read`
+untouched. It then stopped dead on one compound command:
+
+```text
+cd <repo> && git log --all --oneline -- package.json && echo --- && git show da44159 --stat
+    && echo --- && node -e "console.log(process.version)" 2>&1; node --version 2>&1
+```
+
+Plan mode gates on "is this an execution", not on "is this harmful", so a harmless version
+probe bundled into an otherwise read-only command stalls the whole review. The brief's prose
+already warns a reviewer against running things; the prose did not prevent it, and the reviewer
+was arguably not even disobeying, since asking node its version is not running the tests.
+
+Three reviews stalled on three different commands and only the first contained anything
+executable. The third, session 1d75babf, stopped on two `git show` calls with an `echo`
+fallback, which executes nothing: plan mode cannot prove that a compound expression carrying
+`||` and a subshell is read-only, so it asks. Fixing the brief cannot close this. See
+design.md 5.15.
+
+With a person attached it costs one keystroke. Unattended, which is the case this plugin exists
+for, the review waits for nobody and nothing underneath it reclaims the card. The stall detector
+fires only while `state` is 'working' and a worker stopped at a prompt reads 'blocked', which
+liveness calls ALIVE and which extends the claim. The card's runtime cap would end it and is
+unset by default, so the card stays in `running` for as long as the board runs.
+
+The cheap route does not work as written. A repository can pre-authorise commands in its own
+`.claude/settings.json`, but rules spelled `Bash(git commit:*)` never match on Windows, because
+the worker reaches for the PowerShell tool instead. Measured 2026-09-10: `node`, `git status`,
+`git add` and `git commit` were all requested through PowerShell, all four were covered by a
+`Bash(...)` allowlist on paper, and none was covered in fact.
+
+### 1.2 The card drawer can strand the operator with no way back in view
+
+`renderer.ts`, the drawer head, and `styles.ts`, where `.kanban-drawer-body` sets `overflow-y`
+and nothing horizontal. Done when the tab strip and the close control stay reachable however
+wide the drawer content gets. The fix belongs to a different branch; this entry is here so that
+branch has the reproduction.
+
+Reported by the operator, 2026-09-10: with a wide window and the card drawer open on the
+`board` tab, the drawer content overflows horizontally and the tab strip falls out of view.
+Every way back still exists, the terminal, history and board tabs and the panel's own close
+control, and none of them was on screen. The operator stayed stuck until the tab was switched
+for them from outside.
 
 ## 2. Unproven rather than broken
 
@@ -37,15 +87,29 @@ The stall detector          Its thresholds are an hour of silence past a four
                             hour run. Only its guard conditions have been read;
                             it has never fired. Verifying it honestly means
                             either waiting or making the thresholds injectable
-`sourcePhase` = 'review'    Reachable since 2026-09-09 and WRONG until 2026-09-10,
-                            when a stopped review proved it was being set to
-                            'ready'. Fixed and probed; no real reviewer has yet
-                            blocked its way into it
-The verdict path            HALF PROVEN on 2026-09-10: a real reviewer judged a
-                            real branch and `approved` landed the card in done,
-                            with its followup adopted. What no run has exercised
-                            yet is `changes`, the blocked route, and the missing
-                            verdict, which are the other three rows of 10.6.3
+The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
+                            `approved` landed a card in done earlier on
+                            2026-09-10; the blocked route and the review that
+                            declares no verdict were both proven by the second
+                            run of that day. `changes` is the one route no run
+                            has exercised, and it is the one that matters most:
+                            it is the loop that turns a review into the next
+                            implementer's brief. Why it is still unexercised
+                            matters more than a tidy row, and the two attempts
+                            failed for different reasons. The first review died
+                            before declaring anything, killed by the undeclared
+                            turn now closed in section 5. The second was told,
+                            in the card body, to declare `changes` whatever it
+                            concluded; it refused, judged the work on its merits
+                            and declared `approved`, correctly, because the work
+                            was right. Commit c017881 on a worktree branch is
+                            that work. So the route cannot be reached by
+                            scripting a reviewer: proving it needs a branch
+                            carrying real deficient work for a real reviewer to
+                            reject, and that is the shape the next attempt has
+                            to take. A reviewer that will not declare a verdict
+                            it does not hold is a property worth having, and it
+                            is recorded in section 5 rather than resented here
 The watch view against      Verified in the panel harness, over fake boards, and
 real boards                 the channel it reads answers correctly against a real
                             one. Nobody has watched it with two REAL boards busy
@@ -134,7 +198,7 @@ environment and came up "not logged in"
 state 'blocked' also means "finished, and    a declared terminal     design.md 5.10
 waiting on you", so cards stayed running     block outranks liveness
 A scratch workspace under userData could     scratch workspaces      design.md 5.11
-not be launched into                         moved to tmpdir. The       and 1.2 above
+not be launched into                         moved to tmpdir. The       and section 4
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
@@ -193,6 +257,13 @@ nothing that could even name them            merge state, removing
                                              only what landed
 .claude/worktrees put untracked files in     an offer to write it    design.md 8.3
 the operator's git status                    into .git/info/exclude
+                                             rather than into a
+                                             tracked .gitignore,
+                                             with a comment naming
+                                             the writer. Run
+                                             against a real
+                                             repository for the
+                                             first time 2026-09-10
 worktree remove succeeded before branch      the landed check moved  src/worktrees.ts
 -d refused, so an unlanded branch could      inside worktrees.remove
 lose its working tree
@@ -225,4 +296,78 @@ had and the panel had no way to reach,       the drawer and a board
 including the permission mode, which is      settings view with
 a safety control                             rename, re-point,
                                              archive and delete
+A turn that ended without declaring left     reconcile reads a       design.md 5.10
+the card in running for ever. Saying no to   finished turn,          src/dispatch.ts
+an agent, the ordinary use of this           progress.ended ===
+feature, pins the card; it is not a          true, where it read
+misconfiguration. Measured 2026-09-10,       a terminal block AND
+session 79bd31da, where the OPERATOR         a finished turn.
+denied a tool use from the drawer            resolve already read
+terminal. The transcript records, at one     the block first and
+instant, 'User rejected tool use', then      falls through to the
+'[Request interrupted by user for tool       violation path, so it
+use]', then a turn_duration entry. The       was not touched
+denial ENDED THE TURN: the reviewer
+declared nothing, the card stayed running
+and locked, and claude agents --json
+reported state 'working' with status
+'idle'
+updateCard dropped patches its own type      a PATCHABLE set of      src/board.ts
+advertised, and returned the card as if      the twelve fields it    src/types.ts
+they had landed. Two attempts to reset       really applies gates
+the counters on card A were reported         the patch, and any
+successful, and the card then blocked on     other key throws a
+three violations that were supposed to       Refusal naming the
+have been cleared                            strays. CardPatch
+                                             narrowed to
+                                             Partial<Pick<Card,
+                                             ...>> over the same
+                                             twelve, so the type
+                                             promises no more
+An expected refusal was logged like a        a refusal contract.     src/refusal.ts
+crash: the guard refusing to patch a card    Refusal carries the     apps/shell
+with a live worker still printed 'Error      property
+occurred in handler for                      dyarchiaRefusal =
+plugin:kanban:updateCard' with a stack,      true, 53 deliberate
+so an operator watching the console could    throws became it, the
+not tell a working guard from a fault        shell returns the
+                                             value
+                                             { __dyarchiaRefused:
+                                             message } instead of
+                                             throwing, and preload
+                                             unwraps and rethrows a
+                                             plain Error so every
+                                             renderer call site is
+                                             unchanged. The
+                                             PROPERTY, not
+                                             instanceof, because
+                                             the plugin main module
+                                             is bundled apart from
+                                             the shell. main.ts's
+                                             attach channel
+                                             registers on ipcMain
+                                             itself, for the
+                                             MessagePorts, and is
+                                             wrapped by a local
+                                             refusable helper
+Whether updateCard refusing every patch      the right answer.       src/board.ts
+while a card has a live worker was an        Measured 2026-09-10     design.md 13
+obstacle or the right answer had been        against a real board:
+decided on paper only                        the guard held, and
+                                             the operator steered
+                                             with board priorities
+                                             and a cap of 0, which
+                                             pauses the board, to
+                                             stop the dispatcher
+                                             re-claiming a card
+                                             between the read and
+                                             the patch
+Nothing had shown two workers running at     measured 2026-09-10: a  design.md 13
+once on ONE board; the isolation that was    review of one card and
+proven was between two boards                an implementation of
+                                             another ran together
+                                             on one board without
+                                             interfering. TWO
+                                             BOARDS at once stays
+                                             unproven, in section 2
 ```

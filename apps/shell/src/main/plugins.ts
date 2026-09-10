@@ -152,6 +152,15 @@ function servePluginFile(request: Request): Promise<Response> | Response {
         )
 }
 
+const REFUSED = '__dyarchiaRefused'
+
+function isRefusal(error: unknown): error is Error {
+    return (
+        error instanceof Error &&
+        (error as { dyarchiaRefusal?: unknown }).dyarchiaRefusal === true
+    )
+}
+
 async function activateMainModules(): Promise<void> {
     for (const { manifest, dir } of plugins.values()) {
         if (!manifest.main) continue
@@ -163,7 +172,14 @@ async function activateMainModules(): Promise<void> {
                 handle: (channel: string, handler: (...args: unknown[]) => unknown) => {
                     ipcMain.handle(
                         `plugin:${manifest.id}:${channel}`,
-                        (_event, ...args) => handler(...args)
+                        async (_event, ...args) => {
+                            try {
+                                return await handler(...args)
+                            } catch (error) {
+                                if (!isRefusal(error)) throw error
+                                return { [REFUSED]: error.message }
+                            }
+                        }
                     )
                 },
                 broadcast: (channel: string, ...args: unknown[]) => {

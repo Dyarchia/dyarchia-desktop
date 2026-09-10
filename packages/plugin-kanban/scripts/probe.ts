@@ -1,18 +1,21 @@
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt, guarded, home, unlisted } from '../src/dispatch.js'
-import { liveness, parseLaunch } from '../src/agents.js'
+import { adopt, force, guarded, home, unlisted } from '../src/dispatch.js'
+import { liveness, parseLaunch, snapshot } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
 import { brief, reviewBrief } from '../src/worker.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { parseTerminal } from '../src/worker.js'
+import { isRefusal } from '../src/refusal.js'
 import { ours, parseList, same } from '../src/worktrees.js'
 import type { SessionRecord } from '../src/agents.js'
-import type { Card, Run } from '../src/types.js'
+import type { Sink } from '../src/dispatch.js'
+import type { Card, CardPatch, Run } from '../src/types.js'
 
 let passed = 0
 let failed = 0
@@ -37,8 +40,14 @@ async function refuses(name: string, run: () => Promise<unknown>, fragment: stri
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         if (message.includes(fragment)) {
-            passed += 1
-            console.log(`  ok    ${name}`)
+            if (isRefusal(error)) {
+                passed += 1
+                console.log(`  ok    ${name}`)
+                return
+            }
+            failed += 1
+            console.log(`  FAIL  ${name}`)
+            console.log('        it refused without the mark; the shell will log it as a crash')
             return
         }
         failed += 1
@@ -540,12 +549,196 @@ async function guards(): Promise<void> {
     check('and a review goes back to review, not to an implementer', home({ ...base, kind: 'review' }), 'review')
 }
 
+async function patches(): Promise<void> {
+    console.log('\nthe fields a patch may carry')
+
+    const card = await board.createCard('probe', { title: 'patched' })
+    const edited = await board.updateCard('probe', card.id, { title: 'renamed', priority: 2 })
+    const rev = edited.rev
+    check('a patch of the fields it applies lands', [edited.title, edited.priority], ['renamed', 2])
+    check('and it touches nothing it was not given', edited.status, 'triage')
+
+    const extra: Record<string, unknown>[] = [
+        { status: 'done' },
+        { rev: 9 },
+        { locked: false },
+        { runs: [] },
+        { consecutiveFailures: 7 }
+    ]
+    for (const patch of extra) {
+        const key = Object.keys(patch)[0]
+        await refuses(
+            `refuses a patch carrying ${key}`,
+            () => board.updateCard('probe', card.id, patch as CardPatch),
+            `no editable ${key}`
+        )
+    }
+
+    await refuses(
+        'and it names every stray key, not only the first',
+        () => board.updateCard('probe', card.id, { status: 'done', rev: 9 } as unknown as CardPatch),
+        'no editable status, rev'
+    )
+
+    const after = (await board.cards('probe')).find((entry) => entry.id === card.id) as Card
+    check('a refused patch leaves the card alone', [after.status, after.rev], ['triage', rev])
+}
+
+const TURN_ENDED = { type: 'system', subtype: 'turn_duration', durationMs: 1_000, messageCount: 4 }
+
+function spoke(id: string, content: unknown[]): unknown {
+    return { type: 'assistant', message: { id, usage: { input_tokens: 20, output_tokens: 5 }, content } }
+}
+
+function jsonl(rows: unknown[]): string {
+    return `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`
+}
+
+function setenv(name: string, value: string | undefined): void {
+    if (value === undefined) delete process.env[name]
+    else process.env[name] = value
+}
+
+async function reconciling(): Promise<void> {
+    console.log('\nthe turn ended and nothing was declared')
+
+    const workdir = mkdtempSync(join(tmpdir(), 'kanban-recon-'))
+    const fakeHome = mkdtempSync(join(tmpdir(), 'kanban-home-'))
+    const bare = mkdtempSync(join(tmpdir(), 'kanban-bare-'))
+    const transcripts = join(fakeHome, '.claude', 'projects', 'recon')
+    mkdirSync(transcripts, { recursive: true })
+
+    const held = {
+        HOME: process.env.HOME,
+        USERPROFILE: process.env.USERPROFILE,
+        PATH: process.env.PATH
+    }
+    setenv('HOME', fakeHome)
+    setenv('USERPROFILE', fakeHome)
+    setenv('PATH', bare)
+
+    await boards.create({ slug: 'recon', name: 'recon', workdir })
+    for (const entry of await boards.list()) await boards.update(entry.slug, { maxRunning: 0 })
+
+    check('with no claude on PATH the snapshot is unreadable', await snapshot(), null)
+    check(
+        'and every board is paused, so the sweep can claim nothing',
+        (await boards.list()).every((entry) => entry.maxRunning === 0),
+        true
+    )
+
+    const outcomes: string[] = []
+    const notices: string[] = []
+    const sink: Sink = {
+        boardChanged: () => undefined,
+        cardProgress: () => undefined,
+        runEnded: (_slug, _cardId, outcome) => {
+            outcomes.push(outcome)
+        },
+        notify: (notice) => {
+            notices.push(notice.title)
+        }
+    }
+
+    const staged = async (title: string, rows: unknown[]): Promise<string> => {
+        const card = await board.createCard('recon', { title })
+        const sessionId = randomUUID()
+        writeFileSync(join(transcripts, `${sessionId}.jsonl`), jsonl(rows), 'utf-8')
+
+        const file = await board.load('recon')
+        const live = board.find(file, card.id)
+        live.status = 'running'
+        live.locked = true
+        live.runs.push({
+            runId: randomUUID(),
+            kind: 'implement',
+            sessionId,
+            shortId: 'deadbeef',
+            worktree: null,
+            branch: null,
+            startedAt: Date.now(),
+            endedAt: null,
+            outcome: null,
+            summary: null,
+            artifacts: [],
+            kept: [],
+            inputTokens: 0,
+            outputTokens: 0,
+            error: null,
+            headBefore: null
+        })
+        await board.save('recon', file)
+        return card.id
+    }
+
+    const denied = await staged('the operator denied a tool use', [
+        spoke('m1', [{ type: 'tool_use', name: 'PowerShell' }]),
+        { type: 'user', message: { content: [{ type: 'tool_result', content: 'User rejected tool use' }] } },
+        {
+            type: 'user',
+            message: { content: [{ type: 'text', text: '[Request interrupted by user for tool use]' }] }
+        },
+        TURN_ENDED
+    ])
+    const told = await staged('the worker declared it finished', [
+        spoke('m2', [
+            {
+                type: 'text',
+                text: '===KANBAN===\n{ "outcome": "completed", "summary": "did the work", "artifacts": [], "followups": [] }'
+            }
+        ]),
+        TURN_ENDED
+    ])
+    const talking = await staged('the worker is still talking', [
+        TURN_ENDED,
+        spoke('m3', [{ type: 'text', text: 'still reading the diff' }])
+    ])
+
+    await force(sink)
+
+    const reread = async (id: string): Promise<Card> =>
+        (await board.cards('recon')).find((card) => card.id === id) as Card
+    const last = (card: Card): Run => card.runs[card.runs.length - 1]
+
+    const stuck = await reread(denied)
+    check('a finished turn with no terminal block is resolved, not held', stuck.status, 'ready')
+    check('the card is let go of', stuck.locked, false)
+    check('the run is closed', last(stuck).endedAt !== null, true)
+    check('as a protocol violation', last(stuck).outcome, 'violation')
+    check('and it says what was missing', last(stuck).error, 'no terminal block')
+    check('the violation is counted', stuck.protocolViolations, 1)
+    check('the tokens the turn spent are kept', [last(stuck).inputTokens, last(stuck).outputTokens], [20, 5])
+    check('and the operator is told', notices.includes('the operator denied a tool use broke the protocol'), true)
+
+    const finished = await reread(told)
+    check('a finished turn that declared is resolved as it always was', finished.status, 'done')
+    check('with the outcome it declared', last(finished).outcome, 'completed')
+    check('and the summary it wrote', last(finished).summary, 'did the work')
+
+    const ongoing = await reread(talking)
+    check('a turn that is not finished is still held', ongoing.status, 'running')
+    check('the card stays locked', ongoing.locked, true)
+    check('its run stays open', [last(ongoing).endedAt, last(ongoing).outcome], [null, null])
+    check('and nothing is counted against it', ongoing.protocolViolations, 0)
+
+    check('only the finished runs were reported', outcomes.sort(), ['completed', 'violation'])
+    check(
+        'and the paused sweep launched nothing',
+        (await board.cards('recon')).filter((card) => card.status === 'running').length,
+        1
+    )
+
+    for (const [name, value] of Object.entries(held)) setenv(name, value)
+    for (const path of [workdir, fakeHome, bare]) rmSync(path, { recursive: true, force: true })
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
 launches()
 terminals()
 await machine()
+await patches()
 await housekeeping()
 await followups()
 await leases()
@@ -555,6 +748,7 @@ await bulk()
 await guards()
 await reviews()
 await eventLog()
+await reconciling()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

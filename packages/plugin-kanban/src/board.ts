@@ -14,6 +14,7 @@ import type {
     Comment,
     Status
 } from './types.js'
+import { Refusal } from './refusal.js'
 
 const ORDER = rules().order
 const VERSION = 1
@@ -76,7 +77,7 @@ export async function cards(slug: string): Promise<Card[]> {
 
 export function find(file: BoardFile, id: string): Card {
     const card = file.cards.find((entry) => entry.id === id)
-    if (!card) throw new Error(`no card '${id}'`)
+    if (!card) throw new Refusal(`no card '${id}'`)
     return card
 }
 
@@ -93,11 +94,11 @@ function assertNoCycle(file: BoardFile, id: string, parents: string[]): void {
 
     while (stack.length) {
         const next = stack.pop() as string
-        if (next === id) throw new Error('that dependency would close a cycle')
+        if (next === id) throw new Refusal('that dependency would close a cycle')
         if (seen.has(next)) continue
         seen.add(next)
         const parent = byId.get(next)
-        if (!parent) throw new Error(`no card '${next}' on this board`)
+        if (!parent) throw new Refusal(`no card '${next}' on this board`)
         stack.push(...parent.parents)
     }
 }
@@ -111,7 +112,7 @@ function normalizeParents(file: BoardFile, id: string, parents: string[] | undef
 
 function assertWorkdir(workdir: string | null | undefined): string | null {
     if (workdir === undefined || workdir === null || workdir === '') return null
-    if (!isAbsolute(workdir)) throw new Error(`'${workdir}' is not an absolute path`)
+    if (!isAbsolute(workdir)) throw new Refusal(`'${workdir}' is not an absolute path`)
     return workdir
 }
 
@@ -134,7 +135,7 @@ export function blockedBy(file: BoardFile, card: Card): Card[] {
 export async function createCard(slug: string, draft: CardDraft): Promise<Card> {
     const file = await load(slug)
     const title = String(draft.title ?? '').trim()
-    if (!title) throw new Error('the card needs a title')
+    if (!title) throw new Refusal('the card needs a title')
 
     const id = randomUUID()
     const now = Date.now()
@@ -179,14 +180,32 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
     return card
 }
 
+const PATCHABLE = new Set([
+    'title',
+    'body',
+    'priority',
+    'workdir',
+    'workspaceKind',
+    'model',
+    'effort',
+    'maxRuntimeSeconds',
+    'maxRetries',
+    'permissionMode',
+    'scheduledFor',
+    'parents'
+])
+
 export async function updateCard(slug: string, id: string, patch: CardPatch): Promise<Card> {
     const file = await load(slug)
     const card = find(file, id)
-    if (card.locked) throw new Error('that card has a live worker')
+    if (card.locked) throw new Refusal('that card has a live worker')
+
+    const stray = Object.keys(patch).filter((key) => !PATCHABLE.has(key))
+    if (stray.length) throw new Refusal(`a card has no editable ${stray.join(', ')}`)
 
     if (patch.title !== undefined) {
         const title = String(patch.title).trim()
-        if (!title) throw new Error('the card needs a title')
+        if (!title) throw new Refusal('the card needs a title')
         card.title = title
     }
     if (patch.body !== undefined) card.body = String(patch.body)
@@ -210,13 +229,13 @@ export async function updateCard(slug: string, id: string, patch: CardPatch): Pr
 function applyMove(file: BoardFile, id: string, rev: number, to: Status): Status | null {
     const card = find(file, id)
 
-    if (card.rev !== rev) throw new Error('that card changed while you were moving it')
-    if (card.locked) throw new Error('that card has a live worker')
+    if (card.rev !== rev) throw new Refusal('that card changed while you were moving it')
+    if (card.locked) throw new Refusal('that card has a live worker')
     if (card.status === to) return null
-    if (!allows(card.status, to)) throw new Error(`a card cannot go from ${card.status} to ${to}`)
+    if (!allows(card.status, to)) throw new Refusal(`a card cannot go from ${card.status} to ${to}`)
 
     if (to === 'ready' && blockedBy(file, card).length) {
-        throw new Error('that card still has open dependencies')
+        throw new Refusal('that card still has open dependencies')
     }
 
     if (card.status === 'blocked') {
@@ -285,8 +304,8 @@ export async function unblock(slug: string, id: string, rev: number): Promise<Ca
     const file = await load(slug)
     const card = find(file, id)
 
-    if (card.rev !== rev) throw new Error('that card changed while you were unblocking it')
-    if (card.status !== 'blocked') throw new Error('that card is not blocked')
+    if (card.rev !== rev) throw new Refusal('that card changed while you were unblocking it')
+    if (card.status !== 'blocked') throw new Refusal('that card is not blocked')
 
     const open = blockedBy(file, card).length > 0
     card.status = open ? 'todo' : (card.sourcePhase ?? 'ready')
@@ -300,10 +319,10 @@ export async function unblock(slug: string, id: string, rev: number): Promise<Ca
 
 function applyDelete(file: BoardFile, id: string, going: Set<string>): Card {
     const card = find(file, id)
-    if (card.locked) throw new Error('that card has a live worker')
+    if (card.locked) throw new Refusal('that card has a live worker')
 
     const child = file.cards.find((entry) => entry.parents.includes(id) && !going.has(entry.id))
-    if (child) throw new Error(`'${child.title}' depends on that card`)
+    if (child) throw new Refusal(`'${child.title}' depends on that card`)
 
     file.cards = file.cards.filter((entry) => entry.id !== id)
     return card
@@ -330,7 +349,7 @@ export async function deleteCards(slug: string, ids: string[]): Promise<Bulk> {
 
     for (const id of ids) {
         try {
-            if (find(file, id).locked) throw new Error('that card has a live worker')
+            if (find(file, id).locked) throw new Refusal('that card has a live worker')
             going.add(id)
         } catch (error) {
             result.refused.push({ id, why: why(error) })
@@ -394,7 +413,7 @@ export async function comment(
     author: Comment['author']
 ): Promise<Card> {
     const body = String(text ?? '').trim()
-    if (!body) throw new Error('the comment is empty')
+    if (!body) throw new Refusal('the comment is empty')
 
     const file = await load(slug)
     const card = find(file, id)

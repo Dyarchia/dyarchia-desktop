@@ -34,11 +34,17 @@ Next.js.
 css/dyarchia.css     the only entry point; imports the five below, in this order
 css/fonts.css        the six IBM Plex @font-face declarations
 css/tokens.css       both themes
-css/reset.css        normalisation, focus ring, scrollbars, reduced motion
+css/reset.css        normalisation, [hidden], focus ring, scrollbars, reduced motion
 css/motion.css       four keyframes, all prefixed dya-
 css/components.css   the dya-* classes
 fonts/               six static woff2, 336 KB
+tools/contrast.py    the measurement section 11 requires
 ```
+
+`[hidden]` is declared `!important`, which is the conventional form of that rule and the
+only one that works: the UA stylesheet loses to any class that sets `display`, so a hidden
+flex container stays on screen. A consumer toggling `element.hidden` is guaranteed an
+effect, and an element that must be hidden but laid out has `visibility`.
 
 Import order is load-bearing. `reset.css` and `components.css` consume tokens, so
 `tokens.css` precedes both. Every custom property is prefixed `--dya-`, every keyframe and
@@ -330,18 +336,37 @@ This is what makes a theme possible at all, and it is the invariant to check fir
 anything looks wrong in one theme and right in the other.
 
 ```text
-Structure    panel bar (--flush) dock card card__header card__body rule brand
+Structure    panel bar (--flush --inset) dock card card__header card__body rule brand
 Pressable    button (--quiet --sm --danger) key chip item entry (--strong --active)
-Input        field toggle checkbox radio slider
+Input        field (--sm --auto) toggle checkbox radio slider
 Content      tag badge (--success --warning --danger --soft) table row (--selected)
-             metric display heading text label eyebrow value mono caret
+             metric display heading text (--success --warning --danger) label eyebrow
+             value mono caret
 Documents    prose (styles by element) prose__scroll
              code (__kw __str __num __com __fn __pun)
+             log
              math (--block)
 Layers       menu menu__item tooltip
 Navigation   tabs tab pagination
 Absence      empty loading skeleton
 ```
+
+Four distinctions in that list are easy to collapse and are not the same thing:
+
+- **`code` is authored, `log` is streamed.** Code is written by a person, highlighted, and
+  scrolls horizontally because its indentation carries meaning. A log is whatever a process
+  printed: it wraps (`pre-wrap`, and `overflow-wrap: anywhere` for the URL with no break
+  opportunity in it), because a panel that scrolls sideways to read a filename is unusable
+  at panel width. `log` carries no height and no flex; that is the consumer's layout.
+- **`badge` is a chip, `text--*` is a sentence.** The same three status tokens serve both. A
+  reported outcome in prose is not a chip and must not be dressed as one.
+- **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 46px
+  height, the gradient and the hairline under it; the rhythm — flex, centred, `space-2` gap
+  — is the part worth sharing, and the modifier keeps it. A second title bar inside a panel
+  reads as a mistake.
+- **`field` is full-width by default.** That is right for a form and wrong for a control
+  row, where a select expands and pushes what follows onto a second line. `--auto` opts
+  out; a minimum width is layout and stays with the consumer.
 
 ## 11. Verification
 
@@ -350,10 +375,13 @@ There is nothing to build, lint or test. What replaces those commands:
 - **Arithmetic.** Any change to a text, border, surface or accent token is re-measured as a
   WCAG contrast ratio against every surface it can sit on, **in both themes**, and the
   measured numbers go in the commit body. The surfaces are the ten listed in sections 3
-  and 4.
-- **Visual.** The system carries no render of its own. `scratch/build_themes.py` generates
-  a page holding both themes over the real component layer with every ratio computed and
-  marked; regenerate it and look. `scratch/` is gitignored.
+  and 4. `py tools/contrast.py <token-suffix>` reads `tokens.css` and prints that grid;
+  giving it a literal `#rrggbb` measures a value that is not a token yet.
+- **Visual.** The system carries no render of its own. A page that links `css/dyarchia.css`
+  with the fonts beside it, holding the markup in question in both themes, is the whole
+  method. `scratch/` at the workspace root is gitignored and exists for those pages; serve
+  the workspace over HTTP rather than opening the page from disk, or the fonts are blocked
+  as cross-origin and the measurement is made against the wrong faces.
 - **The invariant.** `components.css` must resolve to zero literal colours. Verify against
   the CSSOM, not by reading the file.
 

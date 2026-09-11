@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { registerNotices, showNotice } from './notices'
+import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
 
 export interface PluginManifest {
@@ -150,6 +152,15 @@ function servePluginFile(request: Request): Promise<Response> | Response {
         )
 }
 
+const REFUSED = '__dyarchiaRefused'
+
+function isRefusal(error: unknown): error is Error {
+    return (
+        error instanceof Error &&
+        (error as { dyarchiaRefusal?: unknown }).dyarchiaRefusal === true
+    )
+}
+
 async function activateMainModules(): Promise<void> {
     for (const { manifest, dir } of plugins.values()) {
         if (!manifest.main) continue
@@ -161,14 +172,22 @@ async function activateMainModules(): Promise<void> {
                 handle: (channel: string, handler: (...args: unknown[]) => unknown) => {
                     ipcMain.handle(
                         `plugin:${manifest.id}:${channel}`,
-                        (_event, ...args) => handler(...args)
+                        async (_event, ...args) => {
+                            try {
+                                return await handler(...args)
+                            } catch (error) {
+                                if (!isRefusal(error)) throw error
+                                return { [REFUSED]: error.message }
+                            }
+                        }
                     )
                 },
                 broadcast: (channel: string, ...args: unknown[]) => {
                     for (const win of BrowserWindow.getAllWindows()) {
                         win.webContents.send(`plugin:${manifest.id}:${channel}`, ...args)
                     }
-                }
+                },
+                notify: (notice: PluginNotice) => showNotice(manifest.id, notice)
             })
         } catch (error) {
             console.error(`[plugins] failed to activate main module of "${manifest.id}"`, error)
@@ -202,6 +221,7 @@ async function startEagerly(pluginId: string, dir: string): Promise<string[] | n
 
 export async function setupPlugins(): Promise<void> {
     protocol.handle(PLUGIN_SCHEME, servePluginFile)
+    registerNotices()
     await discoverPlugins()
     await activateMainModules()
     await activatePythonModules()

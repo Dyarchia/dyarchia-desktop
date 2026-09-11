@@ -1,0 +1,25 @@
+{
+    "name": "@dyarchia/plugin-kanban",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "pnpm build:renderer && pnpm build:main && pnpm build:ptyhost",
+        "build:renderer": "node ../../scripts/build-plugin.mjs renderer --css-text",
+        "build:main": "node ../../scripts/build-plugin.mjs main",
+        "build:ptyhost": "esbuild src/ptyhost.ts --bundle --platform=node --format=cjs --external:node-pty --outfile=dist/ptyhost.cjs",
+        "probe": "esbuild scripts/probe.ts --bundle --platform=node --format=esm --alias:electron=./scripts/electron-stub.mjs --outfile=.probe/probe.mjs && node .probe/probe.mjs"
+    },
+    "devDependencies": {
+        "@dyarchia/sdk": "workspace:*",
+        "@types/node": "^26.2.0",
+        "electron": "^43.3.0",
+        "esbuild": "^0.28.2",
+        "typescript": "^5.9.3",
+        "@xterm/xterm": "^6.0.0",
+        "@xterm/addon-fit": "^0.11.0"
+    },
+    "dependencies": {
+        "node-pty": "^1.0.0"
+    }
+}

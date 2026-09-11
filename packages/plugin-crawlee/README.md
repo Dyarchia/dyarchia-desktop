@@ -267,23 +267,19 @@ repositories, so git is the only copy of what a previous round found.
 
 ## The panel
 
-`dyarchia-plugin/` is a panel for [Dyarchia Desktop](https://github.com/Dyarchia/dyarchia-desktop):
-the same two things a prompt does, with the corpus in front of you while you decide. It reads the
-state of every corpus, starts a round and streams it as it happens, and lets a target be written or
-edited without leaving the window.
+This package is a panel for Dyarchia Desktop, and it lives in that workspace: the shell scans
+`packages/` and finds it there, so there is nothing to install. It shows the same two things a
+prompt does, with the corpus in front of you while you decide. It reads the state of every corpus,
+starts a round and streams it as it happens, and lets a target be written or edited without leaving
+the window.
 
-```bash
-py scripts/install_plugin.py
-py scripts/install_plugin.py --uninstall
-```
+The panel does not import the toolkit: it runs the CLI under this project's own interpreter and
+shows what comes back. That is the whole design. It holds no crawling logic, no schema and no
+second copy of the lock, so a button and a prompt cannot disagree about what a round is, and
+anything the panel can do is something you can also do by hand. Run `uv sync --dev` here once, or
+the panel has no interpreter to call and says so.
 
-It installs into the shell's plugin folder and carries a file naming this checkout, because it does
-not import the toolkit: it runs the CLI under this project's own interpreter and shows what comes
-back. That is the whole design. The panel holds no crawling logic, no schema and no second copy of
-the lock, so a button and a prompt cannot disagree about what a round is, and anything the panel
-can do is something you can also do by hand.
-
-Restart the shell after installing. Main modules are imported once, at startup.
+Restart the shell after changing `main.py`. Main modules are imported once, at startup.
 
 Two things to know before using it:
 
@@ -298,13 +294,11 @@ Every surface the panel paints belongs to Dyarchia's design system: `dya-tabs`, 
 font or radius is written literally and no rule of the system is restyled, so the panel follows
 whichever theme the shell has mounted without knowing which one it is.
 
-Five things the system does not have yet are proposed to it in
-[docs/design/dyarchia-ui-proposal.md](docs/design/dyarchia-ui-proposal.md): a `[hidden]` rule in the
-reset, a `dya-log` output surface, status modifiers on `dya-text`, an inset `dya-bar` and a
-`dya-field` that sizes to its content. The panel's markup already names all five. Until they ship,
-each is held up by one prefixed rule marked `until upstream` in the renderer, and the proposal lists
-exactly which rule dies with which proposal. Everything else the panel declares is layout: flex and
-grid containers, widths, scroll boxes and the proportions of the two panes.
+Five things the system did not have were proposed to it from here and shipped in kanon on
+2026-09-11: the `[hidden]` rule in the reset, `dya-log`, the status modifiers on `dya-text`,
+`dya-bar--inset` and `dya-field--auto`. The panel already named all five, so it deleted its own
+rules and moved no markup. What it declares now is layout and nothing else: flex and grid
+containers, widths, scroll boxes and the proportions of the two panes.
 
 ## The step after the sweep
 
@@ -356,7 +350,6 @@ mark left is `browser`, for the tests that need Playwright's Chromium installed.
 - `docs/architecture.md` — how the pieces fit together and why
 - `docs/profiles.md` — the profile file format, selector and pattern syntax
 - `docs/design/specs/` — the approved design
-- `docs/design/dyarchia-ui-proposal.md` — five additions the panel asks of Dyarchia's design system
 
 ## Cost
 

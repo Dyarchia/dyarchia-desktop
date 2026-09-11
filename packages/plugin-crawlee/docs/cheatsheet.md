@@ -500,16 +500,11 @@ uv run pytest --cov=dyarchia_crawlee --cov-report=term-missing
 
 ## 18. The panel
 
-The Dyarchia Desktop plugin in `dyarchia-plugin/`: the corpus in front of you, a round on a button,
-and a target written or edited without leaving the window.
+This package is the Dyarchia Desktop plugin: the corpus in front of you, a round on a button, and
+a target written or edited without leaving the window. The shell scans `packages/` and finds it,
+so there is nothing to install; `uv sync --dev` here once gives it the interpreter it calls.
 
-```bash
-py scripts/install_plugin.py
-py scripts/install_plugin.py --uninstall
-```
-
-It installs into `%APPDATA%/dyarchia/plugins/dyarchia/` with a `home` file naming this checkout.
-Restart the shell afterwards: main modules are imported once, at startup.
+Restart the shell after changing `main.py`: main modules are imported once, at startup.
 
     Channel     Runs                              Answers
     ---------   -------------------------------   --------------------------------------

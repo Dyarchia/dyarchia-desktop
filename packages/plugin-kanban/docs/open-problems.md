@@ -83,10 +83,16 @@ for them from outside.
 ```text
 WHAT                        WHY IT IS UNPROVEN
 --------------------------  ----------------------------------------------------
-The stall detector          Its thresholds are an hour of silence past a four
-                            hour run. Only its guard conditions have been read;
-                            it has never fired. Verifying it honestly means
-                            either waiting or making the thresholds injectable
+The stall detector, the     Its DECISION is proven and its thresholds are now
+wiring rather than the      injectable, see section 5. What no run has exercised
+decision                    is the wiring around it: that `reconcile` calls
+                            `claude stop`, closes the run as `stopped`, blocks
+                            the card as `transient` and sends it back to the
+                            phase it came from. Reaching that honestly still
+                            means a real run silent for an hour past four hours
+                            of life, or a card given a short `maxRuntimeSeconds`,
+                            which enters the same branch through `overran` and is
+                            the cheaper way in
 The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
                             `approved` landed a card in done earlier on
                             2026-09-10; the blocked route and the review that
@@ -370,4 +376,16 @@ proven was between two boards                an implementation of
                                              interfering. TWO
                                              BOARDS at once stays
                                              unproven, in section 2
+The stall detector could not be tested       `overran` and           design.md 12.2
+without waiting five hours, so only its      `stalled` are pure
+guard conditions had ever been read          and exported, and
+                                             `stalled` takes its
+                                             thresholds, so the
+                                             probe can make it fire
+                                             in microseconds. Eleven
+                                             checks, 2026-09-11,
+                                             each verified able to
+                                             fail. The WIRING is
+                                             still unproven, in
+                                             section 2
 ```

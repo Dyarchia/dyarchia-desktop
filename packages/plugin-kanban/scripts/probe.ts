@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt, force, guarded, home, unlisted } from '../src/dispatch.js'
+import { adopt, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
 import { liveness, parseLaunch, snapshot } from '../src/agents.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
@@ -732,6 +732,49 @@ async function reconciling(): Promise<void> {
     for (const path of [workdir, fakeHome, bare]) rmSync(path, { recursive: true, force: true })
 }
 
+function patience(): void {
+    console.log('\nthe detector that gives up on a run')
+
+    const now = 10_000_000
+    const old = now - PATIENCE.minAgeMs - 60_000
+    const mute = now - PATIENCE.silentMs - 60_000
+
+    check('a run with no cap never overruns', overran(null, now - 99_999_999, now), false)
+    check('a run inside its cap does not either', overran(600, now - 60_000, now), false)
+    check('a run past its cap does', overran(600, now - 601_000, now), true)
+
+    check('a working run that is old and mute has stalled', stalled('working', mute, old, now), true)
+    check(
+        'a BLOCKED run has NOT, however old and mute: it is waiting on a person',
+        stalled('blocked', mute, old, now),
+        false
+    )
+    check('nor has a run with no transcript to be silent in', stalled('working', null, old, now), false)
+    check('nor one that is old but still writing', stalled('working', now - 1_000, old, now), false)
+    check(
+        'nor one that is mute but too young to judge',
+        stalled('working', mute, now - 60_000, now),
+        false
+    )
+
+    const impatient = { silentMs: 50, minAgeMs: 100 }
+    check(
+        'the thresholds are injectable, so the rule can be made to fire',
+        stalled('working', now - 60, now - 200, now, impatient),
+        true
+    )
+    check(
+        'and injected thresholds still refuse a run that is too young',
+        stalled('working', now - 60, now - 10, now, impatient),
+        false
+    )
+    check(
+        'and still refuse one that is not working',
+        stalled('blocked', now - 60, now - 200, now, impatient),
+        false
+    )
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -749,6 +792,7 @@ await guards()
 await reviews()
 await eventLog()
 await reconciling()
+patience()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

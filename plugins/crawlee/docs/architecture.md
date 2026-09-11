@@ -412,7 +412,7 @@ person started thirty seconds ago and is watching.
 ## 10. Where this lives
 
 This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it as
-`packages/plugin-crawlee/` with its history intact. The move was decided the same day the product
+`plugins/crawlee/` with its history intact. The move was decided the same day the product
 was renamed, and the reason it is written here rather than left in a conversation is that the
 checkout, its remote and every conversation about it are the things that disappear.
 

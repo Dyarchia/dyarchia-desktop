@@ -360,18 +360,18 @@ Commit bodies    long and evidentiary: the measurement or failure that forced th
 Precedent files to read before writing the equivalent:
 
 ```text
-packages/plugin-eforoi/docs/design.md        how a design doc here is written, and the
+plugins/eforoi/docs/design.md        how a design doc here is written, and the
                                              source of traps 1 and 2 in section 20
-packages/plugin-eforoi/src/renderer.ts       a non-trivial plain-DOM panel: the el()
+plugins/eforoi/src/renderer.ts       a non-trivial plain-DOM panel: the el()
                                              helper, state in the mount closure, a card
                                              map, timer maps, one ctx.on subscription,
                                              and a dispose that tears all of it down
-packages/plugin-eforoi/src/menu.ts           the menu this plugin copies, see section 17
-packages/plugin-eforoi/src/styles.ts         column and scroll idioms; the status-dot
+plugins/eforoi/src/menu.ts           the menu this plugin copies, see section 17
+plugins/eforoi/src/styles.ts         column and scroll idioms; the status-dot
                                              precedent at lines 203-213
-packages/plugin-eforoi/src/providers/cli.ts  spawning a CLI agent: argv construction,
+plugins/eforoi/src/providers/cli.ts  spawning a CLI agent: argv construction,
                                              prompt over stdin, JSONL parsing, aborts
-packages/plugin-terminal/src/ptyhost.ts      a pty in a utilityProcess, for phase 7
+plugins/terminal/src/ptyhost.ts      a pty in a utilityProcess, for phase 7
 scripts/install-plugins.mjs                  what actually reaches the packaged app
 apps/shell/src/main/plugins.ts               discovery, IPC namespacing, main activation
 ```
@@ -2082,7 +2082,7 @@ History    the transcript rendered as readable rows         drawer tab
 
 ### 14.1 The terminal
 
-`packages/plugin-terminal` already solves this and its approach should be reused rather than
+`plugins/terminal` already solves this and its approach should be reused rather than
 reinvented. What it does, and why each part matters here:
 
 ```text
@@ -2553,7 +2553,7 @@ class, so a prefixed one is needed; it belongs on the same standing-request list
 - The 2px indicator height is a literal, justified by `.dya-entry--active` already carrying
   `inset 2px 0 0 var(--dya-accent)`. The spacing ladder governs spacing; `components.css` itself
   carries 5px, 6px, 20px, 22px and 26px sizes.
-- The status dot follows `packages/plugin-eforoi/src/styles.ts:203-213`: 6px,
+- The status dot follows `plugins/eforoi/src/styles.ts:203-213`: 6px,
   `--dya-radius-full`, `--dya-idle` base, `data-state` overrides.
 
 Before this lands, run `py packages/kanon/tools/contrast.py` for `accent-2`, `accent-3` and
@@ -2564,7 +2564,7 @@ not a suggestion.
 ## 17. Files
 
 ```text
-packages/plugin-kanban/
+plugins/kanban/
     dyarchia-plugin.json         id, name, version, renderer, main
     package.json                 build:renderer and build:main
     tsconfig.json                mirror plugin-terminal's, since this has a main
@@ -2659,7 +2659,7 @@ There is no test runner, linter or formatter in that workspace. Verification is 
 a manual smoke test, and two harnesses make it drivable.
 
 ```bash
-npx tsc -p packages/plugin-kanban
+npx tsc -p plugins/kanban
 ```
 
 ```bash
@@ -2734,7 +2734,7 @@ Already paid for in that repo. Do not rediscover them.
 
 1. **`overflow: hidden` on a card makes it a scroll container** and sets its automatic minimum
    size to zero. It cost an hour in `plugin-eforoi`: cards collapsed from 31px to 15px and a
-   510px card overflowed a 416px row. Recorded at `packages/plugin-eforoi/docs/design.md:700`.
+   510px card overflowed a 416px row. Recorded at `plugins/eforoi/docs/design.md:700`.
    The fix is not to ask one element to both scroll and lay out.
 2. **`grid-column: span N` survives nesting.** A card carrying span 12 inside a three-column
    band generated nine implicit 0px tracks. A band must reset `grid-column: auto` on its own

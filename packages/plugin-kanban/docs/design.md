@@ -1875,6 +1875,22 @@ block recurrences          2, then triage
 stranded diagnostic        30 minutes
 ```
 
+Two of those rows, Stalled and Max runtime, were unfalsifiable until 2026-09-11. Their
+thresholds are an hour of silence past a four hour run, so confirming them meant either
+waiting five hours or reading the code and hoping. The decision is now a pair of exported
+pure functions, `overran` and `stalled` in `dispatch.ts`, and `stalled` takes its thresholds
+as a parameter that defaults to the real ones. The probe makes it fire in microseconds, and
+the checks were each verified able to fail by breaking the rule and watching the probe go red.
+
+The row worth stating twice, because it is what the extraction pins down: **a session at a
+permission prompt reads `blocked`, and `stalled` returns false for anything that is not
+`working`.** Nothing reclaims such a card. That is deliberate, it is the "Waiting on a person"
+row of the table above, and it is why an unattended review that stops for permission is a
+problem this detector does not solve. See open-problems section 1.
+
+What is still unproven is the wiring rather than the decision: no run has ever taken the
+branch that calls `claude stop`, closes the run as `stopped` and blocks the card.
+
 ### 12.3 The respawn guard
 
 Do not relaunch a card whose previous run ended in a quota or auth error, or that completed
@@ -2665,7 +2681,7 @@ The headless probe covers what does not need an agent, and is the cheap half of 
 pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
-192 checks, among them: slug validation including the reserved device names, three-valued
+203 checks, among them: slug validation including the reserved device names, three-valued
 liveness, the launcher parser, the terminal-block parser including a truncated block and a
 nested object, dependency cycles, rev fencing, promotion when parents close, unblock restoring
 the source phase while keeping the recurrence count, a parked card waking at its time, the

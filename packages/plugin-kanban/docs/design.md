@@ -814,7 +814,11 @@ dontAsk             Launches, then DENIES every edit and every command
 acceptEdits         Launches. Accepts file edits, and stops for a person on every
                     command. Three prompts to write a test, run it, and commit
 auto                The worker decides for itself, with the safety classifier as
-                    the backstop. This is the mode for an unattended run
+                    the backstop. It is NOT a mode that runs unattended: measured
+                    2026-09-11, two cards carrying `permissionMode: 'auto'` both
+                    stopped for an ordinary file edit approval, offering "Yes, and
+                    switch to accept edits". The plugin passed the mode correctly;
+                    the CLI prompted anyway
 plan                Reviews only, and forced by the board rather than chosen. See
                     10.6.1
 manual              Not measured
@@ -824,6 +828,17 @@ manual              Not measured
 option and cannot start, the second sounds like "do not interrupt me" and means "refuse
 everything". Both cost a run before the reason is visible, and the reason only appears inside
 a three thousand character `run.error`.
+
+The row that was wrong here for a day is `auto`. It was written on 2026-09-10 from a
+description rather than from a measurement, and it said `auto` was the mode for an unattended
+run. It is not. Measured the next day on two boards at once, both workers stopped for a plain
+file edit. **So no permission mode currently runs an implementation unattended on this
+machine**: `bypassPermissions` cannot start, `dontAsk` refuses everything, `acceptEdits` stops
+on commands, and `auto` stops on edits. A card that nobody is watching will sit at a prompt,
+and design.md 5.10 says what happens to it after that. This is the same shape as the open
+problem in open-problems section 1, arrived at from the implementer's side rather than the
+reviewer's, and it is the strongest argument yet for moving the workers onto real agent
+definitions with hooks.
 
 A second trap sits under `acceptEdits` on Windows. A repository can pre-authorise commands in
 its own `.claude/settings.json`, but rules written as `Bash(git commit:*)` never match,
@@ -2681,7 +2696,7 @@ The headless probe covers what does not need an agent, and is the cheap half of 
 pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
-203 checks, among them: slug validation including the reserved device names, three-valued
+208 checks, among them: slug validation including the reserved device names, three-valued
 liveness, the launcher parser, the terminal-block parser including a truncated block and a
 nested object, dependency cycles, rev fencing, promotion when parents close, unblock restoring
 the source phase while keeping the recurrence count, a parked card waking at its time, the

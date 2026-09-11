@@ -70,16 +70,18 @@ the worker reaches for the PowerShell tool instead. Measured 2026-09-10: `node`,
 ```text
 WHAT                        WHY IT IS UNPROVEN
 --------------------------  ----------------------------------------------------
-The stall detector, the     Its DECISION is proven and its thresholds are now
-wiring rather than the      injectable, see section 5. What no run has exercised
-decision                    is the wiring around it: that `reconcile` calls
-                            `claude stop`, closes the run as `stopped`, blocks
-                            the card as `transient` and sends it back to the
-                            phase it came from. Reaching that honestly still
-                            means a real run silent for an hour past four hours
-                            of life, or a card given a short `maxRuntimeSeconds`,
-                            which enters the same branch through `overran` and is
-                            the cheaper way in
+The stall detector, only    Its DECISION is proven and its thresholds are now
+the silence half of it      injectable, see section 5. The BRANCH it feeds is
+                            proven too, and was before today: a real runtime cap
+                            stopped a real review on 2026-09-10, which is how the
+                            routing hole of design.md 10.6.6 was found. So
+                            `claude stop`, closing the run as `stopped`, blocking
+                            as `transient` and asking `home(run)` have all run
+                            against a live agent. What remains unexercised is
+                            narrow: `stalled` returning true on a real run, which
+                            needs one silent for an hour past four hours of life.
+                            `overran` reaches the same branch and has already
+                            done it
 The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
                             `approved` landed a card in done earlier on
                             2026-09-10; the blocked route and the review that
@@ -103,10 +105,6 @@ The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
                             to take. A reviewer that will not declare a verdict
                             it does not hold is a property worth having, and it
                             is recorded in section 5 rather than resented here
-The watch view against      Verified in the panel harness, over fake boards, and
-real boards                 the channel it reads answers correctly against a real
-                            one. Nobody has watched it with two REAL boards busy
-                            at once, which is the case its arithmetic is for
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"
@@ -384,4 +382,29 @@ guard conditions had ever been read          and exported, and
                                              fail. The WIRING is
                                              still unproven, in
                                              section 2
+The watch view had only ever been seen       measured 2026-09-11:    design.md 13
+over fake boards; its arithmetic is for      two boards, one card
+the case of several real ones busy at        each, both running at
+once                                         once. It read "2
+                                             running of 2", gave
+                                             each board its own
+                                             1/1 line, listed both
+                                             runs under RUNNING NOW
+                                             with their ages and
+                                             token counts, and
+                                             surfaced the one that
+                                             had stopped for
+                                             permission under
+                                             PROBLEMS
+`writeAtomic` used a fixed scratch name,     a per path write queue  design.md 8.3
+`<path>.tmp`, so two overlapping writes      inside the process,
+to one file shared it. Found 2026-09-11      plus a unique scratch
+by an EPERM on renaming boards.json,         name for the writers
+which left an orphan .tmp on disk. EPERM     another process cannot
+was the lucky outcome: had both renames      see. The probe drives
+landed, one writer's content would have      eight at once. The
+been lost in silence                         CROSS PROCESS case is
+                                             what the lease is for
+                                             and the probe cannot
+                                             reach it
 ```

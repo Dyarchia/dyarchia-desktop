@@ -1,14 +1,10 @@
-# dyarchia-eforoi
+# eforoi
 
-A panel of two to five models answers the same prompt, an analyst compares the answers
-without merging them, and the final reply is written from that comparison. A plugin for
-dyarchia-desktop, built outside its workspace.
+Two to five models answer the same prompt, an analyst compares the answers without merging
+them, and the final reply is written from that comparison.
 
 The Spartan ephors were five magistrates whose job was to watch the king. The panel caps at
 five for the same reason: past that, more members buy agreement, not scrutiny.
-
-
-## What it does
 
 ```text
    prompt
@@ -24,14 +20,7 @@ insights, blind spots — and the final answer is written from that. Agreement a
 independent members is evidence; disagreement is surfaced rather than smoothed away.
 
 
-Every member and the analyst can search and fetch the web, always. Ask three models for a
-version number and they will search, land on different pages and disagree — which is the
-disagreement the analyst exists to surface.
-
-
 ## Two ways to reach a model
-
-Every model in the catalogue offers up to two routes, chosen per seat from the side menu:
 
 ```text
 Mode           How the call is made                        Who pays
@@ -40,138 +29,194 @@ Subscription   the provider's CLI, already signed in        your plan's quota
 API            HTTPS with your own key                     per token, metered
 ```
 
-Subscription mode spawns the agent CLI you already use — `claude`, `codex`, `opencode` —
-in headless mode. No key is needed and nothing is billed per token; the call consumes plan
-quota. API mode calls the provider directly with a key held in the OS keychain.
+Subscription spawns the agent CLI you already use — `claude`, `codex`, `opencode` — in
+headless mode. API calls the provider directly with a key held in the OS keychain. A mode
+that cannot work is shown greyed with the reason: no CLI on PATH, no key stored, or the
+model not offered on that route.
 
-A mode that cannot work is shown greyed with the reason: no CLI on PATH, no key stored, or
-the model not offered on that route.
+**The catalogue is discovered, not declared.** Routes are probed and models are read from
+what is installed, so a model that appears in your CLI appears here. A seat whose model has
+gone is kept and named rather than dropped in silence.
 
 
 ## One prompt, one run
 
-A run is one-shot. Every model is asked once, the analyst — the seat the panel labels
-**Dogma**, δόγμα, the resolution a council issues — compares what came back and writes from
-the comparison, and nothing carries to the next Run. No member ever sees another member's
-answer, which is what keeps the panel worth polling.
+A run is one-shot. Every model is asked once, the analyst — the seat labelled **Dogma**,
+δόγμα, the resolution a council issues — compares what came back and writes from it, and
+nothing carries to the next Run. No member ever sees another member's answer. `Clear`
+empties the board; there is no conversation to forget.
 
-The analyst does both in a single call, emitting the comparison as JSON, a marker, then the
-answer. It used to be two calls, which made it the slower half of a run and left the writer
-working from the JSON alone, having never read a word any member wrote.
+Members run in parallel, so the panel stage costs whatever the slowest member costs. **The
+analyst then runs twice, sequentially** — once for the comparison JSON, once for the prose
+— after every member has finished. A slow model in the Dogma seat is paid for twice and
+overlaps with nothing, which is the usual reason a run takes far longer than its slowest
+member.
 
-It reads every surviving answer, so it is routinely the slowest seat even on a fast model —
-three members producing 4891, 427 and 3849 tokens hand it over nine thousand tokens of input.
-It carries its own 300 second deadline covering both attempts, the card counts seconds while
-it runs, and a reply that had to be retried says `attempt 2`.
+Every member and the analyst can search and fetch the web, always. Ask three models for a
+version number and they will search, land on different pages and disagree, which is the
+disagreement the analyst exists to surface.
 
-Follow-up turns existed and were removed. A panel is not a chat: a follow-up is a new
-question, and a new question deserves a fresh panel. `Clear` empties the board.
-
-
-## Web search
-
-Every member searches, always. The analyst never does — it compares what it is given.
-
-What is capped is how much they search. Three identical Haiku seats answering the same
-question took 53.8s, 67.5s and 107.3s, having searched 6, 8 and 15 times: nothing bounded
-the agent loop, so a run lasted as long as whichever seat was most curious. The panel prompt
-now states a budget of three searches, and each member carries a 120 second deadline as a
-backstop — a seat that overruns reports that it did not answer in time and does not vote.
+**A panel run leaves nothing in your session history.** `claude -p` persists every headless
+run as a full transcript and no flag suppresses it, so four seats would put four rows into
+your resume picker, all titled with the same prompt. Each stream-json event carries
+`session_id` and the transcript is named after it, so the plugin deletes the file once the
+child exits — on the failure and cancellation paths too. Codex runs `--ephemeral`; opencode
+has no equivalent handle and still writes.
 
 ```text
-                  before             after
---------------   ----------------   ----------------
-searches         6 / 8 / 15         3 / 3 / 3
-members          53.8/67.5/107.3s   38.7/42.2/33.6s
-shadow cost      $0.6657            $0.3099
+Route       Writes to                                  Still does
+---------   ----------------------------------------   ----------
+codex       ~/.codex/sessions/<date>/rollout-*.jsonl   no
+claude      ~/.claude/projects/<scratch-slug>/         no
+opencode    ~/.local/share/opencode/storage            yes
 ```
 
-There is no switch to turn searching off. There was one briefly; it reached four routes of
-five, because opencode has no flag for web access, and a panel that cannot look anything up
-is a panel of models guessing. Each card reports its own search count beside its time: `3 web` when the route reported
-three, `0 web` when it reported none, and `web ?` when the route does not report tool use at
-all. opencode is the one that cannot be counted, and it says so rather than showing a zero
-it cannot stand behind.
 
+## Isolation from your own configuration
 
-## Presets and effort
-
-A seat is a model, a route, and an effort level. The model button opens the catalogue; the
-route button opens both the route and the effort levels that route actually offers for that
-model — codex publishes them per model, so `gpt-5.6-sol` shows an `ultra` that `gpt-5.5` does
-not.
+A CLI agent invoked as an inference endpoint otherwise loads everything it normally loads:
+your memory files, your skills, your MCP servers, your hooks. The first working run
+answered an English prompt in Spanish, because the operator's global `CLAUDE.md` sets
+Spanish. Panel members must be comparable to each other and stable across runs, and neither
+holds if each inherits an environment.
 
 ```text
-Route       Effort reaches the model as
----------   ---------------------------------------
-claude      --effort <level>
-codex       -c model_reasoning_effort=<level>
-opencode    --variant <level>
-anthropic   output_config.effort
-openai      reasoning.effort
+Route       Flag                                  What it drops
+---------   -----------------------------------   -------------------------------------
+claude      --safe-mode --setting-sources ""      CLAUDE.md, skills, plugins, hooks, MCP
+claude      --disallowed-tools "Agent Task …"     delegating to subagents
+codex       --ignore-user-config --ignore-rules   config.toml, execpolicy rules
+opencode    --pure                                external plugins
 ```
 
-`Save` names the current arrangement; `Presets` loads or deletes one, or starts a new
-arrangement. Effort is saved with the seat.
+`--safe-mode` is the right instrument because it keeps authentication working. The adjacent
+`--bare` also strips context but forces API-key auth, which would silently move a
+Subscription seat onto metered billing — the exact thing the mode exists to avoid.
 
-Presets live in a JSON file next to the plugin's other state, outside the repository:
+Every child also runs in an empty scratch directory under the plugin's own `userData`, so
+no project file is discovered and no repository is inherited, and `ANTHROPIC_API_KEY`,
+`ANTHROPIC_AUTH_TOKEN` and `OPENAI_API_KEY` are stripped from the child environment so a
+key exported in the shell cannot quietly convert a plan call into a billed one.
+
+
+## What a route costs
+
+Measured with a prompt asking for a single word, so the numbers are almost entirely fixed
+overhead rather than work.
 
 ```text
-Windows   %APPDATA%\dyarchia\eforoi\panels.json
-macOS     ~/Library/Application Support/dyarchia/eforoi/panels.json
-Linux     ~/.config/dyarchia/eforoi/panels.json
+Route          Context prefix   Notional cost   Actually billed
+------------   --------------   -------------   ----------------------
+claude -p         1,348 tokens   $0.0025        plan quota
+codex exec      ~15,600 tokens   not reported   plan quota
+opencode run     ~8,100 tokens   $0.025         plan quota
 ```
 
-The `Save` button's tooltip shows the resolved path on the machine it is running on.
+Driving an agent CLI as an inference endpoint means paying for whatever it puts in front of
+your prompt, and on the claude route that started near 48,600 tokens a call. Replacing the
+system prompt barely dented it — 47,473 against 48,631 — because the weight is tool
+definitions, not prose. **Denying the tools is what removes them:** `--allowed-tools`
+governs what may be executed, while a denied tool is dropped from the context altogether.
 
-
-## Install
-
-This is a workspace package. From the repository root:
-
-```bash
-pnpm install
-pnpm --filter @dyarchia/plugin-eforoi build
+```text
+Denied on the claude route                    Prefix   Cost per call
+-------------------------------------------   ------   -------------
+nothing (allowed-tools alone)                 48,600   $0.2900
+Agent, Task, ToolSearch                       36,819   $0.0098
+the whole editing and orchestration surface    1,348   $0.0025
 ```
 
-In development that is enough: the shell discovers plugins under `packages/` directly. For
-the packaged app, `node scripts/install-plugins.mjs` copies the manifest and `dist/` into
-`%APPDATA%/dyarchia/plugins/eforoi`.
+Thirty-six times less context for the same answer, and it matters beyond arithmetic: a
+member carrying thirty-two tool definitions behaves like the agent those tools belong to,
+which is how one came to announce it had delegated the question to a subagent.
 
-Restart the shell afterwards rather than reloading the window: the renderer bundle is
-cached by the `dyarchia-plugin://` protocol and the main module is only read at startup.
+What cannot be removed is the identity. A member still reports itself as a Claude agent —
+the system prompt replaces the instructions layered on top, not the harness underneath. **A
+Subscription seat is the model inside its CLI; the API route is the bare model.** Close
+enough to compare, not identical, and worth knowing before reading much into a disagreement
+between the same model on two routes.
+
+API prices come from a table in `src/providers/api.ts`. Anthropic's rates are filled in;
+OpenAI's are deliberately empty, because a wrong price shown with confidence is worse than
+no price, so that route yields token counts and no dollar figure.
 
 
-## Driving it without the shell
+## The IPC contract
 
-Both halves can be exercised with no window. The orchestration layer runs headless:
-
-```bash
-pnpm --filter @dyarchia/plugin-eforoi probe catalog
-pnpm --filter @dyarchia/plugin-eforoi probe run "anthropic/claude-opus-5@subscription" "anthropic/claude-sonnet-5@subscription" "anthropic/claude-opus-5@subscription" "your prompt"
+```text
+Direction   Channel     Purpose
+---------   ---------   ---------------------------------------------------
+invoke      catalog     models and modes, with a reason for each blocked one
+invoke      keys        where each API key comes from: stored, env, or none
+invoke      setKey      encrypt a key into userData, or clear it
+invoke      run         start a run, returns a run id
+invoke      cancel      abort a run in flight
+invoke      panels      the saved presets and the path they live at
+invoke      savePanel   store the current arrangement under a name
+invoke      deletePanel forget one saved preset
+broadcast   event       every run event, tagged with its run id
 ```
 
-The last seat is the analyst. `scripts/electron-stub.mjs` stands in for the two Electron
-APIs the plugin uses.
+All run events travel on one channel as a discriminated union rather than six channels. The
+renderer filters by run id and switches on `type`, so a panel closed and reopened mid-run
+ignores the tail of the previous one instead of rendering it into a fresh layout.
 
-The panel itself is checked by mounting the built bundle against a fake context.
-`scripts/panel-harness.html` supplies a catalogue, a canned set of run events and answers
-carrying the markdown that matters — fenced code, tables, nested lists — so the layout,
-both themes and the code rendering can be inspected in an ordinary browser:
+Keys are encrypted with Electron's `safeStorage` into `userData/eforoi/keys.json`. Never
+`localStorage`, never sent to the renderer, never logged: the renderer can learn that a key
+exists and where it came from, not what it is.
+
+
+## Verifying without spending
+
+The panel is checked by mounting the built bundle against a fake context.
+`scripts/panel-harness.html` supplies a catalogue, canned run events and answers carrying
+the markdown that matters — fenced code, tables, nested lists — so layout, both themes and
+code rendering are inspectable in an ordinary browser, with **zero model calls**.
 
 ```bash
 pnpm --filter @dyarchia/plugin-eforoi build
 py -m http.server 8731 --bind 127.0.0.1
 ```
 
-Then open `http://127.0.0.1:8731/plugins/eforoi/scripts/panel-harness.html` from
-the repository root. Do not try to stub `window.dyarchia` inside the real shell instead:
-that object comes from `contextBridge` and its properties are not writable, so the
-assignment fails silently, the real IPC call goes through, and a modal dialog opens on the
-operator's screen.
+Then open `http://127.0.0.1:8731/plugins/eforoi/scripts/panel-harness.html`. **Do not stub
+`window.dyarchia` inside the real shell instead**: that object comes from `contextBridge`
+and its properties are not writable, so the assignment fails silently, the real IPC call
+goes through, and a modal dialog opens on the operator's screen.
+
+The orchestration layer runs headless, and this one does spend real quota:
+
+```bash
+pnpm --filter @dyarchia/plugin-eforoi probe catalog
+pnpm --filter @dyarchia/plugin-eforoi probe run "<seat>" "<seat>" "<analyst>" "your prompt"
+```
+
+The last seat is the analyst; `scripts/electron-stub.mjs` stands in for the two Electron
+APIs the plugin uses. Say what a run will cost before launching one.
 
 
-## Documentation
+## Deliberate omissions
 
-- [docs/design.md](docs/design.md) — the pipeline, the route adapters, the IPC contract,
-  and the measured cost of each route.
+```text
+Absent               Why
+------------------   ---------------------------------------------------------
+a web switch         It reached four routes of five: opencode has no flag for
+                     web access either way. Same objection as temperature.
+follow-up turns      A panel is not a chat. A follow-up is a new question and a
+                     new question deserves a fresh panel.
+markdown library     Model output reaches the DOM through innerHTML, so a parser
+                     emitting raw HTML would need a sanitiser behind it. The SDK
+                     renderer escapes at every leaf instead.
+temperature          Current Anthropic models reject the parameter with a 400,
+                     and no CLI route exposes one. A control working on two
+                     routes of five would mislead.
+analyst warnings     A weak analyst under a strong panel is a legitimate choice;
+                     comparison is a bounded task. The UI names the role rather
+                     than second-guessing who fills it.
+uniform streaming    Members stream where their route allows it — claude and
+                     opencode emit deltas, codex only a final message — so cards
+                     fill at different rates. The analyst's JSON call never
+                     streams; there is nothing readable to show mid-parse.
+```
+
+One open thread: opencode's run reports no searchable count, so the panel says `web ?`
+rather than a zero it cannot stand behind. Closing it needs one good `--format json` run.

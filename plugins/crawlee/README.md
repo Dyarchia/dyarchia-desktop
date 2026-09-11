@@ -1,58 +1,34 @@
-# dyarchia-crawlee
+# crawlee
 
-On-demand web scraping toolkit built on Crawlee for Python. Point it at a URL and it scrapes. Freeze
-a run that worked into a reusable profile. Snapshot any target to track how its content changes.
+A crawling toolkit that snapshots a corpus, reports what moved between rounds, and a Dyarchia
+Desktop panel that drives it. Two layers: the engine knows nothing about any specific site, and a
+profile describes what to look for without touching the Crawlee API. That boundary is what makes a
+new target a data change rather than a code change.
 
-## Requirements
+**This package runs from the workspace.** The shell scans `plugins/` and finds the panel there, so
+there is nothing to install, and a packaged build does not carry it. The panel shells out to the
+CLI rather than importing the toolkit, because the shell spawns one Python process per plugin with
+whatever `py -3` resolves to and that interpreter has none of these dependencies. The CLI is also
+the surface the tests cover, so a button that is a prompt cannot disagree with a prompt.
 
-Python 3.12 or newer, and uv. The project runs on 3.14 and CI covers 3.12 and 3.14. Browser-backed
-crawlers additionally need Playwright's Chromium, which is a one-off download of roughly 400 MB.
+
+## Setup
+
+Python 3.12 or newer, and uv. Browser-backed crawlers additionally need Playwright's Chromium, a
+one-off download of roughly 400 MB.
 
 ```bash
 uv sync --dev
 uv run playwright install chromium
 ```
 
-## Quick start
+Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
+and every run's output sit in their own checkout, named by `DYARCHIA_CRAWLEE_DATA_DIR`,
+`DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR`; Crawlee's working directory is
+scratch and goes to a temporary path through `DYARCHIA_CRAWLEE_STORAGE_DIR`. All four take absolute
+paths. See `.env.example`. **The matching `.gitignore` entries are guards, not homes:** they catch a
+run started without a `.env`, which would otherwise drop a corpus into the tool's own tree.
 
-Look before you leap. `inspect` reports what a crawl against a target would have to deal with:
-
-```bash
-uv run dyarchia-crawlee inspect https://docs.example.com/guide/overview
-```
-
-Scrape a page with no configuration at all:
-
-```bash
-uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview
-```
-
-Pull specific fields, follow links, write CSV:
-
-```bash
-uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview \
-    --crawler parsel \
-    --select title=h1 \
-    --depth 2 \
-    --max-pages 40 \
-    --follow /guide/ \
-    --format csv
-```
-
-Freeze that run and replay it later:
-
-```bash
-uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview \
-    --select title=h1 --save-profile my-site
-uv run dyarchia-crawlee crawl --profile my-site
-```
-
-Track a target over time:
-
-```bash
-uv run dyarchia-crawlee crawl --profile my-site --snapshot --commit
-uv run dyarchia-crawlee diff my-site --unified
-```
 
 ## Commands
 
@@ -63,15 +39,24 @@ uv run dyarchia-crawlee diff my-site --unified
     diff         Show what changed on a target the last time it was snapshotted
     digest       Bundle those changes into something a later step can read
     watch        Sweep every tracked target once and report whether anything moved
-    urls         Report which URLs a snapshotted target is holding, broken down by section
+    urls         Report which URLs a snapshotted target holds, broken down by section
     state        Report every corpus across every repository, in one answer
     profiles     List the profiles this project knows about
-    profile      Print one profile as it is written, or save one from standard input
+    profile      Print one profile as written, or save one from standard input
     version      Print the installed version
 
-Run `uv run dyarchia-crawlee crawl --help` for the full option list.
+```bash
+uv run dyarchia-crawlee inspect https://docs.example.com/guide/overview
+uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview \
+    --crawler parsel --select title=h1 --depth 2 --max-pages 40 --follow /guide/ --format csv
+uv run dyarchia-crawlee crawl https://docs.example.com/x --select title=h1 --save-profile my-site
+uv run dyarchia-crawlee crawl --profile my-site --snapshot --commit
+uv run dyarchia-crawlee diff my-site --unified
+```
 
-## Choosing a crawler
+`--save-profile` writes only the fields that differ from the defaults. Running a profile takes it
+as the baseline and **only flags actually typed override it** — a flag left alone never overrides,
+even when its default differs.
 
     Crawler          Use when
     -------------    ----------------------------------------------------------------
@@ -81,12 +66,11 @@ Run `uv run dyarchia-crawlee crawl --help` for the full option list.
     playwright       Content only exists after JavaScript runs
     adaptive         You do not know, and would rather not pay for a browser by default
 
-`adaptive` is the default. It runs the cheap static path first and escalates to a browser only when
+`adaptive` is the default: it runs the cheap static path first and escalates to a browser only when
 that path comes back empty.
 
-## Extraction
 
-`--extract` decides what is pulled from each page when no selectors are given:
+## Extraction
 
     Mode       Result
     -------    -----------------------------------------------------------------
@@ -97,239 +81,192 @@ that path comes back empty.
     jsonld     schema.org structured data
     none       Nothing, useful when only the selectors matter
 
-Selectors are given as `--select NAME=SELECTOR` and can be combined with any mode. The selector
-syntax is documented in `docs/profiles.md`.
+The header and footer nearly every page of a run shares are removed once the run is collected, not
+per page: **a single page cannot tell its banner from its content; the corpus can.**
+`--keep-boilerplate` opts out.
 
-Whatever the mode, the header and footer that nearly every page of a run shares are removed once the
-run is collected. A single page cannot tell its banner from its content; the corpus can. Turn it off
-with `--keep-boilerplate`.
+Three repairs exist because their absence was measured, and each refuses to act unless it
+demonstrably works. A document fetched as markdown from its publisher is never touched by any of
+them — that one is stored as published.
 
-A response that claims to be markdown but arrives as layout markup, which is what MDX sites serve
-for their landing pages, is reduced to the prose and links inside it. Headings living in component
-attributes are kept, and fenced code blocks are never touched. `--extract html` opts out by asking
-for the document exactly as fetched.
+- **A renderer emitting one bare `div` per line of a sample** offers no `pre` for extraction to
+  recognise, so the sample is dropped as layout. Five recipe pages carried 1,411 lines of code and
+  extraction kept 134; rewriting such a run as the one `pre` it was meant to be brought the same
+  five to 1,305.
+- **A one-line `pre` renders as inline code** and glues the next opening fence onto the end of that
+  line. 26 pages of one corpus were inverted from that point on, with 444 lines of prose fenced
+  between them. The second newline goes inside the innermost `code`, since one outside it stops the
+  glue and leaves the sample inline.
+- **Extraction can close a paragraph and open a code block on one line**, leaving a delimiter no
+  parser sees and inverting every fence after it. The repair attempts every document rather than
+  only those ending mid-fence, because a page where it happened twice is inverted and balanced at
+  once: 50 such lines sat in the corpora reading as healthy. 49 are repaired; the one that is not
+  sits on a page broken for another reason, where a guess is worth less than the break.
 
-An MDX page may also define the component it renders inside the document, ahead of any prose. That
-definition is JavaScript rather than markup, so no amount of tag-stripping reaches it; it is removed
-outright and the invocation is kept, because where a widget stood is worth knowing and the four
-hundred lines that built it are not. Code fences are exempt: a page teaching JavaScript is a page
-whose `export const` is the lesson.
+MDX pages that define their component ahead of the prose have that definition removed outright and
+the invocation kept — where a widget stood is worth knowing, the four hundred lines that built it
+are not. Code fences are exempt throughout: a page teaching JavaScript is a page whose
+`export const` is the lesson.
 
-Code blocks are rebuilt before extraction rather than repaired after it, in two passes over the
-HTML. A renderer that emits one bare `div` per line of a sample offers no `pre` and no `code` for
-extraction to recognise, so it drops the sample as layout: five recipe pages of one corpus carried
-1,411 lines of code between them and extraction kept 134. Such a run of lines is rewritten as the
-one `pre` it was meant to be, which brought the same five to 1,305.
 
-A block holding a single line is then given a second one, because extraction renders a one-line
-`pre` as inline code and glues the opening fence of the block after it to the end of that line. 26
-pages of one corpus were inverted from that point on, with 444 lines of prose fenced between them;
-afterwards, none. The newline goes inside the innermost `code` element, since a newline outside it
-stops the glue and leaves the sample inline. A page that marks its code up properly is not touched
-by either pass.
+## Profiles
 
-Markdown extracted from HTML is repaired before it is stored. Extraction can close a paragraph and
-open the code block after it on one line, which leaves a fence delimiter no parser can see and
-inverts every fence that follows, so a page's prose is read as code and its code as prose. A page
-where that happened twice is inverted and balanced at once, which is why the repair attempts every
-document rather than only the ones that end mid-fence: 50 such lines were sitting in the corpora,
-nearly all of them read as healthy because their delimiters paired up. 49 are repaired; the one that
-is not sits on a page broken for another reason, and a guess there is worth less than the break.
+A profile is a named, reusable target definition carrying exactly the fields a command line
+carries, so nothing can be expressed in one and not the other. Two sources share one namespace:
+YAML in `profiles/`, and Python modules under `src/dyarchia_crawlee/sites/` exposing a `PROFILE`.
+YAML wins over a Python module of the same name. **Unknown keys are rejected rather than ignored**,
+so a typo is a loud error and not a setting that quietly never applied.
 
-Both repairs refuse to act unless they demonstrably work, and a document fetched as markdown from its
-publisher is never touched by either: that one is stored as published.
+Profiles are not tracked by git: a profile describes somebody's corpus rather than the tool, so it
+lives in the repository that holds the pages it describes. The package ships one worked example,
+and it deliberately does not ask to be snapshotted — it is present in every corpus repository, so
+one that asked would enrol itself in every round swept on the machine.
 
-## Deciding what is worth keeping
+Sources. At least one of `start_urls` or `sitemap_urls` is required.
 
-A sitemap will happily hand over the whole site. `urls` reads the manifest back and reports what a
-target is actually holding, grouped by the path that holds each page and ordered by weight, so the
-sections that are paying their way are separated from the ones that are only bulk:
+    Field           Type      Default     Meaning
+    ------------    ------    --------    ------------------------------------------------
+    name            string    filename    Profile name, also used for output filenames
+    group           string    none        Folder this target's files are kept under
+    description     string    none        Shown when listing profiles
+    start_urls      list      empty       URLs the crawl begins from
+    sitemap_urls    list      empty       Sitemaps to seed requests from
+    fetch_suffix    string    none        The markdown twin of a page
 
-```bash
-uv run dyarchia-crawlee urls my-site --depth 1
-```
+`fetch_suffix` asks for the variant of a page rather than the page, and where it goes depends on the
+publisher, so more than one place is tried: `page` is looked for at `page.md` then `page/index.md`,
+and `page.html` at `page.md` first, because a site naming the extension is saying the twin replaces
+it. The manifest still records the page by the URL the sitemap gave, so a corpus points at pages
+that exist.
 
-    section                                   pages       size   share
-    ---------------------------------------   -----   --------   -----
-    docs.example.com/cookbook                   309    23.0 MB     58%
-    docs.example.com/api                        174     3.1 MB     33%
-    docs.example.com/plugins                     30   376.4 KB      6%
+A group is a folder and a round in one: snapshots go under `data/<group>/<name>/`, output to
+`output/<group>/<name>.jsonl`, and the target joins `watch --group <group>`. **Changing the group of
+a profile does not move the files it already wrote.** Move `data/<name>/` into `data/<group>/`
+yourself, or the next run finds no manifest, calls itself a first snapshot and rewrites the corpus
+with no change detected. Reading tolerates the gap; writing does not.
 
-`--depth` rolls the grouping up to the first N path segments; without it each page is grouped under
-the path that holds it, which is the level an `include` or `exclude` rule is written against. Narrow
-the profile with those rules, then re-run the crawl to drop what the corpus does not need.
+    Field                     Type       Default          Meaning
+    ----------------------    -------    -------------    ------------------------------------
+    crawler                   enum       adaptive         http, beautifulsoup, parsel,
+                                                          playwright, adaptive
+    extract                   enum       auto             auto, text, html, links, jsonld, none
+    selectors                 mapping    empty            Field name to selector expression
+    max_depth                 int        0                Link hops to follow, 0 means none
+    max_pages                 int        none             Stop after this many pages
+    link_selector             string     a                CSS selector for links to follow
+    strategy                  enum       same-hostname    all, same-domain, same-hostname,
+                                                          same-origin
+    include                   list       empty            Patterns a URL must match to be followed
+    exclude                   list       empty            Patterns a URL must not match
+    respect_robots            bool       true             Honour robots.txt, including Crawl-delay
+    user_agent                string     none             Overrides the configured User-Agent
+    stealth                   bool       false            Impersonate a browser instead
+    max_concurrency           int        none             Cap on parallel requests
+    max_requests_per_minute   float      none             Cap on request rate
+    max_request_retries       int        none             Retries per request
+    headless                  bool       true             Run the browser without a window
+    block_resources           list       image/media/font Resource types to abort
+    formats                   list       json             json, jsonl, csv, md
+    snapshot                  bool       false            Store content under data/, report changes
+    min_success_rate          float      none             Below this share of successes, no snapshot
+    min_coverage              float      none             Below this share of the previous corpus
+    trim_boilerplate          bool       true             Drop the shared header and footer
 
-`--list` prints one URL per line and nothing else, for piping into grep or a file. With no target
-named, every snapshotted target is reported in turn.
+**The two thresholds answer different questions.** `min_success_rate` asks how many of the pages
+this run attempted came back; `min_coverage` asks how much of the previous snapshot this run reached
+at all. A run capped by `--max-pages` scores a perfect success rate and would delete everything it
+never visited, which is what coverage is there to stop.
 
-## Snapshots and change tracking
+Selectors are a small extension of CSS, so a whole extraction fits on a command line:
 
-`--snapshot` writes each page's content to `data/<name>/pages/<host>/<path>.md`, mirroring the URL
-structure, and records hashes and per-URL status in a manifest beside it. A profile that names a
-group nests one level deeper, at `data/<group>/<name>/`, and its output goes to
-`output/<group>/<name>.jsonl`.
+    Expression             Result
+    -------------------    --------------------------------------------------
+    h1                     Text of the first match
+    .price@data-value      An attribute of the first match
+    all:.tag               A list with the text of every match
+    all:a@href             A list with an attribute of every match
 
-Detection does not depend on git. The manifest holds the previous hash of every page and the stored
-pages hold the previous text, so every run reports what was added, removed and modified against what
-is on disk, committed or not.
+Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action`) are resolved
+against the page they were found on. A selector matching nothing yields `null`, or an empty list
+under `all:`; the field is always present, which keeps CSV columns stable across pages.
 
-Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
-and every run's output sit in their own checkout alongside it, which `DYARCHIA_CRAWLEE_DATA_DIR`,
-`DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR` point at; Crawlee's working directory is
-scratch and goes to a temporary path through `DYARCHIA_CRAWLEE_STORAGE_DIR`. All four accept absolute
-paths. The matching entries in `.gitignore` are guards rather than homes: they catch a run started
-without a `.env`, which would otherwise drop a corpus back into the tool's tree. See `.env.example`.
+URL patterns, used by `include`, `exclude`, `--follow` and `--exclude`:
 
-`--commit` stages a snapshot when, and only when, its content fingerprint moved, and it writes to
-whichever repository owns the data directory rather than to this one. It is never implicit.
-Deleting the corpus costs the comparison baseline rather than the ability to run.
+    Pattern                       Meaning
+    --------------------------    ---------------------------------------------------
+    /docs/                        The URL contains this text
+    /docs/*.html                  Contains this glob, where * stops at a separator
+    /docs/**                      Contains this glob, where ** crosses separators
+    https://site.com/docs/**      Starts with this glob, matched against the whole URL
+    re:^https://site\.com/\d+     An explicit regular expression, anchored at the start
 
-A run that failed too often writes nothing, because half a snapshot would read as a mass deletion on
-the next comparison. A run that found nothing rewrites nothing, so an unchanged target leaves its
-files untouched.
+The first three forms exist because Crawlee's own globs are anchored against the whole URL: a
+pattern like `**/docs/**` matches nothing, since `**` does not cross the empty segment inside
+`https://`, and it fails silently.
 
-## Corpora
 
-Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
-lives on the machine that crawls it, in the repository that holds the pages it describes; the
-package ships one worked example under `src/dyarchia_crawlee/sites/`, and `docs/profiles.md`
-documents the format. The example deliberately does not ask to be snapshotted: it is present in
-every corpus repository, so one that asked would enrol itself in every round swept on the machine.
+## Snapshots and rounds
 
-What a corpus actually tracks belongs with the corpus. This repository is the toolkit, and a list of
-somebody's targets is not a fact about the toolkit; each corpus repository carries its own.
+`--snapshot` writes each page to `data/<name>/pages/<host>/<path>.md`, mirroring the URL structure,
+with hashes and per-URL status in a manifest beside it. **Detection does not depend on git**: the
+manifest holds the previous hash and the stored pages hold the previous text, so every run reports
+what was added, removed and modified against what is on disk, committed or not. `--commit` stages a
+snapshot only when its content fingerprint moved, writes to whichever repository owns the data
+directory, and is never implicit.
 
-A few rules are worth knowing before adding one:
+A run that failed too often writes nothing, because half a snapshot reads as a mass deletion on the
+next comparison. A run that found nothing rewrites nothing.
 
-- **One language.** A publisher's other locales are a translation of pages already tracked, so they
-  double the disk and the crawl for a diff that reports a retranslation as a change. Express it as
-  an `include` anchored at the first path segment rather than an `exclude` per locale, because an
-  anchored include also excludes the locale added next year.
-- **Prefer the markdown a site publishes** over an extractor's reading of its HTML, so the snapshot
-  is the document rather than an interpretation of it. Where no twin exists, keep the target only
-  after two runs hash identically. That is the test an extractor's reading has to pass and a
-  published document does not.
-- **Read robots.txt for sitemaps, not only the obvious one.** A site can declare a second sitemap
-  there and nowhere else, and a whole section of it is invisible to a profile seeded from the first.
-
-Each group is a folder and a round: its profiles share `<data>/<group>/` and `<output>/<group>/`,
-and `watch --group` sweeps exactly them. A corpus on a neighbouring topic gets its own group, and
-with it its own folder, rather than joining an existing one by having asked for snapshots.
-
-Groups divide one repository, and some things should not be in one repository at all. Two bodies of
-work that share nothing but a scraper get two, because the toolkit resolves a single data root and a
-round can only see the profiles in its own. Point a run at the other by setting
-`DYARCHIA_CRAWLEE_DATA_DIR`, `DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR` for
-it. The separation is also what stops one round from noticing an unrelated profile and quietly
-building a corpus nobody asked for.
-
-## Sweeping a corpus
-
-`watch` is the command that sweeps a whole corpus in one round. It covers every profile that asks
-for snapshots, lets one failing target cost only its own target, writes `WATCH.md` and `WATCH.json`
-describing the sweep, and answers through its exit code:
+`watch` sweeps a whole corpus in one round, letting one failing target cost only itself, and answers
+through its exit code:
 
     Code    Meaning
     ----    ----------------------------------------------------------------
     0       nothing changed, and nothing needs reading
     10      at least one target changed
     1       at least one target failed, so the sweep cannot vouch for itself
+    30      another round already holds the lock
 
-A first snapshot is deliberately not a change. There is nothing yet for it to differ from, and a
-monitor that cries on its own first run teaches you to ignore it.
+- **A first snapshot is not a change.** There is nothing yet for it to differ from, and a monitor
+  that cries on its own first run teaches you to ignore it.
+- **Neither is a reordering.** A page whose lines are the same in a different order is classified
+  `reordered`, listed everywhere it would have been listed, and left out of the verdict. It rewrites
+  the stored page, because the page did change; it does not raise the exit code, because nothing it
+  says did. Three of them woke a notification on one real sweep and told nobody anything.
+- **A round is started by a person and nothing starts one by itself.** `watch` takes a lock on the
+  group before crawling and exits 30 without crawling if another round holds it, so a second window
+  or a second button costs nothing but the message saying who got there first.
 
-Neither is a reordering. A page whose lines are the same as before in a different order — a pricing
-table that shuffled its rows — is classified as `reordered`, listed everywhere it would have been
-listed anyway, and left out of the verdict. It rewrites the stored page, because the page did
-change; it does not raise the exit code, because nothing it says did. Three of them woke a
-notification on one real sweep and told nobody anything.
+`urls` reads the manifest back and reports what a target actually holds, grouped by path and ordered
+by weight, which is how a sitemap's bulk gets separated from the sections paying their way.
+`--depth` rolls the grouping up to the first N segments; `--list` prints one URL per line for
+piping.
 
-```bash
-uv run dyarchia-crawlee watch
-uv run dyarchia-crawlee watch my-site my-other-site
-```
-
-A round covers one corpus repository, the one this machine's `.env` names. `--group` narrows it
-further, to the profiles inside that repository that belong to a group; naming profiles covers
-exactly those and nothing else:
-
-```bash
-uv run dyarchia-crawlee watch --group docs-labs --commit
-```
-
-A round is started by a person and nothing starts one by itself. The lock is what makes that safe:
-`watch` takes one on the group before it crawls and exits 30 without crawling if another round
-already holds it, so a second window, or a second button, costs nothing but the message saying who
-got there first.
-
-`--commit` is worth adding to any round whose history matters. The corpora live in their own
-repositories, so git is the only copy of what a previous round found.
 
 ## The panel
 
-This package is a panel for Dyarchia Desktop, and it lives in that workspace: the shell scans
-`packages/` and finds it there, so there is nothing to install. It shows the same two things a
-prompt does, with the corpus in front of you while you decide. It reads the state of every corpus,
-starts a round and streams it as it happens, and lets a target be written or edited without leaving
-the window.
+The corpus in front of you, a round on a button, and a target written or edited without leaving the
+window. `uv sync --dev` here once, or the panel has no interpreter to call and says so. Restart the
+shell after changing `main.py`: main modules are imported once, at startup.
 
-The panel does not import the toolkit: it runs the CLI under this project's own interpreter and
-shows what comes back. That is the whole design. It holds no crawling logic, no schema and no
-second copy of the lock, so a button and a prompt cannot disagree about what a round is, and
-anything the panel can do is something you can also do by hand. Run `uv sync --dev` here once, or
-the panel has no interpreter to call and says so.
+Two things to know before using it. A round is one process, so stopping it kills the crawl where it
+stands, which is safe — the lock is released by the kernel and Crawlee's working directory is
+scratch. And saving a target commits it: a profile lives in the repository that holds its corpus,
+and the panel refuses to write one it cannot commit rather than leaving an edit nobody can find
+again.
 
-Restart the shell after changing `main.py`. Main modules are imported once, at startup.
-
-Two things to know before using it:
-
-- A round is one process. Stopping it kills the crawl where it stands, which is safe: the lock is
-  released by the kernel and Crawlee's working directory is scratch.
-- Saving a target commits it. A profile lives in the repository that holds its corpus, and the
-  panel refuses to write one it cannot commit rather than leaving an edit nobody can find again.
-
-Every surface the panel paints belongs to Dyarchia's design system: `dya-tabs`, `dya-table`,
-`dya-badge` for a corpus verdict, `dya-entry` for the target list and its selected row, `dya-field`,
-`dya-checkbox`, `dya-button`, `dya-empty`, and `dya-mono` and `dya-key-label` for text. No colour,
-font or radius is written literally and no rule of the system is restyled, so the panel follows
-whichever theme the shell has mounted without knowing which one it is.
-
-Five things the system did not have were proposed to it from here and shipped in kanon on
-2026-09-11: the `[hidden]` rule in the reset, `dya-log`, the status modifiers on `dya-text`,
-`dya-bar--inset` and `dya-field--auto`. The panel already named all five, so it deleted its own
-rules and moved no markup. What it declares now is layout and nothing else: flex and grid
-containers, widths, scroll boxes and the proportions of the two panes.
-
-## The step after the sweep
-
-A sweep that finds a change is only useful if something reads it. Two artefacts exist for that, and
-neither is prose:
-
-- `WATCH.json`, beside `WATCH.md`, holding the same verdict the exit code carries plus, per target,
-  its counts and the path to its change report.
-- `dyarchia-crawlee digest`, which bundles the last snapshot's changes into one document: what changed,
-  the diff, and the file holding each page's current text. The diff says what moved; the file says
-  what the page now claims, and a step that only sees the diff writes a changelog instead of an
-  answer.
-
-```bash
-uv run dyarchia-crawlee digest --changed --group docs-labs --out digest.md
-uv run dyarchia-crawlee digest my-site --json
-```
-
-The digest is a file, and that is the whole interface. What to do with a change is an editorial
-decision, so nothing in this toolkit calls a model, holds a key or knows a provider exists: it
-writes the document and stops. Whatever reads it next lives outside.
-
-The digest reads the change reports the sweep just wrote, and the next sweep overwrites them, so it
-belongs in the same sitting as the round that produced it rather than at some later hour.
 
 ## Politeness
 
-robots.txt is respected by default, including `Crawl-delay`, and requests are rate limited per
-domain with backoff on HTTP 429. The User-Agent identifies the tool rather than impersonating a
-browser. Each of those can be overridden, `--ignore-robots` loudly, but the defaults assume you are
-a guest on someone else's server.
+robots.txt is respected by default, including `Crawl-delay`, requests are rate limited per domain
+with backoff on HTTP 429, and the User-Agent identifies the tool rather than impersonating a
+browser. Each can be overridden, `--ignore-robots` loudly, but the defaults assume you are a guest
+on someone else's server.
+
+Nothing here costs money. The whole stack is open source and runs locally; Apify Cloud, paid proxies
+and LLM-assisted extraction are deliberately out of scope, and no model is consulted at any point
+between a URL going in and a snapshot coming out.
+
 
 ## Development
 
@@ -341,22 +278,9 @@ uv run pytest
 uv run pytest -m "not browser"
 ```
 
-The suite runs offline. Tests that need a website get a fixture site served on localhost; the only
-mark left is `browser`, for the tests that need Playwright's Chromium installed.
+The suite runs offline: tests that need a website get a fixture site served on localhost, and the
+only mark is `browser`, for the tests needing Chromium. 299 unit tests in about 16 seconds.
 
-## Documentation
-
-- `docs/cheatsheet.md` — every command and every option, on one page
-- `docs/architecture.md` — how the pieces fit together and why
-- `docs/profiles.md` — the profile file format, selector and pattern syntax
-- `docs/design/specs/` — the approved design
-
-## Cost
-
-Nothing here costs money. The whole stack is open source and runs locally. Apify Cloud, paid
-proxies and LLM-assisted extraction are all deliberately out of scope: no model is consulted at any
-point between a URL going in and a snapshot coming out.
-
-## License
-
-MIT
+This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it with its
+history. Its history carries a target inventory that was taken out of the README; the repository is
+private, so it is contained, and opening it is the moment to rewrite that history.

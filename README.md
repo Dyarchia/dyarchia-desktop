@@ -69,14 +69,13 @@ The pieces:
             install-plugins.mjs  copies plugins to %APPDATA%/dyarchia/plugins
             build-plugin.mjs     the shared esbuild invocation every plugin builds with
         docs/
-            plugins.md           how to write a plugin
-            ui.md                the UI contract: components, tokens, rules
+            plugins.md           the whole plugin contract: code and UI
 
 
 ## 3. Commands
 
 Development. Opens a window with hot reload; in dev the shell discovers plugins directly
-under packages/, taking priority over installed ones. Run pnpm build at least once first,
+under plugins/, taking priority over installed ones. Run pnpm build at least once first,
 since plugin dist/ is not versioned:
 
 ```bash
@@ -146,7 +145,7 @@ The rules, in order:
   forced the change, what the alternative was, and what was deliberately left alone. A
   one-line body on anything but a typo is below the bar this history sets. A change under
   `packages/kanon/css/` additionally carries its contrast ratios, in both themes — see
-  `docs/ui.md`.
+  `packages/kanon/README.md`.
 - **Everything written to a file is in English**, commit messages included.
 
 

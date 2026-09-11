@@ -1,178 +1,214 @@
 # dyarchia-kanon
 
-Shared CSS for the dyarchia products. Two dark themes over one token contract, one pair of
-typefaces, one grammar of relief, and a layer of components the products consume without
-redefining them. No dependencies, no build step, no JavaScript.
-
-## What is here
+The shared visual system: plain CSS custom properties, a layer of `dya-*` component
+classes and two IBM Plex families. No build step, no dependency, no JavaScript, no test
+suite. This file is the authority over the CSS — it states what the system is, not how it
+got there. The before and after of a change belongs in its commit body.
 
 ```text
-css/dyarchia.css      single entry point, imports the five below
-css/fonts.css         the six IBM Plex @font-face declarations
-css/tokens.css        both themes
-css/reset.css         normalisation, focus, scrollbars, reduced motion
-css/motion.css        four keyframes
-css/components.css    the dya-* classes
-fonts/                IBM Plex Sans Condensed and IBM Plex Mono, 336 KB for six
+css/dyarchia.css     the only entry point; imports the five below, in this order
+css/fonts.css        the six IBM Plex @font-face declarations
+css/tokens.css       both themes
+css/reset.css        normalisation, [hidden], focus ring, scrollbars, reduced motion
+css/motion.css       four keyframes, all prefixed dya-
+css/components.css   the dya-* classes
+fonts/               six static woff2, 336 KB
+tools/contrast.py    the measurement Verification requires
 ```
 
-## Usage
+The shell links `css/dyarchia.css` once, before React mounts, and every plugin renders
+into that document. Import order matters: `reset.css` and `components.css` consume tokens,
+so `tokens.css` precedes both. Every custom property is prefixed `--dya-`, every keyframe
+and every class `dya-`.
 
-Copy `css/` and `fonts/` into the project and link one stylesheet:
+`[hidden]` is declared `!important`, which is the only form that works: the UA stylesheet
+loses to any class that sets `display`, so a hidden flex container stays on screen. A
+consumer toggling `element.hidden` is guaranteed an effect. Hidden but laid out is
+`visibility`.
 
-```html
-<link rel="stylesheet" href="css/dyarchia.css">
+
+## Two themes over one contract
+
+`Gi` is the default and lives on `:root`. `Oneiro` is a single `[data-theme="oneiro"]`
+block that redefines **colour tokens only** — not a radius, not a spacing step, not a
+duration, not a font size. A product switches by setting the attribute on the root element
+and nothing else.
+
+```text
+theme    selector                  ground        the accent that carries the weight
+------   -----------------------   -----------   ----------------------------------
+Gi       :root                     achromatic    an orange ink, used sparingly
+Oneiro   [data-theme="oneiro"]     blue-black    a blue field, flooded
 ```
 
-That gives you `Gi`, the default theme. To get the other one, set an attribute on the root
-element and change nothing else:
-
-```html
-<html data-theme="oneiro">
-```
+Components never learn that themes exist. `components.css` names no colour, so a theme is
+a change of values and can never be a change of rules. **A theme that needs a new rule is
+not a theme; it is a second system, and it is refused.**
 
 Both themes are dark. There is no light theme and the CSS never consults
 `prefers-color-scheme`.
 
-## The two themes
 
-`Gi` is achromatic: a neutral ramp from pure black to `#343433`, with a whisper of warmth
-in the upper half, and three accents used as ink. The orange is the primary and appears
-sparingly.
+## Gi
 
-`Oneiro` is blue-black, and its accent is a field rather than an ink. `--dya-field`
-`#0000f2` fails as text on purpose — it is a surface that carries white at 9.20, and whole
-panels are flooded with it. The theme's speaking accent is a pale lavender at 13.06 on the
-chassis. The field carries weight by area, the lavender by contrast, so the two never
-compete.
+Achromatic ground. Ten surfaces, six sampled from a shipping product and four interpolated
+between them.
 
 ```text
-                        Gi          Oneiro
----------------------   ---------   ---------
---dya-bg                #000000     #04040e
---dya-chassis           #111111     #0a0a20
---dya-surface-1         #151515     #101026
---dya-selected          #343433     #08084a
---dya-text              #d9d8d5     #ffffff
---dya-accent            #d97757     #e0cbf8
---dya-accent-2          #6a9bcc     #cdcdf5
---dya-accent-3          #788c5d     #9797a0
---dya-field             #d97757     #0000f2
---dya-on-field          #151515     #ffffff
+token                  value     relative luminance
+--------------------   -------   ------------------
+--dya-bg               #000000              0.00000
+--dya-sunken           #0d0d0d              0.00402
+--dya-chassis          #111111              0.00561
+--dya-surface-1        #151515              0.00750
+--dya-surface-2        #1a1a19              0.01029
+--dya-flat-hover       #1f1f1e              0.01365
+--dya-raised           #232322              0.01675
+--dya-overlay          #262625              0.01932
+--dya-raised-hover     #2d2d2c              0.02617
+--dya-selected         #343433              0.03425
 ```
 
-Three inks sit below AA somewhere and are graphical objects there, never text:
-`--dya-accent-3` in Gi above `--dya-surface-1`, `--dya-accent` in Gi on
-`--dya-raised-hover` and `--dya-selected`, and `--dya-text-4` on one surface in each theme.
-The full measurement tables are in `docs/specs/`.
-
-## Components
-
-Reference the classes; do not redefine them. A product that restyles `.dya-button` has
-forked the system.
+`--dya-surface-2`, `--dya-flat-hover`, `--dya-overlay` and `--dya-selected` carry one unit
+less blue than red and green. Below them the ramp is neutral. The canvas is the only pure
+black and it carries nothing.
 
 ```text
-Structure    dya-panel  dya-bar (--flush)  dya-dock  dya-card  dya-card__header
-             dya-card__body  dya-rule  dya-brand
-Pressable    dya-button (--quiet --sm --danger)  dya-key  dya-chip  dya-item
-             dya-entry (--strong --active)
-Input        dya-field  dya-toggle  dya-checkbox  dya-radio  dya-slider
-Content      dya-tag  dya-badge (--success --warning --danger --soft)
-             dya-table  dya-row (--selected)  dya-metric  dya-display
-             dya-heading  dya-text  dya-label  dya-eyebrow  dya-value  dya-mono
-Layers       dya-menu  dya-menu__item  dya-tooltip
-Navigation   dya-tabs  dya-tab  dya-pagination
-Absence      dya-empty  dya-loading  dya-skeleton
+token           value       bg   surf-1   raised   overlay   raised-hover   selected
+-------------   -------   ----   ------   ------   -------   ------------   --------
+--dya-text      #d9d8d5  14.73    12.81    11.04     10.63           9.67       8.74
+--dya-text-2    #cbcbc8  12.92    11.23     9.67      9.32           8.48       7.67
+--dya-text-3    #b7b6b4  10.36     9.01     7.76      7.48           6.80       6.15
+--dya-text-4    #9b9a98   7.47     6.50     5.60      5.39           4.90       4.43
+--dya-accent    #d97757   6.73     5.85     5.04      4.85           4.42       3.99
+--dya-accent-2  #6a9bcc   7.17     6.24     5.37      5.17           4.71       4.26
+--dya-accent-3  #788c5d   5.71     4.96     4.28      4.12           3.75       3.39
 ```
 
-A panel with a bar, a card and a pressable control:
+Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.43;
+on that surface the label level is `--dya-text-3`.
 
-```html
-<div class="dya-panel">
-    <div class="dya-bar">
-        <span class="dya-brand">Dyarchia</span>
-        <button class="dya-chip dya-chip--active">Trace</button>
-    </div>
-    <div class="dya-card">
-        <div class="dya-card__header">
-            <span class="dya-value">Behaviour matrix</span>
-            <button class="dya-button">Modify</button>
-        </div>
-        <div class="dya-card__body">
-            <input class="dya-field" placeholder="Search">
-        </div>
-    </div>
-</div>
-```
+`--dya-accent` is the primary: text up to and including `--dya-overlay`, a graphical
+object above it. It is also `--dya-field`, where `--dya-on-field` `#151515` measures 5.85
+against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
+right choice for a link, a selected state or an informational mark. `--dya-accent-3` is
+the weakest ink in the system: text on the canvas, the sunken step, the chassis and
+`--dya-surface-1`, and nowhere else.
 
-`components.css` contains no literal colour, radius or duration. Every rule resolves to a
-token, which is what lets a second theme exist at all: a theme changes values and can never
-change rules.
 
-## The tokens you will reach for
+## Oneiro
+
+Blue-black ground. Four surfaces sampled, six interpolated.
 
 ```text
-Surface     --dya-bg  --dya-chassis  --dya-surface-1  --dya-surface-2
-            --dya-flat-hover  --dya-raised  --dya-raised-hover  --dya-overlay
-            --dya-sunken  --dya-selected
-Gradient    --dya-grad-bar  --dya-grad-dock  --dya-grad-header
-Line        --dya-border  --dya-border-strong  --dya-hairline  --dya-rule
-            --dya-dashed  --dya-faint
-Text        --dya-text  --dya-text-2  --dya-text-3  --dya-text-4
-Relief      --dya-elev-flat  --dya-elev-chassis  --dya-elev-raised
-            --dya-elev-pressed  --dya-elev-sunken  --dya-elev-focus
-            --dya-elev-popover  --dya-elev-overlay
-Accent      --dya-accent  --dya-accent-soft  --dya-accent-faint  --dya-on-accent
-            --dya-accent-2 (--soft)  --dya-accent-3 (--soft)
-Field       --dya-field  --dya-on-field
-Status      --dya-success  --dya-warning  --dya-danger  --dya-*-soft for each
-            --dya-on-status  --dya-idle  --dya-on-idle
-Shape       --dya-radius-sm  --dya-radius  --dya-radius-media
-            --dya-radius-chassis  --dya-radius-tag  --dya-radius-full
-Type        --dya-font-sans  --dya-font-mono  --dya-size-*  --dya-tracking-*
-            --dya-weight-*  --dya-leading-*
-Spacing     --dya-space-1 .. --dya-space-24
-Motion      --dya-dur-*  --dya-ease-*  --dya-press-y  --dya-press-y-key
-            --dya-press-scale
+token                  value     relative luminance
+--------------------   -------   ------------------
+--dya-bg               #04040e              0.00144
+--dya-sunken           #070714              0.00248
+--dya-chassis          #0a0a20              0.00386
+--dya-surface-1        #101026              0.00621
+--dya-surface-2        #17172c              0.00977
+--dya-flat-hover       #1d1d33              0.01379
+--dya-raised           #24243a              0.01942
+--dya-overlay          #2a2a42              0.02542
+--dya-raised-hover     #32324c              0.03481
+--dya-selected         #08084a              0.00720
 ```
 
-## Six rules to respect
-
-- **What can be pressed stands out.** Only what receives input sits recessed: text fields,
-  sliders, and any control while it is being pressed. Surfaces and rows are flat and
-  express their state through background.
-- **A container that groups controls carries no relief of its own.** If it does, the
-  controls inside read as sunk into a well. The panel is the exception and carries
-  `--dya-elev-chassis`, a 1px light at 4%, which is a seam and not relief.
-- **Never put `box-shadow` in a `transition`.** It is the most expensive property to
-  animate and it interpolates badly against a list of shadows. Animate `transform`,
-  `opacity` and `background-color` instead. Hover changes the background, never the shadow.
-- **An ink under 4.50 against what it sits on is not text.** Above 3.00 it can still be a
-  graphical object: a dot, an active indicator, a selection bar, a focus ring.
-- **Interface text is uppercase and data is not.** A file name, a path or a log line keeps
-  its case, in mono. `.dya-entry` is the class for that.
-- **Nothing animates forever.** No shimmer on a skeleton, no pulse on a status dot. The
-  loading state is a static `--dya-surface-2` block.
-
-## Shape
+`--dya-selected` breaks the monotonic ramp on purpose: selection here is a saturated
+field, darker than `--dya-flat-hover` and bluer than everything, and reads as a filled
+region rather than as relief.
 
 ```text
---dya-radius-sm         3px    control under 16px: checkbox, radio, toggle knob,
-                               slider thumb
---dya-radius            6px    buttons, chips, fields, cards, surfaces
---dya-radius-media      6px    image, video, media blocks
---dya-radius-chassis    9px    the panel, and nothing else
---dya-radius-tag       14px    the tag, and nothing else
---dya-radius-full     999px    accent dot, radio, avatar
+token           value       bg   surf-1   raised   overlay   raised-hover   selected
+-------------   -------   -----   ------   ------   -------   ------------   --------
+--dya-text      #ffffff   20.41    18.68    15.12     13.92          12.38      18.36
+--dya-text-2    #e8e8f4   16.80    15.37    12.45     11.46          10.19      15.11
+--dya-text-3    #cdcdf5   13.26    12.14     9.83      9.05           8.05      11.93
+--dya-text-4    #9797a0    7.05     6.45     5.22      4.81           4.27       6.34
+--dya-accent    #e0cbf8   13.67    12.51    10.13      9.33           8.29      12.30
+--dya-accent-2  #cdcdf5   13.26    12.14     9.83      9.05           8.05      11.93
+--dya-accent-3  #9797a0    7.05     6.45     5.22      4.81           4.27       6.34
 ```
+
+`--dya-text-4` at 4.27 on `--dya-raised-hover` is the theme's only ink below AA on any
+surface; there the label level is `--dya-text-3`.
+
+**`--dya-field` is a surface, not an ink.** It is `#0000f2` and it is the point of the
+theme: as text on the chassis it measures 2.12 and fails, which is correct. It carries
+`--dya-on-field` `#ffffff` at 9.20 and whole panels are flooded with it. The lavender
+`--dya-accent` sits 28 degrees from it in hue, so hue does not separate them — luminance
+does, by a factor of ten, at a ratio of 6.16. The field carries weight by area, the
+lavender by contrast. The field floods, the lavender speaks.
+
+
+## Colour rules
+
+- **A theme redefines values, never rules.** Everything in this section holds in both.
+- **Colour is never the only signal.** It states an outcome; a word or an icon says what
+  the outcome is.
+- **An ink under 4.50 against what it sits on is not text.** Above 3.00 it may still be a
+  graphical object: a dot, a rule, a selection bar, a focus ring, a fill.
+- **The status and syntax hues are functional**, declared once on `:root`, and identical in
+  both themes because their job is legibility, not identity.
+
+```text
+token           value     fill in Gi   fill in Oneiro   role
+-------------   -------   ----------   --------------   ------------------------
+--dya-success   #63cf95         9.47            10.58   a positive outcome
+--dya-warning   #d6a95c         8.43             9.42   caution, not failure
+--dya-danger    #f59790         8.45             9.44   error, destruction
+--dya-idle      per theme          —                —   no outcome yet
+```
+
+Each hue has a `-soft` companion at 10% for the ground of a row or a quiet badge, and
+`--dya-on-status` is the ink on any status fill. As text rather than fill, the three
+measure 6.46 / 5.75 / 5.76 at worst in Gi and 6.42 / 5.71 / 5.73 at worst in Oneiro, so
+`.dya-text--success`, `--warning` and `--danger` carry no reservation on any surface.
+
+```text
+token                 value     Gi s-2   Gi s-1   Oneiro s-2   Oneiro s-1
+-------------------   -------   ------   ------   ----------   ----------
+--dya-code-keyword    #cf8fb4     6.84     7.17         6.89         7.33
+--dya-code-string     #8fb87a     7.72     8.09         7.78         8.28
+--dya-code-number     #d6a95c     8.04     8.43         8.11         8.62
+--dya-code-function   #7fb0dd     7.59     7.96         7.66         8.15
+--dya-code-punct      #b7b6b4     8.60     9.01         8.67         9.22
+--dya-code-comment    #85857f     4.69     4.92         4.73         5.03
+```
+
+`--dya-code-comment` is the lowest ink in the system that is still text, deliberately the
+most recessive of the six and just above the 4.50 floor on every ground. Keyword and
+string converge under deuteranopia; a code block accepts that, because the reader still
+has indentation, quotes and delimiters.
+
+`--dya-faint`, the elevation shadows and the glass tokens are theme-neutral black and
+white alphas. `--dya-elev-focus` is the exception and each theme overrides it.
+
+
+## Relief
+
+- **Relief means pressable.** Buttons, keys and chips are raised. Rows, cells and
+  containers are flat and express state through background.
+- **A container that groups controls carries no relief**, or the controls inside read as
+  sunk into a well. The panel is the single exception, carrying `--dya-elev-chassis`, a
+  1px light at 4%, which is a seam and not relief.
+- **Only what receives input is recessed**: fields, sliders, and any control being pressed.
+- **Hover changes the background, never the shadow.** There is no raised-hover elevation;
+  `--dya-raised` moves to `--dya-raised-hover`.
+- **The contour ring is black, not white.** A white ring over a near-black ground reads as
+  a grey outline instead of as depth. No shadow uses positive spread.
+
 
 ## Type
 
-IBM Plex Sans Condensed for content, IBM Plex Mono for interface. Neither family ships a
-variable font, so the system carries six static faces at weights 300, 400 and 500.
+IBM Plex Sans Condensed for content, IBM Plex Mono for interface. Neither ships a variable
+font, so the system carries six static faces at weights 300, 400 and 500.
 
-All interface text is mono, uppercase, with positive tracking that follows the role rather
-than the size:
+- **Hierarchy comes from size and tracking, never from weight.**
+- **Interface text is mono and uppercase; data is not.** A file name, a path, a model name
+  or a log line keeps its case, in mono at `--dya-tracking-mono`. `.dya-entry` is the one
+  list row that does not uppercase.
 
 ```text
 --dya-tracking-mono     0.02em    values, paths, figures, identifiers
@@ -181,49 +217,114 @@ than the size:
 --dya-tracking-brand    0.26em    the brand badge, and nothing else
 ```
 
-Hierarchy comes from size and tracking, not from weight. 300 is for display and for a data
-figure; 400 and 500 carry everything else. One scale, no breakpoint, no `clamp()`.
+One scale, no breakpoint, no `clamp()`.
 
-## Status
+**The prose scale is a second, shorter scale for documents the system did not write.** A
+product rendering markdown or model output cannot put a class on every element, so
+`.dya-prose` is the one block that styles by element. Inside it `h1` takes
+`--dya-size-h2`, `h2` takes `--dya-size-h3`, `h3` takes `--dya-size-h4`, and `h4` to `h6`
+sit at body size and separate by weight — the single sanctioned exception to hierarchy
+coming from size, because six levels do not fit in four sizes. Prose is content, so it is
+sans and keeps its case; the one uppercase element inside it is a table head, which is a
+label.
 
-Three hues, one role each, and unlike the accents they are meant to be read. All three
-fill, with `--dya-on-status` as the ink. They are the same values in both themes because
-their job is legibility, not identity.
+`.dya-math` is the exception inside the exception: notation is data, so it is mono at
+`0.94em` of its surroundings carrying `--dya-text-2` — 11.23 and 10.71 on Gi's two
+surfaces, 15.37 and 14.46 on Oneiro's. The em-relative size is deliberate: an expression
+inside a heading has to scale with it, and no fixed step can. `.dya-math--block` is the
+display form.
+
+
+## Shape, spacing and motion
 
 ```text
-Token            Value     Fill in Gi   Fill in Oneiro   Use
---------------   -------   ----------   --------------   --------------------------
---dya-success    #63cf95         9.47            10.58   confirmation, positive
---dya-warning    #d6a95c         8.43             9.42   caution, not yet a failure
---dya-danger     #f59790         8.45             9.44   error, destructive control
---dya-idle       per theme          —                —   no outcome yet
+--dya-radius-sm         3px    control under 16px: checkbox, radio, toggle knob, thumb
+--dya-radius            6px    buttons, chips, fields, cards, surfaces
+--dya-radius-media      6px    image, video, media blocks
+--dya-radius-chassis    9px    the panel, and nothing else
+--dya-radius-tag       14px    the tag, and nothing else
+--dya-radius-full     999px    accent dot, radio, avatar
 ```
 
-Each hue has a `-soft` companion — the same value over the surface at 10% — for the
-background of a row or a quiet badge.
+Five radii and a pill. Something asking for 8px gets 6px. Spacing is the `--dya-space-1`
+to `--dya-space-24` ladder and nothing outside it.
 
-Colour is never the only signal. It states the outcome; a word or an icon says what it is.
+- **`transform`, `opacity` and `background-color` are the only properties a transition may
+  name.** `color` and `border-color` change instantly, which is why hover on a tab snaps
+  rather than eases. The list is closed. **Never name `box-shadow` in a transition.**
+- **Nothing animates forever.** No shimmer on a skeleton, no pulse on a status dot.
+- **Pressing never changes colour alone.** It scales on `--dya-press-scale` and translates
+  on `--dya-press-y`.
+- **Performance outranks aesthetics.** No WebGL, no shaders. `backdrop-filter` is off by
+  default: `--dya-glass` resolves to `none`.
 
-## Known limits
 
-- **The system carries no render of its own.** Any adjustment to relief or colour is judged
-  inside a consuming product, or against `scratch/build_themes.py`, which generates a page
-  holding both themes over the real component layer with every ratio computed.
-- **Ten components are derived rather than observed.** Toggle, checkbox, radio, slider,
-  content tabs, pagination, empty, loading and skeleton follow the rules but have not been
-  seen against real content.
-- **Six of Oneiro's ten surfaces are interpolated**, and the interpolated steps have not
-  been seen against real content either.
-- **The system has no flat pressable.** dyarchia-desktop draws the open control of two
-  panels as a bare icon with no background, border or relief, because an empty panel
-  holding one raised button reads as an unfilled form. It does that with
-  plugin-prefixed rules built from tokens, which is the sanctioned escape hatch and also
-  a standing bug report: a `.dya-button--bare` beside `--quiet` would let the product
-  drop those rules.
-- **The IBM Plex stylistic sets are undetermined.**
-- **`.dya-prose` styles by element and every other component styles by class.** The
-  exception is justified: a product rendering markdown or model output cannot put a class
-  on elements it did not author. A second such exception would mean the rule is not
-  holding.
-- **`.dya-math` is sized in `em`, and nothing else in the system is.** Notation has to
-  scale with whatever it sits inside, including a heading, and no fixed step can do that.
+## Components
+
+`components.css` is the single declaration site for the `dya-*` classes. A product that
+restyles `.dya-button` has forked the system. **It contains no literal colour, radius or
+duration** — every rule resolves to a token. That is what makes a second theme possible,
+and it is the first thing to check when something looks right in one theme and wrong in
+the other.
+
+```text
+Structure    panel bar (--flush --inset) dock card card__header card__body rule brand
+Pressable    button (--quiet --sm --danger) key chip item entry (--strong --active)
+Input        field (--sm --auto) toggle checkbox radio slider
+Content      tag badge (--success --warning --danger --soft) table row (--selected)
+             metric display heading text (--success --warning --danger) label eyebrow
+             value mono caret
+Documents    prose (styles by element) prose__scroll
+             code (__kw __str __num __com __fn __pun)
+             log
+             math (--block)
+Layers       menu menu__item tooltip
+Navigation   tabs tab pagination
+Absence      empty loading skeleton
+```
+
+Four distinctions in that list are easy to collapse and are not the same thing:
+
+- **`code` is authored, `log` is streamed.** Code is highlighted and scrolls sideways
+  because its indentation carries meaning. A log wraps, because a panel that scrolls to
+  read a filename is unusable at panel width. `log` sets no height and no flex.
+- **`badge` is a chip, `text--*` is a sentence.** Same three tokens; a reported outcome in
+  prose must not be dressed as a label.
+- **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 46px,
+  the gradient and the hairline; the rhythm is what the modifier keeps.
+- **`field` is full-width by default.** `--auto` opts out; a minimum width is the
+  consumer's layout.
+
+
+## Verification
+
+There is nothing to build, lint or test. What replaces those commands:
+
+- **Arithmetic.** Any change to a text, border, surface or accent token is re-measured
+  against every surface it can sit on, **in both themes**, and the numbers go in the commit
+  body. `py tools/contrast.py <token-suffix>` reads `tokens.css` and prints that grid; a
+  literal `#rrggbb` measures a value that is not a token yet.
+- **Visual.** The system carries no render of its own. A page linking `css/dyarchia.css`
+  with the fonts beside it, holding the markup in question in both themes, is the whole
+  method. `scratch/` at the workspace root is gitignored and exists for those pages; serve
+  the workspace over HTTP, or the fonts are blocked as cross-origin and the measurement is
+  made against the wrong faces.
+- **The invariant.** `components.css` must resolve to zero literal colours. Verify against
+  the CSSOM, not by reading the file.
+
+
+## Open questions
+
+- Ten components are derived from these rules rather than observed in a design: toggle,
+  checkbox, radio, slider, content tabs, pagination, empty, loading and skeleton.
+- Six of Oneiro's ten surfaces are interpolated and have not been seen against real
+  content. The theme is also tiring to read over a long session, which is the same
+  observation from the other side.
+- The system has no flat pressable. The shell draws two open controls as a bare icon with
+  plugin-prefixed rules, which is the sanctioned escape hatch and a standing request for
+  `.dya-button--bare` beside `--quiet`.
+- `.dya-prose` styles by element and everything else by class. A second such exception
+  would mean the rule is not holding.
+- The prose scale has one heading size, which is thin for a product whose plugins render
+  arbitrary documents and model output.
+- The IBM Plex stylistic sets are undetermined.

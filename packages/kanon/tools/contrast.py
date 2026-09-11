@@ -4,8 +4,8 @@
     py packages/kanon/tools/contrast.py '#85857f' --against surface-1 surface-2
 
 Every change to a text, border, surface or accent token has to be re-measured this way and
-the numbers go in the commit body. See the repository CLAUDE.md and
-packages/kanon/docs/specs for the rule and the 4.50 floor.
+the numbers go in the commit body. See packages/kanon/README.md for the rule and the 4.50
+floor.
 """
 
 import argparse

@@ -1,5 +1,6 @@
 import { app } from 'electron'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
@@ -128,10 +129,33 @@ export async function assertWorkdir(workdir: string): Promise<string> {
     return value
 }
 
+const writing = new Map<string, Promise<unknown>>()
+
+async function replace(path: string, text: string): Promise<void> {
+    const temporary = `${path}.${randomUUID()}.tmp`
+    try {
+        await writeFile(temporary, text, 'utf-8')
+        await rename(temporary, path)
+    } catch (error) {
+        await rm(temporary, { force: true }).catch(() => undefined)
+        throw error
+    }
+}
+
 export async function writeAtomic(path: string, text: string): Promise<void> {
-    const temporary = `${path}.tmp`
-    await writeFile(temporary, text, 'utf-8')
-    await rename(temporary, path)
+    const queued = (writing.get(path) ?? Promise.resolve()).then(
+        () => replace(path, text),
+        () => replace(path, text)
+    )
+    writing.set(
+        path,
+        queued.catch(() => undefined)
+    )
+    try {
+        await queued
+    } finally {
+        if (writing.get(path) === queued) writing.delete(path)
+    }
 }
 
 export async function list(): Promise<BoardMeta[]> {

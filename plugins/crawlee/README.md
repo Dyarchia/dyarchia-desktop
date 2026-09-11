@@ -22,6 +22,10 @@ uv sync --dev
 uv run playwright install chromium
 ```
 
+**Moving this package invalidates the venv.** The editable install records an absolute path,
+so a `.venv` that travels with the folder still points at where the folder used to be and
+every import of `dyarchia_crawlee` fails. `uv sync --dev` again rewrites it.
+
 Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
 and every run's output sit in their own checkout, named by `DYARCHIA_CRAWLEE_DATA_DIR`,
 `DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR`; Crawlee's working directory is

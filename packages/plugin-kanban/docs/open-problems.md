@@ -24,46 +24,10 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-One, from the verdict-route proof of 2026-09-10 (second run of that day).
-
-### 1.1 A review in plan mode stalls on an execution bundled into a read
-
-`worker.ts`, `reviewBrief` and `REVIEW_MODE`, and design.md 10.6.1, which says why reviews are
-pinned to `plan`. Done when an unattended review cannot be stopped by reaching for an
-execution, AND the design says in writing which route was taken. The route has not been
-chosen, which is what makes this open rather than merely unfixed.
-
-Reviews are forced into plan mode so they can read the branch without stopping for permission,
-and that part works: a real reviewer walked `git diff`, `git log`, `git show`, `ls` and `Read`
-untouched. It then stopped dead on one compound command:
-
-```text
-cd <repo> && git log --all --oneline -- package.json && echo --- && git show da44159 --stat
-    && echo --- && node -e "console.log(process.version)" 2>&1; node --version 2>&1
-```
-
-Plan mode gates on "is this an execution", not on "is this harmful", so a harmless version
-probe bundled into an otherwise read-only command stalls the whole review. The brief's prose
-already warns a reviewer against running things; the prose did not prevent it, and the reviewer
-was arguably not even disobeying, since asking node its version is not running the tests.
-
-Three reviews stalled on three different commands and only the first contained anything
-executable. The third, session 1d75babf, stopped on two `git show` calls with an `echo`
-fallback, which executes nothing: plan mode cannot prove that a compound expression carrying
-`||` and a subshell is read-only, so it asks. Fixing the brief cannot close this. See
-design.md 5.15.
-
-With a person attached it costs one keystroke. Unattended, which is the case this plugin exists
-for, the review waits for nobody and nothing underneath it reclaims the card. The stall detector
-fires only while `state` is 'working' and a worker stopped at a prompt reads 'blocked', which
-liveness calls ALIVE and which extends the claim. The card's runtime cap would end it and is
-unset by default, so the card stays in `running` for as long as the board runs.
-
-The cheap route does not work as written. A repository can pre-authorise commands in its own
-`.claude/settings.json`, but rules spelled `Bash(git commit:*)` never match on Windows, because
-the worker reaches for the PowerShell tool instead. Measured 2026-09-10: `node`, `git status`,
-`git add` and `git commit` were all requested through PowerShell, all four were covered by a
-`Bash(...)` allowlist on paper, and none was covered in fact.
+**Nothing.** The last entry this section held, the review that stalled in plan mode, was
+closed on 2026-09-11 by taking the shell away from reviewers and handing them the diff
+instead. Its evidence is in section 5 and the reasoning is in design.md 10.6.1. A problem
+found while building goes here the same day.
 
 ## 2. Unproven rather than broken
 
@@ -82,6 +46,16 @@ the silence half of it      injectable, see section 5. The BRANCH it feeds is
                             needs one silent for an hour past four hours of life.
                             `overran` reaches the same branch and has already
                             done it
+Reviewing without a shell   Decided and built on 2026-09-11: the board runs the diff
+                            and `Bash` and `PowerShell` are denied to a review. Nine
+                            probe checks cover the brief it produces, including the
+                            empty diff, the missing diff and the patch too large to
+                            inline. What no run has done is JUDGE under it. Two
+                            things are worth watching the first time one does:
+                            whether a reviewer with `Read` and `Grep` but no shell
+                            still reads around the change enough to be worth having,
+                            and whether it now reaches the end without stalling,
+                            which is the whole point
 The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
                             `approved` landed a card in done earlier on
                             2026-09-10; the blocked route and the review that
@@ -407,4 +381,14 @@ been lost in silence                         CROSS PROCESS case is
                                              what the lease is for
                                              and the probe cannot
                                              reach it
+A review in plan mode stalled on any         the board runs the      design.md 10.6.1
+compound shell command it could not          diff and hands it       and 5.15
+prove was read-only. Three stalled on        over; `Bash` and
+three different commands and only the        `PowerShell` are
+first contained anything executable          denied. A reviewer
+                                             needs the change, not
+                                             a shell. It keeps
+                                             Read, Glob and Grep.
+                                             Judging under it is
+                                             unproven, in section 2
 ```

@@ -184,7 +184,7 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 208 checks over slug validation, three-valued liveness and the
+node, no window and no IPC. 216 checks over slug validation, three-valued liveness and the
 window where a new session is not listed yet, both parsers and the verdict, dependency cycles,
 rev fencing, promotion, unblock, scheduled cards, the worktree listing, both briefs, both
 concurrency caps, the respawn guard, where a stopped run goes home, the status tally, both
@@ -310,14 +310,21 @@ dontAsk             launches, and then denies every request it would otherwise
                     be given
 ```
 
-Reviews are not the operator's choice. They are forced into `plan` so a reviewer can read the
-branch without stopping for permission, see design.md 10.6.1. Plan mode gates on whether
-something is an execution, not on whether it is harmful: measured on 2026-09-10, a real reviewer
-read the branch with git diff, git log, git show, ls and Read untouched, then stalled on a
-compound command that appended a `node -e` version probe to a chain of git reads. With a person
-present that costs one keystroke. Unattended nothing ends it: the stall detector fires only while
-the session reads 'working', a worker stopped at a prompt reads 'blocked', and the card's runtime
-cap is unset by default.
+Reviews are not the operator's choice, and since 2026-09-11 they have no shell either. They are
+forced into `plan`, and `Bash` and `PowerShell` are denied to them; the board runs `git diff`
+itself and hands the patch over in the brief, inlined when small and written to `diff.patch`
+beside it when not. `Read`, `Glob` and `Grep` remain and reach the whole checkout.
+
+That is not distrust of reviewers. Plan mode cannot prove a compound shell command is read-only,
+so it asks: three reviews stalled on three different commands on 2026-09-10 and only the first
+contained anything executable, the third being two `git show` calls with an `echo` fallback. A
+review that stops for a permission nobody is there to give is worth less than no review. And a
+reviewer judging "does this do what the card asked" needs the change, not a shell. See
+design.md 10.6.1 for the reasoning and what it costs.
+
+A reviewer still cannot verify BEHAVIOUR, only the change as written, and the brief says so: if
+it cannot be sure without executing something, the honest answer is `changes` naming what it
+would have run.
 
 The measurements behind every mode are in design.md 5.14. `manual` is unmeasured.
 

@@ -170,7 +170,7 @@ pnpm --filter @dyarchia/plugin-kanban build
 ```
 
 ```bash
-npx tsc -p packages/plugin-kanban
+npx tsc -p plugins/kanban
 ```
 
 ```bash
@@ -197,7 +197,7 @@ Electron and opens no native dialog:
 py -m http.server 8731 --bind 127.0.0.1
 ```
 
-Then open `http://127.0.0.1:8731/packages/plugin-kanban/scripts/panel-harness.html` from the
+Then open `http://127.0.0.1:8731/plugins/kanban/scripts/panel-harness.html` from the
 repository root. The harness supplies two boards, thirteen cards across every column, a
 dependency, a running card with a live run, a finished run with an artifact, and a comment
 thread, which is enough to drive the drag, the keyboard path and both themes.
@@ -491,7 +491,7 @@ RULE                        WHY
                             shares the coordinate space of the measurements and no
                             scroll arithmetic is needed anywhere
 .kanban-dot                 the status dot, following
-                            packages/plugin-eforoi/src/styles.ts:203-213
+                            plugins/eforoi/src/styles.ts:203-213
 .kanban-ghost               the dragged copy, at --dya-elev-overlay, matching what
                             the shell gives a dragged dockview group. It carries NO
                             transition: its transform is written every frame

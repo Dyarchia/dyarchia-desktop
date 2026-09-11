@@ -251,7 +251,7 @@ Where a plugin lives, by mode:
 
     Mode         Location                                   How it gets there
     ---------    ---------------------------------------    ---------------------------------
-    dev          packages/<folder>/                         the shell scans the workspace
+    dev          plugins/<folder>/                          the shell scans the workspace
     example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
 

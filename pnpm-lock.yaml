@@ -80,11 +80,16 @@ importers:
 
   packages/kanon: {}
 
-  packages/plugin-docviewer:
+  packages/sdk: {}
+
+  plugins/docviewer:
     devDependencies:
       '@dyarchia/sdk':
         specifier: workspace:*
-        version: link:../sdk
+        version: link:../../packages/sdk
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
       electron:
         specifier: ^43.3.0
         version: 43.3.0
@@ -101,14 +106,14 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  packages/plugin-eforoi:
+  plugins/eforoi:
     devDependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.120.0
         version: 0.120.0
       '@dyarchia/sdk':
         specifier: workspace:*
-        version: link:../sdk
+        version: link:../../packages/sdk
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
@@ -125,7 +130,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/plugin-kanban:
+  plugins/kanban:
     dependencies:
       node-pty:
         specifier: ^1.0.0
@@ -133,7 +138,7 @@ importers:
     devDependencies:
       '@dyarchia/sdk':
         specifier: workspace:*
-        version: link:../sdk
+        version: link:../../packages/sdk
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
@@ -153,11 +158,14 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/plugin-player:
+  plugins/player:
     devDependencies:
       '@dyarchia/sdk':
         specifier: workspace:*
-        version: link:../sdk
+        version: link:../../packages/sdk
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
       electron:
         specifier: ^43.3.0
         version: 43.3.0
@@ -168,7 +176,7 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  packages/plugin-terminal:
+  plugins/terminal:
     dependencies:
       node-pty:
         specifier: ^1.0.0
@@ -176,7 +184,10 @@ importers:
     devDependencies:
       '@dyarchia/sdk':
         specifier: workspace:*
-        version: link:../sdk
+        version: link:../../packages/sdk
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
       '@xterm/addon-clipboard':
         specifier: ^0.2.0
         version: 0.2.0
@@ -201,8 +212,6 @@ importers:
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
-
-  packages/sdk: {}
 
 packages:
 
@@ -1158,6 +1167,7 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xterm/addon-clipboard@0.2.0':
     resolution: {integrity: sha512-Dl31BCtBhLaUEECUbEiVcCLvLBbaeGYdT7NofB8OJkGTD3MWgBsaLjXvfGAD4tQNHhm6mbKyYkR7XD8kiZsdNg==}

@@ -88,7 +88,7 @@ function pluginRoots(): string[] {
     const roots: string[] = []
     if (!app.isPackaged) {
         const workspace = resolve(import.meta.dirname, '../../../..')
-        roots.push(join(workspace, 'packages'))
+        roots.push(join(workspace, 'plugins'))
         if (process.env['DYARCHIA_EXAMPLES']) roots.push(join(workspace, 'examples'))
     }
     roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))

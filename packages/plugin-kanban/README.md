@@ -184,7 +184,7 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 The probe is the headless half of verification: esbuild through an electron stub, then plain
-node, no window and no IPC. 192 checks over slug validation, three-valued liveness and the
+node, no window and no IPC. 203 checks over slug validation, three-valued liveness and the
 window where a new session is not listed yet, both parsers and the verdict, dependency cycles,
 rev fencing, promotion, unblock, scheduled cards, the worktree listing, both briefs, both
 concurrency caps, the respawn guard, where a stopped run goes home, the status tally, both

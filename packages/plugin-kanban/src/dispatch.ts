@@ -117,6 +117,29 @@ function current(card: Card): Run | null {
     return card.runs.length ? card.runs[card.runs.length - 1] : null
 }
 
+export interface Patience {
+    silentMs: number
+    minAgeMs: number
+}
+
+export const PATIENCE: Patience = { silentMs: SILENT_MS, minAgeMs: MIN_AGE_MS }
+
+export function overran(capSeconds: number | null, startedAt: number, now: number): boolean {
+    return capSeconds !== null && now - startedAt > capSeconds * 1000
+}
+
+export function stalled(
+    state: string | null,
+    modifiedAt: number | null,
+    startedAt: number,
+    now: number,
+    limits: Patience = PATIENCE
+): boolean {
+    if (state !== 'working') return false
+    if (modifiedAt === null) return false
+    return now - modifiedAt > limits.silentMs && now - startedAt > limits.minAgeMs
+}
+
 export function unlisted(state: agents.Liveness, startedAt: number, now: number): boolean {
     return state === 'dead' && now - startedAt < YOUNG_MS
 }
@@ -496,12 +519,13 @@ async function reconcile(
 
         const now = Date.now()
         const cap = card.maxRuntimeSeconds
-        const overrun = cap !== null && now - run.startedAt > cap * 1000
-        const silent =
-            session?.state === 'working' &&
-            progress !== null &&
-            now - progress.modifiedAt > SILENT_MS &&
-            now - run.startedAt > MIN_AGE_MS
+        const overrun = overran(cap, run.startedAt, now)
+        const silent = stalled(
+            session?.state ?? null,
+            progress?.modifiedAt ?? null,
+            run.startedAt,
+            now
+        )
 
         if ((overrun || silent) && run.shortId) {
             await agents.stop(run.shortId)

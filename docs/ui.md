@@ -72,6 +72,10 @@ into that same document, so:
   plugin creates.
 - **The reset already applied.** `box-sizing`, margin zeroing, focus ring, scrollbars
   and the reduced-motion block are in force before the plugin runs.
+- **`[hidden]` works.** The reset declares it `!important`, so a panel toggles
+  `el.hidden` and never writes a display rule for it. Without that, the UA stylesheet
+  loses to any class that sets `display` and a hidden flex container stays on screen,
+  which is how a panel ends up rendering both of its tabs at once.
 - **The theme is an attribute, and the shell owns it.** The system carries two dark
   themes: `Gi` on `:root` and `Oneiro` under `[data-theme="oneiro"]`. The two buttons at
   the right of the title bar set it, [theme.ts](apps/shell/src/renderer/src/theme.ts) owns
@@ -115,18 +119,31 @@ The order matters, and it is the point of the whole exercise:
 What the system already declares:
 
 ```text
-Structure    dya-panel  dya-bar (--flush)  dya-dock  dya-card
+Structure    dya-panel  dya-bar (--flush --inset)  dya-dock  dya-card
              dya-card__header  dya-card__body  dya-rule  dya-brand
 Pressable    dya-button (--quiet --sm --danger)  dya-key  dya-chip  dya-item
              dya-entry (--strong --active)
-Input        dya-field  dya-toggle  dya-checkbox  dya-radio  dya-slider
+Input        dya-field (--sm --auto)  dya-toggle  dya-checkbox  dya-radio  dya-slider
 Content      dya-tag  dya-badge  dya-table  dya-row  dya-metric  dya-display
-             dya-heading  dya-text  dya-label  dya-eyebrow  dya-value  dya-mono
-             dya-key-label
+             dya-heading  dya-text (--success --warning --danger)  dya-label
+             dya-eyebrow  dya-value  dya-mono  dya-key-label
+Documents    dya-prose  dya-code  dya-log  dya-math
 Layers       dya-menu  dya-menu__item  dya-tooltip
 Navigation   dya-tabs  dya-tab  dya-pagination
 Absence      dya-empty  dya-loading  dya-skeleton
 ```
+
+Four of those carry a trap worth knowing before the first render:
+
+- **`dya-field` is full width.** It claims 100% and pushes whatever follows it onto a
+  second line in a control row. `--auto` opts out; the minimum width is yours.
+- **`dya-bar` is window chrome**, 46px tall with a gradient and a hairline under it.
+  Inside a panel that reads as a second title bar. `--inset` keeps the rhythm and drops
+  the chrome.
+- **`dya-log` is for what a process printed**, not for authored code: it wraps instead of
+  scrolling sideways. It sets no height, so give it one or let a flex parent do it.
+- **`dya-text--*` is a sentence, `dya-badge--*` is a chip.** Same three tokens, and the
+  wrong one dresses an outcome as a label.
 
 Where the desktop currently lands:
 

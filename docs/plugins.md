@@ -141,10 +141,30 @@ An ESM module for Node exporting activate(ctx) with:
     ---------------------------    --------------------------------------------------
     handle(channel, handler)       answers invoke calls from the renderer
     broadcast(channel, ...args)    emits an event to every window
+    notify(notice)                 tells the operator something happened
 
 Channels namespace themselves: a handle('spawn') in the terminal plugin becomes
 plugin:terminal:spawn at the IPC level. The renderer and the main module of the same plugin
 use the same short channel name.
+
+`notify({ title, body, action })` is for the handful of moments a plugin has to reach an
+operator who is not looking at it. The shell shows a toast in the corner of the window, and,
+**only when no window has focus**, an OS notification as well: a plugin never decides between
+the two, because whether the operator can see the window is the shell's business and not the
+plugin's. Clicking either one focuses the window and hands `action` back to the plugin's
+renderer on the `notice` channel, so the plugin can open whatever the notice was about:
+
+```typescript
+ctx.notify({ title: 'the card is waiting on you', body: 'it wants permission', action: { cardId } })
+```
+
+```typescript
+ctx.on('notice', (action) => open((action as { cardId: string }).cardId))
+```
+
+Spend it carefully. A notice that arrives for something the operator did not need to know is
+worse than no notices at all, and the shell deliberately gives plugins no way to make one
+louder, stickier or more urgent than another.
 
 ```typescript
 import type { PluginMainContext } from '@dyarchia/sdk'
@@ -250,6 +270,11 @@ nothing in packages/ shadows it any more; delete it from %APPDATA%/dyarchia/plug
 
 In dev the workspace takes priority over installed plugins, so an installed copy never
 shadows the version under development.
+
+A plugin with no `dist/` is skipped by the installer and named as it is skipped. That is
+not a failure: a plugin whose renderer needs no bundling and whose main module is a Python
+package sitting in the workspace has nothing the packaged app could run, and crawlee is
+the one in that position today.
 
 
 ## 6. Lifecycle

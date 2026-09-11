@@ -1,0 +1,15 @@
+{
+    "id": "crawlee",
+    "name": "Crawlee",
+    "version": "0.1.0",
+    "renderer": "renderer.js",
+    "python": "main.py",
+    "channels": [
+        "state",
+        "profiles",
+        "show",
+        "save",
+        "start",
+        "stop"
+    ]
+}

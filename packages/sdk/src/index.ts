@@ -27,10 +27,17 @@ export interface PluginContext {
     onThemeChange(listener: () => void): () => void
 }
 
+export interface PluginNotice {
+    title: string
+    body: string
+    action?: unknown
+}
+
 export interface PluginMainContext {
     readonly pluginId: string
     handle(channel: string, handler: (...args: unknown[]) => unknown | Promise<unknown>): void
     broadcast(channel: string, ...args: unknown[]): void
+    notify(notice: PluginNotice): void
 }
 
 export function injectStyles(pluginId: string, css: string): void {

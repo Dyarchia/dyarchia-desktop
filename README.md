@@ -58,6 +58,8 @@ The pieces:
             plugin-docviewer/    native file picker + markdown, mermaid, source toggle
             plugin-player/       audio/video player (dyarchia-media://)
             plugin-eforoi/       a panel of models with one of them comparing the answers
+            plugin-kanban/       a task board that dispatches work to Claude Code
+            plugin-crawlee/      a crawling toolkit and the panel that drives it (python)
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module
@@ -116,7 +118,7 @@ Branch       Holds                              Merged with
 ----------   --------------------------------   ----------------------------
 master       the released state                 --no-ff, from develop only
 develop      integrated, unreleased work        --no-ff, from feature/* only
-feature/*    one coherent change                deleted after merging
+feature/*    one piece of work                  deleted after merging
 ```
 
 The rules, in order:
@@ -125,12 +127,19 @@ The rules, in order:
   on `develop` has lost the review surface the branch exists to give it.
 - **Merge with `--no-ff`, always.** A fast-forward erases the fact that a set of commits
   belonged together, which is the only thing that makes the history readable later.
-- **A feature branch is merged when it is asked for, never on its own judgement.** Finished
-  work waits on its branch, committed and verified, until someone says to land it. The same
-  word lands it on `develop` and on `master`: both hops happen together, by `--no-ff` merge,
-  and nothing is committed directly to either.
-- **Push `develop` and `master` together** once a release merge is made, so the remote is
-  never a partial view of what happened.
+- **Landing on `develop` does not wait to be asked for; landing on `master` does.** The two
+  hops were one rule until 2026-09-11 and are now two, because they carry different risk.
+  A branch that is finished, committed and verified merges into `develop` on its own
+  judgement. `master` is the released state and someone has to say so. Nothing is committed
+  directly to either: both hops are `--no-ff` merges.
+- **A feature branch holds a piece of work, not necessarily a single change.** It can live
+  until that work is done. Two branches cut the same day that both append to the end of one
+  document will conflict on the second merge, which is cheap to fix and is a reason not to
+  split work that belongs together.
+- **Pushing is asked for every time, and `develop` and `master` go together** once a release
+  merge is made, so the remote is never a partial view of what happened. This repository is
+  the shared home of several dyarchia products, so the remote is not one piece of work's to
+  publish.
 - **Delete the feature branch after it merges.** The merge commit holds the name.
 - **Commit bodies are long and evidentiary.** State the measurement or the failure that
   forced the change, what the alternative was, and what was deliberately left alone. A

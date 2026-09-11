@@ -32,6 +32,18 @@
     color: var(--dya-text-3);
 }
 
+.dya-text--success {
+    color: var(--dya-success);
+}
+
+.dya-text--warning {
+    color: var(--dya-warning);
+}
+
+.dya-text--danger {
+    color: var(--dya-danger);
+}
+
 .dya-text-sm {
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-sm);
@@ -284,6 +296,21 @@
     color: var(--dya-code-punct);
 }
 
+.dya-log {
+    overflow: auto;
+    padding: var(--dya-space-3);
+    border-radius: var(--dya-radius);
+    background: var(--dya-sunken);
+    box-shadow: var(--dya-elev-sunken);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .dya-panel {
     background: var(--dya-chassis);
     border: var(--dya-border-width) solid var(--dya-border);
@@ -313,6 +340,13 @@
 
 .dya-bar--flush {
     padding-right: 0;
+}
+
+.dya-bar--inset {
+    height: auto;
+    padding: 0;
+    background: none;
+    border-bottom: none;
 }
 
 .dya-card {
@@ -590,6 +624,10 @@
 .dya-field--sm {
     height: 20px;
     padding: 0 var(--dya-space-2);
+}
+
+.dya-field--auto {
+    width: auto;
 }
 
 textarea.dya-field {

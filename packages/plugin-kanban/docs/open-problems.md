@@ -6,8 +6,10 @@ this file says where the plugin is not that yet.
 
 Rules for keeping it:
 
-- An entry leaves this file only when it is done or deliberately dropped, and a dropped entry
-  moves to section 4 with the reason. Nothing is deleted silently.
+- An entry leaves this file only when it is done, and it leaves into section 4 with the
+  evidence. Nothing is deleted silently. This file records what IS, not what was decided
+  against: a feature nobody built needs no row, and the reason a feature was declined belongs
+  in design.md beside the design it declines.
 - Every entry names the file it lives in and what "done" looks like, so it can be picked up by
   someone with no memory of the session that found it.
 - A problem found while building is written here the same day, before the commit that found it.
@@ -18,16 +20,47 @@ Rules for keeping it:
 - [1. Open, in the order they would bite](#1-open-in-the-order-they-would-bite)
 - [2. Unproven rather than broken](#2-unproven-rather-than-broken)
 - [3. Standing requests on kanon](#3-standing-requests-on-kanon)
-- [4. Deferred or dropped on purpose](#4-deferred-or-dropped-on-purpose)
-- [5. Closed, and where the evidence is](#5-closed-and-where-the-evidence-is)
+- [4. Closed, and where the evidence is](#4-closed-and-where-the-evidence-is)
 
 
 ## 1. Open, in the order they would bite
 
-**Nothing.** The last entry this section held, the review that stalled in plan mode, was
-closed on 2026-09-11 by taking the shell away from reviewers and handing them the diff
-instead. Its evidence is in section 5 and the reasoning is in design.md 10.6.1. A problem
-found while building goes here the same day.
+One. The review that stalled in plan mode was closed on 2026-09-11 by taking the shell away
+from reviewers and handing them the diff; its evidence is in section 4 and the reasoning is in
+design.md 10.6.1. What that fix did NOT touch is the same failure seen from the implementer's
+side, which is the entry below.
+
+### 1.1 No permission mode runs an implementation unattended
+
+`worker.ts` and `agents.ts`, the launch, and design.md 5.14 which carries the measurements.
+Done when a card can be claimed, worked and finished with nobody watching, or when the design
+says in writing that it cannot and what the operator is expected to do instead.
+
+A reviewer could be fixed by taking its shell away, because a reviewer only has to read. An
+implementer has to write, and every mode measured either refuses to start, refuses everything,
+or stops to ask:
+
+```text
+bypassPermissions   will not launch under --bg without a one-time interactive disclaimer
+dontAsk             launches, then denies every edit and every command automatically
+acceptEdits         stops for a person on every command
+auto                stops for a person on every file edit. Measured 2026-09-11 on two
+                    boards at once: both workers stopped on an ordinary edit approval
+manual              not measured, and there is no reason to expect better
+```
+
+So a card nobody is watching sits at a prompt. What happens to it after that is 5.10 and 12.2:
+a session at a prompt reads `blocked`, `stalled` refuses anything that is not `working`, and
+the runtime cap is unset by default, so nothing reclaims it. The board notices and says
+"waiting on you", which is correct and is not a fix.
+
+This is the strongest argument for the thing the reviewer fix stopped short of: moving the
+workers onto real agent definitions with hooks, which `claude --agents <json>` allows without
+writing anything into the operator's repository. A `PreToolUse` hook can answer on the rules
+the operator sets instead of stopping. **One measurement is needed before committing to that,
+and it is cheap: whether a hook denial ends the turn the way an operator's denial does.** If it
+does, hooks would kill reviews more reliably rather than less, and the design has to know that
+before it leans on them.
 
 ## 2. Unproven rather than broken
 
@@ -35,7 +68,7 @@ found while building goes here the same day.
 WHAT                        WHY IT IS UNPROVEN
 --------------------------  ----------------------------------------------------
 The stall detector, only    Its DECISION is proven and its thresholds are now
-the silence half of it      injectable, see section 5. The BRANCH it feeds is
+the silence half of it      injectable, see section 4. The BRANCH it feeds is
                             proven too, and was before today: a real runtime cap
                             stopped a real review on 2026-09-10, which is how the
                             routing hole of design.md 10.6.6 was found. So
@@ -67,7 +100,7 @@ The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
                             matters more than a tidy row, and the two attempts
                             failed for different reasons. The first review died
                             before declaring anything, killed by the undeclared
-                            turn now closed in section 5. The second was told,
+                            turn now closed in section 4. The second was told,
                             in the card body, to declare `changes` whatever it
                             concluded; it refused, judged the work on its merits
                             and declared `approved`, correctly, because the work
@@ -78,10 +111,16 @@ The `changes` verdict       THREE OF THE FOUR ROUTES OF 10.6.3 ARE PROVEN.
                             reject, and that is the shape the next attempt has
                             to take. A reviewer that will not declare a verdict
                             it does not hold is a property worth having, and it
-                            is recorded in section 5 rather than resented here
+                            is recorded in section 4 rather than resented here
 Two panels, two boards      Proven in phase 1, not retested since the dispatcher
                             landed. The isolation is per-slug and should hold,
                             but "should" is not "did"
+The last AppData question   Whether the CLI accepts a working directory under userData
+                            when both the process that creates it and the one that
+                            resolves it are outside a package container. It cannot be
+                            measured from these sessions and nothing depends on it,
+                            since scratch workspaces live in tmpdir. design.md 5.11
+                            keeps the OPEN line
 Anything but Windows        Every measurement in design.md section 5 was made on
                             Windows 11 with a native claude.exe. The .cmd branch
                             in `invocation` has never run, and the AppData
@@ -101,50 +140,7 @@ Both are recorded in the README as debts and belong upstream rather than here.
 - **No screen-reader-only class.** The live region here is a prefixed `.kanban-sr`.
 
 
-## 4. Deferred or dropped on purpose
-
-```text
-Automatic reviewer       2.5, still deferred, but narrower since 2026-09-09: a reviewer
-                         can be asked for with a button, and what stays unbuilt is the
-                         board-level setting that would spend one on every completed
-                         run. design.md 10.6.4 says why it waits for the manual path to
-                         be watched working
-Goal mode                2.5, phase 6
-Auto-decompose           2.5, phase 6
-Swarm                    2.8, phase 7, and it should NOT be built next: over a single
-                         executor a swarm is a card-creation macro. It is worth having
-                         only once worker diversity exists, which is section 21
-A dollar figure          10.2. There is no cost in USD anywhere in a transcript, so the
-                         card shows tokens and calls them tokens. A priced estimate can
-                         come back later, labelled as an estimate, with a versioned price
-                         table beside it
-The executor abstraction 21.5. Deliberately not built. Keep Claude-specific knowledge in
-                         agents.ts and worker.ts and extract an interface from two real
-                         implementations, not one
-A board-side commit      BUILT, MEASURED WORKING, AND REMOVED. A run that finishes with
-                         uncommitted work leaves an empty branch, and the dispatcher was
-                         committing it. The worktree, the session and the branch are the
-                         CLI's, the agent runs in Claude Code, and a board that quietly
-                         commits in the operator's repository is doing somebody else's job.
-                         Nothing is lost by declining: neither the plugin nor `claude rm`
-                         removes a dirty worktree, so the work stays and the board says so.
-                         design.md 5.7
-The transcript copy      7.2 promised a JSONL per run, our own copy of transcript-derived
-                         events, so a run stayed explicable after the CLI forgot its
-                         session. Dropped: Claude Code already keeps that file, and a
-                         second transcript store is the board doing the runtime's job.
-                         The card keeps the run row, which is what a board knows, and the
-                         history tab reads the CLI's file live. design.md 7.2 and 14.3
-The last AppData         Whether the CLI accepts a working directory under userData when
-question                 both the process that creates it and the one that resolves it are
-                         outside a package container. It cannot be measured from these
-                         sessions, nothing in the plugin depends on it since scratch
-                         workspaces live in tmpdir, and it was being carried in section 1
-                         as if it were work. design.md 5.11 keeps the OPEN line
-```
-
-
-## 5. Closed, and where the evidence is
+## 4. Closed, and where the evidence is
 
 Kept so nobody re-opens them or, worse, re-derives them.
 
@@ -163,7 +159,7 @@ environment and came up "not logged in"
 state 'blocked' also means "finished, and    a declared terminal     design.md 5.10
 waiting on you", so cards stayed running     block outranks liveness
 A scratch workspace under userData could     scratch workspaces      design.md 5.11
-not be launched into                         moved to tmpdir. The       and section 4
+not be launched into                         moved to tmpdir. The       and section 2
                                              CAUSE is still open
 A finished session holds its workspace open  stop, then retry the    design.md 5.11
                                              removal
@@ -391,4 +387,28 @@ first contained anything executable          denied. A reviewer
                                              Read, Glob and Grep.
                                              Judging under it is
                                              unproven, in section 2
+The board committed a run's uncommitted      REMOVED on purpose      design.md 5.7
+work for it, so a finished run never         after being built and
+left an empty branch. Built, measured        measured working. The
+working, and taken out again                 worktree, the session
+                                             and the branch are the
+                                             CLI's, and a board
+                                             that quietly commits
+                                             in the operator's
+                                             repository is doing
+                                             somebody else's job.
+                                             Nothing is lost: a
+                                             dirty worktree is
+                                             removed by neither the
+                                             plugin nor `claude
+                                             rm`, so the work stays
+                                             and the board says so
+A second transcript store, one JSONL per     DROPPED. Claude Code    design.md 7.2
+run, was promised so a run stayed            already keeps that      and 14.3
+explicable after the CLI forgot its          file. The card keeps
+session                                      the run row, which is
+                                             what a board knows,
+                                             and the history tab
+                                             reads the CLI's file
+                                             live
 ```

@@ -1605,9 +1605,35 @@ It launches in      NOT the card's mode. Measured on 2026-09-10: under `acceptEd
                     out loud so the run does not end by proposing a plan
 Its brief is the    the card, what the implementer said it did, the branch, and the
 implementer's work  instruction to judge that work rather than to continue it
+It carries the      the board runs `git diff` itself and puts the result in the
+change, and has no  brief. `Bash` and `PowerShell` are denied to the run. Added
+shell               2026-09-11, and the reasoning is below
 It may declare a    `verdict` in the terminal block, and nothing else in the
 verdict             protocol changes
 ```
+
+**Why the shell had to go.** Plan mode was chosen so a reviewer could read the branch without
+stopping for permission, and for reading it works. What it cannot do is prove that a compound
+shell command is read-only, so it asks. Three reviews stalled on three different commands on
+2026-09-10 and only the first contained anything executable; the third was two `git show` calls
+with an `echo` fallback. No wording in the brief prevents that, because the reviewer is not
+disobeying. See 5.15.
+
+The fix follows from asking what a reviewer is actually for. Its criterion is "the work does
+what the card asked and you would land it", which is a judgement about a change against an
+instruction. For that it needs the change, not a shell. So the board runs the diff, which it
+can do reliably because it already knows `headBefore` and the branch, and hands the patch over
+in the brief: inlined when small, written to `diff.patch` beside the brief when not, with the
+`--stat` summary either way. `Read`, `Glob` and `Grep` remain, and reach the whole checkout, so
+the reviewer can still read around the change.
+
+What this costs, stated so nobody rediscovers it as a surprise: a reviewer can no longer go
+looking on its own initiative. On 2026-09-10 one ran `git diff` itself rather than trusting the
+implementer's claim that the branch was empty, which was good practice. That verification now
+belongs to the board, which is a more reliable place for it, but it is a transfer of judgement
+and not a free win. The other half stays true and is said in the brief: a reviewer that cannot
+be sure without EXECUTING something should answer `changes` and name what it would have run.
+Removing the shell does not pretend a read-only review can verify behaviour.
 
 ### 10.6.2 The protocol change, which is one optional field
 
@@ -2696,7 +2722,7 @@ The headless probe covers what does not need an agent, and is the cheap half of 
 pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
-208 checks, among them: slug validation including the reserved device names, three-valued
+216 checks, among them: slug validation including the reserved device names, three-valued
 liveness, the launcher parser, the terminal-block parser including a truncated block and a
 nested object, dependency cycles, rev fencing, promotion when parents close, unblock restoring
 the source phase while keeping the recurrence count, a parked card waking at its time, the

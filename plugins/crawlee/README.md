@@ -1,0 +1,290 @@
+# crawlee
+
+A crawling toolkit that snapshots a corpus, reports what moved between rounds, and a Dyarchia
+Desktop panel that drives it. Two layers: the engine knows nothing about any specific site, and a
+profile describes what to look for without touching the Crawlee API. That boundary is what makes a
+new target a data change rather than a code change.
+
+**This package runs from the workspace.** The shell scans `plugins/` and finds the panel there, so
+there is nothing to install, and a packaged build does not carry it. The panel shells out to the
+CLI rather than importing the toolkit, because the shell spawns one Python process per plugin with
+whatever `py -3` resolves to and that interpreter has none of these dependencies. The CLI is also
+the surface the tests cover, so a button that is a prompt cannot disagree with a prompt.
+
+
+## Setup
+
+Python 3.12 or newer, and uv. Browser-backed crawlers additionally need Playwright's Chromium, a
+one-off download of roughly 400 MB.
+
+```bash
+uv sync --dev
+uv run playwright install chromium
+```
+
+**Moving this package invalidates the venv.** The editable install records an absolute path,
+so a `.venv` that travels with the folder still points at where the folder used to be and
+every import of `dyarchia_crawlee` fails. `uv sync --dev` again rewrites it.
+
+Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
+and every run's output sit in their own checkout, named by `DYARCHIA_CRAWLEE_DATA_DIR`,
+`DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR`; Crawlee's working directory is
+scratch and goes to a temporary path through `DYARCHIA_CRAWLEE_STORAGE_DIR`. All four take absolute
+paths. See `.env.example`. **The matching `.gitignore` entries are guards, not homes:** they catch a
+run started without a `.env`, which would otherwise drop a corpus into the tool's own tree.
+
+
+## Commands
+
+    Command      Purpose
+    ---------    -----------------------------------------------------------------------
+    crawl        Scrape URLs directly, or run a saved profile
+    inspect      Probe a target: robots, sitemaps, markdown variants, rendering, advice
+    diff         Show what changed on a target the last time it was snapshotted
+    digest       Bundle those changes into something a later step can read
+    watch        Sweep every tracked target once and report whether anything moved
+    urls         Report which URLs a snapshotted target holds, broken down by section
+    state        Report every corpus across every repository, in one answer
+    profiles     List the profiles this project knows about
+    profile      Print one profile as written, or save one from standard input
+    version      Print the installed version
+
+```bash
+uv run dyarchia-crawlee inspect https://docs.example.com/guide/overview
+uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview \
+    --crawler parsel --select title=h1 --depth 2 --max-pages 40 --follow /guide/ --format csv
+uv run dyarchia-crawlee crawl https://docs.example.com/x --select title=h1 --save-profile my-site
+uv run dyarchia-crawlee crawl --profile my-site --snapshot --commit
+uv run dyarchia-crawlee diff my-site --unified
+```
+
+`--save-profile` writes only the fields that differ from the defaults. Running a profile takes it
+as the baseline and **only flags actually typed override it** — a flag left alone never overrides,
+even when its default differs.
+
+    Crawler          Use when
+    -------------    ----------------------------------------------------------------
+    http             The response is already what you want: markdown, JSON, plain text
+    beautifulsoup    Ordinary HTML, tolerant parsing of messy markup
+    parsel           Ordinary HTML, faster on large documents
+    playwright       Content only exists after JavaScript runs
+    adaptive         You do not know, and would rather not pay for a browser by default
+
+`adaptive` is the default: it runs the cheap static path first and escalates to a browser only when
+that path comes back empty.
+
+
+## Extraction
+
+    Mode       Result
+    -------    -----------------------------------------------------------------
+    auto       Main content as markdown, with navigation and boilerplate removed
+    text       Plain text of the whole document
+    html       The markup as fetched
+    links      Every link on the page, resolved to absolute URLs
+    jsonld     schema.org structured data
+    none       Nothing, useful when only the selectors matter
+
+The header and footer nearly every page of a run shares are removed once the run is collected, not
+per page: **a single page cannot tell its banner from its content; the corpus can.**
+`--keep-boilerplate` opts out.
+
+Three repairs exist because their absence was measured, and each refuses to act unless it
+demonstrably works. A document fetched as markdown from its publisher is never touched by any of
+them — that one is stored as published.
+
+- **A renderer emitting one bare `div` per line of a sample** offers no `pre` for extraction to
+  recognise, so the sample is dropped as layout. Five recipe pages carried 1,411 lines of code and
+  extraction kept 134; rewriting such a run as the one `pre` it was meant to be brought the same
+  five to 1,305.
+- **A one-line `pre` renders as inline code** and glues the next opening fence onto the end of that
+  line. 26 pages of one corpus were inverted from that point on, with 444 lines of prose fenced
+  between them. The second newline goes inside the innermost `code`, since one outside it stops the
+  glue and leaves the sample inline.
+- **Extraction can close a paragraph and open a code block on one line**, leaving a delimiter no
+  parser sees and inverting every fence after it. The repair attempts every document rather than
+  only those ending mid-fence, because a page where it happened twice is inverted and balanced at
+  once: 50 such lines sat in the corpora reading as healthy. 49 are repaired; the one that is not
+  sits on a page broken for another reason, where a guess is worth less than the break.
+
+MDX pages that define their component ahead of the prose have that definition removed outright and
+the invocation kept — where a widget stood is worth knowing, the four hundred lines that built it
+are not. Code fences are exempt throughout: a page teaching JavaScript is a page whose
+`export const` is the lesson.
+
+
+## Profiles
+
+A profile is a named, reusable target definition carrying exactly the fields a command line
+carries, so nothing can be expressed in one and not the other. Two sources share one namespace:
+YAML in `profiles/`, and Python modules under `src/dyarchia_crawlee/sites/` exposing a `PROFILE`.
+YAML wins over a Python module of the same name. **Unknown keys are rejected rather than ignored**,
+so a typo is a loud error and not a setting that quietly never applied.
+
+Profiles are not tracked by git: a profile describes somebody's corpus rather than the tool, so it
+lives in the repository that holds the pages it describes. The package ships one worked example,
+and it deliberately does not ask to be snapshotted — it is present in every corpus repository, so
+one that asked would enrol itself in every round swept on the machine.
+
+Sources. At least one of `start_urls` or `sitemap_urls` is required.
+
+    Field           Type      Default     Meaning
+    ------------    ------    --------    ------------------------------------------------
+    name            string    filename    Profile name, also used for output filenames
+    group           string    none        Folder this target's files are kept under
+    description     string    none        Shown when listing profiles
+    start_urls      list      empty       URLs the crawl begins from
+    sitemap_urls    list      empty       Sitemaps to seed requests from
+    fetch_suffix    string    none        The markdown twin of a page
+
+`fetch_suffix` asks for the variant of a page rather than the page, and where it goes depends on the
+publisher, so more than one place is tried: `page` is looked for at `page.md` then `page/index.md`,
+and `page.html` at `page.md` first, because a site naming the extension is saying the twin replaces
+it. The manifest still records the page by the URL the sitemap gave, so a corpus points at pages
+that exist.
+
+A group is a folder and a round in one: snapshots go under `data/<group>/<name>/`, output to
+`output/<group>/<name>.jsonl`, and the target joins `watch --group <group>`. **Changing the group of
+a profile does not move the files it already wrote.** Move `data/<name>/` into `data/<group>/`
+yourself, or the next run finds no manifest, calls itself a first snapshot and rewrites the corpus
+with no change detected. Reading tolerates the gap; writing does not.
+
+    Field                     Type       Default          Meaning
+    ----------------------    -------    -------------    ------------------------------------
+    crawler                   enum       adaptive         http, beautifulsoup, parsel,
+                                                          playwright, adaptive
+    extract                   enum       auto             auto, text, html, links, jsonld, none
+    selectors                 mapping    empty            Field name to selector expression
+    max_depth                 int        0                Link hops to follow, 0 means none
+    max_pages                 int        none             Stop after this many pages
+    link_selector             string     a                CSS selector for links to follow
+    strategy                  enum       same-hostname    all, same-domain, same-hostname,
+                                                          same-origin
+    include                   list       empty            Patterns a URL must match to be followed
+    exclude                   list       empty            Patterns a URL must not match
+    respect_robots            bool       true             Honour robots.txt, including Crawl-delay
+    user_agent                string     none             Overrides the configured User-Agent
+    stealth                   bool       false            Impersonate a browser instead
+    max_concurrency           int        none             Cap on parallel requests
+    max_requests_per_minute   float      none             Cap on request rate
+    max_request_retries       int        none             Retries per request
+    headless                  bool       true             Run the browser without a window
+    block_resources           list       image/media/font Resource types to abort
+    formats                   list       json             json, jsonl, csv, md
+    snapshot                  bool       false            Store content under data/, report changes
+    min_success_rate          float      none             Below this share of successes, no snapshot
+    min_coverage              float      none             Below this share of the previous corpus
+    trim_boilerplate          bool       true             Drop the shared header and footer
+
+**The two thresholds answer different questions.** `min_success_rate` asks how many of the pages
+this run attempted came back; `min_coverage` asks how much of the previous snapshot this run reached
+at all. A run capped by `--max-pages` scores a perfect success rate and would delete everything it
+never visited, which is what coverage is there to stop.
+
+Selectors are a small extension of CSS, so a whole extraction fits on a command line:
+
+    Expression             Result
+    -------------------    --------------------------------------------------
+    h1                     Text of the first match
+    .price@data-value      An attribute of the first match
+    all:.tag               A list with the text of every match
+    all:a@href             A list with an attribute of every match
+
+Attributes carrying URLs (`href`, `src`, `data-src`, `srcset`, `poster`, `action`) are resolved
+against the page they were found on. A selector matching nothing yields `null`, or an empty list
+under `all:`; the field is always present, which keeps CSV columns stable across pages.
+
+URL patterns, used by `include`, `exclude`, `--follow` and `--exclude`:
+
+    Pattern                       Meaning
+    --------------------------    ---------------------------------------------------
+    /docs/                        The URL contains this text
+    /docs/*.html                  Contains this glob, where * stops at a separator
+    /docs/**                      Contains this glob, where ** crosses separators
+    https://site.com/docs/**      Starts with this glob, matched against the whole URL
+    re:^https://site\.com/\d+     An explicit regular expression, anchored at the start
+
+The first three forms exist because Crawlee's own globs are anchored against the whole URL: a
+pattern like `**/docs/**` matches nothing, since `**` does not cross the empty segment inside
+`https://`, and it fails silently.
+
+
+## Snapshots and rounds
+
+`--snapshot` writes each page to `data/<name>/pages/<host>/<path>.md`, mirroring the URL structure,
+with hashes and per-URL status in a manifest beside it. **Detection does not depend on git**: the
+manifest holds the previous hash and the stored pages hold the previous text, so every run reports
+what was added, removed and modified against what is on disk, committed or not. `--commit` stages a
+snapshot only when its content fingerprint moved, writes to whichever repository owns the data
+directory, and is never implicit.
+
+A run that failed too often writes nothing, because half a snapshot reads as a mass deletion on the
+next comparison. A run that found nothing rewrites nothing.
+
+`watch` sweeps a whole corpus in one round, letting one failing target cost only itself, and answers
+through its exit code:
+
+    Code    Meaning
+    ----    ----------------------------------------------------------------
+    0       nothing changed, and nothing needs reading
+    10      at least one target changed
+    1       at least one target failed, so the sweep cannot vouch for itself
+    30      another round already holds the lock
+
+- **A first snapshot is not a change.** There is nothing yet for it to differ from, and a monitor
+  that cries on its own first run teaches you to ignore it.
+- **Neither is a reordering.** A page whose lines are the same in a different order is classified
+  `reordered`, listed everywhere it would have been listed, and left out of the verdict. It rewrites
+  the stored page, because the page did change; it does not raise the exit code, because nothing it
+  says did. Three of them woke a notification on one real sweep and told nobody anything.
+- **A round is started by a person and nothing starts one by itself.** `watch` takes a lock on the
+  group before crawling and exits 30 without crawling if another round holds it, so a second window
+  or a second button costs nothing but the message saying who got there first.
+
+`urls` reads the manifest back and reports what a target actually holds, grouped by path and ordered
+by weight, which is how a sitemap's bulk gets separated from the sections paying their way.
+`--depth` rolls the grouping up to the first N segments; `--list` prints one URL per line for
+piping.
+
+
+## The panel
+
+The corpus in front of you, a round on a button, and a target written or edited without leaving the
+window. `uv sync --dev` here once, or the panel has no interpreter to call and says so. Restart the
+shell after changing `main.py`: main modules are imported once, at startup.
+
+Two things to know before using it. A round is one process, so stopping it kills the crawl where it
+stands, which is safe — the lock is released by the kernel and Crawlee's working directory is
+scratch. And saving a target commits it: a profile lives in the repository that holds its corpus,
+and the panel refuses to write one it cannot commit rather than leaving an edit nobody can find
+again.
+
+
+## Politeness
+
+robots.txt is respected by default, including `Crawl-delay`, requests are rate limited per domain
+with backoff on HTTP 429, and the User-Agent identifies the tool rather than impersonating a
+browser. Each can be overridden, `--ignore-robots` loudly, but the defaults assume you are a guest
+on someone else's server.
+
+Nothing here costs money. The whole stack is open source and runs locally; Apify Cloud, paid proxies
+and LLM-assisted extraction are deliberately out of scope, and no model is consulted at any point
+between a URL going in and a snapshot coming out.
+
+
+## Development
+
+```bash
+uv run ruff check .
+uv run ruff format .
+uv run mypy
+uv run pytest
+uv run pytest -m "not browser"
+```
+
+The suite runs offline: tests that need a website get a fixture site served on localhost, and the
+only mark is `browser`, for the tests needing Chromium. 299 unit tests in about 16 seconds.
+
+This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it with its
+history. Its history carries a target inventory that was taken out of the README; the repository is
+private, so it is contained, and opening it is the moment to rewrite that history.

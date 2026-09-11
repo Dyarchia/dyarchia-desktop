@@ -1,10 +1,11 @@
 # Writing a dyarchia-desktop plugin
 
-Guide to building a new feature and registering it with the shell. A plugin is a folder
-holding a manifest and one or two JavaScript bundles; the shell discovers it at startup.
+A plugin is a folder holding a manifest and one or two bundles; the shell discovers it at
+startup. This file is the whole contract — the code side and the UI side. The visual
+mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
 
 
-## 1. Anatomy of a plugin
+## 1. Anatomy
 
     File                       Required    What it is
     -----------------------    --------    ------------------------------------------
@@ -13,8 +14,6 @@ holding a manifest and one or two JavaScript bundles; the shell discovers it at 
     dist/main.js               no          Node module that runs in the main process
     main.py                    no          Python module that runs as its own process
     node_modules/              no          native dependencies of the main module
-
-The manifest:
 
 ```json
 {
@@ -26,23 +25,19 @@ The manifest:
 }
 ```
 
-Manifest rules:
-
-- id is lowercase, pattern ^[a-z][a-z0-9-]*$. It is the namespace of the IPC channels.
-- renderer is required; main only if the plugin needs Node (fs, processes, native modules).
-- python is an alternative to main. A plugin declares main or python, never both. The
-  renderer cannot tell the difference: it uses invoke and on the same way for either.
-- If two plugins declare the same id, the first one discovered wins and the rest are ignored.
-- schemes (optional): list of custom protocol schemes the plugin wants to serve, for media
-  streaming for instance. The shell declares them as privileged at boot (standard, secure,
-  fetch, cors, stream) and the plugin's main module registers the handler with
-  protocol.handle inside its activate. Lowercase names; reserved ones (http, file,
-  dyarchia-plugin, and so on) are rejected.
+- `id` is lowercase, `^[a-z][a-z0-9-]*$`. It is the namespace of the IPC channels. If two
+  plugins declare the same id, the first discovered wins and the rest are skipped.
+- `renderer` is required. `main` only if the plugin needs Node; `python` is the
+  alternative, and a plugin declares one or the other, never both. The renderer cannot
+  tell which: `invoke` and `on` work the same either way.
+- `schemes` lists custom protocol schemes the plugin serves. The shell declares them
+  privileged at boot and the plugin registers the handler with `protocol.handle` in its
+  `activate`. Reserved names (`http`, `file`, `dyarchia-plugin`, …) are rejected.
 
 
 ## 2. The renderer bundle
 
-An ESM module exporting activate(ctx). The context offers:
+An ESM module exporting `activate(ctx)`:
 
     Method                        Use
     --------------------------    ------------------------------------------------
@@ -52,15 +47,9 @@ An ESM module exporting activate(ctx). The context offers:
     token(name)                   resolves a --dya-* custom property to its value
     onThemeChange(listener)       fires when the theme changes; returns unsubscribe
 
-The SDK also exports one function, outside the context:
-
-    injectStyles(pluginId, css)   adds the plugin's style tag once, id
-                                  dyarchia-<pluginId>-styles, ignored on later calls
-
-Call it at the top of the mount rather than at module scope, so a plugin that is never
-opened never touches the document.
-
-The mount receives the panel's DOM container and optionally returns a cleanup function:
+`injectStyles(pluginId, css)` is exported by the SDK outside the context and adds the
+plugin's style tag once. Call it at the top of the mount, not at module scope, so a plugin
+never opened never touches the document.
 
 ```typescript
 import type { PluginContext } from '@dyarchia/sdk'
@@ -75,67 +64,36 @@ export function activate(ctx: PluginContext): void {
 }
 ```
 
-Notes:
+- `icon` is the content of the top-bar toggle: inline SVG with `stroke="currentColor"`, or
+  a one-character string as a fallback.
+- `duplicable: true` allows several instances through a `+` in the group header. Each gets
+  its own mount and dispose; the instance id is `<id>#<n>` and the plugin never handles it.
+- `dispose` must release everything: observers, `on()` subscriptions, sessions opened
+  through `invoke`.
+- **`ctx.token` returns a copy, so it goes stale when the theme changes.** Pair it with
+  `ctx.onThemeChange`, resolve again in the listener, unsubscribe from the dispose. It
+  exists for what `var()` cannot reach — a canvas, a WebGL context, xterm's theme object.
+  A panel drawn with `dya-*` classes and `var()` needs neither, and must never branch on
+  which theme is mounted.
 
-- The renderer is plain DOM. This is a rule, not an observation; see below.
-- icon is the content of the toggle button in the top bar: inline SVG markup, recommended,
-  such as a Lucide icon with stroke="currentColor"; or, as a fallback, a short
-  one-character string.
-- duplicable: true allows several instances of the panel, through a + button in the group
-  header. Each instance gets its own mount/dispose; the internal instance id is <id>#<n>,
-  but the plugin never needs to handle it.
-- Markup reaches for the system's classes first. The shell links the shared design system
-  once, so every dya-* component class is already in the document: a panel writes
-  class="dya-button" rather than declaring a button. A plugin style tag is for what the
-  system has no class for, and what goes inside it is not free either — every --dya-*
-  token is resolvable and a plugin must never write a literal colour, font or radius, nor
-  restyle a dya-* selector. See docs/ui.md for the order, the class list and the rules.
-- ctx.token covers the case that var() cannot: a canvas, a WebGL context or xterm needs a
-  resolved string. token('accent') and token('--dya-accent') both return the value. What
-  it returns is a copy, so it goes stale when the theme changes: pair it with
-  ctx.onThemeChange and resolve again in the listener, unsubscribing from the dispose. A
-  panel drawn entirely with dya-* classes and var() needs neither, and must not branch on
-  which theme is mounted in any case.
-
-
-### The framework rule
-
-**A renderer is written in plain DOM. The shell's own framework is not available to it and
-must not be assumed.**
-
-The shell is React and dockview. That is an implementation detail of the shell, it is not
+**A renderer is written in plain DOM. The shell's framework is not available to it and must
+not be assumed.** The shell is React and dockview; that is an implementation detail, is not
 exported, and no version of it is part of the contract. What a plugin gets is
-`mount(container, handle)`: a DOM node, and a function to call when the panel goes away.
+`mount(container, handle)`. The contract is that small on purpose: it lets a main module be
+written in any language, lets the shell be replaced wholesale as long as a DOM node still
+arrives, and leaves nothing above the plugin deciding when its subtree exists.
 
-The contract is that small deliberately, and it buys three things:
+A plugin may bundle a framework anyway, and for a genuinely stateful panel that can be
+right. The cost is the plugin's: a second copy in the bundle, its own build complexity, and
+unmounting it inside the `dispose` it returns. Note first what the plain path gives — every
+`dya-*` class is already in the document, so the work a component library would do for a
+button, a field, a table or a menu is done. Four of the six plugins here render real UI with
+`document.createElement` and no framework, and the largest is a terminal.
 
-- **A main module can be written in any language.** The renderer cannot tell whether the
-  other side is Node or Python, because the boundary is `invoke`/`on` and not a framework's
-  data flow. Widen the contract to include a component model and that stops being true.
-- **The shell can change without breaking plugins.** React, dockview and the panel host can
-  be replaced wholesale as long as a DOM node still arrives. Export React and every plugin
-  is married to the shell's React version for as long as the product lives.
-- **Nothing owns a plugin's lifecycle but the plugin.** `mount` returns its own teardown.
-  There is no reconciler above it deciding when its subtree exists.
 
-A plugin may still bundle a framework — nothing prevents it, and for a genuinely stateful
-panel it can be the right call. It is not free, and the cost is the plugin's to carry:
+## 3. The main module
 
-- A second copy of that framework in the bundle, on top of the shell's. Two React instances
-  in one document is a supported but real cost, in bytes and in memory.
-- The plugin owns unmounting it inside the `dispose` it returns. The shell calls `dispose`
-  and nothing else.
-- The plugin owns its own build complexity. The shared build script targets plain DOM.
-
-Before reaching for one, note what the plain path already gives. The design system is
-linked once into the document, so every `dya-*` class is available with no import: the work
-a component library would do for a button, a field, a table or a menu is already done, and
-`docs/ui.md` lists what exists. Four of the five plugins in this workspace render real UI
-with `document.createElement` and no framework, and the largest of them is a terminal.
-
-## 3. The main module (optional)
-
-An ESM module for Node exporting activate(ctx) with:
+Node, ESM, exporting `activate(ctx)`:
 
     Method                         Use
     ---------------------------    --------------------------------------------------
@@ -143,75 +101,38 @@ An ESM module for Node exporting activate(ctx) with:
     broadcast(channel, ...args)    emits an event to every window
     notify(notice)                 tells the operator something happened
 
-Channels namespace themselves: a handle('spawn') in the terminal plugin becomes
-plugin:terminal:spawn at the IPC level. The renderer and the main module of the same plugin
-use the same short channel name.
+Channels namespace themselves: `handle('spawn')` in the terminal becomes
+`plugin:terminal:spawn` at the IPC level, and the renderer's `invoke('spawn')` resolves to
+the same string. **Never write the full channel name inside a plugin.**
 
-`notify({ title, body, action })` is for the handful of moments a plugin has to reach an
-operator who is not looking at it. The shell shows a toast in the corner of the window, and,
-**only when no window has focus**, an OS notification as well: a plugin never decides between
-the two, because whether the operator can see the window is the shell's business and not the
-plugin's. Clicking either one focuses the window and hands `action` back to the plugin's
-renderer on the `notice` channel, so the plugin can open whatever the notice was about:
+`notify({ title, body, action })` shows a toast in the window and, **only when no window has
+focus**, an OS notification as well. A plugin never chooses between the two: whether the
+operator can see the window is the shell's business. Clicking either focuses the window and
+hands `action` back on the `notice` channel. Spend it carefully — the shell deliberately
+gives no way to make one notice louder or stickier than another.
 
 ```typescript
 ctx.notify({ title: 'the card is waiting on you', body: 'it wants permission', action: { cardId } })
-```
-
-```typescript
 ctx.on('notice', (action) => open((action as { cardId: string }).cardId))
 ```
 
-Spend it carefully. A notice that arrives for something the operator did not need to know is
-worse than no notices at all, and the shell deliberately gives plugins no way to make one
-louder, stickier or more urgent than another.
-
-```typescript
-import type { PluginMainContext } from '@dyarchia/sdk'
-
-export function activate(ctx: PluginMainContext): void {
-    ctx.handle('greet', (...args) => `hello ${args[0]}`)
-}
-```
-
-
-## 4. The main module in Python (optional)
-
-An alternative to main, for logic better written in Python. The contract is the same as the
-Node one, with snake_case names:
-
-    Method                        Use
-    --------------------------    --------------------------------------------------
-    handle(channel, handler)      answers invoke calls from the renderer
-    broadcast(channel, *args)     emits an event to every window
+In Python the contract is the same with snake_case names and no `notify`:
 
 ```python
 def activate(ctx):
     ctx.handle("greet", lambda name: f"hello {name}")
 ```
 
-How it works underneath:
-
-- The shell spawns one Python process per plugin and talks to it over stdin/stdout in JSON,
-  one message per line. The process dies when the app closes.
-- Invokes run in a thread pool and are correlated by id, so a slow handler blocks nothing
+- The shell spawns one interpreter per Python plugin and talks JSON lines over stdio.
+  Invokes run in a thread pool and are correlated by id, so a slow handler blocks nothing
   and replies may arrive out of order.
-- stdout is reserved for the protocol: inside the plugin, print goes to stderr and shows up
-  in the shell console prefixed with [python:<id>].
-- The interpreter is looked up as py -3 on Windows and python3 elsewhere. The
-  DYARCHIA_PYTHON environment variable forces a specific path.
-
-The runtime lives in packages/pysdk (dyarchia_sdk) and is stdlib only: nothing to install
-with pip. The layer is deliberately thin — context.py is the contract, host.py is the stdio
-transport, and only the transport changes the day an API tier owns this logic. No plugin
-activate and no renderer code is affected.
+- **stdout is the protocol.** `dyarchia_sdk` redirects plugin `print` to stderr, which
+  surfaces in the shell console prefixed `[python:<id>]`.
+- The interpreter is `py -3` on Windows, `python3` elsewhere; `DYARCHIA_PYTHON` forces a
+  path. `packages/pysdk` is stdlib-only, so there is nothing to pip install.
 
 
-## 5. Build and installation
-
-Bundles are built with esbuild, ESM format. The renderer is served over the
-dyarchia-plugin:// protocol and the main module is imported as a Node module from the
-plugin folder.
+## 4. Build and installation
 
 ```json
 "scripts": {
@@ -221,63 +142,104 @@ plugin folder.
 }
 ```
 
-[scripts/build-plugin.mjs](scripts/build-plugin.mjs) holds the esbuild invocation for every
-plugin, so format, externals and output paths are decided once. It takes the entry to
-build and two optional flags:
+[scripts/build-plugin.mjs](../scripts/build-plugin.mjs) holds the esbuild invocation for
+every plugin, so format, externals and output paths are decided once. Two flags:
+`--splitting` emits entry plus chunks into `dist/` for dynamic `import()`, `--css-text`
+loads `.css` imports as text. **A plugin needing anything else writes its own esbuild line
+rather than growing a third flag** — the terminal does, for a CJS pty host with a native
+external, and it is the only case.
 
-    Flag           Effect
-    -----------    ----------------------------------------------------------
-    --splitting    emits the entry plus chunks into dist/, for dynamic import()
-    --css-text     loads .css imports as text, for a library stylesheet
-
-A plugin with a need outside those two writes its own esbuild line rather than growing a
-third flag. The terminal does exactly that for its pty host, which is CJS and has a native
-external, and it is the only such case.
-
-Build rules:
-
-- Native dependencies such as node-pty are marked external and copied into node_modules/
-  inside the installed plugin folder; everything else is bundled.
-- Library CSS is imported as text (--css-text) and handed to injectStyles.
-- The Python module is not bundled: main.py is copied as-is next to the manifest.
-- A heavy dependency that only some documents need goes behind a dynamic import(), and
-  the renderer is then built with --splitting --outdir=dist instead of --outfile.
-  esbuild emits the entry plus its chunks, the dyarchia-plugin:// protocol serves them
-  relative to the entry, and install-plugins.mjs already copies dist/ recursively.
-  docviewer does this for mermaid: the entry is 8 kB and the diagram engine is only
-  fetched when a document actually carries a diagram.
-
-Where a plugin lives, by mode:
+- Native dependencies stay `--external` and are copied into the installed plugin's
+  `node_modules/`; they must be listed in `NATIVE_DEPS` in install-plugins.mjs, or the
+  packaged app cannot load that main module.
+- Library CSS is imported as text and handed to `injectStyles`.
+- `main.py` is copied as-is, never bundled.
+- A heavy dependency only some documents need goes behind a dynamic `import()` with
+  `--splitting`. docviewer does this for mermaid: the entry is 8 kB and the engine is
+  fetched only when a document carries a diagram.
 
     Mode         Location                                   How it gets there
     ---------    ---------------------------------------    ---------------------------------
-    dev          packages/<folder>/                         the shell scans the workspace
+    dev          plugins/<folder>/                          the shell scans the workspace
     example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
 
-examples/ holds the reference plugins: sample, the smallest activate that registers a
-panel, and pyinfo, the only exercise of the Python main module and of broadcast. They are
-not discovered by default, because a reference does not need to run to be read, and a
-shell that ships an empty demo panel is worse than one that does not. To run them:
-
-```bash
-DYARCHIA_EXAMPLES=1 pnpm dev
-```
-
-install-plugins.mjs never copies them, so they cannot reach the packaged app. If one was
-installed before it moved, the installed copy is still discovered and now wins, since
-nothing in packages/ shadows it any more; delete it from %APPDATA%/dyarchia/plugins/.
-
-In dev the workspace takes priority over installed plugins, so an installed copy never
-shadows the version under development.
+In dev the workspace wins, so an installed copy never shadows the version under
+development — and an installed copy of a plugin **deleted** from the workspace is
+discovered again and wins by default. Delete it from `%APPDATA%/dyarchia/plugins/` too.
 
 A plugin with no `dist/` is skipped by the installer and named as it is skipped. That is
-not a failure: a plugin whose renderer needs no bundling and whose main module is a Python
-package sitting in the workspace has nothing the packaged app could run, and crawlee is
-the one in that position today.
+not a failure: crawlee's renderer needs no bundling and its main module is a Python package
+in the workspace, so there is nothing the packaged app could run.
 
 
-## 6. Lifecycle
+## 5. The UI contract
+
+The shell links the design system once, before React mounts, and plugins render into that
+same document. So:
+
+- **Components and tokens are ambient.** Every `dya-*` class and every `--dya-*` property
+  is already resolvable. A panel writes `class="dya-button"`; it imports no CSS and ships
+  no fonts.
+- **The reset has applied**, including `[hidden] { display: none !important }`. Toggle
+  `el.hidden` and never write a display rule for it.
+- **The theme is an attribute and the shell owns it.** A plugin never reads it and never
+  branches on it: it writes `var(--dya-surface-1)` and gets whichever theme is mounted.
+
+The order to work in:
+
+1. **A `dya-*` class exists.** Use it, with a plugin class alongside for layout only —
+   `class="dya-field myplugin-input"` where `.myplugin-input` sets `flex: 1` and nothing
+   else.
+2. **No class exists.** Write a plugin-prefixed rule built entirely from tokens, say so in
+   the plugin's README, and propose it upstream.
+3. **A class exists but is nearly right.** Do not patch it locally. A product that
+   restyles `.dya-button` has forked the system. Propose the modifier upstream.
+
+```text
+Structure    dya-panel  dya-bar (--flush --inset)  dya-dock  dya-card
+             dya-card__header  dya-card__body  dya-rule  dya-brand
+Pressable    dya-button (--quiet --sm --danger)  dya-key  dya-chip  dya-item
+             dya-entry (--strong --active)
+Input        dya-field (--sm --auto)  dya-toggle  dya-checkbox  dya-radio  dya-slider
+Content      dya-tag  dya-badge  dya-table  dya-row  dya-metric  dya-display
+             dya-heading  dya-text (--success --warning --danger)  dya-label
+             dya-eyebrow  dya-value  dya-mono  dya-key-label
+Documents    dya-prose  dya-code  dya-log  dya-math
+Layers       dya-menu  dya-menu__item  dya-tooltip
+Navigation   dya-tabs  dya-tab  dya-pagination
+Absence      dya-empty  dya-loading  dya-skeleton
+```
+
+Four carry a trap worth knowing before the first render: **`dya-field` is full width** and
+`--auto` opts out; **`dya-bar` is window chrome**, 46px with a gradient and a hairline, and
+`--inset` keeps only the rhythm; **`dya-log` is for what a process printed**, wraps instead
+of scrolling sideways, and sets no height; **`dya-text--*` is a sentence and `dya-badge--*`
+is a chip**.
+
+The mandate is in kanon's README and holds here unchanged. Three rules are specific to
+being a panel rather than the system:
+
+- **Panel interiors are transparent.** The dock group already paints `--dya-surface-1`.
+  Painting anything else hides the group's border and breaks the gap rhythm. The exception
+  is a renderer that computes contrast and has to know its ground — the terminal paints
+  `token('surface-1')` for exactly that.
+- **`--dya-field` is a surface, not an ink.** Never set `color: var(--dya-field)`.
+- **A label never sits on `--dya-selected` in Gi or `--dya-raised-hover` in Oneiro**, where
+  `--dya-text-4` measures 4.43 and 4.27. Use `--dya-text-3` there.
+
+The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
+declares it under its own prefix and says so in its README, or proposes it upstream — the
+`[hidden]` rule, `dya-log`, the status modifiers, `dya-bar--inset` and `dya-field--auto`
+all arrived that way. The shell declares one exception of its own, written down: caption
+buttons are flat, because relief on a full-height caption button reads as a mistake.
+
+**Programs choose their own colours.** The terminal ships a 16-colour ANSI palette, but a
+program emitting truecolour escapes bypasses it; xterm's `minimumContrastRatio` is set to
+4.5 as the backstop. A plugin rendering text it does not control needs an equivalent guard.
+
+
+## 6. The gate
 
 ```mermaid
 flowchart TD
@@ -290,24 +252,17 @@ flowchart TD
     G -- "panel closed" --> H[dispose]
 ```
 
-- The layout persists itself; if a saved panel no longer has a plugin at startup, the shell
-  prunes it from the layout without failing.
-- dispose must release everything: observers, on() subscriptions, sessions opened via invoke.
+Before a panel is done:
 
-
-## 7. Checklist for a new plugin
-
-1. A folder under packages/ with a valid dyarchia-plugin.json.
-2. renderer.ts with an activate that registers at least one panel, in plain DOM. If it
-   bundles a framework instead, the dispose it returns unmounts that framework, and the
-   reason it was needed is written in the plugin's README.
-3. Build scripts that call scripts/build-plugin.mjs, producing dist/.
-4. pnpm dev, then check that the toggle appears and the panel mounts and unmounts with no
-   console errors. Rebuild the plugin after every edit: a renderer change needs a window
-   reload, a main module change needs the app restarted, because main modules are
-   imported once at startup and their ipcMain handlers are registered there.
-5. Walk every state of the panel: idle, hover, pressed, selected, empty, error. Nothing
-   declares what a dya-* class already declares. The rest of the gate is in docs/ui.md.
-6. If there is a main module, whether Node or Python: test invoke and broadcast from the
-   panel.
-7. node scripts/install-plugins.mjs, then test in the packaged app too.
+1. `pnpm dev`, the toggle appears, the panel mounts and unmounts with no console errors.
+   Rebuild after every edit: a renderer change needs a window reload, **a main module
+   change needs the app restarted**, because main modules are imported once at startup.
+   A reload against a stale main module fails as a missing IPC handler.
+2. Grep the plugin for `#`, `rgb`, `rgba` — no literal colour anywhere.
+3. Grep for `border-radius`, `box-shadow`, `font-family` — every hit is either layout or a
+   component the system should own.
+4. No `box-shadow` inside any `transition`. No local rule targets a bare `.dya-*` selector.
+5. Chrome text is mono uppercase; prose is sans; file names and paths are mono, normal case.
+6. Walk every state: idle, hover, pressed, selected, empty, error. In both themes.
+7. No `backdrop-filter`, no infinite animation.
+8. If there is a main module, exercise `invoke` and `broadcast` from the panel.

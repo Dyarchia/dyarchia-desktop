@@ -42,7 +42,7 @@ The pieces:
     Python SDK                  packages/pysdk               Python plugin contract and stdio host
     Discovery + protocol        apps/shell/src/main          manifest scanning, bundle serving
     Plugin host                 apps/shell/src/renderer      bundle loading and panel registration
-    Plugins                     packages/plugin-*            the actual functionality
+    Plugins                     plugins/*                    the actual functionality
 
 
 ## 2. Repository layout
@@ -50,16 +50,17 @@ The pieces:
     dyarchia-desktop/
         apps/
             shell/               Electron app (main, preload, renderer)
-        packages/
+        packages/            required: deleting one of these breaks the rest
             kanon/               @dyarchia/kanon - the design system, its spec, and token lookup
             sdk/                 @dyarchia/sdk - contract types and injectStyles
             pysdk/               dyarchia_sdk - python plugin runtime
-            plugin-terminal/     embedded terminal (xterm.js + node-pty)
-            plugin-docviewer/    native file picker + markdown, mermaid, source toggle
-            plugin-player/       audio/video player (dyarchia-media://)
-            plugin-eforoi/       a panel of models with one of them comparing the answers
-            plugin-kanban/       a task board that dispatches work to Claude Code
-            plugin-crawlee/      a crawling toolkit and the panel that drives it (python)
+        plugins/                 optional: delete a folder here and nothing else notices
+            terminal/            embedded terminal (xterm.js + node-pty)
+            docviewer/           native file picker + markdown, mermaid, source toggle
+            player/              audio/video player (dyarchia-media://)
+            eforoi/              a panel of models with one of them comparing the answers
+            kanban/              a task board that dispatches work to Claude Code
+            crawlee/             a crawling toolkit and the panel that drives it (python)
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module

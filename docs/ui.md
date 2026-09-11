@@ -264,7 +264,7 @@ again inside the listener. The terminal is the worked example — it rebuilds xt
 
 The terminal plugin is the worked example: it builds xterm's `ITheme` from
 `token('surface-1')`, `token('text')` and `token('accent-soft')` over a fixed 16-colour
-ANSI palette — [renderer.ts](packages/plugin-terminal/src/renderer.ts).
+ANSI palette — [renderer.ts](plugins/terminal/src/renderer.ts).
 
 Colour a plugin paints itself is colour the system cannot check, and a theme cannot
 reach it either — a fixed palette has to clear every ground the product can mount. The

@@ -9,6 +9,11 @@ Nothing in this repository writes to dyarchia-desktop. The panel already carries
 names in its markup, so the day kanon ships one of these the plugin deletes a rule and moves no
 markup. Section 7 lists exactly what it deletes.
 
+**This stops being a proposal when dyarchia-desktop absorbs this repository**, which was decided on
+2026-09-11 and is described in [architecture.md section 10](../architecture.md#10-when-dyarchia-desktop-absorbs-this).
+At that point the five are simply five edits in kanon, made by whoever does the move, and this
+document is the specification for them rather than a request across a boundary.
+
 ## Index
 
 - [1. What was checked, and how](#1-what-was-checked-and-how)

@@ -13,7 +13,8 @@ How dyarchia-crawlee is put together, and the reasoning behind the parts that ar
 - [7. Failure handling](#7-failure-handling)
 - [8. Sweeping a corpus](#8-sweeping-a-corpus)
 - [9. The panel](#9-the-panel)
-- [10. Testing strategy](#10-testing-strategy)
+- [10. When dyarchia-desktop absorbs this](#10-when-dyarchia-desktop-absorbs-this)
+- [11. Testing strategy](#11-testing-strategy)
 
 ## 1. Two layers
 
@@ -408,7 +409,42 @@ What the panel cannot do is raise a notification. The Python plugin contract car
 the panel shows rather than something it announces, and that is the right way round for work a
 person started thirty seconds ago and is watching.
 
-## 10. Testing strategy
+## 10. When dyarchia-desktop absorbs this
+
+Decided 2026-09-11, the same day the product was renamed: this repository is temporary and
+dyarchia-desktop will take it in. Written down here rather than left in somebody's head, because
+the checkout, its remote and every conversation about it are the things that disappear, and the
+documentation is what travels with the code.
+
+What stops being needed, and why it existed at all:
+
+    Goes                              Because
+    -------------------------------   -----------------------------------------------------
+    scripts/install_plugin.py         the shell scans packages/ in its own workspace, so a
+                                      plugin there is discovered without being installed
+    the `home` file it stamps         it exists only so an installed copy under %APPDATA%
+                                      can find a toolkit outside its own tree
+    docs/design/                      the five additions stop being a cross-repo proposal
+    dyarchia-ui-proposal.md           and become five edits in kanon
+    the `until upstream` rules        they hold up classes the same workspace can now ship
+    in the panel's stylesheet
+
+`dyarchia-plugin/` becomes `packages/plugin-crawlee/`, keeping the id `crawlee` it already
+declares. The panel's markup needs no change: it already names the proposed classes.
+
+What survives untouched is the part worth being deliberate about. The panel still shells out to the
+CLI rather than importing the package, because the shell spawns one Python process per plugin with
+whatever `py -3` resolves to, and that interpreter has none of this project's dependencies whether
+the code sits in a sibling checkout or in the same workspace. `main.py` finds its toolkit by walking
+up for `pyproject.toml`, which keeps working when the package sits inside the plugin's own folder.
+And the reason for the arrangement does not change with the address: the CLI is the surface the
+tests cover, so a button that is a prompt cannot disagree with a prompt.
+
+One thing the move does not fix. The history of this repository carries the target inventory that
+was taken out of the README, and it will carry it into whatever absorbs it. Both repositories are
+private, so it is contained; opening either one is the moment to rewrite it.
+
+## 11. Testing strategy
 
 Unit tests run against local fixtures with no network at all, and cover the parts where correctness
 is subtle: pattern semantics, selector parsing, extraction modes, path derivation, manifest

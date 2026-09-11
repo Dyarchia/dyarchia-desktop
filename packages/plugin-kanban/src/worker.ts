@@ -11,6 +11,9 @@ const LAUNCH_TIMEOUT_MS = 60_000
 const INLINE_LIMIT = 8_000
 const SETTLE_TRIES = 10
 const SETTLE_MS = 400
+const DIFF_LIMIT = 120_000
+const DIFF_INLINE = 20_000
+const DENIED = ['Bash', 'PowerShell']
 
 export interface TerminalBlock {
     outcome: 'completed' | 'blocked'
@@ -62,6 +65,29 @@ export async function head(workdir: string): Promise<string | null> {
             (error, stdout) => resolve(error ? null : stdout.trim())
         )
     })
+}
+
+export interface Patch {
+    stat: string
+    text: string
+    truncated: boolean
+}
+
+export async function patch(
+    workdir: string,
+    headBefore: string | null,
+    branch: string | null
+): Promise<Patch | null> {
+    if (!headBefore || !branch) return null
+    const range = `${headBefore}..${branch}`
+    const stat = await git(workdir, ['diff', '--stat', range])
+    const body = await git(workdir, ['diff', range])
+    if (stat === null || body === null) return null
+    return {
+        stat,
+        text: body.slice(0, DIFF_LIMIT),
+        truncated: body.length > DIFF_LIMIT
+    }
 }
 
 export function brief(
@@ -159,7 +185,9 @@ export function reviewBrief(
     card: Card,
     reviewed: Run,
     workspace: string,
-    attachments: { name: string; path: string }[] = []
+    attachments: { name: string; path: string }[] = [],
+    change: Patch | null = null,
+    patchPath: string | null = null
 ): string {
     const lines: string[] = []
 
@@ -169,16 +197,20 @@ export function reviewBrief(
         'change it: you are in the checkout the operator works in, and nothing you write here is',
         'wanted. Read, decide, and say what you decided.',
         '',
-        'You are in PLAN MODE, and that is deliberate: it is what stops you editing the operator',
-        'checkout by accident, and it lets you read the branch without stopping for permission on',
-        'every command. Do not try to leave it, and do not end by proposing a plan. The judgement',
-        'below IS your output.',
+        'You are in PLAN MODE and you have NO SHELL: Bash and PowerShell are denied to you, on',
+        'purpose. You are not being trusted less than the implementer was. It is that a review',
+        'which reaches for a shell stops dead waiting for a permission nobody is there to give,',
+        'and a stopped review is worth less than no review. Do not try to leave plan mode, and do',
+        'not end by proposing a plan. The judgement below IS your output.',
         '',
-        'Judge from the diff and from what the implementer says it did. Reading is free here;',
-        'RUNNING things is not, and an attempt to run the tests will stop this session dead',
-        'waiting for a person who is not there. If you cannot be sure without executing',
-        'something, that is a legitimate answer: say `changes` and name exactly what you would',
-        'have run.',
+        'You do not need a shell, because the change is already below. The board ran the diff for',
+        'you rather than asking you to. Read it, and read whatever else you need with Read, Glob',
+        'and Grep, which you do have and which reach the whole checkout.',
+        '',
+        'Judge from that diff and from what the implementer says it did. If the two disagree,',
+        'the diff is what happened. If you cannot be sure without EXECUTING something, that is a',
+        'legitimate answer and not a failure: say `changes` and name exactly what you would have',
+        'run and what you expected it to show.',
         ''
     )
 
@@ -204,15 +236,46 @@ export function reviewBrief(
     lines.push(`Your working directory is \`${workspace}\`.`, '')
     if (reviewed.branch) {
         lines.push(`The work is on branch \`${reviewed.branch}\`, and it is not merged.`, '')
-        if (reviewed.headBefore) {
-            lines.push('That branch started here, so this is the whole change:', '')
-            lines.push('```', `git diff ${reviewed.headBefore}..${reviewed.branch}`, '```', '')
-        }
         if (reviewed.worktree) {
             lines.push(`It was written in \`${reviewed.worktree}\`, which may already be gone.`, '')
         }
     } else {
         lines.push('There is no branch: judge the state of the working directory itself.', '')
+    }
+
+    lines.push('## The change', '')
+    if (!change) {
+        lines.push(
+            'The board could not produce a diff for this run. That is itself worth saying: if you',
+            'cannot find the change by reading, `blocked` is the honest answer.',
+            ''
+        )
+    } else if (!change.text.trim()) {
+        lines.push(
+            'The diff is EMPTY. The branch exists and nothing was committed to it, whatever the',
+            'implementer says it did. Judge that, do not go looking for the work elsewhere.',
+            ''
+        )
+    } else {
+        lines.push('```text', change.stat, '```', '')
+        if (change.truncated) {
+            lines.push(
+                `This change is larger than the ${DIFF_LIMIT} characters carried here, so what`,
+                `follows is the beginning of it. The whole patch is at \`${patchPath ?? 'the run folder'}\`.`,
+                'Judging a change you have only half read is not judging it: read the rest before',
+                'you decide, or say `blocked` and say why.',
+                ''
+            )
+        }
+        if (change.text.length <= DIFF_INLINE) {
+            lines.push('```diff', change.text, '```', '')
+        } else {
+            lines.push(
+                `The patch is ${change.text.length} characters, too much to sit in this brief.`,
+                `Read it at \`${patchPath ?? 'the run folder'}\`. The summary above is what it touches.`,
+                ''
+            )
+        }
     }
 
     lines.push('## How to finish', '')
@@ -269,8 +332,18 @@ export async function start(
         !reviewing && (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
     const predicted = isolate ? join(workspace, '.claude', 'worktrees', isolate) : workspace
 
+    let change: Patch | null = null
+    let patchPath: string | null = null
+    if (reviewing) {
+        change = await patch(workspace, reviewing.headBefore, reviewing.branch)
+        if (change?.text.trim()) {
+            patchPath = join(folder, 'diff.patch')
+            await writeFile(patchPath, change.text, 'utf-8')
+        }
+    }
+
     const text = reviewing
-        ? reviewBrief(card, reviewing, workspace, attachments)
+        ? reviewBrief(card, reviewing, workspace, attachments, change, patchPath)
         : brief(card, parents, predicted, isolate !== null, attachments)
     await writeFile(briefPath, text, 'utf-8')
     const prompt =
@@ -291,6 +364,7 @@ export async function start(
         model: card.model,
         effort: card.effort,
         worktree: isolate,
+        deny: reviewing ? DENIED : [],
         prompt
     })
 

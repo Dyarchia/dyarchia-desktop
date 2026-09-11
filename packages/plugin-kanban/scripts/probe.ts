@@ -365,15 +365,44 @@ async function reviews(): Promise<void> {
     }
 
     const card = await board.createCard('probe', { title: 'reviewed', body: 'make it fast' })
-    const text = reviewBrief(card, judged, 'C:\\project')
+    const small = {
+        stat: ' lib.js | 2 +-',
+        text: '-    return text' + String.fromCharCode(10) + '+    return slug',
+        truncated: false
+    }
+    const text = reviewBrief(card, judged, 'C:' + String.fromCharCode(92) + 'project', [], small, 'diff.patch')
     check('the reviewer is told what was asked', text.includes('make it fast'), true)
     check('and what the implementer said', text.includes('rewrote the parser'), true)
     check('it is pointed at the branch', text.includes('kanban-r1'), true)
-    check('with the range that is the change', text.includes('git diff abc1234..kanban-r1'), true)
+    check('it is NOT handed a command to run', text.includes('git diff abc1234..kanban-r1'), false)
+    check('it is handed the change itself', text.includes('+    return slug'), true)
+    check('with the summary of what it touches', text.includes('lib.js | 2 +-'), true)
     check('it works in the project, not a worktree', text.includes('Your working directory is `C:\\project`'), true)
     check('and it is asked for a verdict', text.includes('"verdict": "approved" | "changes"'), true)
 
     check('and told it is in plan mode, so it does not try to leave it', text.includes('PLAN MODE'), true)
+    check('and told it has no shell, and why', text.includes('NO SHELL'), true)
+
+    const empty = reviewBrief(card, judged, 'C:' + String.fromCharCode(92) + 'project', [], { stat: '', text: '', truncated: false })
+    check('an empty diff is the finding, not a hunt', empty.includes('The diff is EMPTY'), true)
+
+    const missing = reviewBrief(card, judged, 'C:' + String.fromCharCode(92) + 'project', [], null)
+    check('no diff at all is an honest blocked', missing.includes('the honest answer'), true)
+
+    const huge = reviewBrief(
+        card, judged, 'C:' + String.fromCharCode(92) + 'project', [],
+        { stat: ' big.js | 9000 +', text: 'x'.repeat(40_000), truncated: false },
+        'diff.patch'
+    )
+    check('a patch too big to inline is pointed at', huge.includes('diff.patch'), true)
+    check('and is not pasted in anyway', huge.includes('x'.repeat(1_000)), false)
+
+    const cut = reviewBrief(
+        card, judged, 'C:' + String.fromCharCode(92) + 'project', [],
+        { stat: ' big.js | 9000 +', text: 'y'.repeat(100), truncated: true },
+        'diff.patch'
+    )
+    check('a truncated patch says so', cut.includes('only half read'), true)
 
     const nothing = reviewBrief(card, { ...judged, branch: null, headBefore: null }, 'C:\\project')
     check('a run with no branch is judged where it stands', nothing.includes('There is no branch'), true)

@@ -205,6 +205,7 @@ export function launchArgv(options: {
     model: string | null
     effort: string | null
     worktree: string | null
+    deny?: string[]
     prompt: string
 }): string[] {
     const args = ['--bg', '--permission-mode', options.permissionMode]
@@ -212,6 +213,7 @@ export function launchArgv(options: {
     if (options.worktree) args.push('--worktree', options.worktree)
     if (options.model) args.push('--model', options.model)
     if (options.effort) args.push('--effort', options.effort)
+    if (options.deny?.length) args.push('--disallowedTools', ...options.deny)
     args.push('-n', options.name, options.prompt)
     return args
 }

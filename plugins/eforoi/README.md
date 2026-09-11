@@ -164,7 +164,7 @@ pnpm --filter @dyarchia/plugin-eforoi build
 py -m http.server 8731 --bind 127.0.0.1
 ```
 
-Then open `http://127.0.0.1:8731/packages/plugin-eforoi/scripts/panel-harness.html` from
+Then open `http://127.0.0.1:8731/plugins/eforoi/scripts/panel-harness.html` from
 the repository root. Do not try to stub `window.dyarchia` inside the real shell instead:
 that object comes from `contextBridge` and its properties are not writable, so the
 assignment fails silently, the real IPC call goes through, and a modal dialog opens on the

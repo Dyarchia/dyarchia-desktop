@@ -2643,10 +2643,10 @@ PHASE  DELIVERS                                                  STATE
   7    Swarm, if 2.8 still argues for it                          one command, one graph
 ```
 
-The parity work is not in this table, because a row of
-[the reference system-parity.md](the reference system-parity.md) section 2 is a decision about what to copy rather than a
-phase of the build. All of it that survived that sorting landed on 2026-09-09: the review run
-of 10.6, several cards at once of 12.4, the settable caps of 13 and the watch view of 13.1.
+The board features are not in this table, because deciding which of them belongs here at all
+was a judgement rather than a phase of the build. All of them that survived that judgement
+landed on 2026-09-09: the review run of 10.6, several cards at once of 12.4, the settable caps
+of 13 and the watch view of 13.1.
 
 What is not built, not proven or plain wrong at any moment lives in
 [open-problems.md](open-problems.md) rather than here, because a list of gaps kept in two

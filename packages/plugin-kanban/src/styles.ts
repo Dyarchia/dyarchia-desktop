@@ -190,6 +190,7 @@ export const STYLES = `
 .kanban-drawer {
     flex: 0 0 330px;
     transition: flex-basis var(--dya-dur-fast) var(--dya-ease);
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;

@@ -7,13 +7,13 @@ import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
-from euripontida_crawlee.config import Settings
-from euripontida_crawlee.models import PageStatus
-from euripontida_crawlee.state import build, render_json
-from euripontida_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
-from euripontida_crawlee.versioning.diffing import save_report as save_changes
-from euripontida_crawlee.versioning.manifest import PageRecord, RunManifest, save_manifest
-from euripontida_crawlee.watch import WATCH_RESULT
+from dyarchia_crawlee.config import Settings
+from dyarchia_crawlee.models import PageStatus
+from dyarchia_crawlee.state import build, render_json
+from dyarchia_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
+from dyarchia_crawlee.versioning.diffing import save_report as save_changes
+from dyarchia_crawlee.versioning.manifest import PageRecord, RunManifest, save_manifest
+from dyarchia_crawlee.watch import WATCH_RESULT
 
 
 def repository(root: Path, name: str, group: str, pages: dict[str, str]) -> Path:

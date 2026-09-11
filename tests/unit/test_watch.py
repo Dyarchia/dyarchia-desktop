@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from euripontida_crawlee.config import Settings
-from euripontida_crawlee.watch import (
+from dyarchia_crawlee.config import Settings
+from dyarchia_crawlee.watch import (
     EXIT_CHANGES,
     EXIT_FAILED,
     EXIT_NO_CHANGES,
@@ -63,8 +63,8 @@ def test_a_first_snapshot_is_not_a_change() -> None:
 def test_the_document_names_what_moved_and_how_to_look() -> None:
     document = render_markdown(WatchResult(entries=[quiet('a'), moved('b')]))
     assert '# Watch report' in document
-    assert 'euripontida-crawlee diff b --unified' in document
-    assert 'euripontida-crawlee diff a' not in document
+    assert 'dyarchia-crawlee diff b --unified' in document
+    assert 'dyarchia-crawlee diff a' not in document
 
 
 def in_group(entry: WatchEntry, group: str | None) -> WatchEntry:

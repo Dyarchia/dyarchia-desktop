@@ -5,9 +5,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
-from euripontida_crawlee.crawlers.adaptive import make_result_checker
-from euripontida_crawlee.crawlers.throttling import target_domains
-from euripontida_crawlee.models import ExtractionMode, RunSpec
+from dyarchia_crawlee.crawlers.adaptive import make_result_checker
+from dyarchia_crawlee.crawlers.throttling import target_domains
+from dyarchia_crawlee.models import ExtractionMode, RunSpec
 
 
 def result_with(*payloads: Any) -> Any:

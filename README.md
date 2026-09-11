@@ -1,4 +1,4 @@
-# euripontida-crawlee
+# dyarchia-crawlee
 
 On-demand web scraping toolkit built on Crawlee for Python. Point it at a URL and it scrapes. Freeze
 a run that worked into a reusable profile. Snapshot any target to track how its content changes.
@@ -18,19 +18,19 @@ uv run playwright install chromium
 Look before you leap. `inspect` reports what a crawl against a target would have to deal with:
 
 ```bash
-uv run euripontida-crawlee inspect https://code.claude.com/docs/en/overview
+uv run dyarchia-crawlee inspect https://code.claude.com/docs/en/overview
 ```
 
 Scrape a page with no configuration at all:
 
 ```bash
-uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview
+uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview
 ```
 
 Pull specific fields, follow links, write CSV:
 
 ```bash
-uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
+uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview \
     --crawler parsel \
     --select title=h1 \
     --depth 2 \
@@ -42,16 +42,16 @@ uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
 Freeze that run and replay it later:
 
 ```bash
-uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
+uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview \
     --select title=h1 --save-profile my-site
-uv run euripontida-crawlee crawl --profile my-site
+uv run dyarchia-crawlee crawl --profile my-site
 ```
 
 Track a target over time:
 
 ```bash
-uv run euripontida-crawlee crawl --profile claude-docs --snapshot --commit
-uv run euripontida-crawlee diff claude-docs --unified
+uv run dyarchia-crawlee crawl --profile claude-docs --snapshot --commit
+uv run dyarchia-crawlee diff claude-docs --unified
 ```
 
 ## Commands
@@ -66,9 +66,10 @@ uv run euripontida-crawlee diff claude-docs --unified
     urls         Report which URLs a snapshotted target is holding, broken down by section
     state        Report every corpus across every repository, in one answer
     profiles     List the profiles this project knows about
+    profile      Print one profile as it is written, or save one from standard input
     version      Print the installed version
 
-Run `uv run euripontida-crawlee crawl --help` for the full option list.
+Run `uv run dyarchia-crawlee crawl --help` for the full option list.
 
 ## Choosing a crawler
 
@@ -145,7 +146,7 @@ target is actually holding, grouped by the path that holds each page and ordered
 sections that are paying their way are separated from the ones that are only bulk:
 
 ```bash
-uv run euripontida-crawlee urls openai-docs --depth 1
+uv run dyarchia-crawlee urls openai-docs --depth 1
 ```
 
     section                                   pages       size   share
@@ -173,9 +174,9 @@ pages hold the previous text, so every run reports what was added, removed and m
 is on disk, committed or not.
 
 Nothing this toolkit produces lives in this repository. The corpora, the profiles that define them
-and every run's output sit in their own checkout alongside it, which `EURIPONTIDA_CRAWLEE_DATA_DIR`,
-`EURIPONTIDA_CRAWLEE_PROFILES_DIR` and `EURIPONTIDA_CRAWLEE_OUTPUT_DIR` point at; Crawlee's working directory is
-scratch and goes to a temporary path through `EURIPONTIDA_CRAWLEE_STORAGE_DIR`. All four accept absolute
+and every run's output sit in their own checkout alongside it, which `DYARCHIA_CRAWLEE_DATA_DIR`,
+`DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR` point at; Crawlee's working directory is
+scratch and goes to a temporary path through `DYARCHIA_CRAWLEE_STORAGE_DIR`. All four accept absolute
 paths. The matching entries in `.gitignore` are guards rather than homes: they catch a run started
 without a `.env`, which would otherwise drop a corpus back into the tool's tree. See `.env.example`.
 
@@ -190,10 +191,10 @@ files untouched.
 ## Corpora
 
 Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
-lives on the machine that crawls it; the package ships `claude-docs` under `src/euripontida_crawlee/sites/`
+lives on the machine that crawls it; the package ships `claude-docs` under `src/dyarchia_crawlee/sites/`
 as the worked example, and `docs/profiles.md` documents the format. The example does not ask to be
 snapshotted: it is present in every corpus repository, so one that asked would enrol itself in
-every unattended round on the machine. The nine this toolkit was built against, in the group
+every round swept on the machine. The nine this toolkit was built against, in the group
 `docs-labs`:
 
     Profile                Target                          Pages
@@ -239,11 +240,11 @@ is a lab over what the AI providers publish, the other is the platform the work 
 separation is also what stops a Salesforce round from noticing a Claude profile and quietly
 building a corpus nobody asked for.
 
-## Running unattended
+## Sweeping a corpus
 
-`watch` is the command a scheduler calls. It sweeps every profile that asks for snapshots, lets one
-failing target cost only its own target, writes `WATCH.md` and `WATCH.json` describing the sweep,
-and answers through its exit code:
+`watch` is the command that sweeps a whole corpus in one round. It covers every profile that asks
+for snapshots, lets one failing target cost only its own target, writes `WATCH.md` and `WATCH.json`
+describing the sweep, and answers through its exit code:
 
     Code    Meaning
     ----    ----------------------------------------------------------------
@@ -261,54 +262,66 @@ change; it does not raise the exit code, because nothing it says did. Three of t
 notification on one real sweep and told nobody anything.
 
 ```bash
-uv run euripontida-crawlee watch
-uv run euripontida-crawlee watch claude-docs claude-code-docs
+uv run dyarchia-crawlee watch
+uv run dyarchia-crawlee watch claude-docs claude-code-docs
 ```
 
-A run covers one corpus repository. `--group` narrows it further, to the profiles inside that
-repository that belong to a group; `-Repository` on the wrapper chooses the repository itself, for
-a machine that watches more than one:
+A round covers one corpus repository, the one this machine's `.env` names. `--group` narrows it
+further, to the profiles inside that repository that belong to a group; naming profiles covers
+exactly those and nothing else:
 
-```powershell
-.\scripts\watch.ps1 -Group salesforce-ai -Repository ..\crawlee-salesforce-data
+```bash
+uv run dyarchia-crawlee watch --group docs-labs --commit
 ```
 
-On Windows, `scripts/watch.ps1` wraps that in a log and a desktop notification raised only when the
-exit code is not 0, and `scripts/register-watch-task.ps1` registers it with the Task Scheduler. The
-notification is a toast that waits: it stays up until dismissed and remains in the notification
-centre, because a sweep that finishes while nobody is looking still has something to say. The
-window a scheduled round opens names the round and its phase in the title and streams the crawl as
-it happens, so a console appearing at logon reads as work rather than as a fault:
+A round is started by a person and nothing starts one by itself. The lock is what makes that safe:
+`watch` takes one on the group before it crawls and exits 30 without crawling if another round
+already holds it, so a second window, or a second button, costs nothing but the message saying who
+got there first.
 
-```powershell
-.\scripts\register-watch-task.ps1 -Name labs-docs -Group docs-labs
+`--commit` is worth adding to any round whose history matters. The corpora live in their own
+repositories, so git is the only copy of what a previous round found.
+
+## The panel
+
+`dyarchia-plugin/` is a panel for [Dyarchia Desktop](https://github.com/Dyarchia/dyarchia-desktop):
+the same two things a prompt does, with the corpus in front of you while you decide. It reads the
+state of every corpus, starts a round and streams it as it happens, and lets a target be written or
+edited without leaving the window.
+
+```bash
+py scripts/install_plugin.py
+py scripts/install_plugin.py --uninstall
 ```
 
-The task fires at every logon and the wrapper decides whether the week is still owed a sweep, so the
-round happens the first time you log on in a given week: Monday if you turn the machine on that day,
-the first day you do if you do not. A run that finds the week already swept exits 20 and does
-nothing.
+It installs into the shell's plugin folder and carries a file naming this checkout, because it does
+not import the toolkit: it runs the CLI under this project's own interpreter and shows what comes
+back. That is the whole design. The panel holds no crawling logic, no schema and no second copy of
+the lock, so a button and a prompt cannot disagree about what a round is, and anything the panel
+can do is something you can also do by hand.
 
-A week whose sweep did not finish is still owed one, so the next logon takes it, but only twice
-before the week is given up on and announced. The bound is the important half. A sweep that cannot
-finish, for whatever reason, leaves the week unmarked, and an unmarked week is attempted at the next
-logon; without a limit that is not a retry but a loop, and it will spend an hour crawling every time
-the machine is turned on.
+Restart the shell after installing. Main modules are imported once, at startup.
 
-Every task carries a name, `labs-docs` by default, and lives under the `\euripontida-crawlee\` folder of the
-Task Scheduler. The name keys the log and the record of the last week swept, so rounds over
-different corpora sit side by side without taking each other's turn. `-Group` is what a round
-covers; naming profiles instead covers exactly those:
+Two things to know before using it:
 
-```powershell
-.\scripts\register-watch-task.ps1 -Name claude-only -Profiles claude-docs, claude-code-docs
-```
+- A round is one process. Stopping it kills the crawl where it stands, which is safe: the lock is
+  released by the kernel and Crawlee's working directory is scratch.
+- Saving a target commits it. A profile lives in the repository that holds its corpus, and the
+  panel refuses to write one it cannot commit rather than leaving an edit nobody can find again.
 
-A task registered with neither sweeps every profile that asks for snapshots, including the ones
-added after it was registered, and says so when you register it.
+Every surface the panel paints belongs to Dyarchia's design system: `dya-tabs`, `dya-table`,
+`dya-badge` for a corpus verdict, `dya-entry` for the target list and its selected row, `dya-field`,
+`dya-checkbox`, `dya-button`, `dya-empty`, and `dya-mono` and `dya-key-label` for text. No colour,
+font or radius is written literally and no rule of the system is restyled, so the panel follows
+whichever theme the shell has mounted without knowing which one it is.
 
-Nothing registers itself. Run that when you want a monitor to start, and
-`.\scripts\register-watch-task.ps1 -Name labs-docs -Unregister` when you want it to stop.
+Five things the system does not have yet are proposed to it in
+[docs/design/dyarchia-ui-proposal.md](docs/design/dyarchia-ui-proposal.md): a `[hidden]` rule in the
+reset, a `dya-log` output surface, status modifiers on `dya-text`, an inset `dya-bar` and a
+`dya-field` that sizes to its content. The panel's markup already names all five. Until they ship,
+each is held up by one prefixed rule marked `until upstream` in the renderer, and the proposal lists
+exactly which rule dies with which proposal. Everything else the panel declares is layout: flex and
+grid containers, widths, scroll boxes and the proportions of the two panes.
 
 ## The step after the sweep
 
@@ -317,30 +330,22 @@ neither is prose:
 
 - `WATCH.json`, beside `WATCH.md`, holding the same verdict the exit code carries plus, per target,
   its counts and the path to its change report.
-- `euripontida-crawlee digest`, which bundles the last snapshot's changes into one document: what changed,
+- `dyarchia-crawlee digest`, which bundles the last snapshot's changes into one document: what changed,
   the diff, and the file holding each page's current text. The diff says what moved; the file says
   what the page now claims, and a step that only sees the diff writes a changelog instead of an
   answer.
 
 ```bash
-uv run euripontida-crawlee digest --changed --group docs-labs --out digest.md
-uv run euripontida-crawlee digest xai-docs --json
+uv run dyarchia-crawlee digest --changed --group docs-labs --out digest.md
+uv run dyarchia-crawlee digest xai-docs --json
 ```
 
-`scripts/watch.ps1 -OnChange <script>` closes the loop: on exit 10, and only then, it writes the
-digest and hands the path to whatever you name. The follow-up takes a path rather than a command
-line because what to do with a change is an editorial decision. Nothing in this toolkit calls a
-model, holds a key or knows a provider exists; `scripts/on-change.example.ps1` is where that
-begins, and it is yours to edit.
+The digest is a file, and that is the whole interface. What to do with a change is an editorial
+decision, so nothing in this toolkit calls a model, holds a key or knows a provider exists: it
+writes the document and stops. Whatever reads it next lives outside.
 
-```powershell
-.\scripts\watch.ps1 -Group docs-labs -OncePerWeek -Commit -OnChange .\scripts\on-change.ps1
-```
-
-The digest reads the change reports the sweep just wrote, and the next sweep overwrites them. That
-is why it runs inside the same wrapper invocation rather than on a schedule of its own, and why
-`-Commit` is worth adding to a round whose history matters: git is the only copy of last week's
-diff.
+The digest reads the change reports the sweep just wrote, and the next sweep overwrites them, so it
+belongs in the same sitting as the round that produced it rather than at some later hour.
 
 ## Politeness
 
@@ -368,6 +373,7 @@ mark left is `browser`, for the tests that need Playwright's Chromium installed.
 - `docs/architecture.md` — how the pieces fit together and why
 - `docs/profiles.md` — the profile file format, selector and pattern syntax
 - `docs/design/specs/` — the approved design
+- `docs/design/dyarchia-ui-proposal.md` — five additions the panel asks of Dyarchia's design system
 
 ## Cost
 

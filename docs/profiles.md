@@ -18,7 +18,7 @@ carries, so nothing can be expressed in one and not the other.
 Two sources share one namespace:
 
 - YAML files in `profiles/`, one per target, named after the file.
-- Python modules under `src/euripontida_crawlee/sites/` exposing a module-level `PROFILE` of type
+- Python modules under `src/dyarchia_crawlee/sites/` exposing a module-level `PROFILE` of type
   `ProfileSpec`.
 
 A YAML file wins over a Python module of the same name, so a bundled definition can be overridden
@@ -29,7 +29,7 @@ lives on the machine that crawls it; the repository ships one Python profile as 
 List what is available with:
 
 ```bash
-uv run euripontida-crawlee profiles
+uv run dyarchia-crawlee profiles
 ```
 
 Python is worth reaching for when the definition benefits from explanation, from constants, or from
@@ -41,7 +41,7 @@ profile is still a declaration, and it cannot call into Crawlee.
 The intended route is to get a run working ad-hoc and then freeze it:
 
 ```bash
-uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
+uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview \
     --crawler parsel \
     --select title=h1 \
     --depth 2 \
@@ -50,7 +50,7 @@ uv run euripontida-crawlee crawl https://code.claude.com/docs/en/overview \
 ```
 
 That writes `profiles/claude-code.yaml` containing only the fields that differ from the defaults. Add a
-`description` by hand afterwards; it shows up in `euripontida-crawlee profiles`.
+`description` by hand afterwards; it shows up in `dyarchia-crawlee profiles`.
 
 Writing one from scratch works too. Unknown keys are rejected rather than ignored, so a typo is a
 loud error and not a setting that quietly never applied.
@@ -58,13 +58,13 @@ loud error and not a setting that quietly never applied.
 ## 3. Running a profile
 
 ```bash
-uv run euripontida-crawlee crawl --profile books
+uv run dyarchia-crawlee crawl --profile books
 ```
 
 The profile supplies the baseline. Any flag typed on the same command line overrides it:
 
 ```bash
-uv run euripontida-crawlee crawl --profile books --max-pages 5 --format csv
+uv run dyarchia-crawlee crawl --profile books --max-pages 5 --format csv
 ```
 
 Only flags actually typed override. A flag left alone never overrides the profile, even when its
@@ -94,7 +94,7 @@ sitemap gave, so a corpus points at pages that exist.
 
 A group is a folder and a round in one. `group: docs-labs` puts this target's snapshots under
 `data/docs-labs/<name>/` and its output under `output/docs-labs/<name>.jsonl`, and makes it part of
-what `euripontida-crawlee watch --group docs-labs` sweeps. Targets that share a subject therefore share a
+what `dyarchia-crawlee watch --group docs-labs` sweeps. Targets that share a subject therefore share a
 folder and a schedule, and a corpus added later joins neither until its profile says so. The value
 is a single folder name in lowercase, digits and hyphens: it becomes a path segment, so it may not
 be one that walks out of the data directory.
@@ -237,7 +237,7 @@ block_resources:
 ```
 
 A documentation site tracked for change, seeded from its sitemap and fetched as markdown. This one
-lives in Python as `src/euripontida_crawlee/sites/claude_docs.py`:
+lives in Python as `src/dyarchia_crawlee/sites/claude_docs.py`:
 
 ```python
 PROFILE = ProfileSpec(
@@ -258,7 +258,7 @@ PROFILE = ProfileSpec(
 
 `snapshot=False` is the one line to change when copying it. A profile shipped inside the package is
 present in every corpus repository, and `watch` sweeps every profile that asks to be snapshotted,
-so an example that asked would join every unattended round on the machine. A profile of your own,
+so an example that asked would join every round swept on the machine. A profile of your own,
 in `profiles/`, is only ever in the repository you put it in and should say `snapshot: true`.
 
 Three decisions in that profile are worth copying for any documentation site. Seeding from the
@@ -271,7 +271,7 @@ What the profile does not need is a rule about the four-line documentation-index
 puts at the top of every markdown page. `trim_boilerplate` finds it from the corpus, because a block
 opening two hundred pages out of two hundred is chrome whatever it says.
 
-Run `euripontida-crawlee inspect` against a new documentation site before writing a profile for it. It
+Run `dyarchia-crawlee inspect` against a new documentation site before writing a profile for it. It
 reports whether a markdown variant exists and which sitemaps are published.
 
 
@@ -301,3 +301,7 @@ comments and the comments are the measurements that justify the rules. Round-tri
 Agentforce Vibes profile through `ProfileSpec` takes it from 24 lines and 8 comments to 17 and
 none: which sitemap set it narrows, what markdown coverage was measured and when, all gone. The
 text is the document; it is parsed only to refuse a broken one.
+
+`profile show` and `profile save` are that pair on the command line, and the panel's editor is the
+same two calls: `show` hands the document over, `save` takes it back with `require_commit` on. A
+round trip through either changes nothing but what you edited.

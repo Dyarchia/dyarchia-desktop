@@ -6,13 +6,13 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from euripontida_crawlee.config import Settings
-from euripontida_crawlee.digest import Digest, DigestPage, DigestTarget, build, render_json, render_markdown
-from euripontida_crawlee.models import PageStatus
-from euripontida_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
-from euripontida_crawlee.versioning.diffing import save_report as save_changes
-from euripontida_crawlee.versioning.manifest import PageRecord, RunManifest, save_manifest
-from euripontida_crawlee.watch import WATCH_RESULT
+from dyarchia_crawlee.config import Settings
+from dyarchia_crawlee.digest import Digest, DigestPage, DigestTarget, build, render_json, render_markdown
+from dyarchia_crawlee.models import PageStatus
+from dyarchia_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
+from dyarchia_crawlee.versioning.diffing import save_report as save_changes
+from dyarchia_crawlee.versioning.manifest import PageRecord, RunManifest, save_manifest
+from dyarchia_crawlee.watch import WATCH_RESULT
 
 
 def corpus(settings: Settings, name: str, changes: list[PageChange], unchanged: int = 0) -> Path:

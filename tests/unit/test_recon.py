@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import httpx
 
-from euripontida_crawlee.models import CrawlerKind
-from euripontida_crawlee.recon import Recon, _check_markdown_variant
+from dyarchia_crawlee.recon import Recon, _check_markdown_variant
 
 URL = 'https://site.example/page'
 
@@ -13,13 +12,13 @@ URL = 'https://site.example/page'
 def test_a_page_with_prose_needs_no_browser() -> None:
     recon = Recon(url=URL, static_content_chars=5_000, runs_scripts=True)
     assert recon.needs_browser is False
-    assert recon.recommended_crawler is CrawlerKind.BEAUTIFULSOUP
+    assert 'beautifulsoup' in recon.recommendation
 
 
 def test_a_framework_shell_needs_a_browser() -> None:
     recon = Recon(url=URL, static_content_chars=120, spa_markers=['id="root"'])
     assert recon.needs_browser is True
-    assert recon.recommended_crawler is CrawlerKind.PLAYWRIGHT
+    assert 'playwright' in recon.recommendation
 
 
 def test_an_empty_page_that_runs_scripts_needs_a_browser() -> None:
@@ -31,7 +30,7 @@ def test_an_empty_page_that_runs_scripts_needs_a_browser() -> None:
     """
     recon = Recon(url=URL, static_content_chars=6, runs_scripts=True)
     assert recon.needs_browser is True
-    assert recon.recommended_crawler is CrawlerKind.PLAYWRIGHT
+    assert 'playwright' in recon.recommendation
 
 
 def test_an_empty_page_without_scripts_is_just_empty() -> None:
@@ -41,7 +40,7 @@ def test_an_empty_page_without_scripts_is_just_empty() -> None:
 
 def test_a_markdown_variant_outranks_every_other_signal() -> None:
     recon = Recon(url=URL, static_content_chars=6, runs_scripts=True, markdown_url=f'{URL}.md')
-    assert recon.recommended_crawler is CrawlerKind.HTTP
+    assert '--crawler http' in recon.recommendation
     assert 'markdown variant' in recon.recommendation
 
 

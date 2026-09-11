@@ -5,7 +5,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from euripontida_crawlee.cli import history_hint
+from dyarchia_crawlee.cli import history_hint
 
 
 def repository(path: Path) -> Path:

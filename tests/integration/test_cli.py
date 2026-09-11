@@ -9,14 +9,15 @@ from __future__ import annotations
 
 import contextlib
 import json
+import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
-from euripontida_crawlee.cli import app
-from euripontida_crawlee.config import get_settings
+from dyarchia_crawlee.cli import app
+from dyarchia_crawlee.config import get_settings
 
 runner = CliRunner()
 
@@ -36,9 +37,9 @@ def output(result: object) -> str:
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """Point every configured path at a temporary directory for the duration of one test."""
-    monkeypatch.setenv('EURIPONTIDA_CRAWLEE_OUTPUT_DIR', str(tmp_path / 'output'))
-    monkeypatch.setenv('EURIPONTIDA_CRAWLEE_DATA_DIR', str(tmp_path / 'data'))
-    monkeypatch.setenv('EURIPONTIDA_CRAWLEE_PROFILES_DIR', str(tmp_path / 'profiles'))
+    monkeypatch.setenv('DYARCHIA_CRAWLEE_OUTPUT_DIR', str(tmp_path / 'output'))
+    monkeypatch.setenv('DYARCHIA_CRAWLEE_DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setenv('DYARCHIA_CRAWLEE_PROFILES_DIR', str(tmp_path / 'profiles'))
     monkeypatch.chdir(tmp_path)
     get_settings.cache_clear()
     yield tmp_path
@@ -280,3 +281,106 @@ def test_urls_without_a_snapshot_says_so(workspace: Path) -> None:
     result = runner.invoke(app, ['urls', 'never-run'])
     assert result.exit_code == 1
     assert 'never-run' in output(result)
+
+
+def test_profile_show_prints_the_file_verbatim(workspace: Path) -> None:
+    """A profile's comments are its measurements. Anything reading one to edit it must see them."""
+    profiles = workspace / 'profiles'
+    profiles.mkdir(parents=True, exist_ok=True)
+    text = (
+        'name: measured\n'
+        '# 45 of 46 pages publish a usable twin, measured 2026-09-04\n'
+        'start_urls:\n'
+        '  - https://s/one  # the one that mattered\n'
+    )
+    (profiles / 'measured.yaml').write_text(text, encoding='utf-8')
+
+    result = runner.invoke(app, ['profile', 'show', 'measured'])
+
+    assert result.exit_code == 0
+    assert result.stdout == text
+
+
+def test_profile_show_renders_the_python_profile_and_warns_off_the_document(workspace: Path) -> None:
+    """The bundled profile has no file. The warning belongs on stderr so a redirect still works."""
+    result = runner.invoke(app, ['profile', 'show', 'claude-docs'])
+
+    assert result.exit_code == 0
+    assert result.stdout.startswith('name: claude-docs')
+    assert 'rendered' not in result.stdout
+
+
+def test_profile_show_of_an_unknown_profile_fails(workspace: Path) -> None:
+    result = runner.invoke(app, ['profile', 'show', 'never-written'])
+
+    assert result.exit_code == 1
+    assert 'never-written' in output(result)
+
+
+def test_profile_save_refuses_what_it_cannot_commit(workspace: Path) -> None:
+    """The default a save button needs: offering an edit that leaves no trace is worse than none."""
+    result = runner.invoke(
+        app, ['profile', 'save', 'demo'], input='name: demo\nstart_urls:\n  - https://s/one\n'
+    )
+
+    assert result.exit_code == 1
+    assert 'refusing to save' in output(result)
+    assert not (workspace / 'profiles' / 'demo.yaml').exists()
+
+
+def test_profile_save_writes_and_commits_inside_a_repository(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = workspace / 'corpus-repo'
+    root.mkdir()
+    for command in (
+        ('init', '-q'),
+        ('config', 'user.email', 'test@example.invalid'),
+        ('config', 'user.name', 'Test'),
+    ):
+        subprocess.run(['git', *command], cwd=root, check=True, capture_output=True)
+    subprocess.run(['git', 'commit', '-q', '--allow-empty', '-m', 'start'], cwd=root, check=True)
+    monkeypatch.setenv('DYARCHIA_CRAWLEE_PROFILES_DIR', str(root / 'profiles'))
+    get_settings.cache_clear()
+
+    text = 'name: demo  # kept as written\nstart_urls:\n  - https://s/one\n'
+    result = runner.invoke(app, ['profile', 'save', 'demo'], input=text)
+
+    assert result.exit_code == 0
+    assert (root / 'profiles' / 'demo.yaml').read_text(encoding='utf-8') == text
+    logged = subprocess.run(['git', 'log', '--oneline'], cwd=root, capture_output=True, text=True, check=True)
+    assert 'profile(demo): added' in logged.stdout
+
+
+def test_profile_save_refuses_an_unknown_key_without_writing(workspace: Path) -> None:
+    """extra='forbid' is what lets a front end compose the YAML without owning the schema."""
+    result = runner.invoke(
+        app,
+        ['profile', 'save', 'demo', '--allow-untracked'],
+        input='name: demo\nstart_urls:\n  - https://s/one\nmax_deph: 2\n',
+    )
+
+    assert result.exit_code == 1
+    assert 'max_deph' in output(result)
+    assert not (workspace / 'profiles' / 'demo.yaml').exists()
+
+
+def test_profile_save_refuses_a_profile_that_names_no_source(workspace: Path) -> None:
+    result = runner.invoke(
+        app, ['profile', 'save', 'demo', '--allow-untracked'], input='name: demo\nmax_depth: 2\n'
+    )
+
+    assert result.exit_code == 1
+    assert not (workspace / 'profiles' / 'demo.yaml').exists()
+
+
+def test_profile_save_allows_an_unversioned_corpus_when_told_to(workspace: Path) -> None:
+    result = runner.invoke(
+        app,
+        ['profile', 'save', 'demo', '--allow-untracked'],
+        input='name: demo\nstart_urls:\n  - https://s/one\n',
+    )
+
+    assert result.exit_code == 0
+    assert (workspace / 'profiles' / 'demo.yaml').is_file()
+    assert 'not versioned' in output(result)

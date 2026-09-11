@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from euripontida_crawlee.extraction import frontmatter
-from euripontida_crawlee.extraction.boilerplate import trim_shared_boilerplate
+from dyarchia_crawlee.extraction import frontmatter
+from dyarchia_crawlee.extraction.boilerplate import trim_shared_boilerplate
 
 BANNER = '> Documentation index\n> Fetch it at /llms.txt'
 

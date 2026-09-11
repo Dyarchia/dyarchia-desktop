@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from euripontida_crawlee.extraction.dom import (
+from dyarchia_crawlee.extraction.dom import (
     DomAdapter,
     FieldSelector,
     ParselAdapter,

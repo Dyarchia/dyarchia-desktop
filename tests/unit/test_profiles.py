@@ -8,18 +8,18 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from euripontida_crawlee import registry
-from euripontida_crawlee.config import Settings
-from euripontida_crawlee.crawlers.factory import build_crawler
-from euripontida_crawlee.errors import ConfigurationError, ProfileError
-from euripontida_crawlee.models import CrawlerKind, ExtractionMode, RunSpec
-from euripontida_crawlee.profiles.loader import (
+from dyarchia_crawlee import registry
+from dyarchia_crawlee.config import Settings
+from dyarchia_crawlee.crawlers.factory import build_crawler
+from dyarchia_crawlee.errors import ConfigurationError, ProfileError
+from dyarchia_crawlee.models import CrawlerKind, ExtractionMode, RunSpec
+from dyarchia_crawlee.profiles.loader import (
     load_profile_file,
+    render_profile,
     save_profile,
-    save_profile_file,
     save_profile_text,
 )
-from euripontida_crawlee.profiles.schema import ProfileSpec
+from dyarchia_crawlee.profiles.schema import ProfileSpec
 
 MINIMAL = """
 description: A demo target
@@ -69,7 +69,7 @@ def test_saving_keeps_only_what_differs_from_the_defaults(tmp_path: Path) -> Non
         crawler=CrawlerKind.PARSEL,
         extract=ExtractionMode.AUTO,
     )
-    body = save_profile_file(profile, tmp_path).read_text(encoding='utf-8')
+    body = render_profile(profile)
 
     assert 'crawler: parsel' in body
     assert 'extract:' not in body
@@ -84,7 +84,7 @@ def test_a_saved_profile_reloads_identically(tmp_path: Path) -> None:
         selectors={'title': 'h1'},
         max_depth=2,
     )
-    reloaded = load_profile_file(save_profile_file(profile, tmp_path))
+    reloaded = load_profile_file(write(tmp_path, 'demo', render_profile(profile)))
     assert reloaded == profile
 
 

@@ -17,7 +17,7 @@ from typing import Any
 from dyarchia_crawlee import registry
 from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.engine import execute
-from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.versioning.diffing import CHANGES_FILENAME
 from dyarchia_crawlee.versioning.report import summary_line
@@ -159,7 +159,7 @@ async def sweep(names: list[str], settings: Settings | None = None) -> WatchResu
             profile = registry.load(name, settings)
             entry.group = profile.group
             run = await execute(profile.to_run_spec(snapshot=True), settings)
-        except CrawleeLabError as error:
+        except DyarchiaCrawleeError as error:
             entry.error = str(error)
         except Exception as error:
             entry.error = f'{type(error).__name__}: {error}'

@@ -25,7 +25,7 @@ from typing import Any
 
 from dyarchia_crawlee import inventory, registry
 from dyarchia_crawlee.config import Settings, get_settings
-from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.storage.snapshots import CHANGES_DOCUMENT
 from dyarchia_crawlee.versioning.diffing import ChangeKind, load_report
@@ -192,7 +192,7 @@ def _target(name: str, settings: Settings) -> DigestTarget:
 
     try:
         profile = registry.load(name, settings)
-    except CrawleeLabError:
+    except DyarchiaCrawleeError:
         pass
     else:
         target.group = profile.group

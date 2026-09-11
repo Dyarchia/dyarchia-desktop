@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from dyarchia_crawlee.errors import CrawleeLabError, ProfileError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError, ProfileError
 from dyarchia_crawlee.profiles.schema import ProfileSpec
 from dyarchia_crawlee.versioning.vcs import commit_path, is_ignored, repository_root
 
@@ -107,7 +107,7 @@ def _persist(target: Path, body: str, name: str, require_commit: bool) -> SavedP
     verb = 'updated' if existed else 'added'
     try:
         revision = commit_path(target, f'profile({name}): {verb}')
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         # Half a saved profile is a profile that no longer describes the corpus beside it.
         if previous is None:
             target.unlink(missing_ok=True)

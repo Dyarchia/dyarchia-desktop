@@ -28,14 +28,14 @@ from datetime import datetime
 from pathlib import Path
 
 from dyarchia_crawlee.config import Settings, get_settings
-from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.models import utcnow
 
 LOCK_DIRECTORY = 'locks'
 EVERYTHING = 'all'
 
 
-class RoundInProgressError(CrawleeLabError):
+class RoundInProgressError(DyarchiaCrawleeError):
     """Raised when another round already holds this group."""
 
 

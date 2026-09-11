@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.models import PageStatus
 from dyarchia_crawlee.versioning.diffing import (
     ChangeKind,
@@ -196,7 +196,7 @@ def test_commit_path_refuses_outside_a_repository() -> None:
         loose.mkdir()
         if repository_root(loose) is not None:
             return
-        with pytest.raises(CrawleeLabError, match='not inside a git repository'):
+        with pytest.raises(DyarchiaCrawleeError, match='not inside a git repository'):
             commit_path(loose, 'nowhere to write')
 
 

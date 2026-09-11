@@ -9,13 +9,13 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
 
 _GIT_TIMEOUT = 600
 
 
 def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    """Run one git command, turning anything that goes wrong into a CrawleeLabError.
+    """Run one git command, turning anything that goes wrong into a DyarchiaCrawleeError.
 
     The timeout is generous because commit hooks run inside `git commit`, and a hook suite that
     installs its own environments on first use takes minutes, not seconds. A crawl must not report
@@ -31,7 +31,7 @@ def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as error:
-        raise CrawleeLabError(f'git {args[0]} could not be run: {error}') from error
+        raise DyarchiaCrawleeError(f'git {args[0]} could not be run: {error}') from error
 
 
 def repository_root(path: Path) -> Path | None:
@@ -80,10 +80,12 @@ def commit_path(target: Path, message: str) -> str | None:
     """
     root = repository_root(target)
     if root is None:
-        raise CrawleeLabError(f'{target} is not inside a git repository, so there is nothing to write to')
+        raise DyarchiaCrawleeError(
+            f'{target} is not inside a git repository, so there is nothing to write to'
+        )
 
     if is_ignored(target, root):
-        raise CrawleeLabError(
+        raise DyarchiaCrawleeError(
             f'{target} is ignored by .gitignore, so the commit cannot record anything. '
             f'Change detection does not need git and keeps working; only the long-term history '
             f'is lost. Remove the entry from .gitignore if you want the history back.'
@@ -91,7 +93,7 @@ def commit_path(target: Path, message: str) -> str | None:
 
     staged = _git(['add', '--', str(target)], root)
     if staged.returncode != 0:
-        raise CrawleeLabError(f'git add failed: {staged.stderr.strip()}')
+        raise DyarchiaCrawleeError(f'git add failed: {staged.stderr.strip()}')
 
     pending = _git(['diff', '--cached', '--quiet', '--', str(target)], root)
     if pending.returncode == 0:
@@ -100,7 +102,7 @@ def commit_path(target: Path, message: str) -> str | None:
     committed = _git(['commit', '-m', message, '--', str(target)], root)
     if committed.returncode != 0:
         detail = committed.stderr.strip() or committed.stdout.strip()
-        raise CrawleeLabError(f'git commit failed: {detail}')
+        raise DyarchiaCrawleeError(f'git commit failed: {detail}')
 
     revision = _git(['rev-parse', 'HEAD'], root)
     return revision.stdout.strip() or None

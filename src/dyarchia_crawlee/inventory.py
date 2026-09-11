@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 from dyarchia_crawlee import registry
 from dyarchia_crawlee.config import Settings, get_settings
-from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.versioning.manifest import load_manifest, manifest_path
 
 UNITS = ('B', 'KB', 'MB', 'GB')
@@ -99,7 +99,7 @@ def _group_of(name: str, settings: Settings) -> str | None:
     """The group a target's profile puts it in, when a profile of that name still exists."""
     try:
         return registry.load(name, settings).group
-    except CrawleeLabError:
+    except DyarchiaCrawleeError:
         return None
 
 

@@ -17,7 +17,7 @@ from rich.table import Table
 from dyarchia_crawlee import __version__, digest, inventory, locking, registry, state
 from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.engine import RunResult, execute
-from dyarchia_crawlee.errors import ConfigurationError, CrawleeLabError
+from dyarchia_crawlee.errors import ConfigurationError, DyarchiaCrawleeError
 from dyarchia_crawlee.models import CrawlerKind, ExtractionMode, LinkStrategy, OutputFormat, RunSpec
 from dyarchia_crawlee.profiles import loader as profile_loader
 from dyarchia_crawlee.profiles.schema import ProfileSpec
@@ -234,7 +234,7 @@ def crawl(
 
     try:
         spec = _build_spec(ctx, profile, urls, fields_by_option, settings)
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -247,7 +247,7 @@ def crawl(
                 ProfileSpec.model_validate({**spec.model_dump(), 'name': save_profile}),
                 settings.resolve(settings.profiles_dir),
             )
-        except CrawleeLabError as error:
+        except DyarchiaCrawleeError as error:
             error_console.print(f'[bold red]{error}[/bold red]')
             raise typer.Exit(code=1) from error
 
@@ -262,7 +262,7 @@ def crawl(
 
     try:
         result = asyncio.run(execute(spec, settings))
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -288,7 +288,7 @@ def _commit_path(snapshot: SnapshotResult) -> None:
     message = f'snapshot({snapshot.manifest.name}): {summary_line(snapshot.report)}'
     try:
         revision = commit_path(snapshot.directory, message)
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         return
 
@@ -360,7 +360,7 @@ def inspect_command(
     """Report what a crawl against this target would have to deal with."""
     try:
         recon = asyncio.run(inspect_url(url, render=render))
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -460,7 +460,7 @@ def digest_command(
     settings = get_settings()
     try:
         bundle = digest.build(list(names) if names else None, settings, group)
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -546,7 +546,7 @@ def state_command(
     settings = get_settings()
     try:
         snapshot = state.build(list(repository) if repository else None, settings)
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -565,7 +565,7 @@ def profiles_command(
     """List the saved profiles this project knows about."""
     try:
         found = registry.discover()
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -637,7 +637,7 @@ def profile_show(
 
     try:
         profile = registry.load(name, settings)
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -671,7 +671,7 @@ def profile_save(
             settings.resolve(settings.profiles_dir),
             require_commit=not allow_untracked,
         )
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
@@ -784,7 +784,7 @@ def _commit_sweep(result: WatchResult, settings: Settings) -> None:
     message = f'watch: {result.headline}'
     try:
         revision = commit_path(directory, message)
-    except CrawleeLabError as error:
+    except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         return
 

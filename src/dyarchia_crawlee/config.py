@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEFAULT_USER_AGENT = 'dyarchia-crawlee/0.1 (+https://github.com/dyarchia-crawlee; polite crawler)'
+DEFAULT_USER_AGENT = 'dyarchia-crawlee/0.1 (+https://github.com/Dyarchia/dyarchia-crawlee; polite crawler)'
 
 
 def find_project_root(start: Path | None = None) -> Path:

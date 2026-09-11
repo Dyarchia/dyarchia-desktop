@@ -18,7 +18,6 @@ import threading
 from pathlib import Path
 from typing import Any
 
-HOME_FILE = 'home'
 CONSOLE_WIDTH = '110'
 
 VERDICTS = {
@@ -35,21 +34,14 @@ _lock = threading.Lock()
 def _toolkit_root() -> Path:
     """Where the toolkit is checked out.
 
-    In the workspace this plugin sits inside that checkout, so walking up finds it. An installed
-    copy sits under %APPDATA% instead and carries a `home` file naming the checkout, which the
-    installer writes. Nothing is guessed: a plugin that cannot find its toolkit says so.
+    The plugin sits at the top of that checkout, so the first walk up finds it. Nothing is
+    guessed: a plugin that cannot find its toolkit says so.
     """
     here = Path(__file__).resolve().parent
-    stamped = here / HOME_FILE
-    if stamped.is_file():
-        root = Path(stamped.read_text(encoding='utf-8').strip())
-        if not (root / 'pyproject.toml').is_file():
-            raise RuntimeError(f'{stamped} points at {root}, which is not the toolkit')
-        return root
     for candidate in (here, *here.parents):
         if (candidate / 'pyproject.toml').is_file():
             return candidate
-    raise RuntimeError(f'no toolkit around {here} and no {HOME_FILE} file naming one')
+    raise RuntimeError(f'no toolkit around {here}')
 
 
 def _interpreter(root: Path) -> Path:

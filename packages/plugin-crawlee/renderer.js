@@ -26,12 +26,6 @@ const STYLE = `
     gap: var(--dya-space-3);
     min-height: 0;
 }
-/* until upstream: [hidden] in kanon's reset. A flex box does not disappear because it is hidden,
-   and the UA rule loses to any class that sets display. Scoped to this panel's own subtree so it
-   settles nothing outside it. */
-.crw-root [hidden] {
-    display: none;
-}
 .crw-head {
     display: flex;
     align-items: baseline;
@@ -46,18 +40,11 @@ const STYLE = `
     max-height: 40%;
     overflow: auto;
 }
-/* until upstream: dya-bar--inset */
 .crw-bar {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-    padding: 0;
     flex: none;
     flex-wrap: wrap;
 }
-/* until upstream: dya-field--auto */
 .crw-scope {
-    width: auto;
     min-width: 220px;
 }
 .crw-check {
@@ -78,26 +65,9 @@ const STYLE = `
 .crw-out > .dya-empty {
     flex: 1;
 }
-/* Every rule below marked "until upstream" implements a class proposed to Dyarchia in
-   docs/design/dyarchia-ui-proposal.md. The markup already carries the proposed name, so the day
-   kanon ships it these rules are deleted and nothing else moves. No rule here targets a bare
-   .dya-* selector, which the system forbids. */
-
-/* until upstream: dya-log */
 .crw-log {
     flex: 1;
     min-height: 60px;
-    margin: 0;
-    padding: var(--dya-space-3);
-    overflow: auto;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    background: var(--dya-sunken);
-    border-radius: var(--dya-radius);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-3);
 }
 .crw-split {
     display: flex;
@@ -146,13 +116,6 @@ const STYLE = `
 }
 .crw-note {
     min-height: 1.4em;
-}
-/* until upstream: dya-text--danger and dya-text--success */
-.crw-bad {
-    color: var(--dya-danger);
-}
-.crw-good {
-    color: var(--dya-success);
 }
 `
 
@@ -320,7 +283,7 @@ function mount(ctx, container) {
                 const state = await ctx.invoke('state')
                 render(state)
             } catch (error) {
-                headline.className = 'dya-value crw-headline crw-bad'
+                headline.className = 'dya-value crw-headline dya-text--danger'
                 headline.textContent = String(error)
             }
         }
@@ -384,7 +347,7 @@ function mount(ctx, container) {
             finished(report) {
                 stop.hidden = true
                 run.disabled = false
-                status.className = `dya-text crw-status ${report.code === 1 ? 'crw-bad' : ''}`
+                status.className = `dya-text crw-status ${report.code === 1 ? 'dya-text--danger' : ''}`
                 status.textContent = report.digest
                     ? `${report.verdict}. Digest at ${report.digest}`
                     : report.verdict
@@ -437,7 +400,7 @@ function mount(ctx, container) {
                 }
                 mark(current)
             } catch (error) {
-                list.appendChild(el('div', 'dya-empty crw-bad', String(error)))
+                list.appendChild(el('div', 'dya-empty dya-text--danger', String(error)))
             }
         }
 
@@ -489,8 +452,8 @@ function mount(ctx, container) {
                 good === undefined
                     ? ''
                     : good
-                      ? ' dya-text--success crw-good'
-                      : ' dya-text--danger crw-bad'
+                      ? ' dya-text--success'
+                      : ' dya-text--danger'
             note.className = `dya-text crw-note${tone}`
             note.textContent = text
         }
@@ -582,7 +545,7 @@ function mount(ctx, container) {
             busy = false
             controls.run.disabled = false
             if (controls.stop) controls.stop.hidden = true
-            status.className = 'dya-text crw-status crw-bad'
+            status.className = 'dya-text crw-status dya-text--danger'
             status.textContent = String(error)
         }
     }

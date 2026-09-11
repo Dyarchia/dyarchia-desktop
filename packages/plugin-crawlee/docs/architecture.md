@@ -13,7 +13,7 @@ How dyarchia-crawlee is put together, and the reasoning behind the parts that ar
 - [7. Failure handling](#7-failure-handling)
 - [8. Sweeping a corpus](#8-sweeping-a-corpus)
 - [9. The panel](#9-the-panel)
-- [10. When dyarchia-desktop absorbs this](#10-when-dyarchia-desktop-absorbs-this)
+- [10. Where this lives](#10-where-this-lives)
 - [11. Testing strategy](#11-testing-strategy)
 
 ## 1. Two layers
@@ -377,8 +377,8 @@ corpora moved to their own repositories, git is the only copy of what a previous
 
 ## 9. The panel
 
-`dyarchia-plugin/` is a Dyarchia Desktop panel, and it is deliberately the thinnest thing that can
-be called one. It holds no crawling logic, no profile schema and no second copy of the lock. Every
+`renderer.js` and `main.py` are a Dyarchia Desktop panel, and it is deliberately the thinnest
+thing that can be called one. It holds no crawling logic, no profile schema and no second copy of the lock. Every
 answer it shows comes from running the CLI under this project's interpreter and reading what came
 back.
 
@@ -409,40 +409,45 @@ What the panel cannot do is raise a notification. The Python plugin contract car
 the panel shows rather than something it announces, and that is the right way round for work a
 person started thirty seconds ago and is watching.
 
-## 10. When dyarchia-desktop absorbs this
+## 10. Where this lives
 
-Decided 2026-09-11, the same day the product was renamed: this repository is temporary and
-dyarchia-desktop will take it in. Written down here rather than left in somebody's head, because
-the checkout, its remote and every conversation about it are the things that disappear, and the
-documentation is what travels with the code.
+This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it as
+`packages/plugin-crawlee/` with its history intact. The move was decided the same day the product
+was renamed, and the reason it is written here rather than left in a conversation is that the
+checkout, its remote and every conversation about it are the things that disappear.
 
-What stops being needed, and why it existed at all:
+The plugin sits at the top of the package and the toolkit underneath it, which is the arrangement
+`main.py` already expected: it walks up for `pyproject.toml` and now finds it in its own directory.
+The shell scans `packages/` in its own workspace, so the panel is discovered without being
+installed.
 
-    Goes                              Because
+What the move removed, and why each piece existed:
+
+    Gone                              Because
     -------------------------------   -----------------------------------------------------
-    scripts/install_plugin.py         the shell scans packages/ in its own workspace, so a
-                                      plugin there is discovered without being installed
-    the `home` file it stamps         it exists only so an installed copy under %APPDATA%
-                                      can find a toolkit outside its own tree
-    docs/design/                      the five additions stop being a cross-repo proposal
-    dyarchia-ui-proposal.md           and become five edits in kanon
-    the `until upstream` rules        they hold up classes the same workspace can now ship
+    scripts/install_plugin.py         it copied the panel under %APPDATA%, which the
+                                      workspace scan makes unnecessary
+    the `home` file it stamped        it existed only so that copy could find a toolkit
+                                      outside its own tree
+    docs/design/                      the five additions were a cross-repo proposal and
+    dyarchia-ui-proposal.md           are now five classes in kanon
+    the `until upstream` rules        they held up classes the same workspace ships
     in the panel's stylesheet
 
-`dyarchia-plugin/` becomes `packages/plugin-crawlee/`, keeping the id `crawlee` it already
-declares. The panel's markup needs no change: it already names the proposed classes.
+The consequence of dropping the installer is worth stating plainly: the panel runs from the
+workspace. A packaged build of the shell does not carry it, and the way back is not the `home` file
+but a package that ships its own interpreter, which is a different piece of work.
 
 What survives untouched is the part worth being deliberate about. The panel still shells out to the
 CLI rather than importing the package, because the shell spawns one Python process per plugin with
 whatever `py -3` resolves to, and that interpreter has none of this project's dependencies whether
-the code sits in a sibling checkout or in the same workspace. `main.py` finds its toolkit by walking
-up for `pyproject.toml`, which keeps working when the package sits inside the plugin's own folder.
-And the reason for the arrangement does not change with the address: the CLI is the surface the
-tests cover, so a button that is a prompt cannot disagree with a prompt.
+the code sits in a sibling checkout or in the same workspace. The reason for the arrangement does
+not change with the address: the CLI is the surface the tests cover, so a button that is a prompt
+cannot disagree with a prompt.
 
-One thing the move does not fix. The history of this repository carries the target inventory that
-was taken out of the README, and it will carry it into whatever absorbs it. Both repositories are
-private, so it is contained; opening either one is the moment to rewrite it.
+One thing the move did not fix. The history carries the target inventory that was taken out of the
+README, and it came across with everything else. dyarchia-desktop is private, so it is contained;
+opening it is the moment to rewrite that history.
 
 ## 11. Testing strategy
 

@@ -24,7 +24,7 @@ Rules for keeping it:
 
 ## 1. Open, in the order they would bite
 
-Two, both from the verdict-route proof of 2026-09-10 (second run of that day).
+One, from the verdict-route proof of 2026-09-10 (second run of that day).
 
 ### 1.1 A review in plan mode stalls on an execution bundled into a read
 
@@ -64,19 +64,6 @@ The cheap route does not work as written. A repository can pre-authorise command
 the worker reaches for the PowerShell tool instead. Measured 2026-09-10: `node`, `git status`,
 `git add` and `git commit` were all requested through PowerShell, all four were covered by a
 `Bash(...)` allowlist on paper, and none was covered in fact.
-
-### 1.2 The card drawer can strand the operator with no way back in view
-
-`renderer.ts`, the drawer head, and `styles.ts`, where `.kanban-drawer-body` sets `overflow-y`
-and nothing horizontal. Done when the tab strip and the close control stay reachable however
-wide the drawer content gets. The fix belongs to a different branch; this entry is here so that
-branch has the reproduction.
-
-Reported by the operator, 2026-09-10: with a wide window and the card drawer open on the
-`board` tab, the drawer content overflows horizontally and the tab strip falls out of view.
-Every way back still exists, the terminal, history and board tabs and the panel's own close
-control, and none of them was on screen. The operator stayed stuck until the tab was switched
-for them from outside.
 
 ## 2. Unproven rather than broken
 
@@ -370,4 +357,13 @@ proven was between two boards                an implementation of
                                              interfering. TWO
                                              BOARDS at once stays
                                              unproven, in section 2
+The card drawer grew past its own            `min-width: 0` on the   README section 5
+flex-basis until the tab strip and the       drawer. Reproduced in
+close control left the screen, stranding     the panel harness
+the operator with every way out still in     2026-09-11: one 406
+the DOM                                      character event detail
+                                             took it 329px to
+                                             2390px and the board
+                                             to 24px. `.kanban-board`
+                                             already had the guard
 ```

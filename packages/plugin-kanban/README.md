@@ -504,6 +504,16 @@ RULE                        WHY
                             into the card and its session rather than a readout, and
                             a button is what a keyboard expects to reach. The rule
                             strips the button chrome and gives it the row layout
+.kanban-drawer              `min-width: 0` is the whole rule and it is load bearing. A
+                            flex item defaults to `min-width: auto`, so its CONTENT can
+                            push it past its own `flex-basis`. One 406 character event
+                            detail took the drawer from 329px to 2390px, crushed the
+                            board to 24px and carried the tab strip and the close
+                            control off the right edge of a 1800px window, stranding the
+                            operator with every way out still in the DOM and none of
+                            them on screen. `.kanban-board` had carried the same guard
+                            since it was written; its sibling had not. Measured in the
+                            panel harness, before and after
 .kanban-terminal            the xterm host. What is worth knowing is not the rule:
                             a pane that attaches to a session mid-turn draws NOTHING
                             until that session next writes, so the terminal says so

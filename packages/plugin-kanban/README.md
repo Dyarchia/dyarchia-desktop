@@ -386,7 +386,7 @@ NOT under userData. Section 2.2 of the design calls a scratch workspace "a fresh
 directory" and userData is not temporary, which is reason enough. It is also where a workspace
 under userData was measured to fail, though **the cause of that is not settled** and may be an
 artifact of the machine it was measured on. See design.md 5.11 and the AppData question in
-section 4 of [docs/open-problems.md](docs/open-problems.md).
+section 2 of [docs/open-problems.md](docs/open-problems.md).
 
 Written by temp file plus `rename`, which is atomic on NTFS within a volume. **The slug is a
 path segment**, so it is validated against an allowlist before it is ever joined to a path:

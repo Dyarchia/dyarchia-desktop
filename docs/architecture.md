@@ -1,6 +1,6 @@
 # Architecture
 
-How euripontida-crawlee is put together, and the reasoning behind the parts that are not obvious.
+How dyarchia-crawlee is put together, and the reasoning behind the parts that are not obvious.
 
 ## Index
 
@@ -11,8 +11,9 @@ How euripontida-crawlee is put together, and the reasoning behind the parts that
 - [5. Crawlee behaviours that had to be handled](#5-crawlee-behaviours-that-had-to-be-handled)
 - [6. Snapshots and the change history](#6-snapshots-and-the-change-history)
 - [7. Failure handling](#7-failure-handling)
-- [8. Running unattended](#8-running-unattended)
-- [9. Testing strategy](#9-testing-strategy)
+- [8. Sweeping a corpus](#8-sweeping-a-corpus)
+- [9. The panel](#9-the-panel)
+- [10. Testing strategy](#10-testing-strategy)
 
 ## 1. Two layers
 
@@ -37,7 +38,7 @@ rewriting; both landed in the engine and both are now available to every target.
     registry                Discovery of YAML and Python profiles           profiles, sites
     runtime                 Crawlee state and working directory per run    nothing
     recon                   Target reconnaissance for the inspect command   extraction
-    watch                   Sweeping every tracked target unattended        registry, engine
+    watch                   Sweeping every tracked target in one round      registry, engine
     digest                  Bundling a sweep's changes for the step         inventory, registry,
                             that runs after it                              versioning
     state                   Every corpus in every repository, as one        digest, inventory,
@@ -74,7 +75,7 @@ rewriting; both landed in the engine and both are now available to every target.
                             worked example of a Python definition. It does
                             not ask to be snapshotted: it is present in
                             every corpus repository, and one that asked
-                            would join every unattended round on the machine
+                            would join every round swept on the machine
 
 Dependencies point towards `models` and `config`, never towards `cli`.
 
@@ -239,7 +240,7 @@ adds is duration. Without it, a target keeps its current state and the report of
 run; with it, every change acquires a date and an author trail.
 
 The corpora are versioned, but not here. They live in their own repository alongside this one, which
-is what `EURIPONTIDA_CRAWLEE_DATA_DIR` and `EURIPONTIDA_CRAWLEE_PROFILES_DIR` point at, and the tool's own history
+is what `DYARCHIA_CRAWLEE_DATA_DIR` and `DYARCHIA_CRAWLEE_PROFILES_DIR` point at, and the tool's own history
 stays a history of the tool. The two sides share no import: one names a directory, the other holds
 it.
 
@@ -274,7 +275,7 @@ Retries with backoff belong to Crawlee. On top of that:
 Crawlee caches storage instances, and the locks guarding them, in a process-global service locator.
 Those locks bind to the event loop that created them, so a second run in the same process fails.
 `runtime.reset_storage_state` is called when a run starts, which makes the engine usable from a test
-suite or a scheduler and not only from a CLI that exits afterwards. It also implies runs are
+suite or a long-lived host and not only from a CLI that exits afterwards. It also implies runs are
 sequential within a process; concurrent crawls in one process were never safe under a global service
 locator.
 
@@ -289,20 +290,20 @@ left ten of its own behind.
 
 Where that directory goes is `settings.storage_root`, which is configurable for the same reason the
 data root is: it is not the tool. Scratch is purged at the start of every run and removed when the
-process exits, so nothing of value is kept there, but a run the scheduler kills leaves its folder
+process exits, so nothing of value is kept there, but a run that is killed leaves its folder
 behind, and a checkout that collects those is a checkout collecting somebody's abandoned crawls.
 
-## 8. Running unattended
+## 8. Sweeping a corpus
 
-A change detector that only detects when somebody remembers to launch it is a script rather than a
-monitor. `watch` closes that gap, and it is shaped by what a scheduler can actually consume.
+`watch` is one round over a whole corpus, and it is shaped by what a caller can consume without
+reading prose: an exit code, two documents and a lock.
 
 It sweeps every profile that asks for snapshots, one after another rather than concurrently: these
 are polite crawls of whole documentation sites, and running five at once would multiply the request
 rate against hosts that have done nothing to deserve it. A target that raises is recorded and the
 sweep continues, because one unreachable host must not hide the state of the other four.
 
-The verdict is the exit code, which is the only thing Task Scheduler reads without help:
+The verdict is the exit code, which is the one thing every caller reads without help:
 
     Code    Meaning
     ----    ----------------------------------------------------------------
@@ -327,51 +328,28 @@ the report. Deriving it later from the diff would be cheaper and wrong: the diff
 hundred lines, so a large genuine change can look balanced, and the error would fall in the
 direction of hiding a change rather than reporting a false one.
 
-Everything Windows-specific lives in `scripts/`, outside the package: `watch.ps1` adds the log and
-the desktop notification, and `register-watch-task.ps1` registers the weekly task. Neither runs
-itself. Installing dependencies so a tool works is one kind of action; changing what a machine does
-at every logon is another, and that one gets proposed rather than performed.
+Nothing starts a round by itself. This machine ran two scheduled rounds at logon for a season, and
+they were removed rather than reduced: an unattended crawler is a thing that spends an hour of a
+laptop on a week nobody asked about, and every safeguard it needed -- a record of the last week
+swept, a bound on how many times a week may be attempted, a notification for the week it gave up on
+-- existed to contain a problem that not running unattended does not have. A round now happens
+because somebody asked for one.
 
-The weekly cadence is not a weekly trigger. Task Scheduler fires the task at every logon and the
-wrapper decides whether the week is owed a sweep, comparing the current ISO week against the last
-one it recorded. A trigger tied to an hour asks the machine to be awake at that hour, and a machine
-that was off on Monday morning loses the week; a trigger tied to logon cannot lose it, because the
-first logon of the week is by definition the first moment there is anyone to notify. The record is
-written only after a sweep that finished, so a week whose sweep failed is still owed one and the
-next logon takes it. The wrapper reports a skipped run as 20, which no sweep returns, so the task
-history distinguishes a week that was quiet from a week that was already done.
+More than one somebody can ask at once, which is what the lock is for. `watch` takes one on the
+group before it crawls and exits 30 without crawling if another round holds it. The lock lives in
+the toolkit rather than in whatever calls it, because a lock only one caller respects is not a lock:
+a panel's button has to obey the same one a prompt does.
 
-Owing a week has to be bounded, and learning that cost five days of a working laptop. A run the
-scheduler kills leaves the week unmarked exactly as a failed run does, so the next logon attempts it
-again, and the one after that too. The execution time limit had been set to an hour by guess rather
-than by measurement; every sweep reached it and was killed; and the retry meant to rescue an unlucky
-week became an hour of crawling at every logon for a working week, with a console window opening
-each time to announce it. The record therefore counts attempts as well as completion, and a week is
-given up on after two of them, with one notification rather than none, because a monitor that
-quietly stops trying is a different failure rather than a fix. The limit is three hours against a
-sweep measured at twenty-five minutes.
-
-The record and the log are keyed by the task's name rather than fixed, because one machine may
-watch several sets of profiles on different schedules. Two tasks sharing a name would share the
-record, and the second would spend the week believing the first had been its own run.
-
-The scheduler is not the only thing that can start a round. A person at a prompt can, and a panel
-with a button will, so `watch` takes a lock on the group before it crawls and exits 30 without
-crawling if another round has it. The lock lives in the toolkit rather than in whatever calls it,
-because a lock only one caller respects is not a lock: the scheduled task has to obey the same one
-the button does.
-
-It is an operating system lock held for the life of the process, not a witness file, and that
-choice is the same lesson as the attempt counter. A witness has to be reaped when its owner dies,
-and a run the scheduler kills gets no chance to reap anything; the file would survive and block
-every round after it. The kernel releases this one however the holder ends -- promptly rather than
-instantly, measured at 56 ms after a kill on this machine, so a caller retrying in the same breath
-may still be refused once.
+It is an operating system lock held for the life of the process, not a witness file. A witness has
+to be reaped when its owner dies, and a run that is killed gets no chance to reap anything; the file
+would survive and block every round after it. The kernel releases this one however the holder ends
+-- promptly rather than instantly, measured at 56 ms after a kill on this machine, so a caller
+retrying in the same breath may still be refused once.
 
 ### 8.1 The step after the sweep
 
-An exit code is enough for a scheduler and not enough for anything that has to decide what a change
-means. The sweep therefore writes `WATCH.json` beside `WATCH.md`, carrying the same verdict as
+An exit code is enough to know that something moved and not enough to decide what it means. The
+sweep therefore writes `WATCH.json` beside `WATCH.md`, carrying the same verdict as
 data, and `digest` assembles the rest: every changed page with its diff and the path to the file
 holding its current text. The path is the part that matters. A step given only diffs writes a
 changelog; a step that can open the page writes an answer.
@@ -387,18 +365,50 @@ corpus cannot answer the question itself; only the sweep can, which is what `WAT
 A report older than the sweep that covered it is reported as no change, and its pages are dropped
 rather than passed on.
 
-The wrapper's `-OnChange` runs that step, on exit 10 and only then, and hands it the digest's path.
-It takes a path rather than a command line on purpose: what to do with a change is an editorial
-decision, and the moment the toolkit holds one it also holds a provider, a key and a prompt. The
-seam is the file. `scripts/on-change.example.ps1` is an example of crossing it, not part of the
-crossing.
+The digest is written on exit 10 and only then, and what it produces is a path. That is the seam,
+and it is a file rather than a call on purpose: what to do with a change is an editorial decision,
+and the moment the toolkit holds one it also holds a provider, a key and a prompt.
 
-It runs inside the same invocation because the change reports it reads are the ones that sweep just
-wrote, and the next sweep overwrites them. A follow-up on its own schedule would be reading last
-week's diff or none at all, which is also the argument for `--commit`: once the corpora moved to
-their own repository, git is the only copy of what a previous week found.
+It belongs in the same sitting as the round that produced it, because the change reports it reads
+are the ones that sweep just wrote and the next sweep overwrites them. A digest taken later reads
+the previous round's diff or none at all, which is also the argument for `--commit`: once the
+corpora moved to their own repositories, git is the only copy of what a previous round found.
 
-## 9. Testing strategy
+## 9. The panel
+
+`dyarchia-plugin/` is a Dyarchia Desktop panel, and it is deliberately the thinnest thing that can
+be called one. It holds no crawling logic, no profile schema and no second copy of the lock. Every
+answer it shows comes from running the CLI under this project's interpreter and reading what came
+back.
+
+That is not laziness about layering, it is the layering. The CLI is the surface the test suite
+covers and the surface a person already uses, so a panel built on anything else would be a second
+implementation of the same decisions, free to drift from the first. A button and a prompt cannot
+disagree about what a round is when the button *is* a prompt.
+
+Three consequences follow, and each of them was a choice:
+
+- **The panel runs under the shell's interpreter, not the toolkit's.** The shell spawns one Python
+  process per plugin with whatever `py -3` resolves to, which has none of this project's
+  dependencies. So `main.py` imports nothing from the package: it locates the checkout, then drives
+  `.venv`'s own interpreter as a subprocess. An installed copy sits outside the checkout and carries
+  a file naming it, because a plugin that guesses where its toolkit lives will one day guess wrong.
+- **Reads answer in place; work streams.** The shell gives an invoke sixty seconds and a round takes
+  tens of minutes, so `state`, `profiles`, `show` and `save` answer directly while `start` returns
+  immediately and the process is followed on a thread, a line at a time. The interesting round is
+  the one that never reaches the end: a crawl stopped after twenty minutes has still said what it
+  found.
+- **The panel composes YAML and the toolkit validates it.** `RunSpec` forbids unknown keys, so a
+  field the panel invents is refused by `profile save` with nothing written. That is what lets the
+  form stay a form instead of becoming a second copy of the schema, and it is why the edit path is
+  the profile's own text rather than a rendering of the model: the comments are the measurements.
+
+What the panel cannot do is raise a notification. The Python plugin contract carries `handle` and
+`broadcast` and no `notify`, which belongs to the Node one. A round's verdict is therefore something
+the panel shows rather than something it announces, and that is the right way round for work a
+person started thirty seconds ago and is watching.
+
+## 10. Testing strategy
 
 Unit tests run against local fixtures with no network at all, and cover the parts where correctness
 is subtle: pattern semantics, selector parsing, extraction modes, path derivation, manifest

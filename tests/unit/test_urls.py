@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from euripontida_crawlee.urls import (
-    apply_suffix,
+from dyarchia_crawlee.urls import (
     collapse_slashes,
     snapshot_relative_path,
     strip_suffix,
@@ -15,20 +14,19 @@ from euripontida_crawlee.urls import (
 PAGE = 'https://site.example/docs/intro'
 
 
-def test_apply_suffix_appends_to_the_path() -> None:
-    assert apply_suffix(PAGE, '.md') == 'https://site.example/docs/intro.md'
+def test_the_first_candidate_appends_to_the_path() -> None:
+    assert suffix_candidates(PAGE, '.md')[0] == 'https://site.example/docs/intro.md'
 
 
-def test_apply_suffix_is_idempotent() -> None:
-    once = apply_suffix(PAGE, '.md')
-    assert once is not None
-    assert apply_suffix(once, '.md') == once
+def test_suffixing_is_idempotent() -> None:
+    once = suffix_candidates(PAGE, '.md')[0]
+    assert suffix_candidates(once, '.md')[0] == once
 
 
 def test_a_directory_url_drops_its_slash_first() -> None:
     """A trailing slash cannot carry `.md`, so the first guess is the page without it."""
-    assert apply_suffix('https://site.example/docs/', '.md') == 'https://site.example/docs.md'
-    assert apply_suffix('https://site.example', '.md') == 'https://site.example/index.md'
+    assert suffix_candidates('https://site.example/docs/', '.md')[0] == 'https://site.example/docs.md'
+    assert suffix_candidates('https://site.example', '.md')[0] == 'https://site.example/index.md'
 
 
 def test_an_extensionless_url_offers_both_forms() -> None:
@@ -49,13 +47,12 @@ def test_no_suffix_means_the_url_itself() -> None:
     assert suffix_candidates(PAGE, None) == [PAGE]
 
 
-def test_apply_suffix_without_a_suffix_is_a_no_op() -> None:
-    assert apply_suffix(PAGE, None) == PAGE
+def test_no_suffix_leaves_the_url_alone() -> None:
+    assert suffix_candidates(PAGE, None)[0] == PAGE
 
 
 def test_strip_suffix_round_trips() -> None:
-    suffixed = apply_suffix(PAGE, '.md')
-    assert suffixed is not None
+    suffixed = suffix_candidates(PAGE, '.md')[0]
     assert strip_suffix(suffixed, '.md') == PAGE
 
 
@@ -127,7 +124,10 @@ def test_a_page_that_names_its_extension_swaps_it_for_the_suffix() -> None:
 
 def test_the_appended_form_is_still_offered_second() -> None:
     """Swapping is the better guess, not the only one, so a site that appends still resolves."""
-    assert apply_suffix('https://site.example/docs/intro.htm', '.md') == 'https://site.example/docs/intro.md'
+    assert (
+        suffix_candidates('https://site.example/docs/intro.htm', '.md')[0]
+        == 'https://site.example/docs/intro.md'
+    )
 
 
 def test_an_extensionless_page_is_untouched_by_the_swap() -> None:

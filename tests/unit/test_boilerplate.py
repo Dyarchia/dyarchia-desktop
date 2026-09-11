@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from euripontida_crawlee.extraction.boilerplate import find_shared_edges, trim_shared_boilerplate
+from dyarchia_crawlee.extraction.boilerplate import find_shared_edges, trim_shared_boilerplate
 
 BANNER = '> ## Documentation Index\n> Fetch the index at https://site.example/llms.txt\n'
 

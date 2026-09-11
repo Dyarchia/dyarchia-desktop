@@ -8,19 +8,19 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from euripontida_crawlee.errors import CrawleeLabError
-from euripontida_crawlee.models import PageStatus
-from euripontida_crawlee.versioning.diffing import (
+from dyarchia_crawlee.errors import CrawleeLabError
+from dyarchia_crawlee.models import PageStatus
+from dyarchia_crawlee.versioning.diffing import (
     ChangeKind,
     compare,
     is_reordering,
     load_report,
     save_report,
 )
-from euripontida_crawlee.versioning.hashing import content_hash, normalise
-from euripontida_crawlee.versioning.manifest import PageRecord, RunManifest, load_manifest, save_manifest
-from euripontida_crawlee.versioning.report import render_markdown, summary_line
-from euripontida_crawlee.versioning.vcs import commit_path, repository_root
+from dyarchia_crawlee.versioning.hashing import content_hash, normalise
+from dyarchia_crawlee.versioning.manifest import PageRecord, RunManifest, load_manifest, save_manifest
+from dyarchia_crawlee.versioning.report import render_markdown, summary_line
+from dyarchia_crawlee.versioning.vcs import commit_path, repository_root
 
 
 def record(url: str, sha: str, status: PageStatus = PageStatus.OK) -> PageRecord:
@@ -55,7 +55,7 @@ def test_identical_manifests_report_no_changes() -> None:
     previous = manifest(one=record('https://s/one', 'aaa'))
     current = manifest(one=record('https://s/one', 'aaa'))
     report = compare(previous, current, {}, {})
-    assert not report.has_changes
+    assert not report.changes
     assert report.unchanged == 1
 
 
@@ -231,8 +231,8 @@ def test_compare_marks_a_reordering_and_keeps_it_out_of_the_verdict() -> None:
     assert report.modified[0].reordered
     assert report.reordered == report.modified
     assert report.substantive == []
-    assert report.has_changes
-    assert not report.has_substantive_changes
+    assert report.changes
+    assert not report.substantive
     assert summary_line(report) == '0 added, 0 removed, 0 modified, 1 reordered, 0 unchanged'
 
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from euripontida_crawlee.config import Settings
-from euripontida_crawlee.inventory import collect, directory_for, human_bytes, section_of, tracked
-from euripontida_crawlee.models import PageStatus
-from euripontida_crawlee.versioning.manifest import PageRecord, RunManifest, save_manifest
+from dyarchia_crawlee.config import Settings
+from dyarchia_crawlee.inventory import collect, directory_for, human_bytes, section_of, tracked
+from dyarchia_crawlee.models import PageStatus
+from dyarchia_crawlee.versioning.manifest import PageRecord, RunManifest, save_manifest
 
 
 def snapshot(

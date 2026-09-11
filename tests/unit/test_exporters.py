@@ -6,8 +6,8 @@ import csv
 import json
 from pathlib import Path
 
-from euripontida_crawlee.models import OutputFormat, RunSpec, ScrapedItem
-from euripontida_crawlee.storage.exporters import export_items, slugify_url
+from dyarchia_crawlee.models import OutputFormat, RunSpec, ScrapedItem
+from dyarchia_crawlee.storage.exporters import export_items, slugify_url
 
 
 def items() -> list[ScrapedItem]:

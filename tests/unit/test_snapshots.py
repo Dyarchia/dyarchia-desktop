@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from euripontida_crawlee.config import Settings
-from euripontida_crawlee.errors import RunAbortedError
-from euripontida_crawlee.models import FailureRecord, RunSpec, ScrapedItem
-from euripontida_crawlee.storage.snapshots import churn_warnings, take_snapshot
-from euripontida_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
+from dyarchia_crawlee.config import Settings
+from dyarchia_crawlee.errors import RunAbortedError
+from dyarchia_crawlee.models import FailureRecord, RunSpec, ScrapedItem
+from dyarchia_crawlee.storage.snapshots import churn_warnings, take_snapshot
+from dyarchia_crawlee.versioning.diffing import ChangeKind, ChangeReport, PageChange
 
 BASE = 'https://site.example/docs/'
 
@@ -46,7 +46,7 @@ def test_an_unchanged_rerun_writes_nothing(settings: Settings) -> None:
 
     assert second.written == []
     assert second.persisted is False
-    assert not second.report.has_changes
+    assert not second.report.changes
 
 
 def test_a_changed_page_is_rewritten_and_reported(settings: Settings) -> None:

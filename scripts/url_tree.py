@@ -11,8 +11,8 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from euripontida_crawlee.config import get_settings
-from euripontida_crawlee.versioning.vcs import repository_root
+from dyarchia_crawlee.config import get_settings
+from dyarchia_crawlee.versioning.vcs import repository_root
 
 
 def _index_path(data: Path) -> Path:

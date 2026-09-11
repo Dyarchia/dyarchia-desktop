@@ -18,6 +18,12 @@ for (const entry of entries) {
     if (!existsSync(manifestPath)) continue
 
     const manifest = JSON.parse(await readFile(manifestPath, 'utf-8'))
+
+    if (!existsSync(join(pluginDir, 'dist'))) {
+        console.log(`skipped ${manifest.id}: no dist/, so it runs from the workspace only`)
+        continue
+    }
+
     const target = join(targetRoot, manifest.id)
     await rm(target, { recursive: true, force: true })
     await mkdir(target, { recursive: true })

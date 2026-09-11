@@ -271,6 +271,11 @@ nothing in packages/ shadows it any more; delete it from %APPDATA%/dyarchia/plug
 In dev the workspace takes priority over installed plugins, so an installed copy never
 shadows the version under development.
 
+A plugin with no `dist/` is skipped by the installer and named as it is skipped. That is
+not a failure: a plugin whose renderer needs no bundling and whose main module is a Python
+package sitting in the workspace has nothing the packaged app could run, and crawlee is
+the one in that position today.
+
 
 ## 6. Lifecycle
 

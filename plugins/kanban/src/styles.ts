@@ -1,7 +1,4 @@
 export const STYLES = `
-.kanban [hidden],
-.kanban-ghost[hidden] { display: none; }
-
 .kanban {
     display: flex;
     flex-direction: column;

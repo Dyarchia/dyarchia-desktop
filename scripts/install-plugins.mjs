@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const repoRoot = resolve(import.meta.dirname, '..')
-const packagesDir = join(repoRoot, 'packages')
+const pluginsDir = join(repoRoot, 'plugins')
 const targetRoot = join(process.env.APPDATA, 'dyarchia', 'plugins')
 
 const NATIVE_DEPS = {
@@ -11,9 +11,9 @@ const NATIVE_DEPS = {
     kanban: ['node-pty']
 }
 
-const entries = await readdir(packagesDir)
+const entries = await readdir(pluginsDir)
 for (const entry of entries) {
-    const pluginDir = join(packagesDir, entry)
+    const pluginDir = join(pluginsDir, entry)
     const manifestPath = join(pluginDir, 'dyarchia-plugin.json')
     if (!existsSync(manifestPath)) continue
 

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
@@ -775,6 +775,46 @@ function patience(): void {
     )
 }
 
+async function atomicWrites(): Promise<void> {
+    console.log('\ntwo writers on one file')
+
+    const root = mkdtempSync(join(tmpdir(), 'kanban-atomic-'))
+    const target = join(root, 'registry.json')
+
+    const first = 'a'.repeat(4096)
+    const second = 'b'.repeat(4096)
+    await Promise.all([boards.writeAtomic(target, first), boards.writeAtomic(target, second)])
+
+    check('both writers finished', existsSync(target), true)
+    check(
+        'the file holds one whole payload, not a mixture',
+        [first, second].includes(readFileSync(target, 'utf-8')),
+        true
+    )
+    check(
+        'and neither left a scratch file behind',
+        readdirSync(root).filter((name) => name.endsWith('.tmp')).length,
+        0
+    )
+
+    const many = await Promise.all(
+        Array.from({ length: 8 }, (_, index) =>
+            boards.writeAtomic(target, String(index).repeat(2048)).then(
+                () => true,
+                () => false
+            )
+        )
+    )
+    check('eight at once, none refused', many.every(Boolean), true)
+    check(
+        'and still no scratch left over',
+        readdirSync(root).filter((name) => name.endsWith('.tmp')).length,
+        0
+    )
+
+    rmSync(root, { recursive: true, force: true })
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
@@ -793,6 +833,7 @@ await reviews()
 await eventLog()
 await reconciling()
 patience()
+await atomicWrites()
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed === 0 ? 0 : 1)

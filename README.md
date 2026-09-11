@@ -18,31 +18,31 @@ uv run playwright install chromium
 Look before you leap. `inspect` reports what a crawl against a target would have to deal with:
 
 ```bash
-uv run dyarchia-crawlee inspect https://code.claude.com/docs/en/overview
+uv run dyarchia-crawlee inspect https://docs.example.com/guide/overview
 ```
 
 Scrape a page with no configuration at all:
 
 ```bash
-uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview
+uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview
 ```
 
 Pull specific fields, follow links, write CSV:
 
 ```bash
-uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview \
+uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview \
     --crawler parsel \
     --select title=h1 \
     --depth 2 \
     --max-pages 40 \
-    --follow /docs/en/ \
+    --follow /guide/ \
     --format csv
 ```
 
 Freeze that run and replay it later:
 
 ```bash
-uv run dyarchia-crawlee crawl https://code.claude.com/docs/en/overview \
+uv run dyarchia-crawlee crawl https://docs.example.com/guide/overview \
     --select title=h1 --save-profile my-site
 uv run dyarchia-crawlee crawl --profile my-site
 ```
@@ -50,8 +50,8 @@ uv run dyarchia-crawlee crawl --profile my-site
 Track a target over time:
 
 ```bash
-uv run dyarchia-crawlee crawl --profile claude-docs --snapshot --commit
-uv run dyarchia-crawlee diff claude-docs --unified
+uv run dyarchia-crawlee crawl --profile my-site --snapshot --commit
+uv run dyarchia-crawlee diff my-site --unified
 ```
 
 ## Commands
@@ -117,13 +117,13 @@ whose `export const` is the lesson.
 
 Code blocks are rebuilt before extraction rather than repaired after it, in two passes over the
 HTML. A renderer that emits one bare `div` per line of a sample offers no `pre` and no `code` for
-extraction to recognise, so it drops the sample as layout: five Claude Cookbook recipes carried
+extraction to recognise, so it drops the sample as layout: five recipe pages of one corpus carried
 1,411 lines of code between them and extraction kept 134. Such a run of lines is rewritten as the
 one `pre` it was meant to be, which brought the same five to 1,305.
 
 A block holding a single line is then given a second one, because extraction renders a one-line
 `pre` as inline code and glues the opening fence of the block after it to the end of that line. 26
-mistral-docs pages were inverted from that point on, with 444 lines of prose fenced between them;
+pages of one corpus were inverted from that point on, with 444 lines of prose fenced between them;
 afterwards, none. The newline goes inside the innermost `code` element, since a newline outside it
 stops the glue and leaves the sample inline. A page that marks its code up properly is not touched
 by either pass.
@@ -146,14 +146,14 @@ target is actually holding, grouped by the path that holds each page and ordered
 sections that are paying their way are separated from the ones that are only bulk:
 
 ```bash
-uv run dyarchia-crawlee urls openai-docs --depth 1
+uv run dyarchia-crawlee urls my-site --depth 1
 ```
 
     section                                   pages       size   share
     ---------------------------------------   -----   --------   -----
-    developers.openai.com/cookbook              309    23.0 MB     58%
-    developers.openai.com/api                   174     3.1 MB     33%
-    developers.openai.com/plugins                30   376.4 KB      6%
+    docs.example.com/cookbook                   309    23.0 MB     58%
+    docs.example.com/api                        174     3.1 MB     33%
+    docs.example.com/plugins                     30   376.4 KB      6%
 
 `--depth` rolls the grouping up to the first N path segments; without it each page is grouped under
 the path that holds it, which is the level an `include` or `exclude` rule is written against. Narrow
@@ -191,53 +191,36 @@ files untouched.
 ## Corpora
 
 Profiles are not tracked by git. A profile describes somebody's corpus rather than the tool, so it
-lives on the machine that crawls it; the package ships `claude-docs` under `src/dyarchia_crawlee/sites/`
-as the worked example, and `docs/profiles.md` documents the format. The example does not ask to be
-snapshotted: it is present in every corpus repository, so one that asked would enrol itself in
-every round swept on the machine. The nine this toolkit was built against, in the group
-`docs-labs`:
+lives on the machine that crawls it, in the repository that holds the pages it describes; the
+package ships one worked example under `src/dyarchia_crawlee/sites/`, and `docs/profiles.md`
+documents the format. The example deliberately does not ask to be snapshotted: it is present in
+every corpus repository, so one that asked would enrol itself in every round swept on the machine.
 
-    Profile                Target                          Pages
-    -------------------    ----------------------------    -----
-    claude-docs            claude.com/docs                   194
-    claude-code-docs       code.claude.com                   170
-    claude-api-docs        platform.claude.com               678
-    claude-cookbook        platform.claude.com, HTML          96
-    openai-docs            developers.openai.com             541
-    chatgpt-docs           learn.chatgpt.com, Codex          257
-    gemini-docs            ai.google.dev, HTML               225
-    xai-docs               docs.x.ai, Grok                   176
-    mistral-docs           docs.mistral.ai, HTML             443
+What a corpus actually tracks belongs with the corpus. This repository is the toolkit, and a list of
+somebody's targets is not a fact about the toolkit; each corpus repository carries its own.
 
-Every corpus is English only. A publisher's other locales are a translation of pages already
-tracked, so they double the disk and the crawl for a diff that reports a retranslation as a change.
-Keeping them out is a rule about these corpora rather than about the toolkit: it is expressed as an
-`include` anchored at the first path segment, or an `exclude` on the locale, in each profile that
-needs one.
+A few rules are worth knowing before adding one:
 
-All but three fetch the markdown variant the site publishes, so the snapshot is the document rather
-than an extractor's reading of it. `ai.google.dev` publishes none, `docs.mistral.ai` publishes one
-for two of its eight sections, and the cookbook answers 404 with an application shell at every
-suffix, so `gemini-docs`, `mistral-docs` and `claude-cookbook` are extracted from HTML instead. Each
-was kept only after two runs hashed identically, which is the test an extractor's reading has to
-pass and a published document does not.
+- **One language.** A publisher's other locales are a translation of pages already tracked, so they
+  double the disk and the crawl for a diff that reports a retranslation as a change. Express it as
+  an `include` anchored at the first path segment rather than an `exclude` per locale, because an
+  anchored include also excludes the locale added next year.
+- **Prefer the markdown a site publishes** over an extractor's reading of its HTML, so the snapshot
+  is the document rather than an interpretation of it. Where no twin exists, keep the target only
+  after two runs hash identically. That is the test an extractor's reading has to pass and a
+  published document does not.
+- **Read robots.txt for sitemaps, not only the obvious one.** A site can declare a second sitemap
+  there and nowhere else, and a whole section of it is invisible to a profile seeded from the first.
 
-`claude-cookbook` is a second target on `platform.claude.com` rather than a section of
-`claude-api-docs`, because the recipes appear in no sitemap that target reads and publish no
-markdown twin. They are in a sitemap of their own, declared in `robots.txt` and nowhere else.
-
-Page counts are from the last run of each and move every week.
-
-Each group is a folder and a round: its profiles share `<data>/<group>/`, `<output>/<group>/` and
-one weekly sweep. A corpus on a neighbouring topic gets its own group, and with it its own folder
-and its own schedule, rather than joining an existing one by having asked for snapshots.
+Each group is a folder and a round: its profiles share `<data>/<group>/` and `<output>/<group>/`,
+and `watch --group` sweeps exactly them. A corpus on a neighbouring topic gets its own group, and
+with it its own folder, rather than joining an existing one by having asked for snapshots.
 
 Groups divide one repository, and some things should not be in one repository at all. Two bodies of
-work that share nothing but a scraper get two, because the toolkit resolves a single data root and
-a round can only see the profiles in its own. `developer.salesforce.com` is tracked that way, in
-`crawlee-salesforce-data`, and reached with `-Repository` rather than filed alongside the labs: one
-is a lab over what the AI providers publish, the other is the platform the work is done on. The
-separation is also what stops a Salesforce round from noticing a Claude profile and quietly
+work that share nothing but a scraper get two, because the toolkit resolves a single data root and a
+round can only see the profiles in its own. Point a run at the other by setting
+`DYARCHIA_CRAWLEE_DATA_DIR`, `DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR` for
+it. The separation is also what stops one round from noticing an unrelated profile and quietly
 building a corpus nobody asked for.
 
 ## Sweeping a corpus
@@ -263,7 +246,7 @@ notification on one real sweep and told nobody anything.
 
 ```bash
 uv run dyarchia-crawlee watch
-uv run dyarchia-crawlee watch claude-docs claude-code-docs
+uv run dyarchia-crawlee watch my-site my-other-site
 ```
 
 A round covers one corpus repository, the one this machine's `.env` names. `--group` narrows it
@@ -337,7 +320,7 @@ neither is prose:
 
 ```bash
 uv run dyarchia-crawlee digest --changed --group docs-labs --out digest.md
-uv run dyarchia-crawlee digest xai-docs --json
+uv run dyarchia-crawlee digest my-site --json
 ```
 
 The digest is a file, and that is the whole interface. What to do with a change is an editorial

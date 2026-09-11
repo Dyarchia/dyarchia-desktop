@@ -1,0 +1,45 @@
+# Nothing this toolkit produces belongs in this checkout. The corpora, the profiles that define
+# them, every run's output and the scraped reference material live in the sibling crawlee-lab-data
+# repository, and Crawlee's working directory is scratch that goes to a temporary path. See .env.
+#
+# The entries below are guards, not homes: they catch a run started without a .env, which would
+# otherwise drop a corpus back into the tool's tree. They are anchored to the root with a leading
+# slash because they name directories the toolkit writes, not names it may not use: unanchored,
+# `storage/` also swallowed the package at src/dyarchia_crawlee/storage, so a module added there was
+# invisible to git.
+/data/
+/output/
+/profiles/*.yaml
+/profiles/*.yml
+/storage/
+/docs/reference/
+
+# The follow-up this machine actually runs, which holds its own paths and its own prompt. The
+# example beside it is the tracked one; what a given machine does with a change is not the tool's.
+scripts/on-change.ps1
+
+# Spanish-language tutorial, kept locally
+docs/tutorial.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+Thumbs.db
+.DS_Store

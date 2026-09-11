@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Quotes, rendered late</title></head>
+<body>
+<h1>Quotes</h1>
+<div id="quotes"></div>
+<script>
+    const quotes = [
+        'The unexamined life is not worth living.',
+        'I know that I know nothing.',
+        'There is nothing permanent except change.',
+        'No man ever steps in the same river twice.',
+        'Man is the measure of all things.',
+        'The whole is greater than the sum of its parts.',
+        'We are what we repeatedly do.',
+        'Happiness depends upon ourselves.',
+        'It is the mark of an educated mind to entertain a thought without accepting it.',
+        'Well begun is half done.',
+    ];
+    const host = document.getElementById('quotes');
+    for (const quote of quotes) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'quote';
+        const text = document.createElement('span');
+        text.className = 'text';
+        text.textContent = quote;
+        wrapper.appendChild(text);
+        host.appendChild(wrapper);
+    }
+</script>
+</body>
+</html>

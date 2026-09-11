@@ -58,6 +58,8 @@ The pieces:
             plugin-docviewer/    native file picker + markdown, mermaid, source toggle
             plugin-player/       audio/video player (dyarchia-media://)
             plugin-eforoi/       a panel of models with one of them comparing the answers
+            plugin-kanban/       a task board that dispatches work to Claude Code
+            plugin-crawlee/      a crawling toolkit and the panel that drives it (python)
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module

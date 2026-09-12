@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from dyarchia_crawlee import digest, inventory
+from dyarchia_crawlee import digest, inventory, repositories
 from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.versioning.vcs import head, is_dirty, repository_root
@@ -79,6 +79,7 @@ class RepositoryState:
     head: str | None = None
     dirty: bool = False
     versioned: bool = False
+    default: bool = False
     corpora: list[CorpusState] = field(default_factory=list)
 
     @property
@@ -102,6 +103,7 @@ class RepositoryState:
             'head': self.head,
             'dirty': self.dirty,
             'versioned': self.versioned,
+            'default': self.default,
             'pages': self.pages,
             'bytes': self.bytes,
             'changed': [corpus.name for corpus in self.changed],
@@ -172,7 +174,7 @@ def _corpus(target: digest.DigestTarget, settings: Settings) -> CorpusState:
     return state
 
 
-def _repository(root: Path) -> RepositoryState:
+def _repository(root: Path, default: bool = False) -> RepositoryState:
     settings = Settings.for_repository(root)
     owner = repository_root(settings.resolve(settings.data_dir))
     repository = RepositoryState(
@@ -183,16 +185,27 @@ def _repository(root: Path) -> RepositoryState:
         versioned=owner is not None,
         head=head(owner) if owner else None,
         dirty=is_dirty(owner) if owner else False,
+        default=default,
     )
     repository.corpora = [_corpus(target, settings) for target in digest.build(settings=settings).targets]
     return repository
 
 
-def build(repositories: list[Path] | None = None, settings: Settings | None = None) -> State:
-    """Read the state of these corpus repositories, or of the one this machine defaults to."""
+def build(roots: list[Path] | None = None, settings: Settings | None = None) -> State:
+    """Read the state of these corpus repositories, or of every one this machine holds.
+
+    Asking for none is not asking for one. A machine that names a repositories directory holds
+    several, and a panel opening on the default answer has to see all of them or it shows a corpus
+    list missing whichever repository the environment did not happen to name.
+    """
     settings = settings or get_settings()
-    roots = repositories or [settings.resolve(settings.data_dir).parent]
-    return State(repositories=[_repository(root) for root in roots])
+    fallback = settings.resolve(settings.data_dir).parent.resolve()
+    return State(
+        repositories=[
+            _repository(root, default=root.resolve() == fallback)
+            for root in roots or repositories.roots(settings)
+        ]
+    )
 
 
 def render_json(state: State) -> str:

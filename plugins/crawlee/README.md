@@ -34,6 +34,45 @@ paths. See `.env.example`. **The matching `.gitignore` entries are guards, not h
 run started without a `.env`, which would otherwise drop a corpus into the tool's own tree.
 
 
+## Corpus repositories
+
+**A corpus repository is a directory with `profiles/`, `data/` and `output/` in it, versioned on
+its own.** One holds one body of documentation and the rules that define it, and its history is the
+history of that corpus rather than of the tool. A machine can hold several, and they share this
+tool and nothing else.
+
+`DYARCHIA_CRAWLEE_REPOSITORIES_DIR` names the folder they sit in. Every subdirectory of it holding
+a `profiles/` is one, so adding a corpus is a clone into that folder rather than an edit to a
+configuration file. The folder is created when it is named and not there, and never filled: an
+empty repository is not a repository, and a `profiles/` of examples enrols somebody in crawling
+sites they did not choose.
+
+    with the variable                            without it
+    -----------------------------------------    ------------------------------------------
+    every repository under the folder, plus      one repository, the one data_dir,
+    the one the other three name                 profiles_dir and output_dir name
+
+Leaving it unset is the whole of the second column, which is what every command did before the
+variable existed. Nothing about a single repository changes either way.
+
+What each command does with more than one:
+
+    Command     Across repositories
+    ---------   ---------------------------------------------------------------------------
+    profiles    lists all of them, with the repository column shown only when there are two
+    state       reports every repository, and marks the one the settings name as default
+    digest      one document covering the round, whichever repositories it touched
+    watch       one round per repository: its own lock, its own report, its own exit code,
+                and the worst of them is what the command exits with
+    crawl       a named profile is crawled into the repository that defines it, never into
+                whichever one the environment happened to name
+
+**Two repositories defining one profile name is refused, not resolved.** Whichever answer the tool
+picked, it would be writing somebody's corpus into somebody else's, and it would do it quietly. An
+edit saved through `profile save` lands where the profile already is, for the same reason; only a
+name that exists nowhere yet is new, and new goes to the default repository.
+
+
 ## Commands
 
     Command      Purpose
@@ -356,7 +395,7 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 350 tests in about a minute.
+only mark is `browser`, for the tests needing Chromium. 362 tests in about a minute.
 
 The fixture server generates its sitemaps rather than serving them from disk, because crawlee
 refuses a relative `<loc>` and a static file cannot name the port the server picked at startup.

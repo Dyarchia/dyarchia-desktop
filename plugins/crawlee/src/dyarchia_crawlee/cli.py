@@ -7,7 +7,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 from urllib.parse import urlparse
 
 import typer
@@ -16,12 +16,10 @@ from rich.table import Table
 
 from dyarchia_crawlee import __version__, digest, inventory, locking, registry, state
 from dyarchia_crawlee.config import Settings, get_settings
-from dyarchia_crawlee.engine import RunResult, execute
 from dyarchia_crawlee.errors import ConfigurationError, DyarchiaCrawleeError
 from dyarchia_crawlee.models import CrawlerKind, ExtractionMode, LinkStrategy, OutputFormat, RunSpec
 from dyarchia_crawlee.profiles import loader as profile_loader
 from dyarchia_crawlee.profiles.schema import ProfileSpec
-from dyarchia_crawlee.recon import Recon, inspect_url
 from dyarchia_crawlee.storage.exporters import slugify_url
 from dyarchia_crawlee.storage.snapshots import SnapshotResult
 from dyarchia_crawlee.versioning.diffing import ChangeKind, load_report
@@ -34,6 +32,15 @@ from dyarchia_crawlee.watch import (
     sweep,
     watchable,
 )
+
+if TYPE_CHECKING:
+    from dyarchia_crawlee.engine import RunResult
+    from dyarchia_crawlee.recon import Recon
+
+"""`engine` and `recon` are imported inside the two commands that crawl, not here. Between them
+they cost three seconds of import: crawlee's crawler stack brings Playwright and, through the
+adaptive crawler's rendering-type predictor, scikit-learn. Every other command in this file reads
+a file or the registry, and the desktop panel calls those on every click."""
 
 app = typer.Typer(
     name='dyarchia-crawlee',
@@ -261,6 +268,8 @@ def crawl(
         settings = settings.model_copy(update={'output_dir': output_dir})
 
     try:
+        from dyarchia_crawlee.engine import execute
+
         result = asyncio.run(execute(spec, settings))
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
@@ -359,6 +368,8 @@ def inspect_command(
 ) -> None:
     """Report what a crawl against this target would have to deal with."""
     try:
+        from dyarchia_crawlee.recon import inspect_url
+
         recon = asyncio.run(inspect_url(url, render=render))
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')

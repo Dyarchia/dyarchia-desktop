@@ -283,7 +283,17 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 299 unit tests in about 16 seconds.
+only mark is `browser`, for the tests needing Chromium. 325 tests in about 50 seconds.
+
+**Nothing the panel calls may import the crawler stack at module scope.** `crawlee.crawlers` costs
+three seconds to import: it brings Playwright, and through the adaptive crawler's rendering-type
+predictor it brings scikit-learn. The panel spawns a fresh process for every click, so a stray
+import makes listing profiles pay for a browser and a machine-learning library — `state` measured
+2.99s for reading files off disk, because it reached `digest` for a filename, which reached `watch`
+for a constant, which imported `engine`. `execute` is now imported inside `sweep` and inside the two
+commands that crawl, and the read paths cost 0.33s. Measure with `python -X importtime -c "import
+dyarchia_crawlee.cli"` before adding an import near the top of `cli.py`, `state.py`, `digest.py` or
+`watch.py`.
 
 This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it with its
 history. Its history carries a target inventory that was taken out of the README; the repository is

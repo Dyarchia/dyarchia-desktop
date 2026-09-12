@@ -16,7 +16,6 @@ from typing import Any
 
 from dyarchia_crawlee import registry
 from dyarchia_crawlee.config import Settings, get_settings
-from dyarchia_crawlee.engine import execute
 from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.versioning.diffing import CHANGES_FILENAME
@@ -150,6 +149,15 @@ def watchable(settings: Settings | None = None, group: str | None = None) -> lis
 
 async def sweep(names: list[str], settings: Settings | None = None) -> WatchResult:
     """Run each target in turn, letting one failure cost only its own target."""
+    from dyarchia_crawlee.engine import execute
+
+    """Imported here rather than at module scope because it is the only thing in this module that
+    needs the crawler stack, and importing that stack costs three seconds: crawlee pulls in
+    Playwright and scikit-learn, the latter for the adaptive crawler's rendering-type predictor.
+    `digest` and `state` reach into this module for a filename and for `watchable`, and the panel
+    calls them on every interaction, so a module-scope import here made listing profiles pay for a
+    browser and a machine-learning library."""
+
     settings = settings or get_settings()
     result = WatchResult()
 

@@ -143,6 +143,15 @@ and `page.html` at `page.md` first, because a site naming the extension is sayin
 it. The manifest still records the page by the URL the sitemap gave, so a corpus points at pages
 that exist.
 
+**The page itself is always the last candidate**, because a publisher that mirrors most of its
+pages does not mirror all of them, and a page with no twin is still content. Asking for it is also
+what tells the two failures apart: a 404 there means the site serves nothing at that URL, so the
+sitemap entry is stale, and that is the only one of the two worth reporting. A suffixed run treats
+404 as an answer rather than an error — `ignore_http_error_status_codes` — so probing costs a
+request and not a traceback, a failed request or a round that says it cannot vouch for itself. One
+sweep of learn.chatgpt.com had both: two pages that publish no twin, and one URL the site had
+dropped.
+
 A group is a folder and a round in one: snapshots go under `data/<group>/<name>/`, output to
 `output/<group>/<name>.jsonl`, and the target joins `watch --group <group>`. **Changing the group of
 a profile does not move the files it already wrote.** Move `data/<name>/` into `data/<group>/`
@@ -267,6 +276,20 @@ with backoff on HTTP 429, and the User-Agent identifies the tool rather than imp
 browser. Each can be overridden, `--ignore-robots` loudly, but the defaults assume you are a guest
 on someone else's server.
 
+**`Crawl-delay` takes one extra step here, and crawlee's own warning is wrong about it.** Crawlee
+applies the directive only when the crawler's `request_manager` *is* a `ThrottlingRequestManager`,
+and a sitemap-seeded run wraps that throttler in a `RequestManagerTandem` — the supported shape,
+since the crawler takes no request loader beside its manager. So the check fails, the delay is never
+handed over, and every seeded profile crawls at full speed no matter what robots.txt asks. 429
+backoff is unaffected, because the throttler records that itself. `apply_robots_crawl_delay` reads
+the directive with crawlee's parser and sets it on the throttler before the tandem hides it, and the
+warning is filtered off that one path, because a line saying the opposite of what the run does
+outlives everyone's memory of why it was wrong. It survives everywhere it is true: with no
+throttler built — a URL with no hostname is enough — nothing enforces the directive and the
+warning is the only notice you get. None of the nine profiles on this machine declares a
+`Crawl-delay`, so this changed no observed behaviour and exists for the target that eventually
+does.
+
 Nothing here costs money. The whole stack is open source and runs locally; Apify Cloud, paid proxies
 and LLM-assisted extraction are deliberately out of scope, and no model is consulted at any point
 between a URL going in and a snapshot coming out.
@@ -283,7 +306,17 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 299 unit tests in about 16 seconds.
+only mark is `browser`, for the tests needing Chromium. 325 tests in about 50 seconds.
+
+**Nothing the panel calls may import the crawler stack at module scope.** `crawlee.crawlers` costs
+three seconds to import: it brings Playwright, and through the adaptive crawler's rendering-type
+predictor it brings scikit-learn. The panel spawns a fresh process for every click, so a stray
+import makes listing profiles pay for a browser and a machine-learning library — `state` measured
+2.99s for reading files off disk, because it reached `digest` for a filename, which reached `watch`
+for a constant, which imported `engine`. `execute` is now imported inside `sweep` and inside the two
+commands that crawl, and the read paths cost 0.33s. Measure with `python -X importtime -c "import
+dyarchia_crawlee.cli"` before adding an import near the top of `cli.py`, `state.py`, `digest.py` or
+`watch.py`.
 
 This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it with its
 history. Its history carries a target inventory that was taken out of the README; the repository is

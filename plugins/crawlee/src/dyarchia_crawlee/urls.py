@@ -44,6 +44,11 @@ def suffix_candidates(url: str, suffix: str | None) -> list[str]:
     the extension is replaced rather than appended: appending would ask for `get-started.html.md`,
     which no publisher serves. The appended form is still offered second, because a site that keeps
     `page.html.md` costs one 404 to find out and nothing else.
+
+    The page itself is always the last candidate. A publisher that offers a markdown twin for most
+    of its pages does not offer one for all of them, and the page is still worth having: asking for
+    it is what separates a page with no twin, which is content, from a URL the sitemap lists and
+    the site no longer serves, which is a stale entry. Both were in one run of learn.chatgpt.com.
     """
     if not suffix:
         return [url]
@@ -58,13 +63,13 @@ def suffix_candidates(url: str, suffix: str | None) -> list[str]:
         return urlunparse(parsed._replace(path=new_path))
 
     if path in {'', '/'}:
-        return [at(f'{path}{INDEX_STEM}{suffix}')]
+        return [at(f'{path}{INDEX_STEM}{suffix}'), url]
     if path.endswith('/'):
-        return [at(f'{path[:-1]}{suffix}'), at(f'{path}{INDEX_STEM}{suffix}')]
+        return [at(f'{path[:-1]}{suffix}'), at(f'{path}{INDEX_STEM}{suffix}'), url]
     for extension in _PAGE_EXTENSIONS:
         if path.endswith(extension):
-            return [at(f'{path[: -len(extension)]}{suffix}'), at(f'{path}{suffix}')]
-    return [at(f'{path}{suffix}'), at(f'{path}/{INDEX_STEM}{suffix}')]
+            return [at(f'{path[: -len(extension)]}{suffix}'), at(f'{path}{suffix}'), url]
+    return [at(f'{path}{suffix}'), at(f'{path}/{INDEX_STEM}{suffix}'), url]
 
 
 def strip_suffix(url: str, suffix: str | None) -> str:

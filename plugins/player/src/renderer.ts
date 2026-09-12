@@ -34,24 +34,6 @@ const STYLES = `
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.player-open {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: none;
-    background: none;
-    box-shadow: none;
-    color: var(--dya-text-4);
-    cursor: pointer;
-    transition: transform var(--dya-dur-press) var(--dya-ease-press);
-}
-.player-open:hover {
-    color: var(--dya-text);
-}
-.player-open:active {
-    transform: scale(var(--dya-press-scale));
-}
 .player-open svg {
     display: block;
     width: 14px;
@@ -113,8 +95,8 @@ export function activate(ctx: PluginContext): void {
             function openButton(large = false): HTMLButtonElement {
                 const button = document.createElement('button')
                 button.className = large
-                    ? 'player-open player-open--lg'
-                    : 'player-open'
+                    ? 'dya-button dya-button--bare player-open player-open--lg'
+                    : 'dya-button dya-button--bare player-open'
                 button.title = 'Open media'
                 button.setAttribute('aria-label', 'Open media')
                 button.innerHTML = PLAYER_ICON

@@ -43,7 +43,15 @@ def _common_options(
         'max_crawl_depth': spec.max_depth if spec.max_depth > 0 else None,
         'request_handler_timeout': timedelta(seconds=settings.request_timeout_seconds),
         'respect_robots_txt_file': spec.respect_robots,
+        **({'ignore_http_error_status_codes': {404}} if spec.fetch_suffix else {}),
     }
+
+
+"""A run that asks for a markdown twin discovers the twin's absence by being told 404, which is an
+answer and not a fault. Left as an error it raises, prints a traceback, counts in requests_failed
+and says the round cannot vouch for itself, for a page the publisher simply does not mirror. Ignored
+here, it arrives at the handler as an ordinary response and `handle_page` reads the status. Only
+suffixed runs ignore it: everywhere else a 404 is a real failure and must stay one."""
 
 
 def _browser_options(spec: RunSpec, settings: Settings) -> dict[str, Any]:

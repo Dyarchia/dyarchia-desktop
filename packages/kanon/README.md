@@ -190,6 +190,12 @@ white alphas. `--dya-elev-focus` is the exception and each theme overrides it.
 
 - **Relief means pressable.** Buttons, keys and chips are raised. Rows, cells and
   containers are flat and express state through background.
+- **`button--bare` is the one pressable without relief**, and it is allowed only where
+  relief would lie: an icon that is the whole content of an empty region, where a raised
+  button reads as an unfilled form. It carries no background and no shadow, so it is also
+  the one control whose hover changes the ink rather than the ground — there is no ground
+  to change. It presses by scale rather than by translation, because nothing that never
+  stood up can sink.
 - **A container that groups controls carries no relief**, or the controls inside read as
   sunk into a well. The panel is the single exception, carrying `--dya-elev-chassis`, a
   1px light at 4%, which is a seam and not relief.
@@ -269,7 +275,7 @@ the other.
 
 ```text
 Structure    panel bar (--flush --inset) dock card card__header card__body rule brand
-Pressable    button (--quiet --sm --danger) key chip item entry (--strong --active)
+Pressable    button (--quiet --sm --danger --bare) key chip item entry (--strong --active)
 Input        field (--sm --auto) toggle checkbox radio slider
 Content      tag badge (--success --warning --danger --soft) table row (--selected)
              metric display heading text (--success --warning --danger) label eyebrow
@@ -281,7 +287,12 @@ Documents    prose (styles by element) prose__scroll
 Layers       menu menu__item tooltip
 Navigation   tabs tab pagination
 Absence      empty loading skeleton
+Assistive    sr-only
 ```
+
+`sr-only` is the one class that is not a component: it takes an element out of the visual
+layout while leaving it in the accessibility tree, which is what a live region needs and
+what `[hidden]` would destroy. Measured 1x1 and still rendered.
 
 Four distinctions in that list are easy to collapse and are not the same thing:
 
@@ -320,9 +331,6 @@ There is nothing to build, lint or test. What replaces those commands:
 - Six of Oneiro's ten surfaces are interpolated and have not been seen against real
   content. The theme is also tiring to read over a long session, which is the same
   observation from the other side.
-- The system has no flat pressable. The shell draws two open controls as a bare icon with
-  plugin-prefixed rules, which is the sanctioned escape hatch and a standing request for
-  `.dya-button--bare` beside `--quiet`.
 - `.dya-prose` styles by element and everything else by class. A second such exception
   would mean the rule is not holding.
 - The prose scale has one heading size, which is thin for a product whose plugins render

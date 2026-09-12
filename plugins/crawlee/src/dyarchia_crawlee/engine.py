@@ -15,7 +15,7 @@ from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.crawlers.context import safe_page
 from dyarchia_crawlee.crawlers.factory import AnyCrawler, build_crawler
 from dyarchia_crawlee.crawlers.settings import build_http_client
-from dyarchia_crawlee.crawlers.throttling import build_request_manager
+from dyarchia_crawlee.crawlers.throttling import apply_robots_crawl_delay, build_request_manager
 from dyarchia_crawlee.errors import BrowserNotInstalledError
 from dyarchia_crawlee.extraction.boilerplate import trim_shared_boilerplate
 from dyarchia_crawlee.extraction.dom import SoupAdapter, adapt
@@ -200,13 +200,21 @@ async def retry_next_candidate(context: Any, spec: RunSpec) -> bool:
 
 async def build_request_source(spec: RunSpec, settings: Settings) -> RequestManager | None:
     """Assemble the request manager: per-domain throttling, plus sitemap seeding when configured."""
+    client = build_http_client(spec, settings)
     throttler = await build_request_manager(spec)
+
+    await apply_robots_crawl_delay(throttler, spec, client)
+
+    """Applied before the tandem hides the throttler. Crawlee sets the directive only when its own
+    request manager is the throttler, which the sitemap path never satisfies, so this is the only
+    place a seeded run learns what robots.txt asked for."""
+
     if not spec.seeded_by_sitemap:
         return throttler
 
     loader = SitemapRequestLoader(
         sitemap_urls=spec.sitemap_urls,
-        http_client=build_http_client(spec, settings),
+        http_client=client,
         include=to_matchers(spec.include) or None,
         exclude=to_matchers(spec.exclude) or None,
         transform_request_function=_suffix_transform(spec.fetch_suffix) if spec.fetch_suffix else None,

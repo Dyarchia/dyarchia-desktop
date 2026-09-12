@@ -273,10 +273,13 @@ and a sitemap-seeded run wraps that throttler in a `RequestManagerTandem` — th
 since the crawler takes no request loader beside its manager. So the check fails, the delay is never
 handed over, and every seeded profile crawls at full speed no matter what robots.txt asks. 429
 backoff is unaffected, because the throttler records that itself. `apply_robots_crawl_delay` reads
-the directive with crawlee's parser and sets it on the throttler before the tandem hides it. The
-warning still prints on every seeded run and can now be ignored: it reports the check, not the
-outcome. None of the nine profiles on this machine declares a `Crawl-delay`, so this changed no
-observed behaviour and exists for the target that eventually does.
+the directive with crawlee's parser and sets it on the throttler before the tandem hides it, and the
+warning is filtered off that one path, because a line saying the opposite of what the run does
+outlives everyone's memory of why it was wrong. It survives everywhere it is true: with no
+throttler built — a URL with no hostname is enough — nothing enforces the directive and the
+warning is the only notice you get. None of the nine profiles on this machine declares a
+`Crawl-delay`, so this changed no observed behaviour and exists for the target that eventually
+does.
 
 Nothing here costs money. The whole stack is open source and runs locally; Apify Cloud, paid proxies
 and LLM-assisted extraction are deliberately out of scope, and no model is consulted at any point

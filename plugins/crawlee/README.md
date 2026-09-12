@@ -143,6 +143,15 @@ and `page.html` at `page.md` first, because a site naming the extension is sayin
 it. The manifest still records the page by the URL the sitemap gave, so a corpus points at pages
 that exist.
 
+**The page itself is always the last candidate**, because a publisher that mirrors most of its
+pages does not mirror all of them, and a page with no twin is still content. Asking for it is also
+what tells the two failures apart: a 404 there means the site serves nothing at that URL, so the
+sitemap entry is stale, and that is the only one of the two worth reporting. A suffixed run treats
+404 as an answer rather than an error — `ignore_http_error_status_codes` — so probing costs a
+request and not a traceback, a failed request or a round that says it cannot vouch for itself. One
+sweep of learn.chatgpt.com had both: two pages that publish no twin, and one URL the site had
+dropped.
+
 A group is a folder and a round in one: snapshots go under `data/<group>/<name>/`, output to
 `output/<group>/<name>.jsonl`, and the target joins `watch --group <group>`. **Changing the group of
 a profile does not move the files it already wrote.** Move `data/<name>/` into `data/<group>/`

@@ -155,3 +155,19 @@ def test_an_unknown_target_is_refused_before_anything_is_crawled(tmp_path: Path)
 
     with pytest.raises(ProfileError, match='unknown profile'):
         rounds(['nowhere'], settings=settings_over(parent, first))
+
+
+def test_a_failure_outranks_a_change_whichever_repository_it_was_in() -> None:
+    """Comparing the exit codes themselves reports 10 over the 1 that came before it."""
+    from dyarchia_crawlee.cli import _exit_rank
+    from dyarchia_crawlee.watch import EXIT_BUSY, EXIT_CHANGES, EXIT_FAILED, EXIT_NO_CHANGES
+
+    def verdict(*codes: int) -> int:
+        return max(codes, key=_exit_rank)
+
+    assert verdict(EXIT_CHANGES, EXIT_FAILED) == EXIT_FAILED
+    assert verdict(EXIT_FAILED, EXIT_CHANGES) == EXIT_FAILED
+    assert verdict(EXIT_NO_CHANGES, EXIT_CHANGES) == EXIT_CHANGES
+    assert verdict(EXIT_CHANGES, EXIT_BUSY) == EXIT_BUSY
+    assert verdict(EXIT_BUSY, EXIT_FAILED) == EXIT_FAILED
+    assert verdict(EXIT_NO_CHANGES, EXIT_NO_CHANGES) == EXIT_NO_CHANGES

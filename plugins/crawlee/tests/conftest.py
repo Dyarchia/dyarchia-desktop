@@ -35,6 +35,25 @@ def spec() -> RunSpec:
     return RunSpec(name='test-run', start_urls=['https://example.com/'])
 
 
+NEWLINE = chr(10)
+
+SITEMAP_TEMPLATE = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+    + NEWLINE
+    + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    + NEWLINE
+    + '{locs}'
+    + NEWLINE
+    + '</urlset>'
+    + NEWLINE
+)
+
+_SITEMAPS = {
+    '/sitemap-live.xml': ['/guide.html', '/handbook.html'],
+    '/sitemap-stale.xml': ['/guide.html', '/gone/retired-last-year'],
+}
+
+
 class _QuietHandler(SimpleHTTPRequestHandler):
     """The fixture site, served without narrating every request into the test output."""
 
@@ -43,6 +62,29 @@ class _QuietHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format: str, *args: object) -> None:
         del format, args
+
+    def do_GET(self) -> None:
+        """Serve the sitemaps from memory, because a static one cannot name its own port.
+
+        Crawlee refuses a relative `<loc>`, so a sitemap that seeds a crawl has to carry absolute
+        URLs, and the port is chosen when the server starts. The stale one lists a page that is
+        there and a page that never was, which is the shape learn.chatgpt.com and docs.mistral.ai
+        both arrive in.
+        """
+        entries = _SITEMAPS.get(self.path)
+        if entries is None:
+            super().do_GET()
+            return
+
+        base = f'http://{self.headers.get("Host", "127.0.0.1")}'
+        locs = NEWLINE.join(f'    <url><loc>{base}{path}</loc></url>' for path in entries)
+        body = SITEMAP_TEMPLATE.format(locs=locs).encode('utf-8')
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/xml')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
 
 @pytest.fixture(scope='session')

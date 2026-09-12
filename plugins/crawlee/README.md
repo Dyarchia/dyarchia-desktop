@@ -267,6 +267,17 @@ with backoff on HTTP 429, and the User-Agent identifies the tool rather than imp
 browser. Each can be overridden, `--ignore-robots` loudly, but the defaults assume you are a guest
 on someone else's server.
 
+**`Crawl-delay` takes one extra step here, and crawlee's own warning is wrong about it.** Crawlee
+applies the directive only when the crawler's `request_manager` *is* a `ThrottlingRequestManager`,
+and a sitemap-seeded run wraps that throttler in a `RequestManagerTandem` — the supported shape,
+since the crawler takes no request loader beside its manager. So the check fails, the delay is never
+handed over, and every seeded profile crawls at full speed no matter what robots.txt asks. 429
+backoff is unaffected, because the throttler records that itself. `apply_robots_crawl_delay` reads
+the directive with crawlee's parser and sets it on the throttler before the tandem hides it. The
+warning still prints on every seeded run and can now be ignored: it reports the check, not the
+outcome. None of the nine profiles on this machine declares a `Crawl-delay`, so this changed no
+observed behaviour and exists for the target that eventually does.
+
 Nothing here costs money. The whole stack is open source and runs locally; Apify Cloud, paid proxies
 and LLM-assisted extraction are deliberately out of scope, and no model is consulted at any point
 between a URL going in and a snapshot coming out.

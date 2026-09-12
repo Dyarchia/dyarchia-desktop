@@ -14,9 +14,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from dyarchia_crawlee import registry
+from dyarchia_crawlee import registry, repositories
 from dyarchia_crawlee.config import Settings, get_settings
-from dyarchia_crawlee.errors import DyarchiaCrawleeError
+from dyarchia_crawlee.errors import DyarchiaCrawleeError, ProfileError
 from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.versioning.diffing import CHANGES_FILENAME
 from dyarchia_crawlee.versioning.report import summary_line
@@ -145,6 +145,44 @@ def watchable(settings: Settings | None = None, group: str | None = None) -> lis
         for name, profile in registry.discover(settings).items()
         if profile.snapshot and (group is None or profile.group == group)
     ]
+
+
+def rounds(
+    names: list[str] | None = None, group: str | None = None, settings: Settings | None = None
+) -> list[tuple[Settings, list[str]]]:
+    """The sweeps a request comes down to, one per repository, in repository order.
+
+    A repository holds a corpus, the profiles that define it and the report of the round that last
+    touched it, so a request covering two of them is two rounds rather than one: two locks, two
+    reports, and two exit codes to combine. Nothing about a single round changes, which is why this
+    returns the settings each one runs under instead of teaching `sweep` about more than one.
+
+    Naming targets explicitly still works across repositories: they are grouped by the one that
+    defines each, not refused for spanning two.
+    """
+    settings = settings or get_settings()
+    found = registry.everywhere(settings)
+
+    if names:
+        wanted = {}
+        for name in names:
+            if name not in found:
+                known = ', '.join(found) or 'none'
+                raise ProfileError(f'unknown profile {name!r}. Available profiles: {known}')
+            wanted[name] = found[name][1]
+    else:
+        wanted = {
+            name: repository
+            for name, (profile, repository) in found.items()
+            if profile.snapshot and (group is None or profile.group == group)
+        }
+
+    covered: list[tuple[Settings, list[str]]] = []
+    for repository in repositories.known(settings):
+        selected = [name for name, owner in wanted.items() if owner.data_dir == repository.data_dir]
+        if selected:
+            covered.append((repository, selected))
+    return covered
 
 
 async def sweep(names: list[str], settings: Settings | None = None) -> WatchResult:

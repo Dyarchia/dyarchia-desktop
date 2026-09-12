@@ -34,6 +34,45 @@ paths. See `.env.example`. **The matching `.gitignore` entries are guards, not h
 run started without a `.env`, which would otherwise drop a corpus into the tool's own tree.
 
 
+## Corpus repositories
+
+**A corpus repository is a directory with `profiles/`, `data/` and `output/` in it, versioned on
+its own.** One holds one body of documentation and the rules that define it, and its history is the
+history of that corpus rather than of the tool. A machine can hold several, and they share this
+tool and nothing else.
+
+`DYARCHIA_CRAWLEE_REPOSITORIES_DIR` names the folder they sit in. Every subdirectory of it holding
+a `profiles/` is one, so adding a corpus is a clone into that folder rather than an edit to a
+configuration file. The folder is created when it is named and not there, and never filled: an
+empty repository is not a repository, and a `profiles/` of examples enrols somebody in crawling
+sites they did not choose.
+
+    with the variable                            without it
+    -----------------------------------------    ------------------------------------------
+    every repository under the folder, plus      one repository, the one data_dir,
+    the one the other three name                 profiles_dir and output_dir name
+
+Leaving it unset is the whole of the second column, which is what every command did before the
+variable existed. Nothing about a single repository changes either way.
+
+What each command does with more than one:
+
+    Command     Across repositories
+    ---------   ---------------------------------------------------------------------------
+    profiles    lists all of them, with the repository column shown only when there are two
+    state       reports every repository, and marks the one the settings name as default
+    digest      one document covering the round, whichever repositories it touched
+    watch       one round per repository: its own lock, its own report, its own exit code,
+                and the worst of them is what the command exits with
+    crawl       a named profile is crawled into the repository that defines it, never into
+                whichever one the environment happened to name
+
+**Two repositories defining one profile name is refused, not resolved.** Whichever answer the tool
+picked, it would be writing somebody's corpus into somebody else's, and it would do it quietly. An
+edit saved through `profile save` lands where the profile already is, for the same reason; only a
+name that exists nowhere yet is new, and new goes to the default repository.
+
+
 ## Commands
 
     Command      Purpose
@@ -266,6 +305,35 @@ and the panel refuses to write one it cannot commit rather than leaving an edit 
 again.
 
 
+## What a run says
+
+**A round is read as a narrative, so three recurring lines are dropped before they reach it.** Each
+is matched exactly, on its own logger, and everything else those loggers emit still arrives. A run
+started with `--verbose` is left alone entirely: the operator asked for DEBUG and gets it.
+
+    dropped                              emitted by                who wanted it
+    ----------------------------------   -----------------------   -----------------------------
+    empty link: <target>                 trafilatura.xml           nobody: see below
+    Current request statistics + table   the crawler, every 60s    the progress line above it
+    current_concurrency = 0; cpu = 0     crawlee's autoscaler      the numbers it was configured
+                                                                   with
+
+`Final request statistics` stays. It is the summary of the run, printed once when a crawler
+finishes, and it is the table worth reading.
+
+`empty link` is accurate and unactionable. Trafilatura warns once per anchor whose own text is
+empty, which on a documentation index is every card in the grid, and what the extraction drops is
+the card's href alone: the card's text is kept, and every destination is a sitemap entry the same
+run fetches on its own. Measured on `ai.google.dev/gemini-api/docs`, nine warnings for nine cards
+and no prose lost. One sweep of the AI corpora emitted forty-five of them at eight lines each,
+which was four fifths of everything it printed.
+
+Silencing is not the general answer to a noisy line, and the two filters this toolkit installs are
+opposite cases. Crawlee's crawl-delay warning is *wrong* on the seeded path and is dropped there
+only. This one is right, and is dropped because being right about an anchor nobody can act on is
+not worth burying the round in.
+
+
 ## A 404 is an answer, not a fault
 
 **A run learns from a 404 when somebody else chose the URL.** A suffixed run is told that the twin
@@ -327,7 +395,7 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 344 tests in about a minute.
+only mark is `browser`, for the tests needing Chromium. 362 tests in about a minute.
 
 The fixture server generates its sitemaps rather than serving them from disk, because crawlee
 refuses a relative `<loc>` and a static file cannot name the port the server picked at startup.

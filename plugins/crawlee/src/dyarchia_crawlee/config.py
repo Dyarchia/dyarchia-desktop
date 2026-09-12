@@ -46,17 +46,29 @@ class Settings(BaseSettings):
     output_dir: Path = Path('output')
     profiles_dir: Path = Path('profiles')
     storage_dir: Path = Path('storage')
+    repositories_dir: Path | None = None
 
     @classmethod
     def for_repository(cls, root: Path) -> Settings:
         """Settings pointing at one corpus repository: a directory holding data, profiles, output.
 
-        The same convention `scripts/watch.ps1 -Repository` sets in the environment, expressed once
-        on this side too. A machine watching several unrelated corpora keeps them in separate
-        repositories, so anything that reads more than one has to be able to name them.
+        A machine watching several unrelated corpora keeps them in separate repositories, so
+        anything that reads more than one has to be able to name them. `repositories_dir` is how a
+        machine says where they all are, and `dyarchia_crawlee.repositories` turns that into one of
+        these per repository.
+
+        These describe that repository and nothing else, so `repositories_dir` is dropped. Settings
+        carrying it would expand back into every repository on the machine the moment anything asked
+        them what they hold, and a per-repository answer that quietly means all of them is the kind
+        of wrong answer nobody can see is wrong.
         """
         root = root.resolve()
-        return cls(data_dir=root / 'data', profiles_dir=root / 'profiles', output_dir=root / 'output')
+        return cls(
+            data_dir=root / 'data',
+            profiles_dir=root / 'profiles',
+            output_dir=root / 'output',
+            repositories_dir=None,
+        )
 
     @property
     def project_root(self) -> Path:

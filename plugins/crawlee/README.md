@@ -266,6 +266,35 @@ and the panel refuses to write one it cannot commit rather than leaving an edit 
 again.
 
 
+## What a run says
+
+**A round is read as a narrative, so three recurring lines are dropped before they reach it.** Each
+is matched exactly, on its own logger, and everything else those loggers emit still arrives. A run
+started with `--verbose` is left alone entirely: the operator asked for DEBUG and gets it.
+
+    dropped                              emitted by                who wanted it
+    ----------------------------------   -----------------------   -----------------------------
+    empty link: <target>                 trafilatura.xml           nobody: see below
+    Current request statistics + table   the crawler, every 60s    the progress line above it
+    current_concurrency = 0; cpu = 0     crawlee's autoscaler      the numbers it was configured
+                                                                   with
+
+`Final request statistics` stays. It is the summary of the run, printed once when a crawler
+finishes, and it is the table worth reading.
+
+`empty link` is accurate and unactionable. Trafilatura warns once per anchor whose own text is
+empty, which on a documentation index is every card in the grid, and what the extraction drops is
+the card's href alone: the card's text is kept, and every destination is a sitemap entry the same
+run fetches on its own. Measured on `ai.google.dev/gemini-api/docs`, nine warnings for nine cards
+and no prose lost. One sweep of the AI corpora emitted forty-five of them at eight lines each,
+which was four fifths of everything it printed.
+
+Silencing is not the general answer to a noisy line, and the two filters this toolkit installs are
+opposite cases. Crawlee's crawl-delay warning is *wrong* on the seeded path and is dropped there
+only. This one is right, and is dropped because being right about an anchor nobody can act on is
+not worth burying the round in.
+
+
 ## A 404 is an answer, not a fault
 
 **A run learns from a 404 when somebody else chose the URL.** A suffixed run is told that the twin
@@ -327,7 +356,7 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 344 tests in about a minute.
+only mark is `browser`, for the tests needing Chromium. 350 tests in about a minute.
 
 The fixture server generates its sitemaps rather than serving them from disk, because crawlee
 refuses a relative `<loc>` and a static file cannot name the port the server picked at startup.

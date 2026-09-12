@@ -22,11 +22,17 @@ def catalogue_html() -> str:
 
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
-    """Settings pointed entirely at a temporary directory, so tests never touch the real project."""
+    """Settings pointed entirely at a temporary directory, so tests never touch the real project.
+
+    `repositories_dir` is cleared rather than left unset. Unset means the field falls back to the
+    developer's own .env, which on a machine holding corpus repositories drags every one of them
+    into a test that asked for a temporary directory and nothing else.
+    """
     return Settings(
         data_dir=tmp_path / 'data',
         output_dir=tmp_path / 'output',
         profiles_dir=tmp_path / 'profiles',
+        repositories_dir=None,
     )
 
 

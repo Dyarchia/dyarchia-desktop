@@ -14,7 +14,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from dyarchia_crawlee import __version__, digest, inventory, locking, registry, state
+from dyarchia_crawlee import __version__, digest, inventory, locking, registry, repositories, state
 from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.errors import ConfigurationError, DyarchiaCrawleeError
 from dyarchia_crawlee.models import CrawlerKind, ExtractionMode, LinkStrategy, OutputFormat, RunSpec
@@ -27,10 +27,13 @@ from dyarchia_crawlee.versioning.report import summary_line
 from dyarchia_crawlee.versioning.vcs import commit_path, repository_root
 from dyarchia_crawlee.watch import (
     EXIT_BUSY,
+    EXIT_CHANGES,
+    EXIT_FAILED,
+    EXIT_NO_CHANGES,
     WatchResult,
+    rounds,
     save_report,
     sweep,
-    watchable,
 )
 
 if TYPE_CHECKING:
@@ -240,7 +243,7 @@ def crawl(
     }
 
     try:
-        spec = _build_spec(ctx, profile, urls, fields_by_option, settings)
+        spec, settings = _build_spec(ctx, profile, urls, fields_by_option, settings)
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
@@ -313,8 +316,13 @@ def _build_spec(
     urls: list[str] | None,
     fields_by_option: dict[str, tuple[str, Any]],
     settings: Settings,
-) -> RunSpec:
-    """Resolve the run: a profile plus explicit overrides, or a purely ad-hoc set of flags."""
+) -> tuple[RunSpec, Settings]:
+    """Resolve the run and the repository it belongs to.
+
+    A named profile is crawled into the repository that defines it, whichever one the environment
+    happens to name. Anything else is ad-hoc and belongs to no corpus, so it runs under the
+    settings it was given.
+    """
     values: dict[str, Any] = dict(fields_by_option.values())
 
     if profile is not None:
@@ -322,14 +330,15 @@ def _build_spec(
         overrides = {field: value for option, (field, value) in fields_by_option.items() if option in typed}
         if urls:
             overrides['start_urls'] = urls
-        return registry.load(profile, settings).to_run_spec(**overrides)
+        found, owner = registry.locate(profile, settings)
+        return found.to_run_spec(**overrides), owner
 
     if not urls:
         raise ConfigurationError('give at least one URL, or select a saved profile with --profile')
 
     values['start_urls'] = urls
     values['name'] = values['name'] or derive_name(urls)
-    return RunSpec.model_validate(values)
+    return RunSpec.model_validate(values), settings
 
 
 def render_inventory(found: inventory.TargetInventory, depth: int | None, limit: int) -> None:
@@ -470,7 +479,7 @@ def digest_command(
     """
     settings = get_settings()
     try:
-        bundle = digest.build(list(names) if names else None, settings, group)
+        bundle = digest.across(list(names) if names else None, group, settings)
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
@@ -573,9 +582,9 @@ def profiles_command(
         bool, typer.Option('--json', help='Emit the profiles as JSON instead of a table.')
     ] = False,
 ) -> None:
-    """List the saved profiles this project knows about."""
+    """List the saved profiles this project knows about, across every corpus repository."""
     try:
-        found = registry.discover()
+        found = registry.everywhere()
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
@@ -591,8 +600,9 @@ def profiles_command(
                         'crawler': profile.crawler.value,
                         'snapshot': profile.snapshot,
                         'urls': [*profile.start_urls, *profile.sitemap_urls],
+                        'repository': str(repository.resolve(repository.data_dir).parent),
                     }
-                    for profile in found.values()
+                    for profile, repository in found.values()
                 ],
                 indent=2,
                 ensure_ascii=False,
@@ -604,15 +614,23 @@ def profiles_command(
         console.print('no profiles found')
         return
 
+    owners = {repository.data_dir for _, repository in found.values()}
+
+    """The repository column is shown only where there is more than one to tell apart. A machine
+    with a single corpus repository already knows which one every profile is in, and the column
+    costs the width the target URL needs to be readable."""
     table = Table(title='profiles', title_style='bold')
     table.add_column('name', style='bold')
+    if len(owners) > 1:
+        table.add_column('repository')
     table.add_column('crawler')
     table.add_column('target')
     table.add_column('description')
 
-    for profile in found.values():
+    for profile, repository in found.values():
         target = next(iter([*profile.start_urls, *profile.sitemap_urls]), '-')
-        table.add_row(profile.name, profile.crawler.value, target, profile.description or '-')
+        owner = [repository.resolve(repository.data_dir).parent.name] if len(owners) > 1 else []
+        table.add_row(profile.name, *owner, profile.crawler.value, target, profile.description or '-')
 
     console.print(table)
 
@@ -639,21 +657,30 @@ def profile_show(
     on stderr rather than in the document, so a redirect still produces a profile and not a warning.
     """
     settings = get_settings()
-    directory = settings.resolve(settings.profiles_dir)
-    for suffix in profile_loader.PROFILE_SUFFIXES:
-        path = directory / f'{name}{suffix}'
-        if path.is_file():
-            print(path.read_text(encoding='utf-8'), end='')
-            return
+    found = _profile_file(name, settings)
+    if found is not None:
+        print(found.read_text(encoding='utf-8'), end='')
+        return
 
     try:
-        profile = registry.load(name, settings)
+        profile, _ = registry.locate(name, settings)
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error
 
-    error_console.print(f'[yellow]{name} has no file in {directory}, so this is rendered[/yellow]')
+    error_console.print(f'[yellow]{name} has no file in any repository, so this is rendered[/yellow]')
     print(profile_loader.render_profile(profile), end='')
+
+
+def _profile_file(name: str, settings: Settings) -> Path | None:
+    """The document one profile is written in, wherever on this machine that is."""
+    for repository in repositories.known(settings):
+        directory = repository.resolve(repository.profiles_dir)
+        for suffix in profile_loader.PROFILE_SUFFIXES:
+            candidate = directory / f'{name}{suffix}'
+            if candidate.is_file():
+                return candidate
+    return None
 
 
 @profile_app.command(name='save')
@@ -673,13 +700,20 @@ def profile_save(
     A profile lives with the corpus it describes, in a repository that tracks it, so a save that
     leaves no commit behind is a change nobody can find again. This refuses one by default and says
     what stands in the way; `--allow-untracked` is for a corpus that is deliberately not versioned.
+
+    An edit lands where the profile already is. Writing it to the default repository instead would
+    leave the original untouched, put a second definition of one name on the machine, and turn the
+    next command into an error about two repositories claiming it. A profile that exists nowhere
+    yet is new, and new goes to the default repository.
     """
     settings = get_settings()
+    existing = _profile_file(name, settings)
+    directory = existing.parent if existing else settings.resolve(settings.profiles_dir)
     try:
         saved = profile_loader.save_profile_text(
             name,
             sys.stdin.read(),
-            settings.resolve(settings.profiles_dir),
+            directory,
             require_commit=not allow_untracked,
         )
     except DyarchiaCrawleeError as error:
@@ -765,14 +799,51 @@ def watch_command(
         )
         raise typer.Exit(code=1)
 
-    selected = list(names) if names else watchable(settings, group)
+    try:
+        covered = rounds(list(names) if names else None, group, settings)
+    except DyarchiaCrawleeError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
 
-    if not selected:
+    if not covered:
         whose = (
             f'no profiles in group {group!r} ask for snapshots' if group else 'no profiles ask for snapshots'
         )
         error_console.print(f'[bold red]{whose}, so there is nothing to watch[/bold red]')
         raise typer.Exit(code=1)
+
+    codes = [
+        _one_round(repository, selected, group, commit, named=len(covered) > 1)
+        for repository, selected in covered
+    ]
+    raise typer.Exit(code=max(codes, key=_exit_rank))
+
+
+_EXIT_RANK = {EXIT_NO_CHANGES: 0, EXIT_CHANGES: 1, EXIT_BUSY: 2, EXIT_FAILED: 3}
+
+
+def _exit_rank(code: int) -> int:
+    """How one round's verdict outranks another's, when a request covered several repositories.
+
+    The order is the one a single round already states: a failure outranks a change, because a
+    target that did not answer hides both. A round that never ran outranks a change for the same
+    reason and loses to a failure, since not knowing is better news than knowing something broke.
+    Comparing the codes themselves does not work, and quietly: they are 0, 1, 10 and 30, so the
+    numeric maximum would report a change over the failure that happened in the repository before
+    it and hand a scheduler a clean-looking exit.
+    """
+    return _EXIT_RANK.get(code, len(_EXIT_RANK))
+
+
+def _one_round(settings: Settings, selected: list[str], group: str | None, commit: bool, named: bool) -> int:
+    """Sweep one repository, report it, and hand back its exit code.
+
+    Named when the request covered more than one, because two reports in a row with nothing between
+    them is two rounds nobody can tell apart.
+    """
+    if named:
+        root = settings.resolve(settings.data_dir).parent
+        console.print(f'sweeping {len(selected)} targets in [bold]{root}[/bold]')
 
     key = group or locking.EVERYTHING
     try:
@@ -781,13 +852,13 @@ def watch_command(
             document = save_report(result, settings)
     except locking.RoundInProgressError as busy:
         error_console.print(f'[bold yellow]{busy}[/bold yellow]')
-        raise typer.Exit(code=EXIT_BUSY) from busy
+        return EXIT_BUSY
 
     if commit:
         _commit_sweep(result, settings)
 
     render_watch(result, document)
-    raise typer.Exit(code=result.exit_code)
+    return result.exit_code
 
 
 def _commit_sweep(result: WatchResult, settings: Settings) -> None:

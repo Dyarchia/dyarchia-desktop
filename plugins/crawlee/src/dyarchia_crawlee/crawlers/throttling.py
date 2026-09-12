@@ -16,6 +16,8 @@ directive with crawlee's own parser and sets it on the throttler directly.
 
 from __future__ import annotations
 
+import logging
+from typing import Any
 from urllib.parse import urlparse
 
 from crawlee._utils.robots import RobotsTxtFile
@@ -84,3 +86,41 @@ def _one_url_per_domain(urls: list[str]) -> list[str]:
         if hostname and hostname not in seen:
             seen[hostname] = url
     return list(seen.values())
+
+
+CRAWL_DELAY_WARNING = 'Crawl-delay directives from robots.txt will not be enforced'
+
+
+class _CrawlDelayHandledHere(logging.Filter):
+    """Drops crawlee's crawl-delay warning on the one path where it is false."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return CRAWL_DELAY_WARNING not in record.getMessage()
+
+
+def crawl_delay_is_ours(spec: RunSpec, manager: RequestManager | None) -> bool:
+    """Whether this run applies the crawl-delay itself, which is the seeded shape and only that.
+
+    True means a throttler was built and then wrapped, so crawlee's isinstance check will fail and
+    `apply_robots_crawl_delay` has already done the work. False means either the throttler is the
+    manager, in which case crawlee does it, or there is no throttler at all, in which case the
+    directive really is unenforced and the warning is the truth.
+    """
+    return (
+        spec.respect_robots
+        and manager is not None
+        and not isinstance(manager, ThrottlingRequestManager)
+        and bool(target_domains([*spec.start_urls, *spec.sitemap_urls]))
+    )
+
+
+def silence_crawl_delay_warning(crawler: Any) -> None:
+    """Stop the crawler repeating a warning this run has already answered.
+
+    Crawlee reports its own check rather than the outcome, so a seeded run is told on every start
+    that crawl-delay will not be enforced, moments after this module enforced it. Left in place the
+    line outlives everyone's memory of why it is wrong. Matched on the message because there is no
+    code to match on; if upstream rewrites the sentence the warning comes back, which is noise
+    rather than a defect.
+    """
+    crawler.log.addFilter(_CrawlDelayHandledHere())

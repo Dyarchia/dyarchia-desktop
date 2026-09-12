@@ -25,6 +25,7 @@ from dyarchia_crawlee.errors import BrowserNotInstalledError
 from dyarchia_crawlee.extraction.boilerplate import trim_shared_boilerplate
 from dyarchia_crawlee.extraction.dom import SoupAdapter, adapt
 from dyarchia_crawlee.extraction.strategies import RawPage, build_item
+from dyarchia_crawlee.logs import apply_log_policy
 from dyarchia_crawlee.models import FailureRecord, RunSpec, ScrapedItem
 from dyarchia_crawlee.patterns import to_matchers
 from dyarchia_crawlee.runtime import reset_storage_state, use_private_storage
@@ -319,6 +320,7 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
 
     request_manager = await build_request_source(spec, settings)
     crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
+    apply_log_policy(crawler)
     if crawl_delay_is_ours(spec, request_manager):
         silence_crawl_delay_warning(crawler)
 

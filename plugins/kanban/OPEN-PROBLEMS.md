@@ -83,9 +83,3 @@ Anything but Windows        Every measured fact was taken on Windows 11 with a
                             finding whose equivalent elsewhere is unknown
 ```
 
-
-## 3. Standing requests on kanon
-
-- **A screen-reader-only class.** The live region here is a prefixed `.kanban-sr`.
-
-The `[hidden]` request was shipped in kanon on 2026-09-11 and the local workaround is gone.

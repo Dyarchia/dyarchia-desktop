@@ -15,7 +15,12 @@ from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.crawlers.context import safe_page
 from dyarchia_crawlee.crawlers.factory import AnyCrawler, build_crawler
 from dyarchia_crawlee.crawlers.settings import build_http_client
-from dyarchia_crawlee.crawlers.throttling import build_request_manager
+from dyarchia_crawlee.crawlers.throttling import (
+    apply_robots_crawl_delay,
+    build_request_manager,
+    crawl_delay_is_ours,
+    silence_crawl_delay_warning,
+)
 from dyarchia_crawlee.errors import BrowserNotInstalledError
 from dyarchia_crawlee.extraction.boilerplate import trim_shared_boilerplate
 from dyarchia_crawlee.extraction.dom import SoupAdapter, adapt
@@ -200,13 +205,21 @@ async def retry_next_candidate(context: Any, spec: RunSpec) -> bool:
 
 async def build_request_source(spec: RunSpec, settings: Settings) -> RequestManager | None:
     """Assemble the request manager: per-domain throttling, plus sitemap seeding when configured."""
+    client = build_http_client(spec, settings)
     throttler = await build_request_manager(spec)
+
+    await apply_robots_crawl_delay(throttler, spec, client)
+
+    """Applied before the tandem hides the throttler. Crawlee sets the directive only when its own
+    request manager is the throttler, which the sitemap path never satisfies, so this is the only
+    place a seeded run learns what robots.txt asked for."""
+
     if not spec.seeded_by_sitemap:
         return throttler
 
     loader = SitemapRequestLoader(
         sitemap_urls=spec.sitemap_urls,
-        http_client=build_http_client(spec, settings),
+        http_client=client,
         include=to_matchers(spec.include) or None,
         exclude=to_matchers(spec.exclude) or None,
         transform_request_function=_suffix_transform(spec.fetch_suffix) if spec.fetch_suffix else None,
@@ -256,11 +269,33 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     failures: list[FailureRecord] = []
 
     async def handle_page(context: Any) -> None:
+        if _status_code(context) == 404:
+            await handle_missing(context)
+            return
+
         page = await to_raw_page(context)
         item = build_item(page, spec)
         await context.push_data(item.model_dump(mode='json'))
         if spec.follows_links:
             await enqueue_next(context, spec)
+
+    async def handle_missing(context: Any) -> None:
+        """Where a suffixed run lands when a candidate is not there.
+
+        The 404 is an answer: it says this is not where the twin lives. Another candidate means
+        keep looking, and the page itself is always the last one, so running out means the site
+        serves nothing at this URL at all. That is a stale sitemap entry rather than a page whose
+        twin is missing, and it is the only one of the two worth reporting.
+        """
+        if await retry_next_candidate(context, spec):
+            return
+        failures.append(
+            FailureRecord(
+                url=_canonical_url(context.request),
+                error='the site serves nothing at this URL, so the sitemap entry is stale',
+                status_code=404,
+            )
+        )
 
     async def handle_failure(context: Any, error: Exception) -> None:
         if await retry_next_candidate(context, spec):
@@ -275,6 +310,8 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
 
     request_manager = await build_request_source(spec, settings)
     crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
+    if crawl_delay_is_ours(spec, request_manager):
+        silence_crawl_delay_warning(crawler)
 
     try:
         statistics = await crawler.run(seed_requests(spec) or None)

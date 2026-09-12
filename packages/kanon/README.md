@@ -225,14 +225,12 @@ font, so the system carries six static faces at weights 300, 400 and 500.
 
 One scale, no breakpoint, no `clamp()`.
 
-**The prose scale is a second, shorter scale for documents the system did not write.** A
-product rendering markdown or model output cannot put a class on every element, so
-`.dya-prose` is the one block that styles by element. Inside it `h1` takes
-`--dya-size-h2`, `h2` takes `--dya-size-h3`, `h3` takes `--dya-size-h4`, and `h4` to `h6`
-sit at body size and separate by weight — the single sanctioned exception to hierarchy
-coming from size, because six levels do not fit in four sizes. Prose is content, so it is
-sans and keeps its case; the one uppercase element inside it is a table head, which is a
-label.
+**The prose sizes are a second, shorter scale for documents the system did not write**, and
+they are tokens rather than a component now: `--dya-size-h2` through `--dya-size-h4` are
+declared and nothing in this system applies them, because the block that did had no
+consumer left. A product rendering markdown cannot put a class on every element, so
+whatever renders it next styles by element under its own prefix, from these sizes. Prose is
+content: sans, and it keeps its case.
 
 `.dya-math` is the exception inside the exception: notation is data, so it is mono at
 `0.94em` of its surroundings carrying `--dya-text-2` — 11.23 and 10.71 on Gi's two
@@ -273,20 +271,23 @@ duration** — every rule resolves to a token. That is what makes a second theme
 and it is the first thing to check when something looks right in one theme and wrong in
 the other.
 
+**The system carries only what something consumes.** A class nobody uses is dead code and
+goes, however well it follows the rules. A plugin that needs what the system does not
+declare builds it ad-hoc under its own prefix and proposes it upstream — which is how
+`[hidden]`, `log`, the status modifiers, `bar--inset`, `field--auto`, `button--bare` and
+`sr-only` all arrived. A class kept for nobody is unexercised, undocumented by use, and
+wrong in ways the first consumer discovers rather than the author.
+
 ```text
-Structure    panel bar (--flush --inset) dock card card__header card__body rule brand
-Pressable    button (--quiet --sm --danger --bare) key chip item entry (--strong --active)
-Input        field (--sm --auto) toggle checkbox radio slider
-Content      tag badge (--success --warning --danger --soft) table row (--selected)
-             metric display heading text (--success --warning --danger) label eyebrow
-             value mono caret
-Documents    prose (styles by element) prose__scroll
-             code (__kw __str __num __com __fn __pun)
-             log
-             math (--block)
-Layers       menu menu__item tooltip
-Navigation   tabs tab pagination
-Absence      empty loading skeleton
+Structure    bar (--flush --inset) card card__header brand
+Pressable    button (--quiet --sm --danger --bare) key (--active) chip entry (--active)
+Input        field (--sm --auto) checkbox
+Content      tag badge (--success --warning --danger --soft) table row
+             text (--success --danger) label eyebrow value mono key-label
+Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
+Layers       menu menu__item (--selected) menu__shortcut
+Navigation   tabs tab
+Absence      empty loading
 Assistive    sr-only
 ```
 
@@ -326,13 +327,14 @@ There is nothing to build, lint or test. What replaces those commands:
 
 ## Open questions
 
-- Ten components are derived from these rules rather than observed in a design: toggle,
-  checkbox, radio, slider, content tabs, pagination, empty, loading and skeleton.
 - Six of Oneiro's ten surfaces are interpolated and have not been seen against real
   content. The theme is also tiring to read over a long session, which is the same
   observation from the other side.
-- `.dya-prose` styles by element and everything else by class. A second such exception
-  would mean the rule is not holding.
-- The prose scale has one heading size, which is thin for a product whose plugins render
-  arbitrary documents and model output.
+- The prose block went with its last consumer, and the SDK's markdown renderer still emits
+  `code`, `math` and `prose__scroll`. Whatever renders markdown next needs typography for
+  the elements between them, and the heading scale has one step, which is thin for
+  arbitrary documents. docviewer answers both today with its own prefixed rules, dropping
+  `h2` and `h3` into the mono label idiom.
+- `text--warning` went and its two siblings stayed, because nothing reports a warning in
+  prose yet. The triad returns whole the day something does.
 - The IBM Plex stylistic sets are undetermined.

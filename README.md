@@ -58,7 +58,6 @@ The pieces:
             terminal/            embedded terminal (xterm.js + node-pty)
             docviewer/           native file picker + markdown, mermaid, source toggle
             player/              audio/video player (dyarchia-media://)
-            eforoi/              a panel of models with one of them comparing the answers
             kanban/              a task board that dispatches work to Claude Code
             crawlee/             a crawling toolkit and the panel that drives it (python)
         examples/

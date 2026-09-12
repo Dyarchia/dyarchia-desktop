@@ -15,7 +15,12 @@ from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.crawlers.context import safe_page
 from dyarchia_crawlee.crawlers.factory import AnyCrawler, build_crawler
 from dyarchia_crawlee.crawlers.settings import build_http_client
-from dyarchia_crawlee.crawlers.throttling import apply_robots_crawl_delay, build_request_manager
+from dyarchia_crawlee.crawlers.throttling import (
+    apply_robots_crawl_delay,
+    build_request_manager,
+    crawl_delay_is_ours,
+    silence_crawl_delay_warning,
+)
 from dyarchia_crawlee.errors import BrowserNotInstalledError
 from dyarchia_crawlee.extraction.boilerplate import trim_shared_boilerplate
 from dyarchia_crawlee.extraction.dom import SoupAdapter, adapt
@@ -283,6 +288,8 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
 
     request_manager = await build_request_source(spec, settings)
     crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
+    if crawl_delay_is_ours(spec, request_manager):
+        silence_crawl_delay_warning(crawler)
 
     try:
         statistics = await crawler.run(seed_requests(spec) or None)

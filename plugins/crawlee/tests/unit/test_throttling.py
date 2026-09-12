@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 import pytest
@@ -9,7 +10,13 @@ from crawlee._utils.robots import RobotsTxtFile
 from crawlee.request_loaders import ThrottlingRequestManager
 
 from dyarchia_crawlee.crawlers import throttling
-from dyarchia_crawlee.crawlers.throttling import apply_robots_crawl_delay, target_domains
+from dyarchia_crawlee.crawlers.throttling import (
+    CRAWL_DELAY_WARNING,
+    apply_robots_crawl_delay,
+    crawl_delay_is_ours,
+    silence_crawl_delay_warning,
+    target_domains,
+)
 from dyarchia_crawlee.models import RunSpec
 
 ASKS_FOR_TWO = 'User-agent: *\nCrawl-delay: 2\nAllow: /\n'
@@ -121,3 +128,46 @@ async def test_without_a_throttler_there_is_nothing_to_tell(monkeypatch: pytest.
 
     spec = spec_for(start_urls=['https://slow.example/'])
     assert await apply_robots_crawl_delay(None, spec, cast('Any', object())) == []
+
+
+def tandem() -> Any:
+    """Whatever the crawler ends up holding on the seeded path, which is not the throttler."""
+    return cast('Any', object())
+
+
+def throttler() -> Any:
+    return recorder()
+
+
+def test_the_seeded_shape_owns_the_delay() -> None:
+    spec = spec_for(sitemap_urls=['https://slow.example/sitemap.xml'])
+    assert crawl_delay_is_ours(spec, tandem()) is True
+
+
+def test_a_bare_throttler_leaves_it_to_crawlee() -> None:
+    spec = spec_for(start_urls=['https://slow.example/'])
+    assert crawl_delay_is_ours(spec, throttler()) is False
+
+
+def test_no_domains_means_the_warning_is_the_truth() -> None:
+    """A URL with no hostname builds no throttler, so nothing enforces the directive and the
+    warning should survive. The model accepts such a URL, which is what makes this reachable."""
+    assert crawl_delay_is_ours(spec_for(start_urls=['file:///tmp/pages']), tandem()) is False
+
+
+def test_opting_out_of_robots_owns_nothing() -> None:
+    spec = spec_for(start_urls=['https://slow.example/'], respect_robots=False)
+    assert crawl_delay_is_ours(spec, tandem()) is False
+
+
+def test_the_filter_drops_the_warning_and_keeps_everything_else() -> None:
+    logger = logging.getLogger('test-crawler-log')
+    crawler = cast('Any', type('Crawler', (), {'log': logger})())
+    silence_crawl_delay_warning(crawler)
+
+    def emitted(message: str) -> bool:
+        record = logger.makeRecord(logger.name, logging.WARNING, __file__, 1, message, None, None)
+        return all(candidate.filter(record) for candidate in logger.filters)
+
+    assert emitted(f'The option is enabled, but {CRAWL_DELAY_WARNING}. To enable it, do x.') is False
+    assert emitted('Request to https://site.example/a failed and reached maximum retries') is True

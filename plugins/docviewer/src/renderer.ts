@@ -52,24 +52,6 @@ const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-5) var(--dya-space-6);
 }
-.docviewer-open {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: none;
-    background: none;
-    box-shadow: none;
-    color: var(--dya-text-4);
-    cursor: pointer;
-    transition: transform var(--dya-dur-press) var(--dya-ease-press);
-}
-.docviewer-open:hover {
-    color: var(--dya-text);
-}
-.docviewer-open:active {
-    transform: scale(var(--dya-press-scale));
-}
 .docviewer-open svg {
     display: block;
     width: 14px;
@@ -255,8 +237,8 @@ export function activate(ctx: PluginContext): void {
             function openButton(large = false): HTMLButtonElement {
                 const button = document.createElement('button')
                 button.className = large
-                    ? 'docviewer-open docviewer-open--lg'
-                    : 'docviewer-open'
+                    ? 'dya-button dya-button--bare docviewer-open docviewer-open--lg'
+                    : 'dya-button dya-button--bare docviewer-open'
                 button.title = 'Open document'
                 button.setAttribute('aria-label', 'Open document')
                 button.innerHTML = DOCS_ICON

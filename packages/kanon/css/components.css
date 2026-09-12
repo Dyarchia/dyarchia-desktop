@@ -447,6 +447,24 @@
     color: var(--dya-text-2);
 }
 
+.dya-button--bare {
+    height: auto;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--dya-text-4);
+    transition: transform var(--dya-dur-press) var(--dya-ease-press);
+}
+
+.dya-button--bare:hover {
+    background-color: transparent;
+    color: var(--dya-text);
+}
+
+.dya-button--bare:active {
+    transform: scale(var(--dya-press-scale));
+}
+
 .dya-button--sm {
     height: 22px;
     padding: 0 var(--dya-space-2);
@@ -991,4 +1009,16 @@ textarea.dya-field {
     height: 1em;
     vertical-align: text-bottom;
     background: var(--dya-accent);
+}
+
+.dya-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }

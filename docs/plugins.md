@@ -199,7 +199,7 @@ The order to work in:
 ```text
 Structure    dya-panel  dya-bar (--flush --inset)  dya-dock  dya-card
              dya-card__header  dya-card__body  dya-rule  dya-brand
-Pressable    dya-button (--quiet --sm --danger)  dya-key  dya-chip  dya-item
+Pressable    dya-button (--quiet --sm --danger --bare)  dya-key  dya-chip  dya-item
              dya-entry (--strong --active)
 Input        dya-field (--sm --auto)  dya-toggle  dya-checkbox  dya-radio  dya-slider
 Content      dya-tag  dya-badge  dya-table  dya-row  dya-metric  dya-display
@@ -209,6 +209,7 @@ Documents    dya-prose  dya-code  dya-log  dya-math
 Layers       dya-menu  dya-menu__item  dya-tooltip
 Navigation   dya-tabs  dya-tab  dya-pagination
 Absence      dya-empty  dya-loading  dya-skeleton
+Assistive    dya-sr-only
 ```
 
 Four carry a trap worth knowing before the first render: **`dya-field` is full width** and

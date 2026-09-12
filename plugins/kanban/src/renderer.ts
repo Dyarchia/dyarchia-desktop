@@ -235,7 +235,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const watch = el('div', 'kanban-watch')
     watch.hidden = true
 
-    const live = el('div', 'kanban-sr')
+    const live = el('div', 'dya-sr-only')
     live.setAttribute('aria-live', 'polite')
 
     const error = el('div', 'kanban-error')

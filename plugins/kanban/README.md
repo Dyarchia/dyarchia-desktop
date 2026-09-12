@@ -172,8 +172,9 @@ closing block, and the card lands in a state that names the refusal instead of r
 Already paid for. Do not rediscover them.
 
 1. **`overflow: hidden` on a card makes it a scroll container** and sets its automatic minimum
-   size to zero. It cost an hour in eforoi: cards collapsed from 31px to 15px and a 510px card
-   overflowed a 416px row. Do not ask one element to both scroll and lay out.
+   size to zero. It cost an hour in a panel that has since been removed: cards collapsed from 31px
+   to 15px and a 510px card overflowed a 416px row. Do not ask one element to both scroll and lay
+   out.
 2. **`grid-column: span N` survives nesting.** A card carrying span 12 inside a three-column band
    generated nine implicit 0px tracks. A band must reset `grid-column: auto` on its children.
 3. **The `dyarchia-plugin://` response is cached** and the main module is read only at startup.

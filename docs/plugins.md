@@ -196,19 +196,22 @@ The order to work in:
 3. **A class exists but is nearly right.** Do not patch it locally. A product that
    restyles `.dya-button` has forked the system. Propose the modifier upstream.
 
+The system declares only what something consumes, so the list above is short on purpose and
+a gap in it is normal rather than an oversight. Building your own and proposing it is the
+route every class added in the last week took.
+
 ```text
-Structure    dya-panel  dya-bar (--flush --inset)  dya-dock  dya-card
-             dya-card__header  dya-card__body  dya-rule  dya-brand
-Pressable    dya-button (--quiet --sm --danger --bare)  dya-key  dya-chip  dya-item
-             dya-entry (--strong --active)
-Input        dya-field (--sm --auto)  dya-toggle  dya-checkbox  dya-radio  dya-slider
-Content      dya-tag  dya-badge  dya-table  dya-row  dya-metric  dya-display
-             dya-heading  dya-text (--success --warning --danger)  dya-label
-             dya-eyebrow  dya-value  dya-mono  dya-key-label
-Documents    dya-prose  dya-code  dya-log  dya-math
-Layers       dya-menu  dya-menu__item  dya-tooltip
-Navigation   dya-tabs  dya-tab  dya-pagination
-Absence      dya-empty  dya-loading  dya-skeleton
+Structure    dya-bar (--flush --inset)  dya-card  dya-card__header  dya-brand
+Pressable    dya-button (--quiet --sm --danger --bare)  dya-key (--active)
+             dya-chip  dya-entry (--active)
+Input        dya-field (--sm --auto)  dya-checkbox
+Content      dya-tag  dya-badge (--success --warning --danger --soft)  dya-table  dya-row
+             dya-text (--success --danger)  dya-label  dya-eyebrow  dya-value
+             dya-mono  dya-key-label
+Documents    dya-code  dya-log  dya-math (--block)  dya-prose__scroll
+Layers       dya-menu  dya-menu__item (--selected)  dya-menu__shortcut
+Navigation   dya-tabs  dya-tab
+Absence      dya-empty  dya-loading
 Assistive    dya-sr-only
 ```
 

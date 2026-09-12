@@ -34,6 +34,7 @@ def test_an_extensionless_url_offers_both_forms() -> None:
     assert suffix_candidates(PAGE, '.md') == [
         'https://site.example/docs/intro.md',
         'https://site.example/docs/intro/index.md',
+        PAGE,
     ]
 
 
@@ -89,12 +90,13 @@ def test_a_trailing_slash_offers_both_conventions() -> None:
     assert suffix_candidates('https://site.example/guide/', '.md') == [
         'https://site.example/guide.md',
         'https://site.example/guide/index.md',
+        'https://site.example/guide/',
     ]
 
 
 def test_a_bare_host_has_no_stem_to_strip() -> None:
     for url in ('https://site.example/', 'https://site.example'):
-        assert suffix_candidates(url, '.md') == ['https://site.example/index.md']
+        assert suffix_candidates(url, '.md') == ['https://site.example/index.md', url]
 
 
 def test_repeated_slashes_are_folded() -> None:
@@ -119,6 +121,7 @@ def test_a_page_that_names_its_extension_swaps_it_for_the_suffix() -> None:
     assert suffix_candidates(page, '.md') == [
         'https://developer.salesforce.com/docs/ai/agentforce/guide/get-started.md',
         'https://developer.salesforce.com/docs/ai/agentforce/guide/get-started.html.md',
+        page,
     ]
 
 
@@ -135,4 +138,20 @@ def test_an_extensionless_page_is_untouched_by_the_swap() -> None:
     assert suffix_candidates(PAGE, '.md') == [
         'https://site.example/docs/intro.md',
         'https://site.example/docs/intro/index.md',
+        PAGE,
+    ]
+
+
+def test_the_page_itself_is_always_the_last_candidate() -> None:
+    """A publisher that mirrors most pages does not mirror all of them, and the page is still
+    content. Asking for it last is also what separates a page with no twin from a URL the sitemap
+    lists and the site no longer serves."""
+    for url in (PAGE, 'https://site.example/guide/', 'https://site.example/a.html'):
+        assert suffix_candidates(url, '.md')[-1] == url
+
+
+def test_an_already_suffixed_url_is_not_offered_twice() -> None:
+    """It is its own page, so appending it again would ask for the same URL a second time."""
+    assert suffix_candidates('https://site.example/docs/intro.md', '.md') == [
+        'https://site.example/docs/intro.md'
     ]

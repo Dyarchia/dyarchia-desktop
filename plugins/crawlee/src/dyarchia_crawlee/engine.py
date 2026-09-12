@@ -269,11 +269,33 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     failures: list[FailureRecord] = []
 
     async def handle_page(context: Any) -> None:
+        if _status_code(context) == 404:
+            await handle_missing(context)
+            return
+
         page = await to_raw_page(context)
         item = build_item(page, spec)
         await context.push_data(item.model_dump(mode='json'))
         if spec.follows_links:
             await enqueue_next(context, spec)
+
+    async def handle_missing(context: Any) -> None:
+        """Where a suffixed run lands when a candidate is not there.
+
+        The 404 is an answer: it says this is not where the twin lives. Another candidate means
+        keep looking, and the page itself is always the last one, so running out means the site
+        serves nothing at this URL at all. That is a stale sitemap entry rather than a page whose
+        twin is missing, and it is the only one of the two worth reporting.
+        """
+        if await retry_next_candidate(context, spec):
+            return
+        failures.append(
+            FailureRecord(
+                url=_canonical_url(context.request),
+                error='the site serves nothing at this URL, so the sitemap entry is stale',
+                status_code=404,
+            )
+        )
 
     async def handle_failure(context: Any, error: Exception) -> None:
         if await retry_next_candidate(context, spec):

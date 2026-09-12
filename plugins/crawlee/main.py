@@ -85,9 +85,18 @@ def _read(args: list[str], stdin: str | None = None) -> str:
 
 
 def _output_directory() -> Path | None:
-    """Where this machine's corpus repository writes, for the digest a changed round produces."""
+    """Where the digest of a changed round goes.
+
+    A round can span every corpus repository this machine holds, and the digest describes the round
+    rather than any one of them, so it lands in the default repository: the one the settings name,
+    which is where anything belonging to no particular corpus already goes. Picking whichever
+    repository sorted first would move the file the day somebody clones another one.
+    """
     repositories = json.loads(_read(['state', '--json'])).get('repositories', [])
-    return Path(repositories[0]['output']) if repositories else None
+    chosen = next((entry for entry in repositories if entry.get('default')), None) or next(
+        iter(repositories), None
+    )
+    return Path(chosen['output']) if chosen else None
 
 
 def activate(ctx: Any) -> None:

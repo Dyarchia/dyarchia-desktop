@@ -30,7 +30,7 @@ from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.storage.snapshots import CHANGES_DOCUMENT
 from dyarchia_crawlee.versioning.diffing import ChangeKind, load_report
 from dyarchia_crawlee.versioning.manifest import load_manifest
-from dyarchia_crawlee.watch import WATCH_RESULT, watchable
+from dyarchia_crawlee.watch import WATCH_RESULT, rounds, watchable
 
 
 @dataclass(slots=True)
@@ -241,6 +241,24 @@ def build(
     settings = settings or get_settings()
     chosen = names or watchable(settings, group)
     return Digest(targets=[_target(name, settings) for name in chosen])
+
+
+def across(
+    names: list[str] | None = None,
+    group: str | None = None,
+    settings: Settings | None = None,
+) -> Digest:
+    """The same digest, over every corpus repository this machine holds.
+
+    A round can span two repositories, so a digest that reads only the one the environment names
+    reports half of what just happened and looks complete doing it. Each repository is asked about
+    its own targets and the answers become one document, because what the operator wants to read is
+    the round, not the folder it landed in.
+    """
+    targets: list[DigestTarget] = []
+    for repository, selected in rounds(names, group, settings):
+        targets += build(selected, repository).targets
+    return Digest(targets=targets)
 
 
 def _sections(target: DigestTarget) -> list[list[Any]]:

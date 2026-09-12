@@ -282,17 +282,26 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
     async def handle_missing(context: Any) -> None:
         """Where a suffixed run lands when a candidate is not there.
 
-        The 404 is an answer: it says this is not where the twin lives. Another candidate means
-        keep looking, and the page itself is always the last one, so running out means the site
-        serves nothing at this URL at all. That is a stale sitemap entry rather than a page whose
-        twin is missing, and it is the only one of the two worth reporting.
+        The 404 is an answer. For a suffixed run it says this is not where the twin lives, and
+        another candidate means keep looking; the page itself is always the last one, so running
+        out means the site serves nothing at this URL at all. For a run seeded from a sitemap and
+        following no links there are no candidates and the first 404 is already that answer.
+
+        Only a run whose every URL came from the sitemap can call the entry stale. One that
+        follows links may have found the 404 behind a broken link on the site instead, which is
+        the same outcome for the corpus and a different thing to say about it.
         """
         if await retry_next_candidate(context, spec):
             return
+        listed = spec.seeded_by_sitemap and not spec.follows_links
         failures.append(
             FailureRecord(
                 url=_canonical_url(context.request),
-                error='the site serves nothing at this URL, so the sitemap entry is stale',
+                error=(
+                    'the site serves nothing at this URL, so the sitemap entry is stale'
+                    if listed
+                    else 'the site serves nothing at this URL'
+                ),
                 status_code=404,
             )
         )

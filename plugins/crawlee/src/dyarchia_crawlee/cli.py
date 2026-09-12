@@ -27,6 +27,7 @@ from dyarchia_crawlee.versioning.report import summary_line
 from dyarchia_crawlee.versioning.vcs import commit_path, repository_root
 from dyarchia_crawlee.watch import (
     EXIT_BUSY,
+    EXIT_CHANGES,
     EXIT_FAILED,
     EXIT_NO_CHANGES,
     WatchResult,
@@ -811,14 +812,27 @@ def watch_command(
         error_console.print(f'[bold red]{whose}, so there is nothing to watch[/bold red]')
         raise typer.Exit(code=1)
 
-    worst = EXIT_NO_CHANGES
-    for repository, selected in covered:
-        code = _one_round(repository, selected, group, commit, named=len(covered) > 1)
-        worst = code if code > worst or worst == EXIT_NO_CHANGES else worst
-        if code == EXIT_FAILED:
-            worst = EXIT_FAILED
+    codes = [
+        _one_round(repository, selected, group, commit, named=len(covered) > 1)
+        for repository, selected in covered
+    ]
+    raise typer.Exit(code=max(codes, key=_exit_rank))
 
-    raise typer.Exit(code=worst)
+
+_EXIT_RANK = {EXIT_NO_CHANGES: 0, EXIT_CHANGES: 1, EXIT_BUSY: 2, EXIT_FAILED: 3}
+
+
+def _exit_rank(code: int) -> int:
+    """How one round's verdict outranks another's, when a request covered several repositories.
+
+    The order is the one a single round already states: a failure outranks a change, because a
+    target that did not answer hides both. A round that never ran outranks a change for the same
+    reason and loses to a failure, since not knowing is better news than knowing something broke.
+    Comparing the codes themselves does not work, and quietly: they are 0, 1, 10 and 30, so the
+    numeric maximum would report a change over the failure that happened in the repository before
+    it and hand a scheduler a clean-looking exit.
+    """
+    return _EXIT_RANK.get(code, len(_EXIT_RANK))
 
 
 def _one_round(settings: Settings, selected: list[str], group: str | None, commit: bool, named: bool) -> int:
@@ -828,7 +842,8 @@ def _one_round(settings: Settings, selected: list[str], group: str | None, commi
     them is two rounds nobody can tell apart.
     """
     if named:
-        console.print(f'[bold]{settings.resolve(settings.data_dir).parent}[/bold]')
+        root = settings.resolve(settings.data_dir).parent
+        console.print(f'sweeping {len(selected)} targets in [bold]{root}[/bold]')
 
     key = group or locking.EVERYTHING
     try:

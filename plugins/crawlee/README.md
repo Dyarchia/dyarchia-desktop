@@ -146,11 +146,8 @@ that exist.
 **The page itself is always the last candidate**, because a publisher that mirrors most of its
 pages does not mirror all of them, and a page with no twin is still content. Asking for it is also
 what tells the two failures apart: a 404 there means the site serves nothing at that URL, so the
-sitemap entry is stale, and that is the only one of the two worth reporting. A suffixed run treats
-404 as an answer rather than an error — `ignore_http_error_status_codes` — so probing costs a
-request and not a traceback, a failed request or a round that says it cannot vouch for itself. One
-sweep of learn.chatgpt.com had both: two pages that publish no twin, and one URL the site had
-dropped.
+sitemap entry is stale, and that is the only one of the two worth reporting. One sweep of
+learn.chatgpt.com had both: two pages that publish no twin, and one URL the site had dropped.
 
 A group is a folder and a round in one: snapshots go under `data/<group>/<name>/`, output to
 `output/<group>/<name>.jsonl`, and the target joins `watch --group <group>`. **Changing the group of
@@ -269,6 +266,30 @@ and the panel refuses to write one it cannot commit rather than leaving an edit 
 again.
 
 
+## A 404 is an answer, not a fault
+
+**A run learns from a 404 when somebody else chose the URL.** A suffixed run is told that the twin
+does not live there; a sitemap-seeded run is told that the site lists something it no longer
+serves. Both runs set `ignore_http_error_status_codes`, so the 404 arrives at the handler as an
+ordinary response and the status is read there: no exception, no traceback, nothing in
+`requests_failed`, and no round claiming it cannot vouch for itself over somebody's stale index.
+The entry is recorded as a failure of its own, which is what `diff` and the manifest report.
+
+Only a run whose every URL came from the sitemap calls the entry stale. One that follows links may
+have found the 404 behind a broken link on the site instead: the same outcome for the corpus, a
+different thing to say about it.
+
+**A URL typed on the command line is the exception and stays loud.** Nobody listed it, the operator
+asked for it by name, and a 404 there is the answer to their question rather than a fact about
+somebody's index.
+
+    run                              a 404 is
+    ------------------------------   -------------------------------------------
+    crawl <url>                      an error: it raises and the run reports it
+    crawl --profile, from a sitemap  a stale entry, recorded and counted
+    any run with fetch_suffix        the twin is not here, so try the next place
+
+
 ## Politeness
 
 robots.txt is respected by default, including `Crawl-delay`, requests are rate limited per domain
@@ -306,7 +327,12 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 325 tests in about 50 seconds.
+only mark is `browser`, for the tests needing Chromium. 344 tests in about a minute.
+
+The fixture server generates its sitemaps rather than serving them from disk, because crawlee
+refuses a relative `<loc>` and a static file cannot name the port the server picked at startup.
+`/sitemap-live.xml` lists two pages that are there and `/sitemap-stale.xml` lists one that is not,
+which is the shape both learn.chatgpt.com and docs.mistral.ai arrive in.
 
 **Nothing the panel calls may import the crawler stack at module scope.** `crawlee.crawlers` costs
 three seconds to import: it brings Playwright, and through the adaptive crawler's rendering-type

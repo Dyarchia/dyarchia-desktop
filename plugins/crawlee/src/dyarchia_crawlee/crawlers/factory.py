@@ -43,15 +43,24 @@ def _common_options(
         'max_crawl_depth': spec.max_depth if spec.max_depth > 0 else None,
         'request_handler_timeout': timedelta(seconds=settings.request_timeout_seconds),
         'respect_robots_txt_file': spec.respect_robots,
-        **({'ignore_http_error_status_codes': {404}} if spec.fetch_suffix else {}),
+        **({'ignore_http_error_status_codes': {404}} if _404_is_an_answer(spec) else {}),
     }
 
 
-"""A run that asks for a markdown twin discovers the twin's absence by being told 404, which is an
-answer and not a fault. Left as an error it raises, prints a traceback, counts in requests_failed
-and says the round cannot vouch for itself, for a page the publisher simply does not mirror. Ignored
-here, it arrives at the handler as an ordinary response and `handle_page` reads the status. Only
-suffixed runs ignore it: everywhere else a 404 is a real failure and must stay one."""
+def _404_is_an_answer(spec: RunSpec) -> bool:
+    """Whether this run learns something from a 404 rather than failing on it.
+
+    A run that asks for a markdown twin discovers the twin's absence by being told 404. A run
+    seeded from a sitemap discovers the same way that the site lists a URL it no longer serves.
+    Neither is a fault of the crawl, and left as an error each raises, prints a traceback, counts
+    in requests_failed and says the round cannot vouch for itself. Ignored, it arrives at the
+    handler as an ordinary response and `handle_page` reads the status.
+
+    A URL typed on the command line is the case this deliberately excludes: nobody listed it, the
+    operator asked for it by name, and a 404 there is the answer to their question rather than a
+    fact about somebody's index.
+    """
+    return bool(spec.fetch_suffix or spec.seeded_by_sitemap)
 
 
 def _browser_options(spec: RunSpec, settings: Settings) -> dict[str, Any]:

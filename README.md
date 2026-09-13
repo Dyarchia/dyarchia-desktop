@@ -162,9 +162,15 @@ plugin loads on the next launch.
 
     root                              holds                             wins
     -------------------------------   -------------------------------   ------
-    %APPDATA%/dyarchia/plugins/       anything dropped in by hand       first
-    resources/plugins/ (packaged)     everything the installer carried  second
-    plugins/ (development)            the same set, from the workspace  second
+    resources/plugins/ (packaged)     everything the installer carried  first
+    plugins/ (development)            the same set, from the workspace  first
+    %APPDATA%/dyarchia/plugins/       anything dropped in by hand       second
+
+The bundled root wins, which is the rule this project has always had for development: an
+installed copy must never shadow the one being worked on. It holds once packaged for the
+same reason — a copy left behind by an older version is stale, and letting it win reads a
+plugin from a manifest it no longer ships. A plugin nobody ships still loads from
+`%APPDATA%`, which is what that root is for.
 
 The restart is Electron's, not a decision. A plugin serving its own scheme needs
 `registerSchemesAsPrivileged` before `app.whenReady()`, and every main module is imported

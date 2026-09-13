@@ -204,9 +204,12 @@ external, and it is the only case.
     packaged     resources/plugins/<id>/                    staged into the installer
     by hand      %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
 
-`%APPDATA%` wins over both of the others, because somebody put it there deliberately. An
-installed copy of a plugin **deleted** from the workspace is therefore discovered again and
-wins; delete it from `%APPDATA%/dyarchia/plugins/` too.
+**The bundled root wins over `%APPDATA%`**, in development and once packaged. An installed
+copy must never shadow the one being worked on, and a copy left behind by an older version is
+stale: letting it win reads the plugin from a manifest it no longer ships, silently. A plugin
+of an id nobody ships still loads from `%APPDATA%`, which is the case that root exists for; an
+installed copy of a plugin **deleted** from the workspace is discovered again for the same
+reason, so delete it from `%APPDATA%/dyarchia/plugins/` too.
 
 **Being discovered is not being loaded.** The shell loads what `<userData>/plugins.json`
 names, which is what the Setup panel writes, and a fresh installation names nothing.

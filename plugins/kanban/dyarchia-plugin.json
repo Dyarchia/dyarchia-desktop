@@ -3,5 +3,17 @@
     "name": "Kanban",
     "version": "0.1.0",
     "renderer": "dist/renderer.js",
-    "main": "dist/main.js"
+    "main": "dist/main.js",
+    "description": "A task board that dispatches work to Claude Code and lets you watch it run",
+    "requires": [
+        {
+            "kind": "command",
+            "name": "claude",
+            "label": "Claude Code CLI",
+            "hint": "install it from claude.com/claude-code, then reopen this panel"
+        }
+    ],
+    "nativeDeps": [
+        "node-pty"
+    ]
 }

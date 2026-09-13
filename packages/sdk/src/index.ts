@@ -18,6 +18,44 @@ export interface PanelHandle {
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
 
+export interface PluginRequirement {
+    kind: string
+    label: string
+    name?: string
+    hint?: string
+    note?: string
+    project?: string
+}
+
+export interface PluginCatalogueEntry {
+    manifest: {
+        id: string
+        name: string
+        version: string
+        description?: string
+        requires?: PluginRequirement[]
+    }
+    directory: string
+    enabled: boolean
+    loaded: boolean
+}
+
+export interface PluginCatalogue {
+    chosen: boolean
+    entries: PluginCatalogueEntry[]
+}
+
+/*
+ * The shell's own surface, as opposed to a plugin's. Everything else a plugin invokes is namespaced
+ * to its own id; this is not, so it stays small on purpose. It exists for the setup panel: what
+ * this installation holds, which of it loads, and the restart that makes a change take effect.
+ */
+export interface ShellApi {
+    catalogue(): Promise<PluginCatalogue>
+    enable(ids: string[]): Promise<string[]>
+    relaunch(): Promise<void>
+}
+
 export interface PluginContext {
     readonly pluginId: string
     token(name: string): string
@@ -25,6 +63,7 @@ export interface PluginContext {
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
     onThemeChange(listener: () => void): () => void
+    shell: ShellApi
 }
 
 export interface PluginNotice {

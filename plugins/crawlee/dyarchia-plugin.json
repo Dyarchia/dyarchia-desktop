@@ -11,5 +11,28 @@
         "save",
         "start",
         "stop"
+    ],
+    "description": "A web scraping toolkit that snapshots documentation and reports what changed",
+    "requires": [
+        {
+            "kind": "python",
+            "label": "Python environment",
+            "project": ".",
+            "postInstall": [
+                [
+                    "playwright",
+                    "install",
+                    "chromium"
+                ]
+            ],
+            "note": "up to 1.2 GB on a machine holding none of it: an interpreter, the packages and a browser. Every step skips what is already cached."
+        }
+    ],
+    "files": [
+        "src",
+        "pyproject.toml",
+        "uv.lock",
+        "README.md",
+        ".env.example"
     ]
 }

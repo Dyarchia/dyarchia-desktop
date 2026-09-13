@@ -12,6 +12,11 @@ import { dirname, join } from 'node:path'
  * The file holds what was enabled rather than what was disabled. A plugin added in a later version
  * therefore arrives off, which is the answer that never surprises anybody: an update does not grow
  * the application behind the user's back.
+ *
+ * None of that applies to a development build. A plugin in the workspace is there because somebody
+ * is working on it, and making them answer a panel before their own tree loads is a question with
+ * one possible answer. `pnpm dev` therefore loads everything, and `DYARCHIA_SETUP=1` is how the
+ * first run a user gets is reproduced on purpose, for working on the panel itself.
  */
 
 const SETTINGS_ID = 'settings'
@@ -23,8 +28,8 @@ function storePath(): string {
     return join(app.getPath('userData'), 'plugins.json')
 }
 
-function everything(): boolean {
-    return process.env['DYARCHIA_ALL_PLUGINS'] === '1'
+function everything(packaged: boolean): boolean {
+    return !packaged && process.env['DYARCHIA_SETUP'] !== '1'
 }
 
 export async function loadEnabled(): Promise<Set<string>> {
@@ -48,8 +53,8 @@ export async function saveEnabled(ids: string[]): Promise<string[]> {
     return kept
 }
 
-export function isEnabled(id: string, enabled: Set<string>): boolean {
-    return ALWAYS.has(id) || everything() || enabled.has(id)
+export function isEnabled(id: string, enabled: Set<string>, packaged: boolean): boolean {
+    return ALWAYS.has(id) || everything(packaged) || enabled.has(id)
 }
 
 /*

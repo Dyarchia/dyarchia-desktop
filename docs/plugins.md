@@ -62,7 +62,11 @@ A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two k
 
 `command` is checked on PATH and never installed: Setup reports it and shows the hint.
 `python` is acquired with uv, into `%APPDATA%/dyarchia/environments/<id>/.venv`, and the
-plugin is told where through `DYARCHIA_PLUGIN_ENV`. **A packaged plugin directory is
+plugin is told where through `DYARCHIA_PLUGIN_ENV`. Its optional `postInstall` is a list of
+uv argument lists run after the packages land, for whatever the project needs beyond them —
+crawlee's is `playwright install chromium`, and leaving it out is an installation that looks
+finished and fails on the first profile asking for a browser. **The steps belong to the
+plugin, so Setup knows nothing about any particular one.** **A packaged plugin directory is
 read-only**, which is why the environment cannot sit beside the code and why a Python plugin
 must look at that variable before falling back to a `.venv` of its own.
 
@@ -211,12 +215,15 @@ of an id nobody ships still loads from `%APPDATA%`, which is the case that root 
 installed copy of a plugin **deleted** from the workspace is discovered again for the same
 reason, so delete it from `%APPDATA%/dyarchia/plugins/` too.
 
-**Being discovered is not being loaded.** The shell loads what `<userData>/plugins.json`
-names, which is what the Setup panel writes, and a fresh installation names nothing.
-Enabling takes effect on the next launch, never in the running window: main modules are
-imported once at startup and a plugin's own scheme has to be privileged before the app is
-ready. `DYARCHIA_ALL_PLUGINS=1` turns everything on for a session, which is what to reach
-for while developing rather than editing the file.
+**In a packaged build, being discovered is not being loaded.** The shell loads what
+`<userData>/plugins.json` names, which is what the Setup panel writes, and a fresh
+installation names nothing. Enabling takes effect on the next launch, never in the running
+window: main modules are imported once at startup and a plugin's own scheme has to be
+privileged before the app is ready.
+
+Development loads the workspace whole and never consults that file, because a plugin in the
+tree is there on purpose. `DYARCHIA_SETUP=1` makes `pnpm dev` behave like a user's first run,
+which is how the Setup panel is worked on.
 
 
 ## 5. The UI contract

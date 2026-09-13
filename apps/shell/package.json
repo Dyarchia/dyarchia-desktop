@@ -10,7 +10,7 @@
         "dev": "electron-vite dev --watch",
         "build": "electron-vite build",
         "start": "electron-vite preview",
-        "prepackage": "node ../../scripts/ensure-runtime.mjs",
+        "prepackage": "node ../../scripts/ensure-runtime.mjs && node ../../scripts/stage-plugins.mjs",
         "package": "electron-vite build && electron-builder --win"
     },
     "dependencies": {

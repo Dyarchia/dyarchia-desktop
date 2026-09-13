@@ -3,5 +3,9 @@
     "name": "Terminal",
     "version": "0.1.0",
     "renderer": "dist/renderer.js",
-    "main": "dist/main.js"
+    "main": "dist/main.js",
+    "description": "A terminal, with sessions that survive the panel being closed",
+    "nativeDeps": [
+        "node-pty"
+    ]
 }

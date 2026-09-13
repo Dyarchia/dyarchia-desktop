@@ -45,12 +45,28 @@ def _toolkit_root() -> Path:
 
 
 def _interpreter(root: Path) -> Path:
-    """The toolkit's own interpreter, which is the only one that has the package installed."""
-    for relative in ('.venv/Scripts/python.exe', '.venv/bin/python'):
-        candidate = root / relative
-        if candidate.is_file():
-            return candidate
-    raise RuntimeError(f'no virtual environment in {root}: run "uv sync --dev" there first')
+    """The toolkit's own interpreter, which is the only one that has the package installed.
+
+    Two places, and the order matters. A checkout keeps its environment beside the code, which is
+    what a developer builds with `uv sync --dev` and what the test suite runs under. An installed
+    copy cannot: the plugin ships inside the application, in a directory nothing may write to, so
+    the shell names an environment directory of its own in `DYARCHIA_PLUGIN_ENV` and the setup
+    panel builds the environment there. The local one wins, so a developer working in the checkout
+    is never answered by an installation they forgot they had.
+    """
+    roots = [root]
+    provided = os.environ.get('DYARCHIA_PLUGIN_ENV')
+    if provided:
+        roots.append(Path(provided))
+
+    for candidate_root in roots:
+        for relative in ('.venv/Scripts/python.exe', '.venv/bin/python'):
+            candidate = candidate_root / relative
+            if candidate.is_file():
+                return candidate
+
+    looked = ' or '.join(str(candidate) for candidate in roots)
+    raise RuntimeError(f'no virtual environment in {looked}: install this plugin from Setup')
 
 
 def _spawn(args: list[str], **extra: Any) -> subprocess.Popen[str]:

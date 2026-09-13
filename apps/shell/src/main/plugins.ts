@@ -6,6 +6,13 @@ import { pathToFileURL } from 'node:url'
 import { registerNotices, showNotice } from './notices'
 import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
+import { hasChosen, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
+
+export interface PluginRequirement {
+    kind: string
+    label: string
+    [key: string]: unknown
+}
 
 export interface PluginManifest {
     id: string
@@ -16,6 +23,9 @@ export interface PluginManifest {
     python?: string
     channels?: string[]
     schemes?: string[]
+    description?: string
+    optional?: boolean
+    requires?: PluginRequirement[]
 }
 
 interface DiscoveredPlugin {
@@ -28,6 +38,7 @@ const ID_PATTERN = /^[a-z][a-z0-9-]*$/
 const MANIFEST_FILE = 'dyarchia-plugin.json'
 
 const plugins = new Map<string, DiscoveredPlugin>()
+const catalogue = new Map<string, DiscoveredPlugin>()
 
 const MIME_TYPES: Record<string, string> = {
     '.js': 'text/javascript',
@@ -84,19 +95,37 @@ export function registerPluginScheme(): void {
     ])
 }
 
+/*
+ * Where plugins are found, nearest first.
+ *
+ * The bundled root is the one that ships inside the application, and it is the workspace tree in
+ * development and `resources/plugins` in a packaged build: the same set either way, so what a
+ * developer sees is what a user gets. `%APPDATA%` stays what it was, the place a plugin nobody
+ * shipped can be dropped.
+ *
+ * Bundled wins. In development that is the rule this project has always had — an installed copy
+ * must never shadow the one being worked on — and it holds for the same reason once packaged: a
+ * copy left in `%APPDATA%` by an older version is stale by definition, and letting it win means a
+ * plugin that shipped a new manifest is read from the old one with nothing said. A plugin nobody
+ * ships still loads from there, which is the case that root exists for.
+ */
+function bundledRoot(): string {
+    return app.isPackaged
+        ? join(process.resourcesPath, 'plugins')
+        : join(resolve(import.meta.dirname, '../../../..'), 'plugins')
+}
+
 function pluginRoots(): string[] {
-    const roots: string[] = []
-    if (!app.isPackaged) {
-        const workspace = resolve(import.meta.dirname, '../../../..')
-        roots.push(join(workspace, 'plugins'))
-        if (process.env['DYARCHIA_EXAMPLES']) roots.push(join(workspace, 'examples'))
+    const roots = [bundledRoot()]
+    if (!app.isPackaged && process.env['DYARCHIA_EXAMPLES']) {
+        roots.push(join(resolve(import.meta.dirname, '../../../..'), 'examples'))
     }
     roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))
     return roots
 }
 
-async function discoverPlugins(): Promise<void> {
-    plugins.clear()
+async function readManifests(): Promise<Map<string, DiscoveredPlugin>> {
+    const found = new Map<string, DiscoveredPlugin>()
     for (const root of pluginRoots()) {
         let entries: string[]
         try {
@@ -116,12 +145,33 @@ async function discoverPlugins(): Promise<void> {
                 console.warn(`[plugins] invalid id in ${dir}, skipping`)
                 continue
             }
-            if (plugins.has(manifest.id)) {
+            if (found.has(manifest.id)) {
                 console.warn(`[plugins] duplicate id "${manifest.id}" in ${dir}, skipping`)
                 continue
             }
-            plugins.set(manifest.id, { manifest, dir })
+            found.set(manifest.id, { manifest, dir })
         }
+    }
+    return found
+}
+
+/*
+ * Everything installed, and everything loaded, which are not the same list.
+ *
+ * `catalogue` is what the setup panel offers; `plugins` is what this session actually activated.
+ * They are separated here rather than filtered at each use because activation happens once, at
+ * boot: a plugin enabled while the application is running is in the catalogue, is not in `plugins`,
+ * and stays that way until the relaunch. Electron settles that — a plugin serving its own scheme
+ * needs `registerSchemesAsPrivileged` before `app.whenReady()`, which has long since run.
+ */
+async function discoverPlugins(): Promise<void> {
+    plugins.clear()
+    catalogue.clear()
+
+    const enabled = await loadEnabled()
+    for (const [id, entry] of await readManifests()) {
+        catalogue.set(id, entry)
+        if (isEnabled(id, enabled, app.isPackaged)) plugins.set(id, entry)
     }
 }
 
@@ -230,5 +280,22 @@ export async function setupPlugins(): Promise<void> {
             manifest,
             rendererUrl: `${PLUGIN_SCHEME}://${manifest.id}/${manifest.renderer.replace(/^\.?\//, '')}`
         }))
+    )
+
+    ipcMain.handle('shell:plugins:catalogue', async () => {
+        const enabled = await loadEnabled()
+        return {
+            chosen: await hasChosen(),
+            entries: [...catalogue.values()].map(({ manifest, dir }) => ({
+                manifest,
+                directory: dir,
+                enabled: isEnabled(manifest.id, enabled, app.isPackaged),
+                loaded: plugins.has(manifest.id)
+            }))
+        }
+    })
+
+    ipcMain.handle('shell:plugins:enable', (_event, ids: unknown) =>
+        saveEnabled(Array.isArray(ids) ? (ids as string[]) : [])
     )
 }

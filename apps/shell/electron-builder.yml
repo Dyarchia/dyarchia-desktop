@@ -9,6 +9,10 @@ extraResources:
       to: pysdk
       filter:
           - dyarchia_sdk/**
+    # Every plugin the shell knows about, staged by scripts/stage-plugins.mjs from each manifest.
+    # They ship enabled by nobody: the setup panel is what turns one on.
+    - from: build/plugins
+      to: plugins
 asar: true
 win:
     target:

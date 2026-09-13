@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen } from 'electron'
 
 const savedBounds = new WeakMap<BrowserWindow, Electron.Rectangle>()
 
@@ -47,5 +47,16 @@ export function registerWindowControls(): void {
 
     ipcMain.handle('shell:window:close', (event) => {
         BrowserWindow.fromWebContents(event.sender)?.close()
+    })
+
+    /*
+     * Restarting is a shell control rather than a plugin's business, and it exists because
+     * enabling a plugin cannot take effect without it: main modules are imported once and a
+     * plugin's own scheme has to be registered before the application is ready. The setup panel
+     * asks for this; nothing does it on the user's behalf.
+     */
+    ipcMain.handle('shell:app:relaunch', () => {
+        app.relaunch()
+        app.quit()
     })
 }

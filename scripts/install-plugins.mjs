@@ -1,45 +1,18 @@
-import { cp, mkdir, readdir, readFile, rm } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { stagePlugins } from './stage-plugins.mjs'
+
+/*
+ * Install every plugin where a packaged build looks for one, for testing an installed copy without
+ * building an installer. What a plugin is made of is its manifest's business; this only says where
+ * the copies go.
+ */
 
 const repoRoot = resolve(import.meta.dirname, '..')
-const pluginsDir = join(repoRoot, 'plugins')
-const targetRoot = join(process.env.APPDATA, 'dyarchia', 'plugins')
+const target = join(process.env.APPDATA, 'dyarchia', 'plugins')
 
-const NATIVE_DEPS = {
-    terminal: ['node-pty'],
-    kanban: ['node-pty']
-}
-
-const entries = await readdir(pluginsDir)
-for (const entry of entries) {
-    const pluginDir = join(pluginsDir, entry)
-    const manifestPath = join(pluginDir, 'dyarchia-plugin.json')
-    if (!existsSync(manifestPath)) continue
-
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf-8'))
-
-    if (!existsSync(join(pluginDir, 'dist'))) {
-        console.log(`skipped ${manifest.id}: no dist/, so it runs from the workspace only`)
-        continue
-    }
-
-    const target = join(targetRoot, manifest.id)
-    await rm(target, { recursive: true, force: true })
-    await mkdir(target, { recursive: true })
-    await cp(manifestPath, join(target, 'dyarchia-plugin.json'))
-    await cp(join(pluginDir, 'dist'), join(target, 'dist'), { recursive: true })
-
-    if (manifest.python) {
-        await cp(join(pluginDir, manifest.python), join(target, manifest.python))
-    }
-
-    for (const dep of NATIVE_DEPS[manifest.id] ?? []) {
-        await cp(
-            join(pluginDir, 'node_modules', dep),
-            join(target, 'node_modules', dep),
-            { recursive: true, dereference: true }
-        )
-    }
-    console.log(`installed ${manifest.id} -> ${target}`)
-}
+await mkdir(target, { recursive: true })
+const staged = await stagePlugins(join(repoRoot, 'plugins'), target, {
+    onPlugin: (id, where) => console.log(`installed ${id} -> ${where}`)
+})
+console.log(`${staged.length} plugins installed`)

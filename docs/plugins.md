@@ -33,6 +33,47 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
 - `schemes` lists custom protocol schemes the plugin serves. The shell declares them
   privileged at boot and the plugin registers the handler with `protocol.handle` in its
   `activate`. Reserved names (`http`, `file`, `dyarchia-plugin`, …) are rejected.
+- `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
+  for somebody deciding whether to turn this on, not for somebody who already has.
+
+**Four more fields say what the plugin is made of, and every one of them is read rather than
+guessed.** This is what lets the installer carry a plugin correctly without knowing anything
+about it.
+
+    field         holds                                          used by
+    -----------   --------------------------------------------   -------------------------
+    files         anything else needed at runtime, beside the     stage-plugins.mjs
+                  entry points: sources, a lockfile, data
+    nativeDeps    packages that must travel with their prebuilt   stage-plugins.mjs
+                  binaries, copied into node_modules/
+    requires      what has to be true before the plugin runs      the Setup panel
+    description   one line for the Setup panel                    the Setup panel
+
+A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two kinds exist:
+
+```json
+"requires": [
+    { "kind": "command", "name": "claude", "label": "Claude Code CLI",
+      "hint": "install it from claude.com/claude-code" },
+    { "kind": "python", "label": "Python toolkit", "project": ".",
+      "note": "an interpreter and about 600 MB of packages" }
+]
+```
+
+`command` is checked on PATH and never installed: Setup reports it and shows the hint.
+`python` is acquired with uv, into `%APPDATA%/dyarchia/environments/<id>/.venv`, and the
+plugin is told where through `DYARCHIA_PLUGIN_ENV`. The sync is `--frozen --no-dev
+--no-editable`: frozen because the shipped lockfile is the one to install and resolving again
+would try to rewrite a read-only directory, and **non-editable because a portable build
+unpacks its resources to a new temporary directory on every launch** — an editable install
+records that path and is broken by the second start. Verified by deleting the plugin
+directory and importing the package anyway. Its optional `postInstall` is a list of
+uv argument lists run after the packages land, for whatever the project needs beyond them —
+crawlee's is `playwright install chromium`, and leaving it out is an installation that looks
+finished and fails on the first profile asking for a browser. **The steps belong to the
+plugin, so Setup knows nothing about any particular one.** **A packaged plugin directory is
+read-only**, which is why the environment cannot sit beside the code and why a Python plugin
+must look at that variable before falling back to a `.venv` of its own.
 
 
 ## 2. The renderer bundle
@@ -46,6 +87,12 @@ An ESM module exporting `activate(ctx)`:
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
     onThemeChange(listener)       fires when the theme changes; returns unsubscribe
+    shell                         the shell itself: catalogue(), enable(ids), relaunch()
+
+**`ctx.shell` is the one member that is not namespaced to the plugin**, and it stays small
+because of it. It exists for the Setup panel: what this installation holds, which of it
+loads, and the relaunch that makes a change take effect. A plugin reaching for it to do
+anything else is answering a question that is not its own.
 
 `injectStyles(pluginId, css)` is exported by the SDK outside the context and adds the
 plugin's style tag once. Call it at the top of the mount, not at module scope, so a plugin
@@ -150,8 +197,9 @@ rather than growing a third flag** — the terminal does, for a CJS pty host wit
 external, and it is the only case.
 
 - Native dependencies stay `--external` and are copied into the installed plugin's
-  `node_modules/`; they must be listed in `NATIVE_DEPS` in install-plugins.mjs, or the
-  packaged app cannot load that main module.
+  `node_modules/`; they must be listed in `nativeDeps` in the manifest, or the packaged app
+  cannot load that main module. Prefer a package shipping N-API prebuilds — node-pty does —
+  so no compiler is needed on the machine that installs it.
 - Library CSS is imported as text and handed to `injectStyles`.
 - `main.py` is copied as-is, never bundled.
 - A heavy dependency only some documents need goes behind a dynamic `import()` with
@@ -162,15 +210,25 @@ external, and it is the only case.
     ---------    ---------------------------------------    ---------------------------------
     dev          plugins/<folder>/                          the shell scans the workspace
     example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
-    portable     %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
+    packaged     resources/plugins/<id>/                    staged into the installer
+    by hand      %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
 
-In dev the workspace wins, so an installed copy never shadows the version under
-development — and an installed copy of a plugin **deleted** from the workspace is
-discovered again and wins by default. Delete it from `%APPDATA%/dyarchia/plugins/` too.
+**The bundled root wins over `%APPDATA%`**, in development and once packaged. An installed
+copy must never shadow the one being worked on, and a copy left behind by an older version is
+stale: letting it win reads the plugin from a manifest it no longer ships, silently. A plugin
+of an id nobody ships still loads from `%APPDATA%`, which is the case that root exists for; an
+installed copy of a plugin **deleted** from the workspace is discovered again for the same
+reason, so delete it from `%APPDATA%/dyarchia/plugins/` too.
 
-A plugin with no `dist/` is skipped by the installer and named as it is skipped. That is
-not a failure: crawlee's renderer needs no bundling and its main module is a Python package
-in the workspace, so there is nothing the packaged app could run.
+**In a packaged build, being discovered is not being loaded.** The shell loads what
+`<userData>/plugins.json` names, which is what the Setup panel writes, and a fresh
+installation names nothing. Enabling takes effect on the next launch, never in the running
+window: main modules are imported once at startup and a plugin's own scheme has to be
+privileged before the app is ready.
+
+Development loads the workspace whole and never consults that file, because a plugin in the
+tree is there on purpose. `DYARCHIA_SETUP=1` makes `pnpm dev` behave like a user's first run,
+which is how the Setup panel is worked on.
 
 
 ## 5. The UI contract

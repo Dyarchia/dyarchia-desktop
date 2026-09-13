@@ -10,6 +10,9 @@ own panels — draggable, resizable, and persistent across sessions.
 - Shell built on Electron + Vite + React + TypeScript, with dockview as the layout manager.
 - Each plugin is an independent project discovered at runtime: the shell never needs
   recompiling to add or remove functionality.
+- The installer carries every plugin and loads none of them. Which ones this installation
+  runs is a choice made in the Setup panel, and what each one needs beyond being copied is
+  declared in its manifest and acquired there.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
 - The look is not the shell's: it is kanon, the shared design system in packages/kanon,
@@ -55,6 +58,7 @@ The pieces:
             sdk/                 @dyarchia/sdk - contract types and injectStyles
             pysdk/               dyarchia_sdk - python plugin runtime
         plugins/                 optional: delete a folder here and nothing else notices
+            settings/            the Setup panel: which plugins load, and installing what they need
             terminal/            embedded terminal (xterm.js + node-pty)
             docviewer/           native file picker + markdown, mermaid, source toggle
             player/              audio/video player (dyarchia-media://)
@@ -65,7 +69,8 @@ The pieces:
             plugin-pyinfo/       reference plugin with a python main module
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes
-            install-plugins.mjs  copies plugins to %APPDATA%/dyarchia/plugins
+            stage-plugins.mjs    collects plugins from their manifests, for the installer
+            install-plugins.mjs  the same, into %APPDATA%/dyarchia/plugins
             build-plugin.mjs     the shared esbuild invocation every plugin builds with
         docs/
             plugins.md           the whole plugin contract: code and UI
@@ -93,7 +98,8 @@ Portable Windows package, producing apps/shell/release/dyarchia-x.y.z.exe:
 pnpm --filter @dyarchia/shell package
 ```
 
-Install plugins for the packaged app:
+Install plugins into %APPDATA%, to test an installed copy without building an installer.
+A packaged build carries them already, so this is only for the copy that overrides it:
 
 ```bash
 node scripts/install-plugins.mjs
@@ -148,12 +154,66 @@ The rules, in order:
 - **Everything written to a file is in English**, commit messages included.
 
 
-## 5. Persistence and paths
+## 5. Plugins are shipped, not installed
+
+**The application carries every plugin and starts with none of them loaded.** A first launch
+shows one panel, Setup, and nothing else. Ticking a plugin there records the choice; the
+plugin loads on the next launch.
+
+    root                              holds                             wins
+    -------------------------------   -------------------------------   ------
+    resources/plugins/ (packaged)     everything the installer carried  first
+    plugins/ (development)            the same set, from the workspace  first
+    %APPDATA%/dyarchia/plugins/       anything dropped in by hand       second
+
+The bundled root wins, which is the rule this project has always had for development: an
+installed copy must never shadow the one being worked on. It holds once packaged for the
+same reason — a copy left behind by an older version is stale, and letting it win reads a
+plugin from a manifest it no longer ships. A plugin nobody ships still loads from
+`%APPDATA%`, which is what that root is for.
+
+The restart is Electron's, not a decision. A plugin serving its own scheme needs
+`registerSchemesAsPrivileged` before `app.whenReady()`, and every main module is imported
+once during startup, so a plugin enabled while the window is open cannot be activated into
+it. Setup says so and offers to relaunch.
+
+The file records what is **on**, so a plugin added by a later version arrives off: an update
+never grows the application behind the user's back.
+
+**None of this applies to `pnpm dev`.** A plugin in the workspace is there because somebody is
+working on it, and asking them to tick a panel before their own tree loads is a question with
+one answer. Development loads everything; `DYARCHIA_SETUP=1` reproduces a user's first run on
+purpose, which is how the panel itself gets worked on.
+
+**A manifest declares what a plugin is made of, and nothing is inferred.** `renderer`, `main`
+and `python` are the entry points; `files` is whatever else it needs at runtime; `nativeDeps`
+are packages that must travel with their prebuilt binaries; `requires` is what has to be true
+before it can run. `scripts/stage-plugins.mjs` reads exactly those, which is why crawlee ships
+like everything else — the script it replaced decided by looking for a `dist/` and left crawlee
+out of every build for a reason nobody had chosen.
+
+    requirement kind   means                            Setup can acquire it
+    ----------------   ------------------------------   --------------------
+    command            an executable on PATH            no: it says what to install
+    python             an interpreter and its packages  yes, with uv
+
+Acquiring a Python environment downloads uv from its own release when it is not already
+there, then builds the environment in `%APPDATA%/dyarchia/environments/<id>/.venv` and tells
+the plugin about it through `DYARCHIA_PLUGIN_ENV`. The plugin directory is read-only in a
+packaged build, and a portable one unpacks it somewhere new on every launch, so the
+environment lives elsewhere and holds no path back to it. Nothing is downloaded until
+somebody presses the button, and every step skips what the machine already has.
+
+
+## 6. Persistence and paths
 
     Data                  Path
     ------------------    -------------------------------------------
     Layout (dev)          %APPDATA%/@dyarchia/shell/layout.json
     Layout (portable)     %APPDATA%/dyarchia/layout.json
+    Enabled plugins       <userData>/plugins.json
+    Acquired tools        <userData>/tools/
+    Plugin environments   <userData>/environments/<id>/.venv
     Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
     Theme choice          renderer localStorage, key dyarchia:theme
 
@@ -162,7 +222,7 @@ synchronously before the first paint, and an IPC round trip would put a frame of
 theme on screen at every launch.
 
 
-## 6. Debugging
+## 7. Debugging
 
 With the DYARCHIA_DEBUG=1 environment variable, and always in dev, the shell exposes the
 Chrome DevTools Protocol on port 9222. The renderer publishes the dockview API on

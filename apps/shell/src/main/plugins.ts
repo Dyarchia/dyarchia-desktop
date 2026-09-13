@@ -101,8 +101,13 @@ export function registerPluginScheme(): void {
  * The bundled root is the one that ships inside the application, and it is the workspace tree in
  * development and `resources/plugins` in a packaged build: the same set either way, so what a
  * developer sees is what a user gets. `%APPDATA%` stays what it was, the place a plugin nobody
- * shipped can be dropped, and it wins over the bundled copy of the same id because somebody put it
- * there deliberately.
+ * shipped can be dropped.
+ *
+ * Bundled wins. In development that is the rule this project has always had — an installed copy
+ * must never shadow the one being worked on — and it holds for the same reason once packaged: a
+ * copy left in `%APPDATA%` by an older version is stale by definition, and letting it win means a
+ * plugin that shipped a new manifest is read from the old one with nothing said. A plugin nobody
+ * ships still loads from there, which is the case that root exists for.
  */
 function bundledRoot(): string {
     return app.isPackaged
@@ -111,10 +116,11 @@ function bundledRoot(): string {
 }
 
 function pluginRoots(): string[] {
-    const roots = [join(app.getPath('appData'), 'dyarchia', 'plugins'), bundledRoot()]
+    const roots = [bundledRoot()]
     if (!app.isPackaged && process.env['DYARCHIA_EXAMPLES']) {
         roots.push(join(resolve(import.meta.dirname, '../../../..'), 'examples'))
     }
+    roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))
     return roots
 }
 

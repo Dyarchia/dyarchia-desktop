@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import { spawn } from 'node:child_process'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 const READY_TIMEOUT_MS = 15_000
 const INVOKE_TIMEOUT_MS = 60_000
@@ -43,7 +43,12 @@ class PythonPlugin {
                 cwd: sdkRoot(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 windowsHide: true,
-                env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUNBUFFERED: '1' }
+                env: {
+                    ...process.env,
+                    PYTHONIOENCODING: 'utf-8',
+                    PYTHONUNBUFFERED: '1',
+                    DYARCHIA_PLUGIN_ENV: pluginEnvironment(this.pluginId)
+                }
             }) as ChildProcessWithoutNullStreams
         } catch (error) {
             console.error(`[python] cannot spawn interpreter for "${this.pluginId}"`, error)
@@ -128,6 +133,18 @@ class PythonPlugin {
 const running = new Map<string, PythonPlugin>()
 const declared = new Map<string, { directory: string; channels: string[] }>()
 const starting = new Map<string, Promise<PythonPlugin | null>>()
+
+/*
+ * Where a Python plugin's own interpreter lives, if it has one.
+ *
+ * A plugin that ships inside the application sits in a read-only directory, so its virtual
+ * environment cannot sit beside it. The setup panel builds one here and the plugin is told the
+ * path rather than guessing: one convention, written once by whoever installs and read once by
+ * whoever runs, and no plugin has to know whether it was bundled or dropped in by hand.
+ */
+export function pluginEnvironment(pluginId: string): string {
+    return join(app.getPath('userData'), 'environments', pluginId)
+}
 
 function sdkRoot(): string {
     return app.isPackaged

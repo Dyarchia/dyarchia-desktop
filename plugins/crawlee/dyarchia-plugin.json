@@ -11,5 +11,20 @@
         "save",
         "start",
         "stop"
+    ],
+    "description": "A web scraping toolkit that snapshots documentation and reports what changed",
+    "requires": [
+        {
+            "kind": "python",
+            "label": "Python toolkit",
+            "project": ".",
+            "note": "an interpreter and about 600 MB of packages, downloaded on install"
+        }
+    ],
+    "files": [
+        "src",
+        "pyproject.toml",
+        "uv.lock",
+        ".env.example"
     ]
 }

@@ -4,5 +4,8 @@
     "version": "0.1.0",
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
-    "schemes": ["dyarchia-media"]
+    "schemes": [
+        "dyarchia-media"
+    ],
+    "description": "An audio and video player"
 }

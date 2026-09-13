@@ -11,6 +11,39 @@ interface PluginListEntry {
     rendererUrl: string
 }
 
+/*
+ * What a plugin may ask of the shell itself, as opposed to of its own main module.
+ *
+ * Everything a plugin does normally is namespaced to its own id, and that is the contract. This is
+ * the shell's own surface, and it exists for the setup panel: reading which plugins this
+ * installation holds, changing which of them load, and asking for the restart that makes the change
+ * take. Nothing here is namespaced, so it stays deliberately small.
+ */
+interface ShellApi {
+    catalogue(): Promise<PluginCatalogue>
+    enable(ids: string[]): Promise<string[]>
+    relaunch(): Promise<void>
+}
+
+export interface PluginCatalogueEntry {
+    manifest: {
+        id: string
+        name: string
+        version: string
+        description?: string
+        optional?: boolean
+        requires?: { kind: string; label: string; [key: string]: unknown }[]
+    }
+    directory: string
+    enabled: boolean
+    loaded: boolean
+}
+
+export interface PluginCatalogue {
+    chosen: boolean
+    entries: PluginCatalogueEntry[]
+}
+
 interface PluginModule {
     activate(ctx: {
         pluginId: string
@@ -19,6 +52,7 @@ interface PluginModule {
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         onThemeChange(listener: () => void): () => void
+        shell: ShellApi
     }): void | Promise<void>
 }
 
@@ -53,7 +87,13 @@ export async function loadPlugins(): Promise<void> {
                 registerPanel,
                 invoke: (channel, ...args) => bridge.invoke(`plugin:${id}:${channel}`, ...args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
-                onThemeChange
+                onThemeChange,
+                shell: {
+                    catalogue: () =>
+                        bridge.invoke('shell:plugins:catalogue') as Promise<PluginCatalogue>,
+                    enable: (ids) => bridge.invoke('shell:plugins:enable', ids) as Promise<string[]>,
+                    relaunch: () => bridge.invoke('shell:app:relaunch') as Promise<void>
+                }
             })
         } catch (error) {
             console.error(`[plugins] failed to load "${id}" from ${entry.rendererUrl}`, error)

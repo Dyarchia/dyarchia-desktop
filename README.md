@@ -199,9 +199,10 @@ out of every build for a reason nobody had chosen.
 
 Acquiring a Python environment downloads uv from its own release when it is not already
 there, then builds the environment in `%APPDATA%/dyarchia/environments/<id>/.venv` and tells
-the plugin about it through `DYARCHIA_PLUGIN_ENV`. The plugin directory itself is read-only in
-a packaged build, which is the whole reason the environment lives elsewhere. Nothing is
-downloaded until somebody presses the button.
+the plugin about it through `DYARCHIA_PLUGIN_ENV`. The plugin directory is read-only in a
+packaged build, and a portable one unpacks it somewhere new on every launch, so the
+environment lives elsewhere and holds no path back to it. Nothing is downloaded until
+somebody presses the button, and every step skips what the machine already has.
 
 
 ## 6. Persistence and paths

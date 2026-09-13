@@ -20,7 +20,6 @@
             "project": ".",
             "postInstall": [
                 [
-                    "run",
                     "playwright",
                     "install",
                     "chromium"
@@ -33,6 +32,7 @@
         "src",
         "pyproject.toml",
         "uv.lock",
+        "README.md",
         ".env.example"
     ]
 }

@@ -178,8 +178,12 @@ once during startup, so a plugin enabled while the window is open cannot be acti
 it. Setup says so and offers to relaunch.
 
 The file records what is **on**, so a plugin added by a later version arrives off: an update
-never grows the application behind the user's back. `DYARCHIA_ALL_PLUGINS=1` turns everything
-on for a session without touching the file.
+never grows the application behind the user's back.
+
+**None of this applies to `pnpm dev`.** A plugin in the workspace is there because somebody is
+working on it, and asking them to tick a panel before their own tree loads is a question with
+one answer. Development loads everything; `DYARCHIA_SETUP=1` reproduces a user's first run on
+purpose, which is how the panel itself gets worked on.
 
 **A manifest declares what a plugin is made of, and nothing is inferred.** `renderer`, `main`
 and `python` are the entry points; `files` is whatever else it needs at runtime; `nativeDeps`

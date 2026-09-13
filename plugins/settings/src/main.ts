@@ -28,6 +28,7 @@ interface Requirement {
     hint?: string
     project?: string
     note?: string
+    postInstall?: string[][]
 }
 
 interface Status {
@@ -219,12 +220,24 @@ async function acquirePython(
      * lockfile that shipped is the one to install, and resolving again would try to rewrite it.
      * UV_PROJECT_ENVIRONMENT is what puts the environment outside that directory at all.
      */
-    await run(
-        say,
-        uv,
-        ['sync', '--frozen', '--no-dev', '--project', join(directory, requirement.project ?? '.')],
-        { UV_PROJECT_ENVIRONMENT: environment }
-    )
+    const project = join(directory, requirement.project ?? '.')
+    await run(say, uv, ['sync', '--frozen', '--no-dev', '--project', project], {
+        UV_PROJECT_ENVIRONMENT: environment
+    })
+
+    /*
+     * Whatever the project says has to happen after its packages are there. crawlee's is
+     * `playwright install chromium`, the browser its browser-backed crawlers drive, and its own
+     * README has said so since before this panel existed. Leaving it out produced the failure this
+     * whole feature is meant to remove: an installation that looks finished and breaks later, on
+     * the first profile that asks for a browser.
+     *
+     * The steps are uv arguments and the plugin declares them, so nothing about any one plugin is
+     * written down here.
+     */
+    for (const step of requirement.postInstall ?? []) {
+        await run(say, uv, [...step, '--project', project], { UV_PROJECT_ENVIRONMENT: environment })
+    }
 }
 
 export async function activate(ctx: {

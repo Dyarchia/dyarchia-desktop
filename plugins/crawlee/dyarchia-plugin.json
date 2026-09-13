@@ -18,7 +18,15 @@
             "kind": "python",
             "label": "Python toolkit",
             "project": ".",
-            "note": "an interpreter and about 600 MB of packages, downloaded on install"
+            "postInstall": [
+                [
+                    "run",
+                    "playwright",
+                    "install",
+                    "chromium"
+                ]
+            ],
+            "note": "an interpreter, its packages and a browser: about 1 GB, downloaded on install"
         }
     ],
     "files": [

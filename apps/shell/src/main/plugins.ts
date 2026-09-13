@@ -171,7 +171,7 @@ async function discoverPlugins(): Promise<void> {
     const enabled = await loadEnabled()
     for (const [id, entry] of await readManifests()) {
         catalogue.set(id, entry)
-        if (isEnabled(id, enabled)) plugins.set(id, entry)
+        if (isEnabled(id, enabled, app.isPackaged)) plugins.set(id, entry)
     }
 }
 
@@ -289,7 +289,7 @@ export async function setupPlugins(): Promise<void> {
             entries: [...catalogue.values()].map(({ manifest, dir }) => ({
                 manifest,
                 directory: dir,
-                enabled: isEnabled(manifest.id, enabled),
+                enabled: isEnabled(manifest.id, enabled, app.isPackaged),
                 loaded: plugins.has(manifest.id)
             }))
         }

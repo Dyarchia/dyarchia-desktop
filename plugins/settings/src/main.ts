@@ -99,33 +99,72 @@ async function uvBinary(): Promise<string | null> {
     return onPath('uv')
 }
 
-async function statusOf(pluginId: string, requirement: Requirement): Promise<Status> {
+/*
+ * What a requirement is missing, part by part, rather than whether it is missing.
+ *
+ * One boolean per requirement reads as "a gigabyte is about to be downloaded" on a machine that
+ * already holds all of it. Everything underneath is incremental — uv links packages it has already
+ * cached, `playwright install` is a no-op when the browser is there — so the panel would have been
+ * the only part of the chain claiming otherwise.
+ *
+ * What can be checked generically is checked and reported: whether uv is here, and whether this
+ * plugin's environment has been built. What cannot is stated as what it is, because a panel that
+ * knew how to test one plugin's post-install step would know about that plugin.
+ */
+async function statusOf(pluginId: string, requirement: Requirement): Promise<Status[]> {
     if (requirement.kind === 'command') {
         const found = requirement.name ? await onPath(requirement.name) : null
-        return {
-            label: requirement.label,
-            met: found !== null,
-            acquirable: false,
-            detail: found ?? (requirement.hint ?? `${requirement.name} is not on PATH`)
-        }
+        return [
+            {
+                label: requirement.label,
+                met: found !== null,
+                acquirable: false,
+                detail: found ?? (requirement.hint ?? `${requirement.name} is not on PATH`)
+            }
+        ]
     }
 
     if (requirement.kind === 'python') {
+        const uv = await uvBinary()
         const python = venvPython(pluginId)
-        return {
-            label: requirement.label,
-            met: await exists(python),
-            acquirable: true,
-            detail: (await exists(python)) ? python : (requirement.note ?? 'not installed yet')
+        const built = await exists(python)
+
+        const parts: Status[] = [
+            {
+                label: 'uv',
+                met: uv !== null,
+                acquirable: true,
+                detail: uv ?? 'not here, so it is downloaded from its own release first'
+            },
+            {
+                label: requirement.label,
+                met: built,
+                acquirable: true,
+                detail: built ? python : `to be built in ${python}`
+            }
+        ]
+
+        for (const step of requirement.postInstall ?? []) {
+            parts.push({
+                label: `uv ${step.join(' ')}`,
+                met: built,
+                acquirable: true,
+                detail: built
+                    ? 'ran with the environment'
+                    : 'runs after the packages, and skips whatever is already on this machine'
+            })
         }
+        return parts
     }
 
-    return {
-        label: requirement.label,
-        met: false,
-        acquirable: false,
-        detail: `this build does not know how to check a "${requirement.kind}" requirement`
-    }
+    return [
+        {
+            label: requirement.label,
+            met: false,
+            acquirable: false,
+            detail: `this build does not know how to check a "${requirement.kind}" requirement`
+        }
+    ]
 }
 
 type Say = (line: string) => void
@@ -249,7 +288,10 @@ export async function activate(ctx: {
 
     ctx.handle('inspect', async (...args: unknown[]) => {
         const { pluginId, requires } = args[0] as { pluginId: string; requires?: Requirement[] }
-        return Promise.all((requires ?? []).map((requirement) => statusOf(pluginId, requirement)))
+        const found = await Promise.all(
+            (requires ?? []).map((requirement) => statusOf(pluginId, requirement))
+        )
+        return found.flat()
     })
 
     ctx.handle('acquire', async (...args: unknown[]) => {

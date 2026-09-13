@@ -209,10 +209,13 @@ export function activate(ctx: PluginContext): void {
                 return
             }
 
+            const note = requires.find((requirement) => requirement.note)?.note
+            if (note) box.append(el('p', 'dya-text', note))
+
             const install = el(
                 'button',
                 'dya-button dya-button--sm',
-                'Install what this needs'
+                `Install the ${missing.length} missing`
             ) as HTMLButtonElement
             install.addEventListener('click', () => {
                 install.disabled = true

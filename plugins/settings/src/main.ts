@@ -173,8 +173,9 @@ async function run(say: Say, command: string, args: string[], env: NodeJS.Proces
     say(`$ ${command} ${args.join(' ')}`)
     await new Promise<void>((resolve, reject) => {
         const child = spawn(command, args, { env: { ...process.env, ...env }, windowsHide: true })
-        child.stdout.on('data', (chunk: Buffer) => forEachLine(chunk, say))
-        child.stderr.on('data', (chunk: Buffer) => forEachLine(chunk, say))
+        const reader = lineReader(say)
+        child.stdout.on('data', reader)
+        child.stderr.on('data', reader)
         child.on('error', reject)
         child.on('close', (code) =>
             code === 0 ? resolve() : reject(new Error(`${command} exited with ${code}`))
@@ -182,9 +183,17 @@ async function run(say: Say, command: string, args: string[], env: NodeJS.Proces
     })
 }
 
-function forEachLine(chunk: Buffer, say: Say): void {
-    for (const line of chunk.toString('utf-8').split(/\r?\n/)) {
-        if (line.trim()) say(line)
+/*
+ * Chunks from a pipe do not arrive on line boundaries, so whatever follows the last newline is held
+ * until the rest of it turns up. Splitting each chunk on its own tore package names in half in the
+ * panel's log, which is the one place this output is ever read.
+ */
+function lineReader(say: Say): (chunk: Buffer) => void {
+    let rest = ''
+    return (chunk) => {
+        const parts = (rest + chunk.toString('utf-8')).split(/\r?\n/)
+        rest = parts.pop() ?? ''
+        for (const line of parts) if (line.trim()) say(line)
     }
 }
 
@@ -260,7 +269,16 @@ async function acquirePython(
      * UV_PROJECT_ENVIRONMENT is what puts the environment outside that directory at all.
      */
     const project = join(directory, requirement.project ?? '.')
-    await run(say, uv, ['sync', '--frozen', '--no-dev', '--project', project], {
+
+    /*
+     * `--frozen` because the plugin directory is read-only once packaged: the lockfile that shipped
+     * is the one to install, and resolving again would try to rewrite it. `--no-editable` because
+     * an editable install records the absolute path of the project, and a portable build unpacks
+     * its resources somewhere new on every launch, so an environment pointing back at them is
+     * broken by the second start. The package is copied into the environment instead, which is
+     * what makes the environment the only thing that has to survive.
+     */
+    await run(say, uv, ['sync', '--frozen', '--no-dev', '--no-editable', '--project', project], {
         UV_PROJECT_ENVIRONMENT: environment
     })
 
@@ -271,11 +289,18 @@ async function acquirePython(
      * whole feature is meant to remove: an installation that looks finished and breaks later, on
      * the first profile that asks for a browser.
      *
-     * The steps are uv arguments and the plugin declares them, so nothing about any one plugin is
-     * written down here.
+     * Each step is a command to run inside the environment, declared by the plugin, so nothing
+     * about any one plugin is written down here.
+     *
+     * uv's own options go before the command or they are forwarded to it. Written the other way
+     * round, `--project` reached playwright and uv ran against no project at all, which is how
+     * `program not found` came back for a package that was installed. `--no-sync` because the
+     * environment was built a moment ago and the project cannot be resolved again anyway.
      */
     for (const step of requirement.postInstall ?? []) {
-        await run(say, uv, [...step, '--project', project], { UV_PROJECT_ENVIRONMENT: environment })
+        await run(say, uv, ['run', '--project', project, '--no-sync', ...step], {
+            UV_PROJECT_ENVIRONMENT: environment
+        })
     }
 }
 

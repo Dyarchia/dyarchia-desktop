@@ -62,7 +62,12 @@ A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two k
 
 `command` is checked on PATH and never installed: Setup reports it and shows the hint.
 `python` is acquired with uv, into `%APPDATA%/dyarchia/environments/<id>/.venv`, and the
-plugin is told where through `DYARCHIA_PLUGIN_ENV`. Its optional `postInstall` is a list of
+plugin is told where through `DYARCHIA_PLUGIN_ENV`. The sync is `--frozen --no-dev
+--no-editable`: frozen because the shipped lockfile is the one to install and resolving again
+would try to rewrite a read-only directory, and **non-editable because a portable build
+unpacks its resources to a new temporary directory on every launch** — an editable install
+records that path and is broken by the second start. Verified by deleting the plugin
+directory and importing the package anyway. Its optional `postInstall` is a list of
 uv argument lists run after the packages land, for whatever the project needs beyond them —
 crawlee's is `playwright install chromium`, and leaving it out is an installation that looks
 finished and fails on the first profile asking for a browser. **The steps belong to the

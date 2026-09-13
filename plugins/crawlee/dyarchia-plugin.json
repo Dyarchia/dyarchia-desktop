@@ -16,7 +16,7 @@
     "requires": [
         {
             "kind": "python",
-            "label": "Python toolkit",
+            "label": "Python environment",
             "project": ".",
             "postInstall": [
                 [
@@ -26,7 +26,7 @@
                     "chromium"
                 ]
             ],
-            "note": "an interpreter, its packages and a browser: about 1 GB, downloaded on install"
+            "note": "up to 1.2 GB on a machine holding none of it: an interpreter, the packages and a browser. Every step skips what is already cached."
         }
     ],
     "files": [

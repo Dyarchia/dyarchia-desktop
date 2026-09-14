@@ -12,3 +12,6 @@ CLAUDE.md
 scratch/
 .probe/
 apps/shell/build/
+
+# Local notes, not part of the repository
+.docs_ignore/

@@ -336,7 +336,7 @@ Input        field (--sm --auto) checkbox
 Content      tag badge (--success --warning --danger --soft) table row
              text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
-Layers       menu menu__item (--selected) menu__shortcut
+Layers       menu menu__item (--selected) menu__shortcut tip
 Navigation   tabs tab
 Absence      empty loading
 Assistive    sr-only
@@ -359,6 +359,12 @@ Four distinctions in that list are easy to collapse and are not the same thing:
   prose must not be dressed as a label.
 - **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 38px,
   the gradient and the hairline; the rhythm is what the modifier keeps.
+- **`tip` is a sentence, `menu` is a choice.** A tip is a `[popover="hint"]` the browser
+  opens on interest, anchored to its `[interestfor]` control by the engine and flipped at
+  an edge by `position-try-fallbacks`; mono, sentence case, never uppercase, because it
+  explains rather than labels. A control that shows only an icon carries a tip and an
+  `aria-label`, and `key` is that control: a 22px square whose content is an `svg` at
+  14px or one glyph.
 - **`field` is full-width by default.** `--auto` opts out; a minimum width is the
   consumer's layout.
 

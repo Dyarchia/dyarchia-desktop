@@ -335,6 +335,22 @@ for a later tick. A 401 does not fix itself in five seconds, and a dispatcher wi
 burns the whole board against a bad credential.
 
 
+## The inspector
+
+A selected card opens beside the board and takes half the panel; the key in its head gives
+it the whole panel, hiding the board rather than squeezing it, and the choice is remembered
+per panel. From 720 px of width the inspector is two columns, the form on the left and the
+stage on the right at full height: the terminal while a worker is on the card, the
+transcript once it is gone, and the board's own events on the third tab. Under that width
+the stage sits above the form.
+
+Every setting is a native `select`: harness, model and effort per phase, permission mode,
+workspace kind. A blank inherits, and the option says what it inherits, `board · claude`
+when the board sets it and `default` when the harness decides. The bar carries the board
+name, then three keys for that board (new, settings, worktrees), then dispatch and watch;
+every icon-only control opens a tip on hover or focus and carries an `aria-label`. The board
+picker lists boards and nothing else.
+
 ## Storage and IPC
 
 No database. The card id is ours and the session id is the CLI's, and they are never conflated.

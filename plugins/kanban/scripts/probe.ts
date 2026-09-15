@@ -16,7 +16,7 @@ import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
 import { brief, land, reviewBrief } from '../src/worker.js'
 import { parseTerminal } from '../src/closing.js'
-import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
+import { alive, decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { isRefusal } from '../src/refusal.js'
 import { blank, merge, resolve, restore } from '../src/runners.js'
 import { ours, parseList, same } from '../src/worktrees.js'
@@ -292,17 +292,21 @@ async function leases(): Promise<void> {
     const now = Date.now()
     check('an empty file is taken', decide(null, 'me', now), 'take')
     check('our own lease is renewed', decide({ owner: 'me', pid: 1, at: now - 1000 }, 'me', now), 'renew')
-    check('a fresh lease of anothers is waited on', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now), 'wait')
-    check('a stale one is taken', decide({ owner: 'you', pid: 2, at: now - TTL_MS - 1 }, 'me', now), 'take')
+    const live = (): boolean => true
+    const gone = (): boolean => false
+    check('a fresh lease of anothers is waited on', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now, TTL_MS, live), 'wait')
+    check('a stale one is taken', decide({ owner: 'you', pid: 2, at: now - TTL_MS - 1 }, 'me', now, TTL_MS, live), 'take')
+    check('a fresh one whose process is gone is taken', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now, TTL_MS, gone), 'take')
+    check('our own process is alive', alive(process.pid), true)
 
     check('the first process holds it', await hold('first', now), true)
     check('and it is written down', (await readLease())?.owner, 'first')
     check('a second process does not', await hold('second', now), false)
     check('the first keeps it', (await readLease())?.owner, 'first')
     check('the second takes it once it goes stale', await hold('second', now + TTL_MS + 1), true)
-    await drop('first')
+    drop('first')
     check('a holder that is not us drops nothing', (await readLease())?.owner, 'second')
-    await drop('second')
+    drop('second')
     check('and the holder can drop its own', await readLease(), null)
 }
 

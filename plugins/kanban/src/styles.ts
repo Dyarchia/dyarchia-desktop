@@ -373,6 +373,56 @@ export const STYLES = `
 .kanban-menu-hint { flex: none; }
 .kanban-menu-empty { padding: var(--dya-space-3); }
 
+.kanban-health {
+    min-width: 280px;
+    overflow-y: auto;
+}
+
+.kanban-health-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--dya-space-1);
+    width: 100%;
+    padding: var(--dya-space-2);
+    border: none;
+    border-radius: var(--dya-radius);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+button.kanban-health-row {
+    cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+button.kanban-health-row:hover,
+button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2); }
+
+.kanban-health-where {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+}
+
+.kanban-health-where > .dya-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kanban-health-problem {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
+    overflow-wrap: anywhere;
+}
+
 .kanban-setup {
     flex: 1;
     min-height: 0;

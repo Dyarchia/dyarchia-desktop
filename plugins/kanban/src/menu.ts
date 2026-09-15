@@ -66,9 +66,52 @@ function matches(row: MenuRow, needle: string): boolean {
         .every((token) => haystack.includes(token))
 }
 
-export function openMenu(options: MenuOptions): () => void {
+export interface Surface {
+    root: HTMLElement
+    place(): void
+    close(): void
+}
+
+/*
+ * One floating surface under the anchor, on the overlay elevation, closed by a click outside,
+ * a resize or the window losing focus. The picker and the health popover both sit on it; the
+ * caller fills it and asks for placement once the content has a size.
+ */
+export function openSurface(anchor: HTMLElement, className: string, within?: (target: Node) => boolean): Surface {
     const root = document.createElement('div')
-    root.className = 'dya-menu kanban-menu'
+    root.className = `dya-menu kanban-menu ${className}`.trim()
+    document.body.appendChild(root)
+
+    const close = (): void => {
+        root.remove()
+        document.removeEventListener('mousedown', onOutside, true)
+        window.removeEventListener('resize', close)
+        window.removeEventListener('blur', close)
+    }
+
+    function onOutside(event: MouseEvent): void {
+        const target = event.target as Node
+        if (root.contains(target) || anchor.contains(target) || within?.(target)) return
+        close()
+    }
+
+    const placeIt = (): void => {
+        const spot = place(anchor.getBoundingClientRect(), root.getBoundingClientRect())
+        root.style.left = `${spot.left}px`
+        root.style.top = `${spot.top}px`
+    }
+
+    document.addEventListener('mousedown', onOutside, true)
+    window.addEventListener('resize', close)
+    window.addEventListener('blur', close)
+
+    return { root, place: placeIt, close }
+}
+
+export function openMenu(options: MenuOptions): () => void {
+    let submenu: HTMLElement | null = null
+    const surface = openSurface(options.anchor, '', (target) => submenu?.contains(target) === true)
+    const root = surface.root
     root.setAttribute('role', 'menu')
 
     const search = document.createElement('input')
@@ -81,9 +124,7 @@ export function openMenu(options: MenuOptions): () => void {
     list.className = 'kanban-menu-list'
 
     root.append(search, list)
-    document.body.appendChild(root)
 
-    let submenu: HTMLElement | null = null
     let active = -1
     let rendered: { row: MenuRow; element: HTMLElement }[] = []
 
@@ -94,16 +135,7 @@ export function openMenu(options: MenuOptions): () => void {
 
     const close = (): void => {
         closeSubmenu()
-        root.remove()
-        document.removeEventListener('mousedown', onOutside, true)
-        window.removeEventListener('resize', close)
-        window.removeEventListener('blur', close)
-    }
-
-    function onOutside(event: MouseEvent): void {
-        const target = event.target as Node
-        if (root.contains(target) || submenu?.contains(target) || options.anchor.contains(target)) return
-        close()
+        surface.close()
     }
 
     const openSubmenu = (index: number): void => {
@@ -261,14 +293,8 @@ export function openMenu(options: MenuOptions): () => void {
     })
 
     render()
-    const spot = place(options.anchor.getBoundingClientRect(), root.getBoundingClientRect())
-    root.style.left = `${spot.left}px`
-    root.style.top = `${spot.top}px`
+    surface.place()
     search.focus()
-
-    document.addEventListener('mousedown', onOutside, true)
-    window.addEventListener('resize', close)
-    window.addEventListener('blur', close)
 
     return close
 }

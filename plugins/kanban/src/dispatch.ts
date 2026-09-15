@@ -37,7 +37,7 @@ const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
 const PRUNE_MS = 10 * 60_000
 const CREDENTIAL = /401|429|quota|credit|not logged in|refresh your login/i
-const CONFIGURATION = /not on PATH|model|not logged in|api key|unauthori[sz]ed|403/i
+const CONFIGURATION = /not on PATH|model|not logged in|not authenticated|api key|unauthori[sz]ed|401|403/i
 const YOUNG_MS = 20_000
 
 export interface CardProgress {
@@ -338,8 +338,16 @@ async function resolveReview(
         return
     }
 
+    if (harness.of(run).orphaned(run)) {
+        close(run, 'crashed', null, 'the app that hosted this review was closed, and a hosted run does not outlive it')
+        land(card, 'review')
+        void events.record(meta.slug, card.id, 'crashed', run.error ?? '', run.runId)
+        say('crashed')
+        return
+    }
+
     card.consecutiveFailures += 1
-    close(run, 'crashed', null, 'the reviewer is gone, and it judged nothing')
+    close(run, 'crashed', null, progress?.error ?? 'the reviewer is gone, and it judged nothing')
     const spent = card.consecutiveFailures >= (card.maxRetries ?? RETRIES)
     if (spent) block(meta.slug, card, 'transient', 'review')
     else land(card, 'review')
@@ -405,6 +413,15 @@ async function resolve(
 
         if (declared.followups.length) await adopt(file, meta, card, declared.followups)
 
+        if (declared.outcome === 'completed' && run.worktree) {
+            const landed = await worker.land(run.worktree, card.title)
+            if (landed === 'committed') {
+                void events.record(meta.slug, card.id, 'landed', 'the board committed what the worker left', run.runId)
+            } else if (landed === 'failed') {
+                run.error = 'the worker left changes the board could not commit'
+            }
+        }
+
         if (declared.outcome === 'completed') {
             card.consecutiveFailures = 0
             card.protocolViolations = 0
@@ -451,17 +468,38 @@ async function resolve(
 
     const where = place(meta, card, run)
     const moved = run.headBefore ? (await worker.head(where)) !== run.headBefore : false
+    if (progress) {
+        run.inputTokens = progress.inputTokens
+        run.outputTokens = progress.outputTokens
+    }
+
+    const said = progress?.error ?? null
+    const orphaned = harness.of(run).orphaned(run)
+    if (orphaned || (said && CONFIGURATION.test(said))) {
+        const why = orphaned
+            ? 'the app that hosted this run was closed, and a hosted run does not outlive it'
+            : (said as string)
+        close(run, 'crashed', moved ? 'the run is gone, but the repository head moved' : null, why)
+        card.comments.push({
+            at: Date.now(),
+            author: 'agent',
+            text: `This attempt does not count against the card: ${why}`
+        })
+        if (orphaned) land(card, 'ready')
+        else block(meta.slug, card, 'needs_input', 'ready')
+        void events.record(meta.slug, card.id, 'crashed', why, run.runId)
+        ended(sink, meta, card, run)
+        sink.runEnded(meta.slug, card.id, 'crashed')
+        return
+    }
+
     card.consecutiveFailures += 1
     close(
         run,
         'crashed',
         moved ? 'the worker is gone, but the repository head moved' : null,
-        moved ? 'crashed after changing the repository' : 'crashed with no evidence of work'
+        said ?? (moved ? 'crashed after changing the repository' : 'crashed with no evidence of work')
     )
-    if (progress) {
-        run.inputTokens = progress.inputTokens
-        run.outputTokens = progress.outputTokens
-    }
 
     const limit = card.maxRetries ?? RETRIES
     const spent = card.consecutiveFailures >= limit

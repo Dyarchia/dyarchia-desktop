@@ -1,9 +1,15 @@
 import type { HarnessId, HarnessInfo, Run } from '../types.js'
 import * as claude from './claude.js'
+import * as codex from './codex.js'
+import * as grok from './grok.js'
+import * as opencode from './opencode.js'
 import type { Driver, Fleet } from './types.js'
 
 const DRIVERS: Record<HarnessId, Driver> = {
-    claude: claude.driver
+    claude: claude.driver,
+    codex: codex.driver,
+    grok: grok.driver,
+    opencode: opencode.driver
 }
 
 export const HARNESSES = Object.keys(DRIVERS) as HarnessId[]
@@ -22,11 +28,20 @@ export function of(run: Run): Driver {
     return driver(run.harness)
 }
 
-export function catalogue(): HarnessInfo[] {
-    return HARNESSES.map((id) => {
-        const { label, models, efforts } = DRIVERS[id]
-        return { id, label, models: [...models], efforts: efforts ? [...efforts] : null }
-    })
+export async function catalogue(): Promise<HarnessInfo[]> {
+    return Promise.all(
+        HARNESSES.map(async (id) => {
+            const held = DRIVERS[id]
+            const available = (await held.binary()) !== null
+            return {
+                id,
+                label: held.label,
+                available,
+                models: available ? await held.models() : [],
+                efforts: held.efforts ? [...held.efforts] : null
+            }
+        })
+    )
 }
 
 export async function poll(): Promise<Fleet> {

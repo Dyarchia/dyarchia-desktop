@@ -250,8 +250,9 @@ directory this app started in, three attempts in a row
 opencode models openrouter lists 367 ids in -m form        the drawer offers them
 opencode over OpenRouter completed a card, commit and       the cycle works end to end
 closing block included, and codex approved it
-the dispatcher lease outlives a killed app for its TTL     a relaunch within 90 s watches,
-                                                           not claims, until it expires
+the dispatcher lease outlives a killed app for its TTL     a lease whose process is gone is
+                                                           taken at once; the 90 s TTL covers
+                                                           a holder that hangs
 ```
 
 A launch that fails before any work is done, because the binary is not on PATH, the model is
@@ -298,6 +299,12 @@ Block loop            2 cycles of block, unblock, same block kind       the boar
 
 The last three are the board's because they are properties of the card, not of a process, which
 is why they survive any change of execution substrate.
+
+Every diagnostic reaches the bar as `health n`. The button opens a list, one row per problem
+with where it sits above the sentence; a row that belongs to a card opens that card, and one
+about the machine (another window holds the dispatcher, a worker outlived the previous app) is
+shown on every board. The list is re-read every thirty seconds, so a problem that resolves
+itself leaves the bar without a board event.
 
 ```text
 claim TTL                  15 minutes, extended on ALIVE or UNKNOWN

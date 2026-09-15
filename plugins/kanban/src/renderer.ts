@@ -3,7 +3,7 @@ import { injectStyles } from '@dyarchia/sdk'
 import type { PanelHandle, PluginContext } from '@dyarchia/sdk'
 import { installDrag } from './drag.js'
 import type { DragColumn } from './drag.js'
-import { openMenu } from './menu.js'
+import { openMenu, openSurface } from './menu.js'
 import type { MenuRow } from './menu.js'
 import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
@@ -2207,28 +2207,43 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const showHealth = (): void => {
         if (!diagnostics.length) return
-        openMenu({
-            anchor: healthButton,
-            rows: diagnostics.map((entry, index) => ({
-                key: entry.cardId ?? '',
-                label: entry.cardId ? (cardById(entry.cardId)?.title ?? entry.cardId) : 'this machine',
-                group: entry.problem,
-                direct: true,
-                leaves: [{ label: entry.problem, value: String(index) }]
-            })),
-            filter: 'filter problems',
-            onPick: (row) => {
-                if (!row.key) return
-                select(row.key)
-                focusCard(row.key)
+        const surface = openSurface(healthButton, 'kanban-health')
+        surface.root.setAttribute('role', 'dialog')
+        surface.root.setAttribute('aria-label', 'problems')
+        surface.root.tabIndex = -1
+        for (const entry of diagnostics) {
+            const card = entry.cardId ? cardById(entry.cardId) : undefined
+            const row = el(card ? 'button' : 'div', 'kanban-health-row')
+            if (row instanceof HTMLButtonElement) row.type = 'button'
+            const dot = el('span', 'kanban-dot')
+            dot.dataset.tone = 'warning'
+            const where = el('span', 'kanban-health-where')
+            where.append(dot, el('span', 'dya-text', card?.title ?? 'this machine'))
+            row.append(where, el('span', 'kanban-health-problem', entry.problem))
+            if (card) {
+                row.addEventListener('click', () => {
+                    surface.close()
+                    select(card.id)
+                    focusCard(card.id)
+                })
             }
+            surface.root.appendChild(row)
+        }
+        surface.root.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return
+            event.stopPropagation()
+            surface.close()
+            healthButton.focus()
         })
+        surface.place()
+        surface.root.focus()
     }
 
     const ticker = window.setInterval(() => {
         clock = Date.now()
         for (const card of cards) paintCard(card)
         if (watching) paintWatch()
+        if (meta) void health().catch(() => undefined)
     }, 30_000)
 
     const onNotice = (raw: unknown): void => {

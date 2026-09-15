@@ -1,0 +1,408 @@
+"""Full-text search over what the corpus repositories hold.
+
+A snapshotted target is a manifest and a folder of markdown pages. This module turns those pages
+into an SQLite FTS5 index, one database per corpus repository, and answers a query with the
+chunks that match it ranked by BM25. Nothing here needs a model, a service or a package outside
+the standard library: the sqlite3 module Python ships with carries FTS5 on every platform this
+toolkit runs on.
+
+The index is derived from the snapshots and never versioned with them. It lives under
+`index_dir`, one file named after the repository, and it is refreshed page by page from the
+manifest's content hashes: a page whose hash the index already holds is skipped, one whose hash
+moved is re-chunked, and one the manifest no longer lists is dropped. A round that changed twenty
+pages therefore costs twenty pages to bring the index up to date, which is what makes keeping
+it current cheap enough to do on every search.
+
+A page is split into chunks at its headings, and a section longer than `CHUNK_CHARS` is split
+again at a paragraph boundary, so a hit points at the part of a page that carries the words
+rather than at the page as a whole. The rows a page produced are contiguous, and the page table
+remembers the range, so dropping a page is a delete by rowid and not a scan of the whole index.
+
+Every refresh writes one line to `search.log` beside the index files: when, which process,
+which repository, what triggered it and what it cost. An index that changed when nobody asked
+is explained there.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import sqlite3
+import time
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+
+from dyarchia_crawlee import inventory, repositories
+from dyarchia_crawlee.config import Settings, get_settings
+from dyarchia_crawlee.errors import DyarchiaCrawleeError
+from dyarchia_crawlee.versioning.manifest import load_manifest
+
+CHUNK_CHARS = 1600
+SNIPPET_TOKENS = 28
+SCHEMA_VERSION = 2
+BUSY_SECONDS = 60.0
+LOG_NAME = 'search.log'
+HEADING = re.compile(r'^#{1,6}\s+(.*\S)\s*$')
+WORD = re.compile(r'[\w][\w\-./:]*', re.UNICODE)
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS pages (
+    url TEXT PRIMARY KEY,
+    target TEXT NOT NULL,
+    sha256 TEXT NOT NULL,
+    first_id INTEGER NOT NULL,
+    last_id INTEGER NOT NULL
+);
+CREATE VIRTUAL TABLE IF NOT EXISTS chunks USING fts5(
+    target UNINDEXED,
+    url UNINDEXED,
+    title,
+    heading,
+    body,
+    tokenize = 'unicode61 remove_diacritics 2'
+);
+"""
+
+
+@dataclass(slots=True)
+class Hit:
+    """One chunk that matched, with enough around it to decide whether to open the page."""
+
+    repository: str
+    target: str
+    url: str
+    title: str
+    heading: str
+    snippet: str
+    score: float
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            'repository': self.repository,
+            'target': self.target,
+            'url': self.url,
+            'title': self.title,
+            'heading': self.heading,
+            'snippet': self.snippet,
+            'score': round(self.score, 3),
+        }
+
+
+@dataclass(slots=True)
+class Refresh:
+    """What bringing one repository's index up to date cost."""
+
+    repository: str
+    added: int = 0
+    updated: int = 0
+    removed: int = 0
+    pages: int = 0
+    seconds: float = 0.0
+
+    @property
+    def changed(self) -> bool:
+        return bool(self.added or self.updated or self.removed)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            'repository': self.repository,
+            'added': self.added,
+            'updated': self.updated,
+            'removed': self.removed,
+            'pages': self.pages,
+            'seconds': round(self.seconds, 2),
+        }
+
+
+def index_path(root: Path, settings: Settings | None = None) -> Path:
+    """Where one repository's index lives: under `index_dir`, named after the repository."""
+    settings = settings or get_settings()
+    return settings.resolve(settings.index_dir) / f'{root.resolve().name}.sqlite'
+
+
+def log_path(settings: Settings | None = None) -> Path:
+    settings = settings or get_settings()
+    return settings.resolve(settings.index_dir) / LOG_NAME
+
+
+def _note(settings: Settings, line: str) -> None:
+    path = log_path(settings)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+    with path.open('a', encoding='utf-8') as handle:
+        handle.write(f'{stamp} pid={os.getpid()} {line}\n')
+
+
+def chunk(text: str) -> list[tuple[str, str]]:
+    """Split a markdown page into (heading, body) pieces at its headings and at length.
+
+    The heading attached to a piece is the nearest one above it, so a long section split at a
+    paragraph keeps its heading on every piece. Blank pieces are dropped.
+    """
+    pieces: list[tuple[str, str]] = []
+    heading = ''
+    buffer: list[str] = []
+    size = 0
+
+    def flush() -> None:
+        nonlocal buffer, size
+        body = '\n'.join(buffer).strip()
+        if body:
+            pieces.append((heading, body))
+        buffer = []
+        size = 0
+
+    for line in text.splitlines():
+        matched = HEADING.match(line)
+        if matched:
+            flush()
+            heading = matched.group(1)
+            continue
+        if size + len(line) > CHUNK_CHARS and not line.strip():
+            flush()
+            continue
+        buffer.append(line)
+        size += len(line) + 1
+    flush()
+    return pieces
+
+
+def _writer(path: Path) -> sqlite3.Connection:
+    """A connection that may change the index: write-ahead log, explicit transactions, one schema.
+
+    An index written by an older layout is dropped and rebuilt rather than read wrongly; the
+    version lives in the file itself.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path, timeout=BUSY_SECONDS, isolation_level=None)
+    connection.execute('PRAGMA journal_mode = WAL')
+    version = connection.execute('PRAGMA user_version').fetchone()[0]
+    if version != SCHEMA_VERSION:
+        connection.executescript('DROP TABLE IF EXISTS chunks; DROP TABLE IF EXISTS pages;')
+        connection.executescript(SCHEMA)
+        connection.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
+    return connection
+
+
+def _reader(path: Path) -> sqlite3.Connection:
+    """A connection that only reads. It never runs the schema, so it never takes a write lock."""
+    return sqlite3.connect(path, timeout=BUSY_SECONDS, isolation_level=None)
+
+
+def _held(connection: sqlite3.Connection) -> dict[str, tuple[str, str, int, int]]:
+    return {
+        url: (target, sha, first, last)
+        for url, target, sha, first, last in connection.execute(
+            'SELECT url, target, sha256, first_id, last_id FROM pages'
+        )
+    }
+
+
+def refresh(
+    root: Path,
+    settings: Settings | None = None,
+    rebuild: bool = False,
+    trigger: str = 'asked',
+) -> Refresh:
+    """Bring one repository's index level with its manifests, page by page, in one transaction."""
+    settings = settings or get_settings()
+    own = Settings.for_repository(root)
+    path = index_path(root, settings)
+    started = time.monotonic()
+    if rebuild:
+        for suffix in ('', '-wal', '-shm'):
+            Path(f'{path}{suffix}').unlink(missing_ok=True)
+
+    report = Refresh(repository=root.resolve().name)
+    connection = _writer(path)
+    try:
+        connection.execute('BEGIN IMMEDIATE')
+        held = _held(connection)
+        seen: set[str] = set()
+        tracked = inventory.tracked(own)
+
+        for name in tracked:
+            directory = inventory.directory_for(name, own)
+            manifest = load_manifest(directory)
+            if manifest is None:
+                continue
+            for url, record in manifest.stored.items():
+                if not record.path or not record.sha256:
+                    continue
+                seen.add(url)
+                previous = held.get(url)
+                if previous is not None and previous[0] == name and previous[1] == record.sha256:
+                    continue
+                page = directory / record.path
+                if not page.is_file():
+                    continue
+                text = page.read_text(encoding='utf-8', errors='replace')
+                title = record.title or url
+                if previous is not None:
+                    connection.execute(
+                        'DELETE FROM chunks WHERE rowid BETWEEN ? AND ?', (previous[2], previous[3])
+                    )
+                first = last = 0
+                for heading, body in chunk(text):
+                    cursor = connection.execute(
+                        'INSERT INTO chunks (target, url, title, heading, body) VALUES (?, ?, ?, ?, ?)',
+                        (name, url, title, heading, body),
+                    )
+                    last = int(cursor.lastrowid or 0)
+                    first = first or last
+                connection.execute(
+                    'INSERT OR REPLACE INTO pages (url, target, sha256, first_id, last_id) '
+                    'VALUES (?, ?, ?, ?, ?)',
+                    (url, name, record.sha256, first, last),
+                )
+                if previous is None:
+                    report.added += 1
+                else:
+                    report.updated += 1
+
+        for url in set(held) - seen:
+            _, _, first, last = held[url]
+            connection.execute('DELETE FROM chunks WHERE rowid BETWEEN ? AND ?', (first, last))
+            connection.execute('DELETE FROM pages WHERE url = ?', (url,))
+            report.removed += 1
+
+        report.pages = connection.execute('SELECT COUNT(*) FROM pages').fetchone()[0]
+        connection.execute('COMMIT')
+    except BaseException:
+        connection.execute('ROLLBACK')
+        raise
+    finally:
+        connection.close()
+
+    report.seconds = time.monotonic() - started
+    _note(
+        settings,
+        f'{report.repository} refresh trigger={trigger} rebuild={rebuild} tracked={len(tracked)} '
+        f'held={len(held)} added={report.added} updated={report.updated} removed={report.removed} '
+        f'pages={report.pages} seconds={report.seconds:.1f}',
+    )
+    return report
+
+
+def stale(root: Path, settings: Settings | None = None) -> str | None:
+    """Why the index needs a refresh before it is read, or None when it does not.
+
+    Missing is one reason; a manifest written after the index is the other, named by target.
+    """
+    settings = settings or get_settings()
+    path = index_path(root, settings)
+    if not path.is_file():
+        return 'missing'
+    built = path.stat().st_mtime
+    own = Settings.for_repository(root)
+    for name in inventory.tracked(own):
+        manifest = inventory.directory_for(name, own) / 'manifest.json'
+        if manifest.is_file() and manifest.stat().st_mtime > built:
+            return f'manifest:{name}'
+    return None
+
+
+def match_expression(query: str) -> str:
+    """Turn free text into an FTS5 expression that cannot raise on the user's punctuation.
+
+    Every word becomes a quoted phrase token joined by the implicit AND, so `Record Type` finds
+    chunks holding both words and `foo(bar)` does not reach the parser as an operator. An empty
+    query is refused rather than matched against everything.
+    """
+    words = [word.replace('"', '') for word in WORD.findall(query)]
+    words = [word for word in words if word]
+    if not words:
+        raise DyarchiaCrawleeError('a search needs at least one word')
+    return ' '.join(f'"{word}"' for word in words)
+
+
+def _roots(repository: str | None, settings: Settings) -> list[Path]:
+    roots = repositories.roots(settings)
+    if repository is None:
+        return roots
+    chosen = [root for root in roots if root.name == repository]
+    if not chosen:
+        names = ', '.join(root.name for root in roots) or 'none'
+        raise DyarchiaCrawleeError(f'no corpus repository named {repository!r}; this machine holds: {names}')
+    return chosen
+
+
+def search(
+    query: str,
+    repository: str | None = None,
+    target: str | None = None,
+    limit: int = 10,
+    settings: Settings | None = None,
+    refresh_first: bool = True,
+) -> list[Hit]:
+    """Answer a query across one repository or every one, best chunks first.
+
+    The index is brought up to date before it is read when a manifest moved since it was built,
+    so a search after a round sees the round. Words are ANDed; when nothing holds all of them the
+    query is widened to any of them, which is the difference between an empty answer and a
+    weaker one, and the score says which it was.
+    """
+    settings = settings or get_settings()
+    expression = match_expression(query)
+    widened = ' OR '.join(expression.split(' '))
+    hits: list[Hit] = []
+
+    for root in _roots(repository, settings):
+        if refresh_first:
+            reason = stale(root, settings)
+            if reason:
+                refresh(root, settings, trigger=f'search:{reason}')
+        path = index_path(root, settings)
+        if not path.is_file():
+            continue
+        connection = _reader(path)
+        try:
+            found = _query(connection, root.name, expression, target, limit)
+            if not found and widened != expression:
+                found = _query(connection, root.name, widened, target, limit)
+        except sqlite3.OperationalError as error:
+            if 'no such table' in str(error):
+                found = []
+            else:
+                raise
+        finally:
+            connection.close()
+        hits.extend(found)
+
+    hits.sort(key=lambda hit: hit.score)
+    return hits[:limit]
+
+
+def _query(
+    connection: sqlite3.Connection,
+    repository: str,
+    expression: str,
+    target: str | None,
+    limit: int,
+) -> list[Hit]:
+    clauses = ['chunks MATCH ?']
+    params: list[object] = [expression]
+    if target:
+        clauses.append('target = ?')
+        params.append(target)
+    params.append(limit)
+    rows = connection.execute(
+        'SELECT target, url, title, heading, '
+        f"snippet(chunks, 4, '[', ']', ' ... ', {SNIPPET_TOKENS}), "
+        'bm25(chunks, 0, 0, 3.0, 2.0, 1.0) AS score '
+        f'FROM chunks WHERE {" AND ".join(clauses)} ORDER BY score LIMIT ?',
+        params,
+    ).fetchall()
+    return [
+        Hit(
+            repository=repository,
+            target=row[0],
+            url=row[1],
+            title=row[2],
+            heading=row[3],
+            snippet=' '.join(str(row[4]).split()),
+            score=float(row[5]),
+        )
+        for row in rows
+    ]

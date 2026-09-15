@@ -366,6 +366,11 @@ to be allowed by name, `mcp__dyarchia-corpus__search_corpus`, or a non-interacti
 blocks the call. What an agent does with a documentation search is the agent's business, and
 the tool answers the same way the CLI does.
 
+Under the desktop shell the panel's host publishes that server as an offer to other plugins,
+`<userData>/mcp/crawlee.json` in the shape docs/plugins.md describes, at startup and after
+every round, and only while a corpus repository holds pages: a fresh install offers nothing,
+and no other plugin has to know this one exists to use the tool when it is there.
+
 
 ## The panel
 

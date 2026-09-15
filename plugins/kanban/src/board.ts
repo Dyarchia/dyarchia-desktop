@@ -36,6 +36,7 @@ function restore(card: Card): Card {
     for (const run of card.runs ?? []) {
         if (run.kind !== 'review') run.kind = 'implement'
         if (!isHarness(run.harness)) run.harness = DEFAULT_HARNESS
+        if (!Array.isArray(run.handoff)) run.handoff = []
     }
     return card
 }

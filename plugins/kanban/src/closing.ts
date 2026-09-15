@@ -38,6 +38,7 @@ export function parseTerminal(text: string): TerminalBlock | null {
             blockKind: (raw.blockKind as BlockKind) ?? null,
             summary: typeof raw.summary === 'string' ? raw.summary : '',
             artifacts: Array.isArray(raw.artifacts) ? raw.artifacts.map(String) : [],
+            handoff: Array.isArray(raw.handoff) ? raw.handoff.map(String) : [],
             followups: followups
                 .map((entry) => entry as Record<string, unknown>)
                 .filter((entry) => typeof entry?.title === 'string')

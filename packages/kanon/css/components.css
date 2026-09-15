@@ -417,6 +417,31 @@ textarea.dya-field {
     padding: var(--dya-space-2) var(--dya-space-3);
     line-height: var(--dya-leading-body);
     resize: vertical;
+}
+
+.dya-select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.dya-select > .dya-field {
+    appearance: none;
+    padding-right: var(--dya-space-6);
+    cursor: pointer;
+}
+
+.dya-select::after {
+    content: "";
+    position: absolute;
+    right: var(--dya-space-3);
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--dya-text-4);
+    border-bottom: 1.5px solid var(--dya-text-4);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
 }.dya-checkbox {
     appearance: none;
     display: grid;
@@ -614,14 +639,19 @@ textarea.dya-field {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--dya-space-2);
+    gap: var(--dya-space-3);
     padding: var(--dya-space-6) var(--dya-space-4);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    line-height: var(--dya-leading-body);
     text-align: center;
+    text-wrap: balance;
     color: var(--dya-text-4);
+}
+
+.dya-empty > span,
+.dya-loading > span {
+    max-width: 44ch;
 }.dya-sr-only {
     position: absolute;
     width: 1px;

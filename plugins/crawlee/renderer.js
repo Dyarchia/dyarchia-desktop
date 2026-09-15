@@ -255,6 +255,8 @@ function mount(ctx, container) {
 
         const bar = el('div', 'dya-bar--inset crw-bar')
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
+        const scopeBox = el('span', 'dya-select')
+        scopeBox.appendChild(scope)
         const commitBox = el('label', 'crw-check')
         const commit = el('input', 'dya-checkbox')
         commit.type = 'checkbox'
@@ -264,7 +266,7 @@ function mount(ctx, container) {
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
         const status = el('span', 'dya-text crw-status', '')
-        bar.append(el('span', 'dya-key-label', 'round'), scope, commitBox, run, stop, status)
+        bar.append(el('span', 'dya-key-label', 'round'), scopeBox, commitBox, run, stop, status)
 
         const out = el('div', 'crw-out')
         const idle = el('div', 'dya-empty', 'nothing has run yet')

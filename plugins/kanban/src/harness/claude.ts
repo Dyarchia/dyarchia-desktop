@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { parseTerminal } from '../closing.js'
 import { Refusal } from '../refusal.js'
 import type { Run } from '../types.js'
-import * as corpus from './corpus.js'
+import * as offers from './offers.js'
 import { capture, findBinary, invocation } from './process.js'
 import type {
     Driver,
@@ -133,7 +133,7 @@ export function launchArgv(options: {
     effort: string | null
     worktree: string | null
     deny?: string[]
-    mcpConfig?: string | null
+    offering?: offers.Offering | null
     prompt: string
 }): string[] {
     const args = ['--bg', '--permission-mode', options.permissionMode]
@@ -142,7 +142,10 @@ export function launchArgv(options: {
     if (options.model) args.push('--model', options.model)
     if (options.effort) args.push('--effort', options.effort)
     if (options.deny?.length) args.push('--disallowedTools', ...options.deny)
-    if (options.mcpConfig) args.push('--mcp-config', options.mcpConfig, '--allowedTools', corpus.TOOL)
+    if (options.offering) {
+        args.push('--mcp-config', options.offering.configPath)
+        if (options.offering.allow.length) args.push('--allowedTools', ...options.offering.allow)
+    }
     args.push('-n', options.name, options.prompt)
     return args
 }
@@ -172,7 +175,7 @@ async function launch(spec: LaunchSpec): Promise<Launched> {
         effort: spec.effort,
         worktree: spec.isolate,
         deny: reviewing ? DENIED : [],
-        mcpConfig: await corpus.configure(),
+        offering: await offers.configure(),
         prompt: spec.prompt
     })
 

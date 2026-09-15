@@ -183,6 +183,8 @@ def activate(ctx):
   and replies may arrive out of order.
 - **stdout is the protocol.** `dyarchia_sdk` redirects plugin `print` to stderr, which
   surfaces in the shell console prefixed `[python:<id>]`.
+- The host receives `DYARCHIA_USER_DATA`, the shell's own data directory, which is where the
+  offers folder below lives and where a plugin keeps anything that must outlive its directory.
 - The interpreter is `py -3` on Windows, `python3` elsewhere; `DYARCHIA_PYTHON` forces a
   path. `packages/pysdk` is stdlib-only, so there is nothing to pip install.
 
@@ -336,3 +338,33 @@ Before a panel is done:
 6. Walk every state: idle, hover, pressed, selected, empty, error. In both themes.
 7. No `backdrop-filter`, no infinite animation.
 8. If there is a main module, exercise `invoke` and `broadcast` from the panel.
+
+
+## 7. Offering a tool to agents
+
+Plugins are independent: kanban runs without crawlee, crawlee without kanban, and neither
+imports the other. What one can still do is offer the other a tool, through one folder the
+shell reserves: `<userData>/mcp/`. A plugin that can serve a tool over the Model Context
+Protocol writes `<userData>/mcp/<its id>.json` while it can serve it and deletes the file when
+it cannot; a plugin that launches agents reads the folder when it launches one and never asks
+who wrote what.
+
+```json
+{
+    "plugin": "crawlee",
+    "server": "dyarchia-corpus",
+    "command": "C:/.../environments/crawlee/.venv/Scripts/python.exe",
+    "args": ["-m", "dyarchia_crawlee", "mcp", "--root", "C:/.../plugins/crawlee"],
+    "env": { "PYTHONIOENCODING": "utf-8" },
+    "tools": [{ "name": "search_corpus", "note": "full-text search over the snapshotted documentation" }]
+}
+```
+
+`server` names the MCP server and is a lowercase slug; `command`, `args` and `env` are how to
+start it over stdio; each tool has the name the server exposes and one sentence for the agent's
+brief. The reader skips a file whose `command` no longer exists, which is what an uninstalled
+plugin leaves behind, so an offer never outlives what serves it. The condition for writing the
+file is the offering plugin's own business: crawlee publishes only when a corpus repository
+holds pages, and withdraws after a round that leaves none. The kanban is the one reader today;
+it merges every offer into one `--mcp-config`, allows the listed tools by name, and ends the
+brief with a Tools section made of the notes.

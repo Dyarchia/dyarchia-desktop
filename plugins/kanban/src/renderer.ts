@@ -163,8 +163,15 @@ function order(cards: Card[]): Card[] {
     return cards.slice().sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
 }
 
+const FOLDABLE: Status[] = ['done', 'archived']
+
 function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle): () => void {
     const pinKey = `${PIN}${handle.instanceId}`
+    const foldKey = (status: Status): string => `${pinKey}:fold:${status}`
+    const folded = (status: Status): boolean => {
+        const stored = read(foldKey(status))
+        return stored === null ? true : stored === 'true'
+    }
 
     let registry: BoardMeta[] = []
     let meta: BoardMeta | null = null
@@ -200,12 +207,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const bar = el('div', 'dya-bar kanban-bar')
     const boardButton = el('button', 'dya-button dya-button--quiet', 'board')
     boardButton.type = 'button'
-    const titleField = el('input', 'dya-field dya-field--sm')
-    titleField.type = 'text'
-    titleField.placeholder = 'new card'
-    titleField.spellcheck = false
-    const addButton = el('button', 'dya-button dya-button--sm', 'add')
-    addButton.type = 'button'
     const tickButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'dispatch')
     tickButton.type = 'button'
     tickButton.title = 'sweep every board now instead of waiting for the tick'
@@ -216,8 +217,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const healthButton = el('button', 'dya-button dya-button--quiet dya-button--sm', 'health')
     healthButton.type = 'button'
     healthButton.hidden = true
-    const meter = el('span', 'kanban-meta')
-    bar.append(boardButton, titleField, addButton, tickButton, watchButton, spacer, healthButton, meter)
+    const meter = el('span', 'dya-tag kanban-meta')
+    meter.hidden = true
+    bar.append(boardButton, tickButton, watchButton, spacer, healthButton, meter)
 
     const main = el('div', 'kanban-main')
     const board = el('div', 'kanban-board')
@@ -332,6 +334,55 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const indicator = el('div', 'kanban-indicator')
         indicator.hidden = true
         const empty = el('div', 'dya-empty kanban-empty', 'nothing here')
+
+        if (status === 'triage') {
+            const plus = el('button', 'dya-key', '+')
+            plus.type = 'button'
+            plus.title = 'new card'
+            plus.setAttribute('aria-label', 'new card')
+            const draft = el('div', 'kanban-new')
+            draft.hidden = true
+            const field = el('input', 'dya-field dya-field--sm')
+            field.type = 'text'
+            field.placeholder = 'card title, enter to add'
+            field.spellcheck = false
+            draft.appendChild(field)
+            const dismiss = (): void => {
+                draft.hidden = true
+                field.value = ''
+            }
+            plus.addEventListener('click', () => {
+                draft.hidden = false
+                field.focus()
+            })
+            field.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') dismiss()
+                if (event.key === 'Enter') void add(field.value).then(dismiss)
+            })
+            field.addEventListener('blur', () => {
+                if (!field.value.trim()) dismiss()
+            })
+            head.appendChild(plus)
+            scroller.appendChild(draft)
+        }
+
+        if (FOLDABLE.includes(status)) {
+            const fold = el('button', 'dya-key kanban-fold')
+            fold.type = 'button'
+            const apply = (closed: boolean): void => {
+                shell.dataset.collapsed = String(closed)
+                fold.textContent = closed ? '+' : '−'
+                fold.title = closed ? `show ${label}` : `fold ${label}`
+                fold.setAttribute('aria-expanded', String(!closed))
+            }
+            apply(folded(status))
+            fold.addEventListener('click', () => {
+                const next = shell.dataset.collapsed !== 'true'
+                write(foldKey(status), String(next))
+                apply(next)
+            })
+            head.appendChild(fold)
+        }
 
         scroller.append(list, empty, indicator)
         shell.append(head, scroller)
@@ -461,7 +512,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             if (first) first.root.tabIndex = 0
         }
 
-        meter.textContent = meta ? `${meta.name} · ${cards.length} cards · ${meta.workdir}` : ''
+        meter.hidden = meta === null
+        meter.textContent = `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`
+        meter.title = meta ? `${meta.name} · ${meta.workdir}` : ''
         paintMarks()
         paintDrawer()
     }
@@ -523,13 +576,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const open = registry.filter((entry) => !entry.archived)
         if (missing && !open.some((entry) => entry.slug === missing)) {
-            const gone = el('div', 'dya-empty', `board '${missing}' is gone or archived`)
+            const gone = el('div', 'dya-empty')
+            gone.append(el('span', undefined, `The board '${missing}' is gone or archived.`))
             const pick = el('button', 'dya-button', 'choose a board')
             pick.type = 'button'
             pick.addEventListener('click', () => openBoardMenu(pick))
-            const holder = el('div', 'kanban-setup-form')
-            holder.append(gone, pick)
-            setup.appendChild(holder)
+            gone.appendChild(pick)
+            setup.appendChild(gone)
             return
         }
 
@@ -538,7 +591,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const buildBoardForm = (): HTMLElement => {
         const form = el('div', 'kanban-setup-form')
-        const label = el('div', 'dya-empty', 'a board is a project. name it and point it at a directory.')
+        const label = el('div', 'dya-text kanban-lede', 'A board is a project. Name it and point it at a directory.')
 
         const name = el('input', 'dya-field')
         name.type = 'text'
@@ -710,7 +763,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         form.append(
             el(
                 'div',
-                'dya-empty',
+                'dya-text kanban-lede',
                 `${current.name}. The slug '${current.slug}' names its storage and never changes.`
             )
         )
@@ -737,7 +790,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const capsLabel = el(
             'div',
-            'dya-empty',
+            'dya-text kanban-lede',
             'How many workers may run at once. 0 pauses: nothing new is claimed, and what is ' +
                 'already running finishes. A reviewer you ask for by hand starts regardless.'
         )
@@ -753,7 +806,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const runnersLabel = el(
             'div',
-            'dya-empty',
+            'dya-text kanban-lede',
             'Which harness, model and effort run each phase, unless a card says otherwise. ' +
                 'A reviewer on a different model than the implementer is a better judge of it.'
         )
@@ -1782,16 +1835,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .catch((thrown: unknown) => failOn(id, thrown))
     }
 
-    const add = (): void => {
-        const title = titleField.value.trim()
+    const add = async (raw: string): Promise<void> => {
+        const title = raw.trim()
         if (!title || !meta) return
-        void invoke<Card>('createCard', meta.slug, { title })
-            .then((card) => {
-                titleField.value = ''
-                say(`${card.title} added to triage`)
-                return refresh()
-            })
-            .catch(fail)
+        try {
+            const card = await invoke<Card>('createCard', meta.slug, { title })
+            say(`${card.title} added to triage`)
+            await refresh()
+        } catch (thrown) {
+            fail(thrown)
+        }
     }
 
     const visibleColumns = (): Status[] =>
@@ -1985,10 +2038,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         void invoke('dispatchNow')
             .then(() => refresh())
             .catch(fail)
-    })
-    addButton.addEventListener('click', add)
-    titleField.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') add()
     })
     board.addEventListener('keydown', onBoardKey)
 

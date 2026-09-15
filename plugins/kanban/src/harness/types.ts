@@ -3,9 +3,11 @@ import type { HarnessId, Run, RunKind } from '../types.js'
 export type Liveness = 'alive' | 'dead' | 'unknown'
 
 export interface LaunchSpec {
+    runId: string
     kind: RunKind
     name: string
     prompt: string
+    briefPath: string
     workspace: string
     addDirs: string[]
     isolate: string | null
@@ -58,20 +60,30 @@ export interface Invocation {
  * runs a card; the brief, the closing block, the lease, the stall detector and the
  * verdict never see which one did. `poll` is taken once per sweep and handed back to the
  * three liveness questions, because one listing per tick is the budget and a harness that
- * answers them from a process table rather than a registry is free to ignore it.
+ * answers them from its own process table is free to ignore it. `isolates` says whether
+ * the harness makes the worktree itself; when it does not, the board makes one before the
+ * launch and hands it over as the working directory. `restraint` is the paragraph of the
+ * review brief that names how this harness keeps a reviewer from writing, because the
+ * mechanism is the harness's and the reviewer is told the truth about it. `commits` says
+ * whether a worker under this harness can commit at all; when it cannot, the brief
+ * says so and the board commits what the worker leaves on the branch.
  */
 export interface Driver {
     id: HarnessId
     label: string
-    models: string[]
+    isolates: boolean
+    commits: boolean
     efforts: string[] | null
     binary(): Promise<string | null>
+    models(): Promise<string[]>
+    restraint(): string[]
     launch(spec: LaunchSpec): Promise<Launched>
     worktreePath(workspace: string, isolate: string): string
     poll(): Promise<unknown>
     liveness(snapshot: unknown, run: Run): Liveness
     state(snapshot: unknown, run: Run): string | null
     waiting(snapshot: unknown, run: Run): boolean
+    orphaned(run: Run): boolean
     stop(run: Run): Promise<void>
     progress(place: string, run: Run): Promise<Progress | null>
     history(place: string, run: Run): Promise<HistoryRow[]>

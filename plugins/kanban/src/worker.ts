@@ -41,6 +41,32 @@ export async function head(workdir: string): Promise<string | null> {
     })
 }
 
+/*
+ * What a worker leaves uncommitted in its worktree is not on the branch, so nothing can
+ * review it and the worktree may go. The board therefore commits it, as one commit
+ * named after the card, and says so in the message. A harness whose sandbox refuses
+ * git metadata writes cannot do this itself, and a worker that simply forgot gets the
+ * same treatment rather than a lost afternoon.
+ */
+export async function land(worktree: string, title: string): Promise<'committed' | 'clean' | 'failed'> {
+    const status = await git(worktree, ['status', '--porcelain'])
+    if (status === null) return 'failed'
+    if (!status.trim()) return 'clean'
+    if ((await git(worktree, ['add', '-A'])) === null) return 'failed'
+    const message = `${title}\n\nCommitted by the board: the worker left this in the working tree.`
+    const done = await git(worktree, [
+        '-c',
+        'user.name=dyarchia kanban',
+        '-c',
+        'user.email=kanban@dyarchia.local',
+        'commit',
+        '-q',
+        '-m',
+        message
+    ])
+    return done === null ? 'failed' : 'committed'
+}
+
 export interface Patch {
     stat: string
     text: string
@@ -69,7 +95,8 @@ export function brief(
     parents: Card[],
     workspace: string,
     isolated: boolean,
-    attachments: { name: string; path: string }[] = []
+    attachments: { name: string; path: string }[] = [],
+    commits: boolean = true
 ): string {
     const lines: string[] = []
 
@@ -111,13 +138,25 @@ export function brief(
             'It is a git worktree of the project, on its own branch, so your changes are isolated',
             'from the checkout the operator is working in. Do not try to merge it: say what you',
             'changed in the summary and leave the branch for a person to land.',
-            '',
-            'COMMIT what you change on that branch before you finish, in as many commits as the',
-            'work deserves. A change you leave uncommitted is not on the branch, so there is',
-            'nothing for anyone to land and nothing to review, and the workspace may be removed',
-            'from under it.',
             ''
         )
+        if (commits) {
+            lines.push(
+                'COMMIT what you change on that branch before you finish, in as many commits as the',
+                'work deserves. A change you leave uncommitted is not on the branch, so there is',
+                'nothing for anyone to land and nothing to review, and the workspace may be removed',
+                'from under it.',
+                ''
+            )
+        } else {
+            lines.push(
+                'Do NOT try to commit: your sandbox refuses every write to the git metadata, so',
+                'git add and git commit fail here by design. Leave your changes in the working tree',
+                'and the board commits them on the branch, as one commit named after this card,',
+                'the moment you finish. Do not treat the failed commit as a blocker.',
+                ''
+            )
+        }
     }
     if (card.workspaceKind === 'scratch') {
         lines.push(
@@ -155,13 +194,22 @@ export function brief(
     return lines.join('\n')
 }
 
+const CLAUDE_RESTRAINT = [
+    'You are in PLAN MODE and you have NO SHELL: Bash and PowerShell are denied to you, on',
+    'purpose. You are not being trusted less than the implementer was. It is that a review',
+    'which reaches for a shell stops dead waiting for a permission nobody is there to give,',
+    'and a stopped review is worth less than no review. Do not try to leave plan mode, and do',
+    'not end by proposing a plan. The judgement below IS your output.'
+]
+
 export function reviewBrief(
     card: Card,
     reviewed: Run,
     workspace: string,
     attachments: { name: string; path: string }[] = [],
     change: Patch | null = null,
-    patchPath: string | null = null
+    patchPath: string | null = null,
+    restraint: string[] = CLAUDE_RESTRAINT
 ): string {
     const lines: string[] = []
 
@@ -171,11 +219,7 @@ export function reviewBrief(
         'change it: you are in the checkout the operator works in, and nothing you write here is',
         'wanted. Read, decide, and say what you decided.',
         '',
-        'You are in PLAN MODE and you have NO SHELL: Bash and PowerShell are denied to you, on',
-        'purpose. You are not being trusted less than the implementer was. It is that a review',
-        'which reaches for a shell stops dead waiting for a permission nobody is there to give,',
-        'and a stopped review is worth less than no review. Do not try to leave plan mode, and do',
-        'not end by proposing a plan. The judgement below IS your output.',
+        ...restraint,
         '',
         'You do not need a shell, because the change is already below. The board ran the diff for',
         'you rather than asking you to. Read it, and read whatever else you need with Read, Glob',
@@ -306,6 +350,11 @@ export async function start(
     const isolate =
         !reviewing && (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
     const predicted = isolate ? driver.worktreePath(workspace, isolate) : workspace
+    if (isolate && !driver.isolates) {
+        await mkdir(dirname(predicted), { recursive: true })
+        const made = await git(workspace, ['worktree', 'add', '-b', `worktree-${isolate}`, predicted])
+        if (made === null) throw new Error(`git could not add a worktree at ${predicted}`)
+    }
 
     let change: Patch | null = null
     let patchPath: string | null = null
@@ -318,8 +367,8 @@ export async function start(
     }
 
     const text = reviewing
-        ? reviewBrief(card, reviewing, workspace, attachments, change, patchPath)
-        : brief(card, parents, predicted, isolate !== null, attachments)
+        ? reviewBrief(card, reviewing, workspace, attachments, change, patchPath, driver.restraint())
+        : brief(card, parents, predicted, isolate !== null, attachments, driver.commits)
     await writeFile(briefPath, text, 'utf-8')
     const prompt =
         text.length <= INLINE_LIMIT
@@ -333,9 +382,11 @@ export async function start(
     }
 
     const launched = await driver.launch({
+        runId,
         kind: reviewing ? 'review' : 'implement',
         name: (reviewing ? `review: ${card.title}` : card.title).slice(0, 60),
         prompt,
+        briefPath,
         workspace,
         addDirs: dirs,
         isolate,

@@ -19,7 +19,7 @@ export type RunKind = 'implement' | 'review'
 
 export type Verdict = 'approved' | 'changes'
 
-export type HarnessId = 'claude'
+export type HarnessId = 'claude' | 'codex' | 'grok' | 'opencode'
 
 export interface Runner {
     harness: HarnessId | null
@@ -40,6 +40,7 @@ export interface RunnersPatch {
 export interface HarnessInfo {
     id: HarnessId
     label: string
+    available: boolean
     models: string[]
     efforts: string[] | null
 }

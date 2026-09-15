@@ -21,6 +21,29 @@ export type Verdict = 'approved' | 'changes'
 
 export type HarnessId = 'claude'
 
+export interface Runner {
+    harness: HarnessId | null
+    model: string | null
+    effort: string | null
+}
+
+export interface Runners {
+    implement: Runner
+    review: Runner
+}
+
+export interface RunnersPatch {
+    implement?: Partial<Runner>
+    review?: Partial<Runner>
+}
+
+export interface HarnessInfo {
+    id: HarnessId
+    label: string
+    models: string[]
+    efforts: string[] | null
+}
+
 export interface Run {
     runId: string
     kind: RunKind
@@ -63,8 +86,7 @@ export interface Card {
     assignee: string
     workdir: string | null
     workspaceKind: WorkspaceKind
-    model: string | null
-    effort: string | null
+    runners: Runners
     maxRuntimeSeconds: number | null
     maxRetries: number | null
     permissionMode: string
@@ -92,6 +114,7 @@ export interface BoardMeta {
     createdAt: number
     order: number
     maxRunning: number | null
+    runners: Runners
 }
 
 export interface Settings {
@@ -125,8 +148,7 @@ export interface CardDraft {
     priority?: number
     workdir?: string | null
     workspaceKind?: WorkspaceKind
-    model?: string | null
-    effort?: string | null
+    runners?: RunnersPatch
     maxRuntimeSeconds?: number | null
     maxRetries?: number | null
     permissionMode?: string
@@ -142,21 +164,20 @@ export type CardPatch = Partial<
         | 'priority'
         | 'workdir'
         | 'workspaceKind'
-        | 'model'
-        | 'effort'
         | 'maxRuntimeSeconds'
         | 'maxRetries'
         | 'permissionMode'
         | 'scheduledFor'
         | 'parents'
     >
->
+> & { runners?: RunnersPatch }
 
 export interface BoardDraft {
     slug: string
     name: string
     workdir: string
     maxRunning?: number | null
+    runners?: RunnersPatch
 }
 
 export interface WatchRun {

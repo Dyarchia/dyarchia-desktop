@@ -1,4 +1,4 @@
-import type { HarnessId, Run } from '../types.js'
+import type { HarnessId, HarnessInfo, Run } from '../types.js'
 import * as claude from './claude.js'
 import type { Driver, Fleet } from './types.js'
 
@@ -20,6 +20,13 @@ export function driver(id: HarnessId): Driver {
 
 export function of(run: Run): Driver {
     return driver(run.harness)
+}
+
+export function catalogue(): HarnessInfo[] {
+    return HARNESSES.map((id) => {
+        const { label, models, efforts } = DRIVERS[id]
+        return { id, label, models: [...models], efforts: efforts ? [...efforts] : null }
+    })
 }
 
 export async function poll(): Promise<Fleet> {

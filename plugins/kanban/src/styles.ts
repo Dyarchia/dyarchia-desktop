@@ -231,6 +231,10 @@ export const STYLES = `
 
 .kanban-row > .kanban-cap { flex: 0 0 4rem; }
 
+.kanban-runner { flex-wrap: wrap; }
+
+.kanban-runner > .dya-field { flex: 1 1 12rem; }
+
 .kanban-body-field {
     min-height: 128px;
     resize: vertical;

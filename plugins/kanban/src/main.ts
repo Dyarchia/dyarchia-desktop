@@ -92,6 +92,8 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('boards', () => boards.list())
 
+    ctx.handle('harnesses', () => harness.catalogue())
+
     ctx.handle('settings', () => boards.settings())
 
     ctx.handle('updateSettings', async (raw) => {

@@ -3,7 +3,8 @@ import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { MARKER } from './closing.js'
 import * as harness from './harness/index.js'
-import type { Card, HarnessId, Run } from './types.js'
+import type { Resolved } from './runners.js'
+import type { Card, Run } from './types.js'
 
 const INLINE_LIMIT = 8_000
 const DIFF_LIMIT = 120_000
@@ -289,10 +290,10 @@ export async function start(
     workspace: string,
     attachments: { name: string; path: string }[] = [],
     reviewing: Run | null = null,
-    on: HarnessId = harness.DEFAULT_HARNESS
+    chosen: Resolved = { harness: harness.DEFAULT_HARNESS, model: null, effort: null }
 ): Promise<Started> {
-    const driver = harness.driver(on)
-    if (!(await driver.binary())) throw new Error(`${on} is not on PATH`)
+    const driver = harness.driver(chosen.harness)
+    if (!(await driver.binary())) throw new Error(`${chosen.harness} is not on PATH`)
 
     const info = await stat(workspace).catch(() => null)
     if (!info?.isDirectory()) throw new Error(`'${workspace}' is not an existing directory`)
@@ -339,8 +340,8 @@ export async function start(
         addDirs: dirs,
         isolate,
         permissionMode: card.permissionMode,
-        model: card.model,
-        effort: card.effort
+        model: chosen.model,
+        effort: chosen.effort
     })
 
     const place = launched.worktree ?? workspace

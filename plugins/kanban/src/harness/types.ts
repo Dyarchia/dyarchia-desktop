@@ -62,6 +62,9 @@ export interface Invocation {
  */
 export interface Driver {
     id: HarnessId
+    label: string
+    models: string[]
+    efforts: string[] | null
     binary(): Promise<string | null>
     launch(spec: LaunchSpec): Promise<Launched>
     worktreePath(workspace: string, isolate: string): string

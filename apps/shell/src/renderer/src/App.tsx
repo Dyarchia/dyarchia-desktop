@@ -100,7 +100,7 @@ export function App(): React.JSX.Element {
                     <DockLayout onReady={handleReady} />
                 ) : (
                     <div className="dya-loading shell-loading">
-                        <span className="dya-brand">dyarchia</span>
+                        <span className="dya-carved">dyarchia</span>
                         <span>Loading plugins…</span>
                     </div>
                 )}

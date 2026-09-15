@@ -166,7 +166,7 @@ export const STYLES = `
     flex: 1;
     min-width: 0;
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-label-sm);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-4);
     white-space: nowrap;

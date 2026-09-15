@@ -28,6 +28,7 @@ export interface TerminalBlock {
     blockKind: 'dependency' | 'needs_input' | 'capability' | 'transient' | null
     summary: string
     artifacts: string[]
+    handoff: string[]
     followups: { title: string; body: string }[]
 }
 

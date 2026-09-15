@@ -174,6 +174,7 @@ function blank(runId: string, kind: RunKind, on: HarnessId): Run {
         summary: null,
         artifacts: [],
         kept: [],
+        handoff: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,
@@ -390,9 +391,11 @@ async function resolve(
             declared.artifacts
         )
         run.kept = picked.kept
+        const handed = await harvest(meta.slug, card.id, place(meta, card, run), declared.handoff)
+        run.handoff = handed.kept
 
-        if (declared.outcome === 'completed' && picked.missing.length) {
-            const names = picked.missing.join(', ')
+        if (declared.outcome === 'completed' && (picked.missing.length || handed.missing.length)) {
+            const names = [...picked.missing, ...handed.missing].join(', ')
             close(run, 'violation', declared.summary, `declared but missing: ${names}`)
             card.comments.push({
                 at: Date.now(),
@@ -635,10 +638,7 @@ async function launch(
             .map((id) => file.cards.find((entry) => entry.id === id))
             .filter((entry): entry is Card => Boolean(entry))
 
-        const held = card.attachments.map((entry) => ({
-            name: entry.name,
-            path: join(boards.attachmentsRoot(meta.slug, card.id), entry.name)
-        }))
+        const held = carried(card, boards.attachmentsRoot(meta.slug, card.id))
 
         const chosen = runners.resolve(meta.runners, card.runners, run.kind)
         const started = await worker.start(card, parents, run.runId, where, held, reviewing, chosen)
@@ -672,6 +672,26 @@ async function launch(
         ended(sink, meta, card, run)
         sink.runEnded(meta.slug, card.id, 'crashed')
     }
+}
+
+/*
+ * What the next worker on this card is handed: every file the operator attached, and what
+ * the last completed implement run declared as handoff. Only that run's, because a brief
+ * that enumerates what five attempts left is a different problem, and only handoff, because
+ * an artifact is output for the operator and was never addressed to an agent.
+ */
+export function carried(card: Card, root: string): { name: string; path: string; from: 'operator' | 'worker' }[] {
+    const held: { name: string; path: string; from: 'operator' | 'worker' }[] = card.attachments.map((entry) => ({
+        name: entry.name,
+        path: join(root, entry.name),
+        from: 'operator'
+    }))
+    const last = [...card.runs].reverse().find((run) => run.kind === 'implement' && run.outcome === 'completed')
+    for (const name of last?.handoff ?? []) {
+        if (held.some((entry) => entry.name === name)) continue
+        held.push({ name, path: join(root, name), from: 'worker' })
+    }
+    return held
 }
 
 function take(meta: BoardMeta, card: Card, kind: RunKind): Run {

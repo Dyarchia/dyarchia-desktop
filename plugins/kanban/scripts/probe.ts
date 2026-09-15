@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
+import { adopt, carried, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
 import { liveness, parseLaunch, snapshot } from '../src/harness/claude.js'
 import * as codex from '../src/harness/codex.js'
 import * as grok from '../src/harness/grok.js'
@@ -115,6 +115,8 @@ function terminals(): void {
         'some prose\n===KANBAN===\n{ "outcome": "completed", "summary": "did it", "artifacts": ["a.txt"], "followups": [{"title":"next","body":"b"}] }\n'
     check('outcome', parseTerminal(good)?.outcome, 'completed')
     check('artifacts', parseTerminal(good)?.artifacts, ['a.txt'])
+    check('a block with no handoff hands nothing on', parseTerminal(good)?.handoff, [])
+    check('a handoff is read beside the artifacts', parseTerminal('===KANBAN===\n{"outcome":"completed","artifacts":["out.md"],"handoff":["notes.md"]}')?.handoff, ['notes.md'])
     check('followups', parseTerminal(good)?.followups, [{ title: 'next', body: 'b' }])
     check('no marker is no block', parseTerminal('just prose'), null)
     check('a truncated block is no block', parseTerminal('===KANBAN===\n{ "outcome": "com'), null)
@@ -323,6 +325,23 @@ async function attachments(): Promise<void> {
     check('the brief names the file', text.includes('C:\\attachments\\spec.pdf'), true)
     check('under its own heading', text.includes('## Attachments'), true)
     check('and a card with none says nothing', brief(card, [], 'C:\\workspace', false).includes('## Attachments'), false)
+
+    console.log('\nwhat the next run is handed')
+    const bare = { ...card, attachments: [{ name: 'spec.pdf', bytes: 1, at: 1 }], runs: [] as Run[] } as Card
+    const done = (handoff: string[], outcome: Run['outcome']): Run => ({
+        runId: randomUUID(), kind: 'implement', harness: 'claude', sessionId: null, shortId: null, worktree: null, branch: null,
+        startedAt: 1, endedAt: 2, outcome, summary: null, artifacts: [], kept: [], handoff, inputTokens: 0, outputTokens: 0, error: null, headBefore: null
+    })
+    check('with no runs, only the operator files go', carried(bare, 'C:\\a').map((f) => f.from), ['operator'])
+    bare.runs = [done(['notes.md'], 'completed'), done(['later.md'], 'crashed')]
+    const given = carried(bare, 'C:\\a')
+    check('the last completed run hands its files on', given.map((f) => f.name), ['spec.pdf', 'notes.md'])
+    check('a crashed attempt hands nothing', given.some((f) => f.name === 'later.md'), false)
+    check('and the brief says who left it', brief(bare, [], 'C:\\w', false, given).includes('left for you by the previous run'), true)
+    bare.runs = [done(['first.md'], 'completed'), done(['second.md'], 'completed')]
+    check('only the latest completed run, not every attempt', carried(bare, 'C:\\a').map((f) => f.name), ['spec.pdf', 'second.md'])
+    bare.runs = [done(['spec.pdf'], 'completed')]
+    check('a name the operator already gave is not listed twice', carried(bare, 'C:\\a').length, 1)
 }
 
 async function eventLog(): Promise<void> {
@@ -365,6 +384,7 @@ async function reviews(): Promise<void> {
         summary: 'rewrote the parser',
         artifacts: [],
         kept: [],
+        handoff: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,
@@ -539,6 +559,7 @@ async function guards(): Promise<void> {
         summary: null,
         artifacts: [],
         kept: [],
+        handoff: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,
@@ -700,6 +721,7 @@ async function reconciling(): Promise<void> {
             summary: null,
             artifacts: [],
             kept: [],
+            handoff: [],
             inputTokens: 0,
             outputTokens: 0,
             error: null,

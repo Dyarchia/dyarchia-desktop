@@ -59,6 +59,7 @@ export interface Run {
     summary: string | null
     artifacts: string[]
     kept: string[]
+    handoff: string[]
     inputTokens: number
     outputTokens: number
     error: string | null

@@ -75,6 +75,14 @@ plugin, so Setup knows nothing about any particular one.** **A packaged plugin d
 read-only**, which is why the environment cannot sit beside the code and why a Python plugin
 must look at that variable before falling back to a `.venv` of its own.
 
+An optional `verify` is one argv the plugin declares as the proof that its environment works,
+run with the environment's own scripts directory first on PATH, so `python` there is the
+environment's interpreter. Setup runs it at the end of an installation and again every time
+it inspects the plugin, and reports the exit code: zero is "ready", anything else is a row
+that says what was run and what came back. crawlee's asks Playwright where Chromium is and
+exits 1 if the file is not there, which is the difference between an environment that was
+built and one that can crawl. Without `verify`, "ready" means only that the interpreter exists.
+
 
 ## 2. The renderer bundle
 

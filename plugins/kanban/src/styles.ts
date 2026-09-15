@@ -49,6 +49,7 @@ export const STYLES = `
 }
 
 .kanban-main {
+    position: relative;
     flex: 1;
     min-height: 0;
     display: flex;
@@ -235,25 +236,30 @@ export const STYLES = `
 }
 
 .kanban-drawer {
-    flex: 0 0 50%;
+    position: absolute;
+    top: var(--dya-space-3);
+    right: var(--dya-space-3);
+    bottom: var(--dya-space-3);
+    z-index: 20;
+    width: 50%;
     min-width: 0;
-    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     container-type: inline-size;
-    border-left: var(--dya-border-width) solid var(--dya-hairline);
-    background: var(--dya-chassis);
+    box-shadow: var(--dya-elev-overlay);
 }
 
 .kanban-drawer[data-size='full'] {
-    flex: 1 1 100%;
-    border-left: none;
+    width: calc(100% - var(--dya-space-3) * 2);
 }
 
 .kanban-drawer-head {
     flex: none;
     gap: var(--dya-space-2);
 }
+
+.kanban-drawer-state { flex: none; }
 
 .kanban-drawer-title {
     flex: 1;
@@ -280,19 +286,26 @@ export const STYLES = `
     gap: var(--dya-space-3);
 }
 
+.kanban-grow { flex: 1 0 auto; }
+
+.kanban-grow > .kanban-body-field {
+    flex: 1 1 auto;
+    min-height: 96px;
+}
+
 @container (min-width: 720px) {
-    .kanban-drawer-body {
+    .kanban-drawer[data-stage='true'] .kanban-drawer-body {
         display: grid;
         grid-template-columns: minmax(360px, 1fr) minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
     }
 
-    .kanban-form {
+    .kanban-drawer[data-stage='true'] .kanban-form {
         grid-column: 1;
         grid-row: 1;
     }
 
-    .kanban-stage {
+    .kanban-drawer[data-stage='true'] .kanban-stage {
         grid-column: 2;
         grid-row: 1;
         height: auto;
@@ -341,9 +354,26 @@ export const STYLES = `
 
 .kanban-settings {
     display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-columns: 7.5rem minmax(0, 1fr);
     align-items: center;
-    gap: var(--dya-space-1) var(--dya-space-2);
+    gap: var(--dya-space-2);
+}
+
+.kanban-runners {
+    display: grid;
+    grid-template-columns: 7.5rem repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: var(--dya-space-2);
+    margin-top: var(--dya-space-2);
+}
+
+.kanban-runners > .kanban-runner { display: contents; }
+
+.kanban-model {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-1);
+    min-width: 0;
 }
 
 .kanban-settings > .kanban-select { justify-self: stretch; }

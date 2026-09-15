@@ -337,10 +337,12 @@ burns the whole board against a bad credential.
 
 ## The inspector
 
-A selected card opens beside the board and takes half the panel; the key in its head gives
-it the whole panel, hiding the board rather than squeezing it, and the choice is remembered
-per panel. From 720 px of width the inspector is two columns, the form on the left and the
-stage on the right at full height: the terminal while a worker is on the card, the
+A selected card opens over the board, not beside it: a card-shaped sheet as tall as the
+columns, half the panel wide, with the board still in place underneath. The key in its head
+gives it the whole panel, the choice is remembered per panel, and it closes on Escape, on
+its key, or on a click on the board around it. Without a run it is one column and the brief
+grows to the height. With a run and 720 px of width it is two columns, the form on the left
+and the stage on the right at full height: the terminal while a worker is on the card, the
 transcript once it is gone, and the board's own events on the third tab. Under that width
 the stage sits above the form.
 

@@ -287,7 +287,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     board.setAttribute('role', 'application')
     board.setAttribute('aria-label', 'task board')
 
-    const drawer = el('aside', 'kanban-drawer')
+    const drawer = el('aside', 'dya-card kanban-drawer')
     drawer.hidden = true
 
     const stage = el('div', 'kanban-stage')
@@ -303,7 +303,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     let inspector: 'half' | 'full' = read(sizeStore) === 'full' ? 'full' : 'half'
     const applySize = (): void => {
         drawer.dataset.size = inspector
-        board.hidden = inspector === 'full' && !drawer.hidden
     }
 
     const marks = el('div', 'dya-bar kanban-marks')
@@ -794,7 +793,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         custom.hidden = listed
         custom.value = listed ? '' : (current.model ?? '')
         custom.addEventListener('change', () => apply({ model: custom.value.trim() || null }))
-        row.appendChild(
+        const modelCell = el('div', 'kanban-model')
+        modelCell.appendChild(
             choose('model', listed ? (current.model ?? '') : OTHER, ['', ...models, OTHER], modelLabels, disabled, (value) => {
                 if (value === OTHER) {
                     custom.hidden = false
@@ -804,7 +804,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 apply({ model: value || null })
             })
         )
-        row.appendChild(custom)
+        modelCell.appendChild(custom)
+        row.appendChild(modelCell)
 
         if (info?.efforts) {
             const effortLabels: Record<string, string> = {
@@ -815,6 +816,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     apply({ effort: value || null })
                 )
             )
+        } else {
+            row.appendChild(el('span', 'kanban-setting', 'no effort setting'))
         }
         return row
     }
@@ -1291,6 +1294,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         terminalFor = ''
         stageView.replaceChildren()
         stage.hidden = true
+        drawer.dataset.stage = 'false'
     }
 
     const paintHistory = (card: Card, into: HTMLElement): void => {
@@ -1382,6 +1386,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         terminalFor = wanted
         stage.hidden = false
+        drawer.dataset.stage = 'true'
 
         if (tab === 'board') {
             const list = el('div', 'kanban-history')
@@ -1418,7 +1423,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
 
         if (drawnId === card.id && drawnRev === card.rev) {
-            const label = drawer.querySelector('.kanban-drawer-head .dya-label')
+            const label = drawer.querySelector('.kanban-drawer-state')
             if (label) label.textContent = rules.labels[shown(card)]
             syncTerminal(card)
             return
@@ -1430,8 +1435,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         drawer.replaceChildren()
         applySize()
 
-        const head = el('div', 'dya-bar kanban-drawer-head')
-        const heading = el('span', 'dya-label', rules.labels[shown(card)])
+        const head = el('div', 'dya-card__header kanban-drawer-head')
+        const heading = el('span', 'dya-tag kanban-drawer-state', rules.labels[shown(card)])
         const named = el('span', 'dya-text kanban-drawer-title', card.title)
         const sizeKey = key('expand', 'take the whole panel')
         const paintSize = (): void => {
@@ -1485,7 +1490,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         title.addEventListener('change', () => patch(card.id, { title: title.value }))
         titleGroup.appendChild(title)
 
-        const bodyGroup = el('div', 'kanban-group')
+        const bodyGroup = el('div', 'kanban-group kanban-grow')
         bodyGroup.append(el('span', 'dya-label', 'brief'))
         const text = el('textarea', 'dya-field kanban-body-field')
         text.value = card.body
@@ -1548,10 +1553,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             choose('permission mode', card.permissionMode, PERMISSIONS, {}, card.locked, (value) =>
                 patch(card.id, { permissionMode: value })
             ),
-            el('span', 'kanban-setting', 'implement'),
-            phase('implement'),
-            el('span', 'kanban-setting', 'review'),
-            phase('review'),
             el('span', 'kanban-setting', 'workspace'),
             choose('workspace', card.workspaceKind, ['dir', 'scratch'], labelled, card.locked, (value) =>
                 patch(card.id, { workspaceKind: value as Card['workspaceKind'] })
@@ -1568,6 +1569,19 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             )
         )
         settingsGroup.appendChild(settings)
+
+        const runnersGrid = el('div', 'kanban-runners')
+        runnersGrid.append(
+            el('span', 'kanban-setting'),
+            el('span', 'dya-label', 'harness'),
+            el('span', 'dya-label', 'model'),
+            el('span', 'dya-label', 'effort'),
+            el('span', 'kanban-setting', 'implement'),
+            phase('implement'),
+            el('span', 'kanban-setting', 'review'),
+            phase('review')
+        )
+        settingsGroup.appendChild(runnersGrid)
 
         const filesGroup = el('div', 'kanban-group')
         filesGroup.append(el('span', 'dya-label', 'files'))
@@ -2073,6 +2087,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .catch(fail)
     })
     board.addEventListener('keydown', onBoardKey)
+    board.addEventListener('click', (event) => {
+        if (!selected || gesturing) return
+        const target = event.target as Element
+        if (target.closest('.kanban-card, .dya-key, .kanban-new')) return
+        select(null)
+    })
+    drawer.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented) return
+        event.preventDefault()
+        select(null)
+        if (drawnId) focusCard(drawnId)
+    })
 
     const watchRow = (run: WatchRun): HTMLElement => {
         const row = el('button', 'kanban-watch-run')

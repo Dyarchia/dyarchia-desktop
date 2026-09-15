@@ -1,9 +1,9 @@
 # kanban
 
 A task board that dispatches work to Claude Code and lets the operator watch the agent work and
-talk to it while it does. [OPEN-PROBLEMS.md](OPEN-PROBLEMS.md) is the register of what
-is wrong, missing or unproven; anything found while building goes there before the commit that
-found it, and nothing leaves it silently.
+talk to it while it does. What is wrong, missing or unproven is kept in a register outside this
+repository; anything found while building goes there before the commit that found it, and nothing
+leaves it silently.
 
 A worker is **a real interactive session, not a batch run**: `claude --bg` in a git worktree, with
 a pty the operator can attach to. Print mode exists and this design does not use it, because a

@@ -5,15 +5,15 @@ import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
 import { adopt, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
-import { liveness, parseLaunch, snapshot } from '../src/agents.js'
+import { liveness, parseLaunch, snapshot } from '../src/harness/claude.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
 import { brief, reviewBrief } from '../src/worker.js'
+import { parseTerminal } from '../src/closing.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
-import { parseTerminal } from '../src/worker.js'
 import { isRefusal } from '../src/refusal.js'
 import { ours, parseList, same } from '../src/worktrees.js'
-import type { SessionRecord } from '../src/agents.js'
+import type { SessionRecord } from '../src/harness/claude.js'
 import type { Sink } from '../src/dispatch.js'
 import type { Card, CardPatch, Run } from '../src/types.js'
 
@@ -348,6 +348,7 @@ async function reviews(): Promise<void> {
     const judged: Run = {
         runId: 'r1',
         kind: 'implement',
+        harness: 'claude',
         sessionId: 's1',
         shortId: 'abc',
         worktree: 'C:\\project\\.claude\\worktrees\\kanban-r1',
@@ -521,6 +522,7 @@ async function guards(): Promise<void> {
     const base: Run = {
         runId: 'g1',
         kind: 'implement',
+        harness: 'claude',
         sessionId: 's',
         shortId: 'g',
         worktree: null,
@@ -681,6 +683,7 @@ async function reconciling(): Promise<void> {
         live.runs.push({
             runId: randomUUID(),
             kind: 'implement',
+            harness: 'claude',
             sessionId,
             shortId: 'deadbeef',
             worktree: null,

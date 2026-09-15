@@ -3,6 +3,7 @@ import { mkdir, readFile, rename } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import * as events from './events.js'
+import { DEFAULT_HARNESS, isHarness } from './harness/index.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed, rules } from './rules.js'
 import type {
@@ -29,6 +30,7 @@ function empty(): BoardFile {
 function restore(card: Card): Card {
     for (const run of card.runs ?? []) {
         if (run.kind !== 'review') run.kind = 'implement'
+        if (!isHarness(run.harness)) run.harness = DEFAULT_HARNESS
     }
     return card
 }

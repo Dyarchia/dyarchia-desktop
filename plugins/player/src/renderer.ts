@@ -54,7 +54,7 @@ const STYLES = `
 }
 .player-stage audio,
 .player-stage video {
-    color-scheme: dark;
+    color-scheme: var(--dya-scheme);
 }
 .player-stage video {
     max-width: 100%;

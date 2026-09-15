@@ -388,9 +388,9 @@ There is nothing to build, lint or test. What replaces those commands:
   to move once a long session is spent in it.
 - The prose block went with its last consumer, and the SDK's markdown renderer still emits
   `code`, `math` and `prose__scroll`. Whatever renders markdown next needs typography for
-  the elements between them, and the heading scale has one step, which is thin for
-  arbitrary documents. docviewer answers both today with its own prefixed rules, dropping
-  `h2` and `h3` into the mono label idiom.
+  the elements between them. docviewer answers that today with its own prefixed rules,
+  styling by element in sans from `--dya-size-h2` to `--dya-size-h4`; a second consumer
+  is what would move those rules upstream.
 - `text--warning` went and its two siblings stayed, because nothing reports a warning in
   prose yet. The triad returns whole the day something does.
 - The IBM Plex stylistic sets are undetermined.

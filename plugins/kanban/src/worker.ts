@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { MARKER } from './closing.js'
-import * as corpus from './harness/corpus.js'
+import * as offers from './harness/offers.js'
 import * as harness from './harness/index.js'
 import type { Resolved } from './runners.js'
 import type { Card, Run } from './types.js'
@@ -386,8 +386,12 @@ export async function start(
     let text = reviewing
         ? reviewBrief(card, reviewing, workspace, attachments, change, patchPath, driver.restraint())
         : brief(card, parents, predicted, isolate !== null, attachments, driver.commits)
-    if (chosen.harness === 'claude' && (await corpus.locate())) {
-        text += `\n## Tools\n\n${corpus.TOOL_NOTE}\n`
+    if (chosen.harness === 'claude') {
+        const offered = await offers.list()
+        if (offered.length) {
+            const notes = offered.flatMap((offer) => offer.tools.map((tool) => `- ${tool.name}: ${tool.note}`))
+            text += `\n## Tools\n\nBeyond your own tools you can call these; reach for them before guessing.\n\n${notes.join('\n')}\n`
+        }
     }
     await writeFile(briefPath, text, 'utf-8')
     const prompt =

@@ -171,16 +171,16 @@ directory, and a declared file that is not there is a violation, as it always wa
 `.claude/worktrees/<name>` on branch `worktree-<name>`, because that is the directory the
 board already ignores, inventories and prunes.
 
-### The corpus tool
+### Tools other plugins offer
 
-A Claude worker is given one tool beyond its own: `search_corpus`, the full-text search over
-the documentation the crawlee plugin has snapshotted on this machine, served by
-`dyarchia-crawlee mcp` over stdio. The board finds crawlee's interpreter where crawlee's own
-host looks for it, an environment beside the checkout first and the one Setup builds second,
-writes a one-server config under `<userData>/kanban/mcp.json`, and launches with
-`--mcp-config` plus `--allowedTools mcp__dyarchia-corpus__search_corpus`. The brief ends with a
-Tools section that names the tool and says when to reach for it. No crawlee, no environment:
-no config, no section, and the worker runs as before. The hosted harnesses do not get it yet.
+A Claude worker can be given tools beyond its own, and the board learns of them from the one
+folder the shell reserves for offers, `<userData>/mcp/`, described in docs/plugins.md. The
+board reads every offer there at launch, merges them into one config under
+`<userData>/kanban/mcp.json`, launches with `--mcp-config` and the listed tools allowed by
+name, and ends the brief with a Tools section made of the offers' notes. It knows nothing about
+who offers what: with the folder empty the worker runs as before, and an offer whose command is
+gone from the disk is skipped. Today the one offer is crawlee's `search_corpus`, published only
+while a corpus repository holds pages. The hosted harnesses do not get offers yet.
 
 Three print-mode runs on 2026-09-15 settled the two things that were not obvious:
 
@@ -195,6 +195,28 @@ RUN   WHAT WAS DIFFERENT                    WHAT HAPPENED                       
                                             ignores cwd, so it read no .env
 3     server launched with --root           first URL returned in 7.7 s, 3 turns   0.29 USD
 ```
+
+### The review loop, measured
+
+The `changes` verdict is the loop that turns a review into the next implementer's brief, and
+it was the one route no real run had taken until 2026-09-15. A card asked for a guarded
+`divide` with two tests; after the implement run the branch was edited by hand to drop the
+guard and its test while the run's own report still claimed them, and a review was asked for:
+
+```text
+RUN                          MODE      TIME   WHAT HAPPENED
+---------------------------  --------  -----  ---------------------------------------------
+implement                    auto      46 s   guard, tests, 3 passed, committed
+review (branch tampered)     plan      71 s   verdict changes: named the missing guard, the
+                                              missing test and the false "3 passed"; card
+                                              back to ready with the review as a comment
+implement, with the review   auto      85 s   redid the work on a fresh worktree, all three
+review                       plan      80 s   verdict approved, card done
+```
+
+A review is asked for by hand, not claimed by the dispatcher, and the earlier attempt to
+provoke `changes` by telling a reviewer to declare it regardless failed because the reviewer
+judged the work on its merits; a branch that is deficient in fact is the only way to reach it.
 
 ### Measured facts about the hosted harnesses
 

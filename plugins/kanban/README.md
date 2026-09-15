@@ -161,6 +161,31 @@ directory, and a declared file that is not there is a violation, as it always wa
 `.claude/worktrees/<name>` on branch `worktree-<name>`, because that is the directory the
 board already ignores, inventories and prunes.
 
+### The corpus tool
+
+A Claude worker is given one tool beyond its own: `search_corpus`, the full-text search over
+the documentation the crawlee plugin has snapshotted on this machine, served by
+`dyarchia-crawlee mcp` over stdio. The board finds crawlee's interpreter where crawlee's own
+host looks for it, an environment beside the checkout first and the one Setup builds second,
+writes a one-server config under `<userData>/kanban/mcp.json`, and launches with
+`--mcp-config` plus `--allowedTools mcp__dyarchia-corpus__search_corpus`. The brief ends with a
+Tools section that names the tool and says when to reach for it. No crawlee, no environment:
+no config, no section, and the worker runs as before. The hosted harnesses do not get it yet.
+
+Three print-mode runs on 2026-09-15 settled the two things that were not obvious:
+
+```text
+RUN   WHAT WAS DIFFERENT                    WHAT HAPPENED                          COST
+----  ------------------------------------  -------------------------------------  --------
+1     config with a cwd, tool not allowed   the tool was listed and the call was   0.61 USD
+                                            blocked for want of permission
+2     tool allowed by name                  the call ran, and the server answered  0.32 USD
+                                            "nothing matches": the client starts
+                                            it in the session directory and
+                                            ignores cwd, so it read no .env
+3     server launched with --root           first URL returned in 7.7 s, 3 turns   0.29 USD
+```
+
 ### Measured facts about the hosted harnesses
 
 Every row cost a real run on 2026-09-15, against codex-cli 0.154.0, grok 1.0.30 and opencode

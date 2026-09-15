@@ -359,8 +359,12 @@ what it cost. An index that changed when nobody asked is explained there.
 `mcp` serves the same search to an agent as one tool, `search_corpus`, over stdio: JSON-RPC 2.0
 one message per line, the `initialize`, `tools/list`, `tools/call` and `ping` methods, nothing
 else. A Claude Code session reaches it with an `--mcp-config` naming this environment's
-interpreter and `-m dyarchia_crawlee mcp`; what an agent does with a documentation search is the
-agent's business, and the tool answers the same way the CLI does.
+interpreter and `-m dyarchia_crawlee mcp --root <this checkout>`; the client starts the server
+in its own session directory and ignores any `cwd` the configuration names, so without `--root`
+the server reads no `.env`, sees no corpus, and answers that nothing matches. The tool also has
+to be allowed by name, `mcp__dyarchia-corpus__search_corpus`, or a non-interactive session
+blocks the call. What an agent does with a documentation search is the agent's business, and
+the tool answers the same way the CLI does.
 
 
 ## The panel

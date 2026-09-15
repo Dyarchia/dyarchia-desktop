@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { MARKER } from './closing.js'
+import * as corpus from './harness/corpus.js'
 import * as harness from './harness/index.js'
 import type { Resolved } from './runners.js'
 import type { Card, Run } from './types.js'
@@ -382,9 +383,12 @@ export async function start(
         }
     }
 
-    const text = reviewing
+    let text = reviewing
         ? reviewBrief(card, reviewing, workspace, attachments, change, patchPath, driver.restraint())
         : brief(card, parents, predicted, isolate !== null, attachments, driver.commits)
+    if (chosen.harness === 'claude' && (await corpus.locate())) {
+        text += `\n## Tools\n\n${corpus.TOOL_NOTE}\n`
+    }
     await writeFile(briefPath, text, 'utf-8')
     const prompt =
         text.length <= INLINE_LIMIT

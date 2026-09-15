@@ -33,6 +33,10 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
 - `schemes` lists custom protocol schemes the plugin serves. The shell declares them
   privileged at boot and the plugin registers the handler with `protocol.handle` in its
   `activate`. Reserved names (`http`, `file`, `dyarchia-plugin`, …) are rejected.
+- `boot` starts a Python plugin's interpreter with the app instead of on its first invoke.
+  The default is lazy, because a panel nobody opens costs nothing that way; set it when the
+  plugin's `activate` has to act before anyone asks, an offer to other plugins being the
+  case that exists.
 - `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
   for somebody deciding whether to turn this on, not for somebody who already has.
 
@@ -74,6 +78,14 @@ finished and fails on the first profile asking for a browser. **The steps belong
 plugin, so Setup knows nothing about any particular one.** **A packaged plugin directory is
 read-only**, which is why the environment cannot sit beside the code and why a Python plugin
 must look at that variable before falling back to a `.venv` of its own.
+
+An optional `verify` is one argv the plugin declares as the proof that its environment works,
+run with the environment's own scripts directory first on PATH, so `python` there is the
+environment's interpreter. Setup runs it at the end of an installation and again every time
+it inspects the plugin, and reports the exit code: zero is "ready", anything else is a row
+that says what was run and what came back. crawlee's asks Playwright where Chromium is and
+exits 1 if the file is not there, which is the difference between an environment that was
+built and one that can crawl. Without `verify`, "ready" means only that the interpreter exists.
 
 
 ## 2. The renderer bundle
@@ -175,6 +187,8 @@ def activate(ctx):
   and replies may arrive out of order.
 - **stdout is the protocol.** `dyarchia_sdk` redirects plugin `print` to stderr, which
   surfaces in the shell console prefixed `[python:<id>]`.
+- The host receives `DYARCHIA_USER_DATA`, the shell's own data directory, which is where the
+  offers folder below lives and where a plugin keeps anything that must outlive its directory.
 - The interpreter is `py -3` on Windows, `python3` elsewhere; `DYARCHIA_PYTHON` forces a
   path. `packages/pysdk` is stdlib-only, so there is nothing to pip install.
 
@@ -243,6 +257,11 @@ same document. So:
   `el.hidden` and never write a display rule for it.
 - **The theme is an attribute and the shell owns it.** A plugin never reads it and never
   branches on it: it writes `var(--dya-surface-1)` and gets whichever theme is mounted.
+- **The browser is the one Electron ships, and nothing else.** Electron 43 carries
+  Chromium 150, so the popover attribute, interest invokers (`interestfor`), anchor
+  positioning and container queries are native; a plugin uses them as written and ships no
+  polyfill and no fallback. A tip is `popover="hint"` on a `.dya-tip` reached by
+  `interestfor` from the control it explains.
 
 The order to work in:
 
@@ -274,7 +293,7 @@ Assistive    dya-sr-only
 ```
 
 Four carry a trap worth knowing before the first render: **`dya-field` is full width** and
-`--auto` opts out; **`dya-bar` is window chrome**, 46px with a gradient and a hairline, and
+`--auto` opts out; **`dya-bar` is window chrome**, 38px with a gradient and a hairline, and
 `--inset` keeps only the rhythm; **`dya-log` is for what a process printed**, wraps instead
 of scrolling sideways, and sets no height; **`dya-text--*` is a sentence and `dya-badge--*`
 is a chip**.
@@ -287,8 +306,8 @@ being a panel rather than the system:
   is a renderer that computes contrast and has to know its ground — the terminal paints
   `token('surface-1')` for exactly that.
 - **`--dya-field` is a surface, not an ink.** Never set `color: var(--dya-field)`.
-- **A label never sits on `--dya-selected` in Gi or `--dya-raised-hover` in Oneiro**, where
-  `--dya-text-4` measures 4.43 and 4.27. Use `--dya-text-3` there.
+- **A label never sits on `--dya-selected` in Gi**, where `--dya-text-4` measures 4.45.
+  Use `--dya-text-3` there. Slate has no such surface.
 
 The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
 declares it under its own prefix and says so in its README, or proposes it upstream — the
@@ -328,3 +347,35 @@ Before a panel is done:
 6. Walk every state: idle, hover, pressed, selected, empty, error. In both themes.
 7. No `backdrop-filter`, no infinite animation.
 8. If there is a main module, exercise `invoke` and `broadcast` from the panel.
+
+
+## 7. Offering a tool to agents
+
+Plugins are independent: kanban runs without crawlee, crawlee without kanban, and neither
+imports the other. What one can still do is offer the other a tool, through one folder the
+shell reserves: `<userData>/mcp/`. A plugin that can serve a tool over the Model Context
+Protocol writes `<userData>/mcp/<its id>.json` while it can serve it and deletes the file when
+it cannot; a plugin that launches agents reads the folder when it launches one and never asks
+who wrote what. An offer is only written by a plugin that is running, so a Python plugin that
+offers one declares `"boot": true` in its manifest: otherwise its interpreter starts with its
+panel, and until somebody opens that panel there is nothing in the folder.
+
+```json
+{
+    "plugin": "crawlee",
+    "server": "dyarchia-corpus",
+    "command": "C:/.../environments/crawlee/.venv/Scripts/python.exe",
+    "args": ["-m", "dyarchia_crawlee", "mcp", "--root", "C:/.../plugins/crawlee"],
+    "env": { "PYTHONIOENCODING": "utf-8" },
+    "tools": [{ "name": "search_corpus", "note": "full-text search over the snapshotted documentation" }]
+}
+```
+
+`server` names the MCP server and is a lowercase slug; `command`, `args` and `env` are how to
+start it over stdio; each tool has the name the server exposes and one sentence for the agent's
+brief. The reader skips a file whose `command` no longer exists, which is what an uninstalled
+plugin leaves behind, so an offer never outlives what serves it. The condition for writing the
+file is the offering plugin's own business: crawlee publishes only when a corpus repository
+holds pages, and withdraws after a round that leaves none. The kanban is the one reader today;
+it merges every offer into one `--mcp-config`, allows the listed tools by name, and ends the
+brief with a Tools section made of the notes.

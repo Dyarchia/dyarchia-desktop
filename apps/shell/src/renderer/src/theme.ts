@@ -1,7 +1,7 @@
 const EARTH_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/></svg>'
-const MOON_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10Z"/></svg>'
+const SLATE_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>'
 
 export interface ThemeDescriptor {
     id: string
@@ -11,7 +11,7 @@ export interface ThemeDescriptor {
 
 export const THEMES: ThemeDescriptor[] = [
     { id: 'gi', label: 'Gi', icon: EARTH_ICON },
-    { id: 'oneiro', label: 'Oneiro', icon: MOON_ICON }
+    { id: 'slate', label: 'Slate', icon: SLATE_ICON }
 ]
 
 const STORAGE_KEY = 'dyarchia:theme'

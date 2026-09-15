@@ -36,8 +36,8 @@ const STYLE = `
     flex: 1;
 }
 .crw-corpora {
-    flex: none;
-    max-height: 40%;
+    flex: 0 1 auto;
+    min-height: 160px;
     overflow: auto;
 }
 .crw-bar {
@@ -59,8 +59,8 @@ const STYLE = `
 }
 .crw-out {
     display: flex;
-    flex: 1;
-    min-height: 0;
+    flex: 1 1 120px;
+    min-height: 120px;
 }
 .crw-out > .dya-empty {
     flex: 1;
@@ -82,6 +82,10 @@ const STYLE = `
     flex: none;
     width: 210px;
     overflow: auto;
+}
+.crw-list > .dya-button {
+    align-self: flex-start;
+    margin-bottom: var(--dya-space-1);
 }
 .crw-editor {
     display: flex;
@@ -116,6 +120,48 @@ const STYLE = `
 }
 .crw-note {
     min-height: 1.4em;
+}
+.crw-query {
+    flex: 1;
+    min-width: 200px;
+}
+.crw-hits {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+}
+.crw-hits > .dya-empty {
+    flex: 1;
+}
+.crw-hit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-1);
+    padding: var(--dya-space-2) 0;
+    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+}
+.crw-hit-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-2);
+    flex-wrap: wrap;
+}
+.crw-hit-where {
+    margin-left: auto;
+}
+.crw-hit-url {
+    color: var(--dya-text-4);
+    user-select: all;
+    overflow-wrap: anywhere;
+}
+.crw-hit-snippet {
+    color: var(--dya-text-3);
+}
+.crw-hit-snippet mark {
+    background: var(--dya-accent-soft);
+    color: var(--dya-text);
 }
 `
 
@@ -186,6 +232,7 @@ function mount(ctx, container) {
     const tabs = el('div', 'dya-tabs crw-tabs')
     const rounds = el('div', 'crw-view')
     const targets = el('div', 'crw-view')
+    const searching = el('div', 'crw-view')
 
     /*
      * One job at a time on the Python side, so one place for its output at a time here. The sink
@@ -197,6 +244,7 @@ function mount(ctx, container) {
     const views = [
         { id: 'rounds', title: 'Rounds', node: rounds },
         { id: 'targets', title: 'Targets', node: targets },
+        { id: 'search', title: 'Search', node: searching },
     ]
     const buttons = views.map((view) => {
         const button = el('button', 'dya-tab', view.title)
@@ -215,8 +263,9 @@ function mount(ctx, container) {
 
     const roundsView = buildRounds()
     const targetsView = buildTargets()
+    const searchView = buildSearch()
 
-    root.append(tabs, rounds, targets)
+    root.append(tabs, rounds, targets, searching)
     container.appendChild(root)
     select('rounds')
 
@@ -235,6 +284,7 @@ function mount(ctx, container) {
 
     void roundsView.refresh()
     void targetsView.refresh()
+    void searchView.refresh()
 
     return () => {
         unsubscribeLine()
@@ -253,8 +303,10 @@ function mount(ctx, container) {
         const wrap = el('div', 'crw-corpora')
         wrap.appendChild(table)
 
-        const bar = el('div', 'dya-bar--inset crw-bar')
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
+        const scopeBox = el('span', 'dya-select')
+        scopeBox.appendChild(scope)
         const commitBox = el('label', 'crw-check')
         const commit = el('input', 'dya-checkbox')
         commit.type = 'checkbox'
@@ -264,7 +316,7 @@ function mount(ctx, container) {
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
         const status = el('span', 'dya-text crw-status', '')
-        bar.append(el('span', 'dya-key-label', 'round'), scope, commitBox, run, stop, status)
+        bar.append(el('span', 'dya-key-label', 'round'), scopeBox, commitBox, run, stop, status)
 
         const out = el('div', 'crw-out')
         const idle = el('div', 'dya-empty', 'nothing has run yet')
@@ -357,12 +409,95 @@ function mount(ctx, container) {
     }
 
 
+    /*
+     * The corpus as a reader uses it: words in, the chunks that carry them out. The index is the
+     * CLI's, refreshed on the way in when a round moved a manifest, so the first search after a
+     * round pays for the pages that changed and nothing else.
+     */
+    function buildSearch() {
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
+        const query = el('input', 'dya-field crw-query')
+        query.type = 'search'
+        query.placeholder = 'words to look for, enter to search'
+        query.spellcheck = false
+        const scope = el('select', 'dya-field dya-field--auto crw-scope')
+        const scopeBox = el('span', 'dya-select')
+        scopeBox.appendChild(scope)
+        const go = el('button', 'dya-button', 'Search')
+        bar.append(query, scopeBox, go)
+
+        const hits = el('div', 'crw-hits')
+        const idle = el('div', 'dya-empty', 'Words are matched together first, then any of them.')
+        hits.appendChild(idle)
+        searching.append(bar, hits)
+
+        go.addEventListener('click', () => void run())
+        query.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') void run()
+        })
+
+        async function refresh() {
+            try {
+                const state = await ctx.invoke('state')
+                scope.replaceChildren()
+                const every = el('option', undefined, 'every repository')
+                every.value = ''
+                scope.appendChild(every)
+                for (const repo of state.repositories || []) {
+                    const name = String(repo.root || '').split(/[\\/]/).pop()
+                    if (!name) continue
+                    const option = el('option', undefined, name)
+                    option.value = name
+                    scope.appendChild(option)
+                }
+            } catch (error) {
+                hits.replaceChildren(el('div', 'dya-empty dya-text--danger', String(error)))
+            }
+        }
+
+        async function run() {
+            const text = query.value.trim()
+            if (!text) return
+            hits.replaceChildren(el('div', 'dya-empty', 'searching…'))
+            try {
+                const found = await ctx.invoke('search', { query: text, repository: scope.value || null, limit: 20 })
+                render(found)
+            } catch (error) {
+                hits.replaceChildren(el('div', 'dya-empty dya-text--danger', String(error)))
+            }
+        }
+
+        function render(found) {
+            hits.replaceChildren()
+            if (!found.length) {
+                hits.appendChild(el('div', 'dya-empty', 'Nothing in the corpus holds those words.'))
+                return
+            }
+            for (const hit of found) {
+                const row = el('div', 'crw-hit')
+                const head = el('div', 'crw-hit-head')
+                head.append(el('span', 'dya-text', hit.title))
+                if (hit.heading) head.append(el('span', 'dya-key-label', hit.heading))
+                head.append(el('span', 'dya-key-label crw-hit-where', `${hit.repository} / ${hit.target}`))
+                const url = el('div', 'dya-mono crw-hit-url', hit.url)
+                const snippet = el('div', 'dya-text crw-hit-snippet')
+                for (const [index, part] of String(hit.snippet).split(/[\[\]]/).entries()) {
+                    snippet.append(index % 2 ? el('mark', undefined, part) : part)
+                }
+                row.append(head, url, snippet)
+                hits.appendChild(row)
+            }
+        }
+
+        return { refresh }
+    }
+
     function buildTargets() {
         const split = el('div', 'crw-split')
         const list = el('div', 'crw-list')
         const editor = el('div', 'crw-editor')
 
-        const bar = el('div', 'dya-bar--inset crw-bar')
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const title = el('span', 'dya-mono crw-status', 'pick a target, or add one')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')

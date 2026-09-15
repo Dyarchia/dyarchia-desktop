@@ -25,6 +25,7 @@ export type EventKind =
     | 'attached'
     | 'detached'
     | 'deleted'
+    | 'landed'
 
 export interface BoardEvent {
     at: number

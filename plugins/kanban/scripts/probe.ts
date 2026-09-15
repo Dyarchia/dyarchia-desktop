@@ -1,19 +1,26 @@
+import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
-import { liveness, parseLaunch, snapshot } from '../src/agents.js'
+import { adopt, carried, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
+import { liveness, parseLaunch, snapshot } from '../src/harness/claude.js'
+import * as codex from '../src/harness/codex.js'
+import * as grok from '../src/harness/grok.js'
+import * as offers from '../src/harness/offers.js'
+import * as opencode from '../src/harness/opencode.js'
+import type { LaunchSpec } from '../src/harness/types.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
-import { brief, reviewBrief } from '../src/worker.js'
-import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
-import { parseTerminal } from '../src/worker.js'
+import { brief, land, reviewBrief } from '../src/worker.js'
+import { parseTerminal } from '../src/closing.js'
+import { alive, decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
 import { isRefusal } from '../src/refusal.js'
+import { blank, merge, resolve, restore } from '../src/runners.js'
 import { ours, parseList, same } from '../src/worktrees.js'
-import type { SessionRecord } from '../src/agents.js'
+import type { SessionRecord } from '../src/harness/claude.js'
 import type { Sink } from '../src/dispatch.js'
 import type { Card, CardPatch, Run } from '../src/types.js'
 
@@ -109,6 +116,8 @@ function terminals(): void {
         'some prose\n===KANBAN===\n{ "outcome": "completed", "summary": "did it", "artifacts": ["a.txt"], "followups": [{"title":"next","body":"b"}] }\n'
     check('outcome', parseTerminal(good)?.outcome, 'completed')
     check('artifacts', parseTerminal(good)?.artifacts, ['a.txt'])
+    check('a block with no handoff hands nothing on', parseTerminal(good)?.handoff, [])
+    check('a handoff is read beside the artifacts', parseTerminal('===KANBAN===\n{"outcome":"completed","artifacts":["out.md"],"handoff":["notes.md"]}')?.handoff, ['notes.md'])
     check('followups', parseTerminal(good)?.followups, [{ title: 'next', body: 'b' }])
     check('no marker is no block', parseTerminal('just prose'), null)
     check('a truncated block is no block', parseTerminal('===KANBAN===\n{ "outcome": "com'), null)
@@ -283,17 +292,21 @@ async function leases(): Promise<void> {
     const now = Date.now()
     check('an empty file is taken', decide(null, 'me', now), 'take')
     check('our own lease is renewed', decide({ owner: 'me', pid: 1, at: now - 1000 }, 'me', now), 'renew')
-    check('a fresh lease of anothers is waited on', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now), 'wait')
-    check('a stale one is taken', decide({ owner: 'you', pid: 2, at: now - TTL_MS - 1 }, 'me', now), 'take')
+    const live = (): boolean => true
+    const gone = (): boolean => false
+    check('a fresh lease of anothers is waited on', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now, TTL_MS, live), 'wait')
+    check('a stale one is taken', decide({ owner: 'you', pid: 2, at: now - TTL_MS - 1 }, 'me', now, TTL_MS, live), 'take')
+    check('a fresh one whose process is gone is taken', decide({ owner: 'you', pid: 2, at: now - 1000 }, 'me', now, TTL_MS, gone), 'take')
+    check('our own process is alive', alive(process.pid), true)
 
     check('the first process holds it', await hold('first', now), true)
     check('and it is written down', (await readLease())?.owner, 'first')
     check('a second process does not', await hold('second', now), false)
     check('the first keeps it', (await readLease())?.owner, 'first')
     check('the second takes it once it goes stale', await hold('second', now + TTL_MS + 1), true)
-    await drop('first')
+    drop('first')
     check('a holder that is not us drops nothing', (await readLease())?.owner, 'second')
-    await drop('second')
+    drop('second')
     check('and the holder can drop its own', await readLease(), null)
 }
 
@@ -317,6 +330,23 @@ async function attachments(): Promise<void> {
     check('the brief names the file', text.includes('C:\\attachments\\spec.pdf'), true)
     check('under its own heading', text.includes('## Attachments'), true)
     check('and a card with none says nothing', brief(card, [], 'C:\\workspace', false).includes('## Attachments'), false)
+
+    console.log('\nwhat the next run is handed')
+    const bare = { ...card, attachments: [{ name: 'spec.pdf', bytes: 1, at: 1 }], runs: [] as Run[] } as Card
+    const done = (handoff: string[], outcome: Run['outcome']): Run => ({
+        runId: randomUUID(), kind: 'implement', harness: 'claude', sessionId: null, shortId: null, worktree: null, branch: null,
+        startedAt: 1, endedAt: 2, outcome, summary: null, artifacts: [], kept: [], handoff, inputTokens: 0, outputTokens: 0, error: null, headBefore: null
+    })
+    check('with no runs, only the operator files go', carried(bare, 'C:\\a').map((f) => f.from), ['operator'])
+    bare.runs = [done(['notes.md'], 'completed'), done(['later.md'], 'crashed')]
+    const given = carried(bare, 'C:\\a')
+    check('the last completed run hands its files on', given.map((f) => f.name), ['spec.pdf', 'notes.md'])
+    check('a crashed attempt hands nothing', given.some((f) => f.name === 'later.md'), false)
+    check('and the brief says who left it', brief(bare, [], 'C:\\w', false, given).includes('left for you by the previous run'), true)
+    bare.runs = [done(['first.md'], 'completed'), done(['second.md'], 'completed')]
+    check('only the latest completed run, not every attempt', carried(bare, 'C:\\a').map((f) => f.name), ['spec.pdf', 'second.md'])
+    bare.runs = [done(['spec.pdf'], 'completed')]
+    check('a name the operator already gave is not listed twice', carried(bare, 'C:\\a').length, 1)
 }
 
 async function eventLog(): Promise<void> {
@@ -348,6 +378,7 @@ async function reviews(): Promise<void> {
     const judged: Run = {
         runId: 'r1',
         kind: 'implement',
+        harness: 'claude',
         sessionId: 's1',
         shortId: 'abc',
         worktree: 'C:\\project\\.claude\\worktrees\\kanban-r1',
@@ -358,6 +389,7 @@ async function reviews(): Promise<void> {
         summary: 'rewrote the parser',
         artifacts: [],
         kept: [],
+        handoff: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,
@@ -521,6 +553,7 @@ async function guards(): Promise<void> {
     const base: Run = {
         runId: 'g1',
         kind: 'implement',
+        harness: 'claude',
         sessionId: 's',
         shortId: 'g',
         worktree: null,
@@ -531,6 +564,7 @@ async function guards(): Promise<void> {
         summary: null,
         artifacts: [],
         kept: [],
+        handoff: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,
@@ -681,6 +715,7 @@ async function reconciling(): Promise<void> {
         live.runs.push({
             runId: randomUUID(),
             kind: 'implement',
+            harness: 'claude',
             sessionId,
             shortId: 'deadbeef',
             worktree: null,
@@ -691,6 +726,7 @@ async function reconciling(): Promise<void> {
             summary: null,
             artifacts: [],
             kept: [],
+            handoff: [],
             inputTokens: 0,
             outputTokens: 0,
             error: null,
@@ -844,11 +880,166 @@ async function atomicWrites(): Promise<void> {
     rmSync(root, { recursive: true, force: true })
 }
 
+async function landing(): Promise<void> {
+    console.log('\nthe board lands what a worker leaves')
+    const repo = mkdtempSync(join(tmpdir(), 'kanban-land-'))
+    const sh = (args: string[]): string => execFileSync('git', args, { cwd: repo, encoding: 'utf-8' }).trim()
+    sh(['init', '-q'])
+    writeFileSync(join(repo, 'a.txt'), 'a')
+    sh(['add', '.'])
+    sh(['-c', 'user.name=p', '-c', 'user.email=p@p', 'commit', '-q', '-m', 'init'])
+    check('a clean tree has nothing to land', await land(repo, 'card'), 'clean')
+    writeFileSync(join(repo, 'b.txt'), 'b')
+    check('a dirty tree is committed', await land(repo, 'the card'), 'committed')
+    check('under the card title', sh(['log', '-1', '--format=%s']), 'the card')
+    check('and the tree is clean after', sh(['status', '--porcelain']), '')
+    check('a path that is no repository fails rather than throws', await land(join(repo, 'nowhere'), 'x'), 'failed')
+    const card = { title: 't', body: '', comments: [], workspaceKind: 'dir' } as unknown as Card
+    check('a harness that cannot commit is told not to try', brief(card, [], repo, true, [], false).includes('Do NOT try to commit'), true)
+    check('and one that can is told to commit', brief(card, [], repo, true, [], true).includes('COMMIT what you change'), true)
+    rmSync(repo, { recursive: true, force: true })
+}
+
+async function offered(): Promise<void> {
+    console.log('\noffers other plugins leave for a worker')
+    const folder = offers.folder()
+    mkdirSync(folder, { recursive: true })
+    writeFileSync(join(folder, 'one.json'), JSON.stringify({
+        plugin: 'one', server: 'one-server', command: process.execPath, args: ['-e', '0'],
+        tools: [{ name: 'lookup', note: 'looks things up' }]
+    }))
+    writeFileSync(join(folder, 'gone.json'), JSON.stringify({
+        plugin: 'gone', server: 'gone-server', command: join(folder, 'missing.exe'), args: [],
+        tools: [{ name: 'vanished', note: 'nothing' }]
+    }))
+    writeFileSync(join(folder, 'broken.json'), '{"plugin": 1}')
+    const listed = await offers.list()
+    check('an offer with a live command is listed, a gone one and a broken one are not', listed.map((offer) => offer.server), ['one-server'])
+    const offering = await offers.configure()
+    check('the listed tool is allowed by its full name', offering?.allow, ['mcp__one-server__lookup'])
+    check('the note reaches the brief', offering?.notes, ['lookup: looks things up'])
+    const config = JSON.parse(readFileSync(offering!.configPath, 'utf-8'))
+    check('the config names the server the way claude expects', Object.keys(config.mcpServers), ['one-server'])
+    rmSync(folder, { recursive: true, force: true })
+    check('with no offer there is no config', await offers.configure(), null)
+}
+
+function hostedReaders(): void {
+    console.log('\nreading the three hosted harnesses')
+    const spec: LaunchSpec = {
+        runId: 'run-1',
+        kind: 'implement',
+        name: 'a card',
+        prompt: 'do the thing',
+        briefPath: 'C:\project\.dyakanban\run-1\brief.md',
+        workspace: 'C:\\project',
+        addDirs: ['C:\\project', 'C:\\attachments'],
+        isolate: 'kanban-12345678',
+        permissionMode: 'acceptEdits',
+        model: 'm',
+        effort: 'high'
+    }
+    const review: LaunchSpec = { ...spec, kind: 'review', isolate: null }
+
+    const codexArgs = codex.launchArgv(spec, 'C:\\wt', 'C:\\final.md')
+    check('codex writes to the workspace and reads the attachments', codexArgs.includes('workspace-write') && codexArgs.includes('C:\\attachments'), true)
+    check('codex does not add its own cwd twice', codexArgs.filter((arg) => arg === 'C:\\wt').length, 1)
+    check('codex takes the effort as a config override', codexArgs.includes('model_reasoning_effort="high"'), true)
+    check('a codex review is read-only', codex.launchArgv(review, 'C:\\p', 'C:\\f').includes('read-only'), true)
+    check('bypass is the only mode that drops the sandbox', codex.launchArgv({ ...spec, permissionMode: 'bypassPermissions' }, 'C:\\wt', 'C:\\f').includes('--dangerously-bypass-approvals-and-sandbox'), true)
+    const codexRead = codex.read([
+        '{"type":"thread.started","thread_id":"t1"}',
+        '{"type":"turn.started"}',
+        '{"type":"item.started","item":{"id":"i1","type":"command_execution","command":"git status"}}',
+        '{"type":"item.completed","item":{"id":"i1","type":"command_execution","command":"git status","aggregated_output":"clean","exit_code":0}}',
+        '{"type":"item.completed","item":{"id":"i2","type":"agent_message","text":"done\\n===KANBAN===\\n{\\"outcome\\":\\"completed\\",\\"summary\\":\\"s\\"}"}}',
+        '{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":50,"output_tokens":7}}'
+    ])
+    check('codex counts cached input as input', [codexRead.inputTokens, codexRead.outputTokens], [150, 7])
+    check('codex ends on turn.completed', codexRead.ended, true)
+    check('codex names the last tool', codexRead.tool, 'command_execution')
+    check('codex keeps the agent text', codexRead.texts.length, 1)
+    check('codex history has the command and its output', codexRead.rows.map((row) => row.kind), ['tool', 'result', 'text', 'end'])
+    const codexFailed = codex.read(['{"type":"turn.failed","error":{"message":"The model is not supported"}}'])
+    check('codex surfaces a failed turn as the error', codexFailed.error, 'The model is not supported')
+
+    const grokArgs = grok.launchArgv(spec, 'C:\\wt', 'sid')
+    check('grok runs headless with streaming json', grokArgs.slice(0, 4), ['-p', 'do the thing', '--output-format', 'streaming-json'])
+    check('grok keeps the permission mode', grokArgs.includes('acceptEdits'), true)
+    const grokReview = grok.launchArgv(review, 'C:\\p', 'sid')
+    check('a grok review is in plan mode without the writing tools', grokReview.includes('plan') && grokReview.some((arg) => arg.includes('run_terminal_command')), true)
+    check('grok reads its model list', grok.parseModels('You are not authenticated.\n\nDefault model: grok-4.6\n\nAvailable models:\n  * grok-4.6 (default)\n  - grok-4.5\n'), ['grok-4.6', 'grok-4.5'])
+    const grokRead = grok.read([
+        '{"type":"available_commands","tools":[]}',
+        '{"type":"thought","data":"hm"}',
+        '{"type":"text","data":"hel"}',
+        '{"type":"text","data":"lo"}',
+        '{"type":"usage","usage":{"input_tokens":1}}',
+        '{"type":"end","stopReason":"end_turn","sessionId":"s","usage":{"input_tokens":20,"cache_read_input_tokens":5,"output_tokens":3}}'
+    ])
+    check('grok joins the text deltas', grokRead.text, 'hello')
+    check('grok takes the usage from the end event', [grokRead.inputTokens, grokRead.outputTokens], [25, 3])
+    check('grok ends cleanly on end_turn', [grokRead.ended, grokRead.error], [true, null])
+    check('grok history keeps thought, text and the end', grokRead.rows.map((row) => row.kind), ['thinking', 'text', 'end'])
+
+    const openArgs = opencode.launchArgv(spec, 'C:\wt', 'a card')
+    check('opencode is told its directory on the command line', openArgs.slice(openArgs.indexOf('--dir'), openArgs.indexOf('--dir') + 2), ['--dir', 'C:\wt'])
+    check('opencode runs with json events and auto approval', openArgs.includes('--auto') && openArgs.includes('json'), true)
+    check('opencode gets the brief as its message', openArgs[openArgs.length - 1], 'do the thing')
+    check('an opencode review runs as the plan agent, not auto', (() => { const args = opencode.launchArgv(review, 'C:\p', 'r'); return args.includes('plan') && !args.includes('--auto') })(), true)
+    check('opencode reads its model list', opencode.parseModels('junk\nopenrouter/~x-ai/grok-latest\nopenrouter/amazon/nova-lite-v1\n'), ['openrouter/~x-ai/grok-latest', 'openrouter/amazon/nova-lite-v1'])
+    const openRead = opencode.read([
+        '{"type":"step_start","part":{"type":"step-start"}}',
+        '{"type":"tool","part":{"tool":"bash","state":{"status":"running","input":{"command":"ls"}}}}',
+        '{"type":"tool","part":{"tool":"bash","state":{"status":"completed","output":"a\\nb","input":{"command":"ls"}}}}',
+        '{"type":"text","part":{"type":"text","text":"hello"}}',
+        '{"type":"step_finish","part":{"reason":"stop","tokens":{"input":10,"output":2,"cache":{"read":4,"write":0}}}}'
+    ])
+    check('opencode counts cache reads as input', [openRead.inputTokens, openRead.outputTokens], [14, 2])
+    check('opencode ends on a stop', openRead.ended, true)
+    check('opencode history has the tool, its result and the text', openRead.rows.map((row) => row.kind), ['tool', 'result', 'text', 'end'])
+}
+
+async function runnersRules(): Promise<void> {
+    console.log('\nrunners per phase')
+    const legacy = restore({ model: 'opus', effort: 'high' })
+    check('a legacy model lands on the implement phase', legacy.implement.model, 'opus')
+    check('and so does its effort', legacy.implement.effort, 'high')
+    check('the review phase inherits, it is not copied', legacy.review, { harness: null, model: null, effort: null })
+    check('a blank legacy card is a blank runner', restore({ model: '', effort: null }), blank())
+    check('a stored runners block is read as it is', restore({ runners: { review: { model: 'sonnet' } } }).review.model, 'sonnet')
+    check('a stored block naming a harness nobody has is dropped whole', restore({ runners: { review: { harness: 'cursor' } } }), blank())
+
+    const above = merge(blank(), { implement: { model: 'fable', effort: 'high' }, review: { model: 'opus' } })
+    const own = merge(blank(), { review: { effort: 'max' } })
+    check('the card inherits the board implementer', resolve(above, own, 'implement'), { harness: 'claude', model: 'fable', effort: 'high' })
+    check('and overrides only what it says for the review', resolve(above, own, 'review'), { harness: 'claude', model: 'opus', effort: 'max' })
+    check('nothing set means the default harness and the CLI defaults', resolve(blank(), blank(), 'review'), { harness: 'claude', model: null, effort: null })
+    check('a merge keeps what the patch does not name', merge(above, { implement: { effort: null } }).implement.model, 'fable')
+    check('and a blank string clears rather than stores', merge(above, { implement: { model: '   ' } }).implement.model, null)
+    await refuses('a harness nobody has is refused', async () => merge(blank(), { review: { harness: 'cursor' as never } }), 'not a harness')
+    await refuses('a model name has a limit', async () => merge(blank(), { review: { model: 'x'.repeat(81) } }), 'at most 80')
+
+    const meta = await boards.create({ slug: 'runners', name: 'runners', workdir: tmpdir(), runners: { review: { model: 'opus' } } })
+    check('a board stores its runners', meta.runners.review.model, 'opus')
+    const updated = await boards.update('runners', { runners: { implement: { effort: 'low' } } })
+    check('a board patch merges per phase', [updated.runners.implement.effort, updated.runners.review.model], ['low', 'opus'])
+    const created = await board.createCard('runners', { title: 'r', runners: { implement: { model: 'sonnet' } } })
+    check('a card stores its runners', created.runners.implement.model, 'sonnet')
+    const patched = await board.updateCard('runners', created.id, { runners: { implement: { model: null } } })
+    check('and a card patch clears one field without touching the rest', patched.runners.implement, { harness: null, model: null, effort: null })
+    await refuses('a card does not take a model any more', async () => board.updateCard('runners', created.id, { model: 'x' } as never), 'no editable model')
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
 launches()
 terminals()
+await offered()
+hostedReaders()
+await landing()
+await runnersRules()
 await machine()
 await patches()
 await housekeeping()

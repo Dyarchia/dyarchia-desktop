@@ -9,9 +9,11 @@
         "profiles",
         "show",
         "save",
+        "search",
         "start",
         "stop"
     ],
+    "boot": true,
     "description": "A web scraping toolkit that snapshots documentation and reports what changed",
     "requires": [
         {
@@ -24,6 +26,11 @@
                     "install",
                     "chromium"
                 ]
+            ],
+            "verify": [
+                "python",
+                "-c",
+                "import os, sys\nfrom playwright.sync_api import sync_playwright\nwith sync_playwright() as p:\n    sys.exit(0 if os.path.exists(p.chromium.executable_path) else 1)"
             ],
             "note": "up to 1.2 GB on a machine holding none of it: an interpreter, the packages and a browser. Every step skips what is already cached."
         }

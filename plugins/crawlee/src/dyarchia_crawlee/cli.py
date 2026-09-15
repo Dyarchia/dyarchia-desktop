@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
@@ -14,7 +15,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from dyarchia_crawlee import __version__, digest, inventory, locking, registry, repositories, state
+from dyarchia_crawlee import __version__, digest, inventory, locking, registry, repositories, search, state
 from dyarchia_crawlee.config import Settings, get_settings
 from dyarchia_crawlee.errors import ConfigurationError, DyarchiaCrawleeError
 from dyarchia_crawlee.models import CrawlerKind, ExtractionMode, LinkStrategy, OutputFormat, RunSpec
@@ -892,6 +893,79 @@ def render_watch(result: WatchResult, document: Path) -> None:
     console.print(table)
     console.print(result.headline)
     console.print(f'report: {document}', style='dim')
+
+
+@app.command(name='index')
+def index_command(
+    repository: Annotated[str | None, typer.Argument(help='one corpus repository, by directory name')] = None,
+    rebuild: Annotated[bool, typer.Option('--rebuild', help='drop the index and build it again')] = False,
+    json_output: Annotated[bool, typer.Option('--json')] = False,
+) -> None:
+    """Bring the search index level with the snapshots, page by page."""
+    settings = get_settings()
+    try:
+        roots = search._roots(repository, settings)
+        reports = [search.refresh(found, settings, rebuild=rebuild) for found in roots]
+    except DyarchiaCrawleeError as error:
+        raise typer.BadParameter(str(error)) from error
+
+    if json_output:
+        console.print_json(json.dumps([report.to_dict() for report in reports]))
+        return
+    for report in reports:
+        console.print(
+            f'{report.repository}: {report.pages} pages indexed, '
+            f'{report.added} added, {report.updated} updated, {report.removed} removed'
+        )
+
+
+@app.command(name='search')
+def search_command(
+    query: Annotated[str, typer.Argument(help='words to look for; together first, then any')],
+    repository: Annotated[
+        str | None, typer.Option('--repository', help='one corpus repository, by name')
+    ] = None,
+    target: Annotated[str | None, typer.Option('--target', help='one target, by profile name')] = None,
+    limit: Annotated[int, typer.Option('--limit', min=1, max=50)] = 10,
+    json_output: Annotated[bool, typer.Option('--json')] = False,
+) -> None:
+    """Search the corpus the way a reader would, and get the chunks that carry the words."""
+    try:
+        hits = search.search(query, repository=repository, target=target, limit=limit)
+    except DyarchiaCrawleeError as error:
+        raise typer.BadParameter(str(error)) from error
+
+    if json_output:
+        console.print_json(json.dumps([hit.to_dict() for hit in hits], ensure_ascii=False))
+        return
+    if not hits:
+        console.print('nothing in the corpus matches')
+        return
+    for hit in hits:
+        head = f'{hit.title} — {hit.heading}' if hit.heading else hit.title
+        console.print(f'[bold]{head}[/bold]')
+        console.print(f'  {hit.url}')
+        console.print(f'  [{hit.repository}/{hit.target}] {hit.snippet}')
+
+
+@app.command(name='mcp')
+def mcp_command(
+    root: Annotated[
+        Path | None,
+        typer.Option('--root', help='the checkout whose .env names the corpus repositories'),
+    ] = None,
+) -> None:
+    """Serve the corpus search as a Model Context Protocol tool over stdio, until stdin closes.
+
+    An MCP client starts the server wherever its own session lives and ignores any working
+    directory the configuration names, so the settings would read no .env and see no corpus.
+    `--root` moves the process there first.
+    """
+    from dyarchia_crawlee.mcp import serve
+
+    if root is not None:
+        os.chdir(root)
+    serve()
 
 
 @app.command()

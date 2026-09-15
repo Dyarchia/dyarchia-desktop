@@ -3,14 +3,14 @@ import type { UtilityProcess } from 'electron'
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
-import * as agents from './agents.js'
 import { nextName, reclaim } from './artifacts.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
 import * as dispatch from './dispatch.js'
 import * as events from './events.js'
+import * as harness from './harness/index.js'
+import * as hosted from './harness/hosted.js'
 import { rules } from './rules.js'
-import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
 import type {
     Attachment,
@@ -93,6 +93,8 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('boards', () => boards.list())
 
+    ctx.handle('harnesses', () => harness.catalogue())
+
     ctx.handle('settings', () => boards.settings())
 
     ctx.handle('updateSettings', async (raw) => {
@@ -138,6 +140,9 @@ export function activate(ctx: PluginMainContext): void {
         await boards.find(target)
         if ((await running(target)).length) throw new Refusal('that board still has a card running')
 
+        for (const card of await board.cards(target)) {
+            for (const run of card.runs) await hosted.forget(run)
+        }
         await boards.forget(target)
         board.forget(target)
         await reclaim(boards.boardRoot(target), boards.root())
@@ -227,7 +232,7 @@ export function activate(ctx: PluginMainContext): void {
         const { card } = await liveRun(target, String(id))
         const run = card.runs[card.runs.length - 1]
         if (!run || run.endedAt !== null) throw new Refusal('that card has no live run')
-        if (run.shortId) await agents.stop(run.shortId)
+        await harness.of(run).stop(run)
         await dispatch.force(sink)
         return true
     })
@@ -245,8 +250,7 @@ export function activate(ctx: PluginMainContext): void {
             (card.workspaceKind === 'scratch'
                 ? join(boards.workspacesRoot(meta.slug), card.id)
                 : (card.workdir ?? meta.workdir))
-        const path = await agents.transcript(place, run.sessionId)
-        return path ? await worker.history(path) : []
+        return harness.of(run).history(place, run)
     })
 
     ctx.handle('reveal', async (slug, id, name) => {
@@ -351,10 +355,7 @@ export function activate(ctx: PluginMainContext): void {
             const { meta, card } = await liveRun(String(slug), String(cardId))
             const run = card.runs[card.runs.length - 1]
             if (!run?.shortId) throw new Refusal('that card has no session to attach to')
-
-            const path = await agents.binary()
-            if (!path) throw new Refusal('claude is not on PATH')
-            const call = agents.invocation(path, ['attach', run.shortId])
+            const call = await harness.of(run).attach(run)
 
             const { port1, port2 } = new MessageChannelMain()
             const host = ptyHost()

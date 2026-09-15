@@ -141,7 +141,7 @@ body,
     --dv-icon-hover-background-color: var(--dya-flat-hover);
     --dv-border-radius: var(--dya-radius);
     --dv-tab-border-radius: var(--dya-radius);
-    --dv-tabs-and-actions-container-height: 38px;
+    --dv-tabs-and-actions-container-height: 34px;
     --dv-tab-margin-block: 0;
     --dv-floating-border: var(--dya-border-width) solid var(--dya-border);
     --dv-floating-group-border: var(--dya-border-width) solid var(--dya-border);
@@ -163,8 +163,13 @@ body,
 
 .dv-shell.dockview-theme-abyss-spaced .dv-tabs-and-actions-container {
     background: var(--dya-grad-header);
-    border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
+    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius) var(--dya-radius) 0 0;
+}
+
+.dock-empty {
+    height: 100%;
+    gap: var(--dya-space-4);
 }
 
 .dv-shell.dockview-theme-abyss-spaced .dv-resize-container .dv-groupview {

@@ -65,7 +65,12 @@ CLI's safety classifier is the backstop, and it is the only mode that gets a com
 nobody watching. A run you intend to sit in front of can go on `acceptEdits`, which applies edits
 without asking and then stops on every command, the commit included. `bypassPermissions` **refuses
 to launch under `--bg` at all** — the CLI wants a one-time interactive disclaimer and a detached
-session has nobody to give it, so the run never starts.
+session has nobody to give it, so the run never starts. The refusal names its remedy: `Run claude
+--dangerously-skip-permissions once interactively`, which records the acceptance in the operator's
+own `~/.claude.json`. That is a decision for the person at the keyboard and nothing in this plugin
+takes it for them; whether a background worker then launches and finishes under that mode has not
+been measured from here, because the acceptance is not something a tool should perform on an
+operator's behalf.
 
 **The Windows allowlist trap.** A repository can pre-authorise commands in its own
 `.claude/settings.json`, but on Windows a rule written as `Bash(...)` never fires: the worker
@@ -82,7 +87,14 @@ git add      PowerShell          Bash(git add:*)
 git commit   PowerShell          Bash(git commit:*)
 ```
 
-Name the tool the worker actually uses.
+Name the tool the worker actually uses, and know that it varies. Measured again on 2026-09-15
+with both spellings allowed in the repository's own `.claude/settings.json` — `Bash(git add:*)`,
+`Bash(git commit:*)`, `PowerShell(git add:*)`, `PowerShell(git commit:*)` — under `--bg` and
+`acceptEdits`: the worker wrote its file, reached for **Bash** this time, ran
+`git add note.txt && git commit -m e2` as one command, and stopped at the permission prompt
+anyway. Whether the compound command or the background session defeated the rules is not settled;
+the run cost 0.39 USD of the operator's plan and the question stays open in the mode table. Until
+it closes, `auto` is the only mode measured to commit unattended.
 
 
 ## Who runs a card

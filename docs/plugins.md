@@ -253,6 +253,11 @@ same document. So:
   `el.hidden` and never write a display rule for it.
 - **The theme is an attribute and the shell owns it.** A plugin never reads it and never
   branches on it: it writes `var(--dya-surface-1)` and gets whichever theme is mounted.
+- **The browser is the one Electron ships, and nothing else.** Electron 43 carries
+  Chromium 150, so the popover attribute, interest invokers (`interestfor`), anchor
+  positioning and container queries are native; a plugin uses them as written and ships no
+  polyfill and no fallback. A tip is `popover="hint"` on a `.dya-tip` reached by
+  `interestfor` from the control it explains.
 
 The order to work in:
 

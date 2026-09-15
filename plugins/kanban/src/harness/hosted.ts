@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
-import { mkdir, readFile, stat } from 'node:fs/promises'
+import { mkdir, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Run } from '../types.js'
 import { childEnv } from './process.js'
@@ -127,6 +127,12 @@ export async function final(run: Run): Promise<string | null> {
 
 export async function stderr(run: Run): Promise<string> {
     return readFile(stderrPath(run), 'utf-8').catch(() => '')
+}
+
+export async function forget(run: Run): Promise<void> {
+    for (const path of [eventsPath(run), stderrPath(run), finalPath(run)]) {
+        await rm(path, { force: true }).catch(() => undefined)
+    }
 }
 
 export function parseLine(line: string): Record<string, unknown> | null {

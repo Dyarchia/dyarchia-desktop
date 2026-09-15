@@ -4,6 +4,7 @@ import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import * as events from './events.js'
 import { DEFAULT_HARNESS, isHarness } from './harness/index.js'
+import * as hosted from './harness/hosted.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed, rules } from './rules.js'
 import * as runners from './runners.js'
@@ -334,6 +335,7 @@ function applyDelete(file: BoardFile, id: string, going: Set<string>): Card {
 }
 
 async function forgetCard(slug: string, card: Card): Promise<void> {
+    for (const run of card.runs) await hosted.forget(run)
     await reclaim(attachmentsRoot(slug, card.id), boardRoot(slug))
     await reclaim(join(workspacesRoot(slug), card.id), workspacesRoot(slug))
     await events.record(slug, card.id, 'deleted', card.title)

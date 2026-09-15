@@ -47,7 +47,8 @@ class PythonPlugin {
                     ...process.env,
                     PYTHONIOENCODING: 'utf-8',
                     PYTHONUNBUFFERED: '1',
-                    DYARCHIA_PLUGIN_ENV: pluginEnvironment(this.pluginId)
+                    DYARCHIA_PLUGIN_ENV: pluginEnvironment(this.pluginId),
+                    DYARCHIA_USER_DATA: app.getPath('userData')
                 }
             }) as ChildProcessWithoutNullStreams
         } catch (error) {

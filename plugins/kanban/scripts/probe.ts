@@ -9,6 +9,7 @@ import { adopt, carried, force, guarded, home, overran, PATIENCE, stalled, unlis
 import { liveness, parseLaunch, snapshot } from '../src/harness/claude.js'
 import * as codex from '../src/harness/codex.js'
 import * as grok from '../src/harness/grok.js'
+import * as offers from '../src/harness/offers.js'
 import * as opencode from '../src/harness/opencode.js'
 import type { LaunchSpec } from '../src/harness/types.js'
 import { nextName, strays } from '../src/artifacts.js'
@@ -895,6 +896,30 @@ async function landing(): Promise<void> {
     rmSync(repo, { recursive: true, force: true })
 }
 
+async function offered(): Promise<void> {
+    console.log('\noffers other plugins leave for a worker')
+    const folder = offers.folder()
+    mkdirSync(folder, { recursive: true })
+    writeFileSync(join(folder, 'one.json'), JSON.stringify({
+        plugin: 'one', server: 'one-server', command: process.execPath, args: ['-e', '0'],
+        tools: [{ name: 'lookup', note: 'looks things up' }]
+    }))
+    writeFileSync(join(folder, 'gone.json'), JSON.stringify({
+        plugin: 'gone', server: 'gone-server', command: join(folder, 'missing.exe'), args: [],
+        tools: [{ name: 'vanished', note: 'nothing' }]
+    }))
+    writeFileSync(join(folder, 'broken.json'), '{"plugin": 1}')
+    const listed = await offers.list()
+    check('an offer with a live command is listed, a gone one and a broken one are not', listed.map((offer) => offer.server), ['one-server'])
+    const offering = await offers.configure()
+    check('the listed tool is allowed by its full name', offering?.allow, ['mcp__one-server__lookup'])
+    check('the note reaches the brief', offering?.notes, ['lookup: looks things up'])
+    const config = JSON.parse(readFileSync(offering!.configPath, 'utf-8'))
+    check('the config names the server the way claude expects', Object.keys(config.mcpServers), ['one-server'])
+    rmSync(folder, { recursive: true, force: true })
+    check('with no offer there is no config', await offers.configure(), null)
+}
+
 function hostedReaders(): void {
     console.log('\nreading the three hosted harnesses')
     const spec: LaunchSpec = {
@@ -1007,6 +1032,7 @@ await slugs()
 await livenessRules()
 launches()
 terminals()
+await offered()
 hostedReaders()
 await landing()
 await runnersRules()

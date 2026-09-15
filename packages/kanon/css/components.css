@@ -145,7 +145,7 @@
 }
 
 .dya-bar {
-    height: 46px;
+    height: 38px;
     background: var(--dya-grad-bar);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }.dya-bar--flush {

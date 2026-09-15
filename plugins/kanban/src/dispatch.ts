@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import * as agents from './agents.js'
 import { harvest, reclaim, strays } from './artifacts.js'
-import type { SessionRecord } from './agents.js'
 import * as board from './board.js'
 import * as boards from './boards.js'
 import * as events from './events.js'
+import * as harness from './harness/index.js'
+import type { Fleet, Liveness, Progress } from './harness/types.js'
 import * as lease from './lease.js'
 import { isClosed } from './rules.js'
+import * as runners from './runners.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
 import type {
@@ -16,6 +17,7 @@ import type {
     BoardFile,
     BoardMeta,
     Card,
+    HarnessId,
     Overview,
     Run,
     RunKind,
@@ -35,6 +37,7 @@ const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
 const PRUNE_MS = 10 * 60_000
 const CREDENTIAL = /401|429|quota|credit|not logged in|refresh your login/i
+const CONFIGURATION = /not on PATH|model|not logged in|not authenticated|api key|unauthori[sz]ed|401|403/i
 const YOUNG_MS = 20_000
 
 export interface CardProgress {
@@ -140,7 +143,7 @@ export function stalled(
     return now - modifiedAt > limits.silentMs && now - startedAt > limits.minAgeMs
 }
 
-export function unlisted(state: agents.Liveness, startedAt: number, now: number): boolean {
+export function unlisted(state: Liveness, startedAt: number, now: number): boolean {
     return state === 'dead' && now - startedAt < YOUNG_MS
 }
 
@@ -156,10 +159,11 @@ function reviewed(card: Card): Run | null {
     )
 }
 
-function blank(runId: string, kind: RunKind): Run {
+function blank(runId: string, kind: RunKind, on: HarnessId): Run {
     return {
         runId,
         kind,
+        harness: on,
         sessionId: null,
         shortId: null,
         worktree: null,
@@ -170,6 +174,7 @@ function blank(runId: string, kind: RunKind): Run {
         summary: null,
         artifacts: [],
         kept: [],
+        handoff: [],
         inputTokens: 0,
         outputTokens: 0,
         error: null,
@@ -257,7 +262,7 @@ async function resolveReview(
     card: Card,
     run: Run,
     sink: Sink,
-    progress: worker.Progress | null
+    progress: Progress | null
 ): Promise<void> {
     if (progress) {
         run.inputTokens = progress.inputTokens
@@ -334,8 +339,16 @@ async function resolveReview(
         return
     }
 
+    if (harness.of(run).orphaned(run)) {
+        close(run, 'crashed', null, 'the app that hosted this review was closed, and a hosted run does not outlive it')
+        land(card, 'review')
+        void events.record(meta.slug, card.id, 'crashed', run.error ?? '', run.runId)
+        say('crashed')
+        return
+    }
+
     card.consecutiveFailures += 1
-    close(run, 'crashed', null, 'the reviewer is gone, and it judged nothing')
+    close(run, 'crashed', null, progress?.error ?? 'the reviewer is gone, and it judged nothing')
     const spent = card.consecutiveFailures >= (card.maxRetries ?? RETRIES)
     if (spent) block(meta.slug, card, 'transient', 'review')
     else land(card, 'review')
@@ -355,7 +368,7 @@ async function resolve(
     card: Card,
     run: Run,
     sink: Sink,
-    progress: worker.Progress | null
+    progress: Progress | null
 ): Promise<void> {
     if (run.kind === 'review') return resolveReview(file, meta, card, run, sink, progress)
 
@@ -378,9 +391,11 @@ async function resolve(
             declared.artifacts
         )
         run.kept = picked.kept
+        const handed = await harvest(meta.slug, card.id, place(meta, card, run), declared.handoff)
+        run.handoff = handed.kept
 
-        if (declared.outcome === 'completed' && picked.missing.length) {
-            const names = picked.missing.join(', ')
+        if (declared.outcome === 'completed' && (picked.missing.length || handed.missing.length)) {
+            const names = [...picked.missing, ...handed.missing].join(', ')
             close(run, 'violation', declared.summary, `declared but missing: ${names}`)
             card.comments.push({
                 at: Date.now(),
@@ -401,6 +416,15 @@ async function resolve(
 
         if (declared.followups.length) await adopt(file, meta, card, declared.followups)
 
+        if (declared.outcome === 'completed' && run.worktree) {
+            const landed = await worker.land(run.worktree, card.title)
+            if (landed === 'committed') {
+                void events.record(meta.slug, card.id, 'landed', 'the board committed what the worker left', run.runId)
+            } else if (landed === 'failed') {
+                run.error = 'the worker left changes the board could not commit'
+            }
+        }
+
         if (declared.outcome === 'completed') {
             card.consecutiveFailures = 0
             card.protocolViolations = 0
@@ -408,7 +432,7 @@ async function resolve(
             card.lastBlockKind = null
             card.blockKind = null
             if (card.workspaceKind === 'scratch') {
-                if (run.shortId) await agents.stop(run.shortId)
+                await harness.of(run).stop(run)
                 const gone = await reclaim(workspace(meta, card), boards.workspacesRoot(meta.slug))
                 if (!gone) run.error = 'the scratch workspace could not be removed'
             }
@@ -447,17 +471,38 @@ async function resolve(
 
     const where = place(meta, card, run)
     const moved = run.headBefore ? (await worker.head(where)) !== run.headBefore : false
+    if (progress) {
+        run.inputTokens = progress.inputTokens
+        run.outputTokens = progress.outputTokens
+    }
+
+    const said = progress?.error ?? null
+    const orphaned = harness.of(run).orphaned(run)
+    if (orphaned || (said && CONFIGURATION.test(said))) {
+        const why = orphaned
+            ? 'the app that hosted this run was closed, and a hosted run does not outlive it'
+            : (said as string)
+        close(run, 'crashed', moved ? 'the run is gone, but the repository head moved' : null, why)
+        card.comments.push({
+            at: Date.now(),
+            author: 'agent',
+            text: `This attempt does not count against the card: ${why}`
+        })
+        if (orphaned) land(card, 'ready')
+        else block(meta.slug, card, 'needs_input', 'ready')
+        void events.record(meta.slug, card.id, 'crashed', why, run.runId)
+        ended(sink, meta, card, run)
+        sink.runEnded(meta.slug, card.id, 'crashed')
+        return
+    }
+
     card.consecutiveFailures += 1
     close(
         run,
         'crashed',
         moved ? 'the worker is gone, but the repository head moved' : null,
-        moved ? 'crashed after changing the repository' : 'crashed with no evidence of work'
+        said ?? (moved ? 'crashed after changing the repository' : 'crashed with no evidence of work')
     )
-    if (progress) {
-        run.inputTokens = progress.inputTokens
-        run.outputTokens = progress.outputTokens
-    }
 
     const limit = card.maxRetries ?? RETRIES
     const spent = card.consecutiveFailures >= limit
@@ -476,7 +521,7 @@ async function resolve(
 
 async function reconcile(
     meta: BoardMeta,
-    sessions: SessionRecord[] | null,
+    fleet: Fleet,
     sink: Sink
 ): Promise<boolean> {
     const file = await board.load(meta.slug)
@@ -491,12 +536,8 @@ async function reconcile(
             continue
         }
 
-        const state = run.sessionId ? agents.liveness(sessions, run.sessionId) : 'dead'
-        const session = run.sessionId ? agents.find(sessions, run.sessionId) : null
-        const path = run.sessionId
-            ? await agents.transcript(place(meta, card, run), run.sessionId)
-            : null
-        const progress = path ? await worker.progress(path) : null
+        const state = fleet.liveness(run)
+        const progress = await harness.of(run).progress(place(meta, card, run), run)
 
         if (progress) {
             run.inputTokens = progress.inputTokens
@@ -509,7 +550,7 @@ async function reconcile(
         if (!finished && (state === 'unknown' || unlisted(state, run.startedAt, asOf))) continue
 
         if (finished || state === 'dead') {
-            if (finished && state !== 'dead' && run.shortId) await agents.stop(run.shortId)
+            if (finished && state !== 'dead') await harness.of(run).stop(run)
             await resolve(file, meta, card, run, sink, progress)
             changed = true
             continue
@@ -521,14 +562,14 @@ async function reconcile(
         const cap = card.maxRuntimeSeconds
         const overrun = overran(cap, run.startedAt, now)
         const silent = stalled(
-            session?.state ?? null,
+            fleet.state(run),
             progress?.modifiedAt ?? null,
             run.startedAt,
             now
         )
 
-        if ((overrun || silent) && run.shortId) {
-            await agents.stop(run.shortId)
+        if (overrun || silent) {
+            await harness.of(run).stop(run)
             close(
                 run,
                 'stopped',
@@ -543,7 +584,7 @@ async function reconcile(
             continue
         }
 
-        const asking = agents.waiting(session)
+        const asking = fleet.waiting(run)
         if (asking && !waiting.has(card.id)) {
             waiting.add(card.id)
             tell(sink, meta, card, `${card.title} is waiting on you`, 'the worker is asking for permission')
@@ -554,7 +595,7 @@ async function reconcile(
             slug: meta.slug,
             cardId: card.id,
             runId: run.runId,
-            state: session?.state ?? 'working',
+            state: fleet.state(run) ?? 'working',
             tool: progress?.tool ?? null,
             inputTokens: progress?.inputTokens ?? 0,
             outputTokens: progress?.outputTokens ?? 0,
@@ -597,19 +638,30 @@ async function launch(
             .map((id) => file.cards.find((entry) => entry.id === id))
             .filter((entry): entry is Card => Boolean(entry))
 
-        const held = card.attachments.map((entry) => ({
-            name: entry.name,
-            path: join(boards.attachmentsRoot(meta.slug, card.id), entry.name)
-        }))
+        const held = carried(card, boards.attachmentsRoot(meta.slug, card.id))
 
-        const started = await worker.start(card, parents, run.runId, where, held, reviewing)
+        const chosen = runners.resolve(meta.runners, card.runners, run.kind)
+        const started = await worker.start(card, parents, run.runId, where, held, reviewing, chosen)
         run.sessionId = started.sessionId
         run.shortId = started.shortId
         run.headBefore = started.headBefore
         run.worktree = started.worktree
         run.branch = started.branch
     } catch (error) {
-        close(run, 'crashed', null, error instanceof Error ? error.message : String(error))
+        const message = error instanceof Error ? error.message : String(error)
+        close(run, 'crashed', null, message)
+        if (CONFIGURATION.test(message)) {
+            card.comments.push({
+                at: Date.now(),
+                author: 'agent',
+                text: `The launch failed before any work was done, so this attempt does not count: ${message}`
+            })
+            block(meta.slug, card, 'needs_input', back)
+            void events.record(meta.slug, card.id, 'crashed', message, run.runId)
+            ended(sink, meta, card, run)
+            sink.runEnded(meta.slug, card.id, 'crashed')
+            return
+        }
         card.consecutiveFailures += 1
         if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
             block(meta.slug, card, 'capability', back)
@@ -622,8 +674,28 @@ async function launch(
     }
 }
 
-function take(card: Card, kind: RunKind): Run {
-    const run = blank(randomUUID(), kind)
+/*
+ * What the next worker on this card is handed: every file the operator attached, and what
+ * the last completed implement run declared as handoff. Only that run's, because a brief
+ * that enumerates what five attempts left is a different problem, and only handoff, because
+ * an artifact is output for the operator and was never addressed to an agent.
+ */
+export function carried(card: Card, root: string): { name: string; path: string; from: 'operator' | 'worker' }[] {
+    const held: { name: string; path: string; from: 'operator' | 'worker' }[] = card.attachments.map((entry) => ({
+        name: entry.name,
+        path: join(root, entry.name),
+        from: 'operator'
+    }))
+    const last = [...card.runs].reverse().find((run) => run.kind === 'implement' && run.outcome === 'completed')
+    for (const name of last?.handoff ?? []) {
+        if (held.some((entry) => entry.name === name)) continue
+        held.push({ name, path: join(root, name), from: 'worker' })
+    }
+    return held
+}
+
+function take(meta: BoardMeta, card: Card, kind: RunKind): Run {
+    const run = blank(randomUUID(), kind, runners.resolve(meta.runners, card.runners, kind).harness)
     card.runs.push(run)
     card.status = 'running'
     card.locked = true
@@ -640,7 +712,7 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
     const card = claimable(file, Date.now())[0]
     if (!card) return false
 
-    const run = take(card, 'implement')
+    const run = take(meta, card, 'implement')
     await board.save(meta.slug, file)
     await events.record(meta.slug, card.id, 'claimed', `attempt ${card.runs.length}`, run.runId)
     sink.boardChanged(meta.slug)
@@ -658,7 +730,7 @@ export async function review(meta: BoardMeta, cardId: string, sink: Sink): Promi
     const judged = reviewed(card)
     if (!judged) throw new Error('that card has no finished run for a reviewer to read')
 
-    const run = take(card, 'review')
+    const run = take(meta, card, 'review')
     await board.save(meta.slug, file)
     await events.record(
         meta.slug,
@@ -742,10 +814,10 @@ async function prune(): Promise<void> {
     housekeeping = notes
 }
 
-export async function diagnose(known?: SessionRecord[] | null): Promise<Diagnostic[]> {
+export async function diagnose(known?: Fleet): Promise<Diagnostic[]> {
     const found: Diagnostic[] = [...housekeeping]
     const now = Date.now()
-    const sessions = known === undefined ? await agents.snapshot() : known
+    const fleet = known ?? (await harness.poll())
     const open = (await boards.list()).filter((entry) => !entry.archived)
     const across = (await boards.settings()).maxRunning
 
@@ -788,7 +860,7 @@ export async function diagnose(known?: SessionRecord[] | null): Promise<Diagnost
             const run = current(card)
             if (!run?.sessionId) continue
 
-            if (sessions === null) {
+            if (fleet.liveness(run) === 'unknown') {
                 found.push({
                     slug: meta.slug,
                     cardId: card.id,
@@ -797,8 +869,7 @@ export async function diagnose(known?: SessionRecord[] | null): Promise<Diagnost
                 continue
             }
 
-            const session = agents.find(sessions, run.sessionId)
-            if (agents.waiting(session)) {
+            if (fleet.waiting(run)) {
                 found.push({ slug: meta.slug, cardId: card.id, problem: 'waiting on you' })
             }
         }
@@ -826,7 +897,7 @@ export async function diagnose(known?: SessionRecord[] | null): Promise<Diagnost
 const DECISIONS = 24
 
 export async function overview(): Promise<Overview> {
-    const sessions = await agents.snapshot()
+    const fleet = await harness.poll()
     const open = (await boards.list()).filter((entry) => !entry.archived)
     const across = (await boards.settings()).maxRunning
 
@@ -838,7 +909,7 @@ export async function overview(): Promise<Overview> {
         boards: [],
         runs: [],
         decisions: [],
-        problems: await diagnose(sessions)
+        problems: await diagnose(fleet)
     }
 
     for (const meta of open) {
@@ -857,7 +928,6 @@ export async function overview(): Promise<Overview> {
             if (card.status !== 'running') continue
             const run = current(card)
             if (!run) continue
-            const session = run.sessionId ? agents.find(sessions, run.sessionId) : null
             const live: WatchRun = {
                 slug: meta.slug,
                 board: meta.name,
@@ -866,11 +936,11 @@ export async function overview(): Promise<Overview> {
                 runId: run.runId,
                 kind: run.kind,
                 startedAt: run.startedAt,
-                state: session?.state ?? 'working',
+                state: fleet.state(run) ?? 'working',
                 tool: null,
                 inputTokens: run.inputTokens,
                 outputTokens: run.outputTokens,
-                waiting: agents.waiting(session)
+                waiting: fleet.waiting(run)
             }
             shape.runs.push(live)
         }
@@ -903,14 +973,14 @@ export async function sweep(sink: Sink): Promise<void> {
         if (!holding) return
 
         await prune().catch(() => undefined)
-        const sessions = await agents.snapshot()
+        const fleet = await harness.poll()
         const open = (await boards.list()).filter((entry) => !entry.archived)
         if (!open.length) return
         const across = (await boards.settings()).maxRunning
 
         let running = 0
         for (const meta of open) {
-            if (await reconcile(meta, sessions, sink)) sink.boardChanged(meta.slug)
+            if (await reconcile(meta, fleet, sink)) sink.boardChanged(meta.slug)
             if (await board.promote(meta.slug, Date.now())) sink.boardChanged(meta.slug)
             running += (await board.cards(meta.slug)).filter((card) => card.status === 'running').length
         }
@@ -955,7 +1025,7 @@ export function begin(sink: Sink): () => void {
     return () => {
         if (timer) clearInterval(timer)
         timer = null
-        void lease.drop(OWNER).catch(() => undefined)
+        lease.drop(OWNER)
     }
 }
 

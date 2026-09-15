@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     output_dir: Path = Path('output')
     profiles_dir: Path = Path('profiles')
     storage_dir: Path = Path('storage')
+    index_dir: Path = Path('index')
     repositories_dir: Path | None = None
 
     @classmethod

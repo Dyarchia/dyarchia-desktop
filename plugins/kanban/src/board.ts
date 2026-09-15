@@ -3,8 +3,11 @@ import { mkdir, readFile, rename } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import * as events from './events.js'
+import { DEFAULT_HARNESS, isHarness } from './harness/index.js'
+import * as hosted from './harness/hosted.js'
 import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed, rules } from './rules.js'
+import * as runners from './runners.js'
 import type {
     Attachment,
     BoardFile,
@@ -27,8 +30,14 @@ function empty(): BoardFile {
 }
 
 function restore(card: Card): Card {
+    const raw = card as unknown as Record<string, unknown>
+    card.runners = runners.restore(raw)
+    delete raw.model
+    delete raw.effort
     for (const run of card.runs ?? []) {
         if (run.kind !== 'review') run.kind = 'implement'
+        if (!isHarness(run.harness)) run.harness = DEFAULT_HARNESS
+        if (!Array.isArray(run.handoff)) run.handoff = []
     }
     return card
 }
@@ -153,11 +162,10 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
         assignee: 'claude',
         workdir: assertWorkdir(draft.workdir),
         workspaceKind: draft.workspaceKind ?? 'dir',
-        model: draft.model ?? null,
-        effort: draft.effort ?? null,
+        runners: runners.merge(runners.blank(), draft.runners),
         maxRuntimeSeconds: draft.maxRuntimeSeconds ?? null,
         maxRetries: draft.maxRetries ?? null,
-        permissionMode: draft.permissionMode ?? 'acceptEdits',
+        permissionMode: draft.permissionMode ?? 'auto',
         scheduledFor: draft.scheduledFor ?? null,
         parents,
         attachments: [],
@@ -186,8 +194,7 @@ const PATCHABLE = new Set([
     'priority',
     'workdir',
     'workspaceKind',
-    'model',
-    'effort',
+    'runners',
     'maxRuntimeSeconds',
     'maxRetries',
     'permissionMode',
@@ -212,8 +219,7 @@ export async function updateCard(slug: string, id: string, patch: CardPatch): Pr
     if (patch.priority !== undefined) card.priority = Number(patch.priority) || 0
     if (patch.workdir !== undefined) card.workdir = assertWorkdir(patch.workdir)
     if (patch.workspaceKind !== undefined) card.workspaceKind = patch.workspaceKind
-    if (patch.model !== undefined) card.model = patch.model
-    if (patch.effort !== undefined) card.effort = patch.effort
+    if (patch.runners !== undefined) card.runners = runners.merge(card.runners, patch.runners)
     if (patch.maxRuntimeSeconds !== undefined) card.maxRuntimeSeconds = patch.maxRuntimeSeconds
     if (patch.maxRetries !== undefined) card.maxRetries = patch.maxRetries
     if (patch.permissionMode !== undefined) card.permissionMode = String(patch.permissionMode)
@@ -329,6 +335,7 @@ function applyDelete(file: BoardFile, id: string, going: Set<string>): Card {
 }
 
 async function forgetCard(slug: string, card: Card): Promise<void> {
+    for (const run of card.runs) await hosted.forget(run)
     await reclaim(attachmentsRoot(slug, card.id), boardRoot(slug))
     await reclaim(join(workspacesRoot(slug), card.id), workspacesRoot(slug))
     await events.record(slug, card.id, 'deleted', card.title)

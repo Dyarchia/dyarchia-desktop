@@ -1,13 +1,15 @@
 # kanban
 
 A task board that dispatches work to Claude Code and lets the operator watch the agent work and
-talk to it while it does. [OPEN-PROBLEMS.md](OPEN-PROBLEMS.md) is the register of what
-is wrong, missing or unproven; anything found while building goes there before the commit that
-found it, and nothing leaves it silently.
+talk to it while it does. What is wrong, missing or unproven is kept in a register outside this
+repository; anything found while building goes there before the commit that found it, and nothing
+leaves it silently.
 
-A worker is **a real interactive session, not a batch run**: `claude --bg` in a git worktree, with
-a pty the operator can attach to. Print mode exists and this design does not use it, because a
-session you cannot talk to cannot be unblocked.
+A worker under Claude Code is **a real interactive session, not a batch run**: `claude --bg` in a
+git worktree, with a pty the operator can attach to. Print mode exists and this design does not
+use it, because a session you cannot talk to cannot be unblocked. The three other harnesses the
+board can run, Codex CLI, Grok CLI and OpenCode, have no detached mode, so under them a worker
+is a child process of this app whose event stream the board keeps; see *Who runs a card*.
 
 
 ## Build and verify
@@ -53,34 +55,209 @@ and the reason is NOT settled
 transcripts
 A stopped session reads as alive                         the card never lands on its own
 'blocked' does not mean the worker is still working      liveness needs three values
-Permission modes are not interchangeable under --bg      see below
+Two modes finish a card unattended, auto and dontAsk    see below
 Plan mode does not stop a reviewer from stalling         plan mode is not a safety net
 os.kill(pid, 0) is not a liveness query on Windows       it lies in both directions
 ```
 
-**Which permission mode.** An unattended run goes on `auto`: the worker decides for itself, the
-CLI's safety classifier is the backstop, and it is the only mode that gets a commit made with
-nobody watching. A run you intend to sit in front of can go on `acceptEdits`, which applies edits
-without asking and then stops on every command, the commit included. `bypassPermissions` **refuses
-to launch under `--bg` at all** — the CLI wants a one-time interactive disclaimer and a detached
-session has nobody to give it, so the run never starts.
-
-**The Windows allowlist trap.** A repository can pre-authorise commands in its own
-`.claude/settings.json`, but on Windows a rule written as `Bash(...)` never fires: the worker
-reaches for the PowerShell tool, so the rule names a tool that is never asked for and the worker
-stops for approval anyway. Measured on the proof repository, four commands, all four covered on
-paper and none in fact.
+**Which permission mode.** Two modes finish a card with nobody watching, measured on
+2026-09-15 with the same brief (write a file, add it, commit it) in a fresh repository under
+`--bg`:
 
 ```text
-COMMAND      REQUESTED THROUGH   RULE THAT WAS MEANT TO COVER IT
------------  ------------------  ---------------------------------
-node         PowerShell          Bash(node:*)
-git status   PowerShell          Bash(git status:*)
-git add      PowerShell          Bash(git add:*)
-git commit   PowerShell          Bash(git commit:*)
+MODE        FLAGS                                  OUTCOME                         TIME   COST
+----------  -------------------------------------  ------------------------------  -----  --------
+auto        --permission-mode auto                 committed; the classifier       50 s   0.35 USD
+                                                   passed a compound shell
+                                                   command, no prompt
+dontAsk     --permission-mode dontAsk              committed in its worktree;      45 s   0.79 USD
+            --allowedTools EnterWorktree Edit      what the list does not name
+            Write Read Glob Grep                   is denied, never asked, and
+            "Bash(git add:*)" "Bash(git commit:*)" the worker routes round a
+            "PowerShell(git add:*)"                denial
+            "PowerShell(git commit:*)"
+acceptEdits --permission-mode acceptEdits          edits applied, then a stop at   -      0.39 USD
+                                                   the first command
+bypass      --permission-mode bypassPermissions    refuses to launch under --bg    -      -
 ```
 
-Name the tool the worker actually uses.
+`auto` is the default for a new card and the mode for unattended implementation: the worker
+decides for itself and the CLI's classifier reviews what is not read-only, blocking what
+escalates beyond the brief. Its one documented gap is that gap: a blocked action is retried
+another way, and after three blocks in a row a session that cannot prompt keeps working without
+the action. Auto mode also drops blanket `Bash(*)` and `PowerShell(*)` allow rules on entry, so
+an allowlist does not widen it. An earlier measurement, on 2026-09-11, saw two `auto` workers
+stop on ordinary edits; the CLI documents that a session asked for `auto` starts in Manual when
+the model does not support it, when a settings file disables it or when the server declines it,
+which is the reading that fits, and today's runs replace that row.
+
+`dontAsk` with `--allowedTools` is the CLI's own recipe for CI: exact, and nothing outside the
+list ever prompts. It costs more than `auto` on the same brief because a denied call is a turn
+spent. `acceptEdits` is for a run you sit in front of. `bypassPermissions` wants a one-time
+interactive acceptance that writes to the operator's `~/.claude.json`; nothing in this plugin
+performs it, and the operator has chosen not to.
+
+**The allowlist trap has two halves.** Allow rules in a repository's own `.claude/settings.json`
+grant capability, so the CLI applies them only after the operator accepts the workspace trust
+dialog for that folder, which an interactive session shows and a background or `-p` session
+never does. A background worker therefore ignores every rule the repository carries, whichever
+tool they name; the E2 run of 2026-09-15 stopped for that reason and not for the compound
+command. Rules meant for a worker go on the command line as `--allowedTools`, where the board
+puts them. The second half is Windows: the worker reaches for `PowerShell` as readily as for
+`Bash`, one run each way on the same brief, so a rule that names one tool covers half the runs.
+Name both.
+
+## Who runs a card
+
+A card runs in two phases, implement and review, and each phase names its runner: a harness, a
+model and an effort. A card leaves blank what its board decides, and a board leaves blank what
+the harness decides.
+
+```text
+FIELD     THE CARD SAYS     ELSE THE BOARD SAYS   ELSE
+--------  ----------------  --------------------  ------------------------
+harness   that harness      that harness          claude
+model     that model        that model            the CLI's own default
+effort    that effort       that effort           the CLI's own default
+```
+
+The two phases are separate on purpose. A reviewer on the model that wrote the code is a worse
+judge of it than one on another model, and independence is what the review phase exists for. A
+board written before runners existed carried one model and one effort on the card; they read
+back as the implementer's, and the review phase inherits, which is what it did by omission.
+
+A harness is a driver in `src/harness/`, and the whole of what the board asks of one is five
+operations: launch a run with a brief, answer whether it is alive, stop it, hand back its final
+text, and give the operator a pty to attach. The brief, the closing block, the worktree per
+card, the lease, the stall detector and the verdict never see which driver answered. Four are
+shipped, and the harness list, each one's models and whether it is on PATH, come from the
+drivers rather than from the panel.
+
+```text
+HARNESS    BINARY     MODELS COME FROM                    RUNS AS
+---------  ---------  ----------------------------------  ---------------------------------
+claude     claude     four aliases                        claude --bg, detached, a registry
+codex      codex      ~/.codex/models_cache.json, the     codex exec --json, a child of this
+                      ones it would list                  app
+grok       grok       grok models                         grok -p, streaming json, a child
+opencode   opencode   opencode models openrouter          opencode run --format json, a child
+```
+
+**A hosted run is a child of this app.** Its stdout is the event stream and goes to
+`<userData>/kanban/hosted/<runId>.jsonl`, which is what progress and the history tab read;
+its exit is the liveness answer; the terminal tab tails that file, because there is no
+session to talk to. When this app closes, the run closes with it: the board marks it crashed
+with that reason, sends the card back to its phase, and does not count the attempt. That is
+the trade the plan accepted on 2026-09-15 rather than a second supervisor of our own.
+
+**The board lands what a worker leaves uncommitted.** A change left in the working tree is not
+on the branch, so nothing can review it and the worktree may go. When an implement run
+completes in a worktree with a dirty tree, the board commits it as one commit named after the
+card, says so in the message and in the event log, and only then hands the card to review.
+Codex needs this by construction: its sandbox refuses every write to the git metadata, `--add-dir`
+on `.git` included, so its brief tells it not to try. A worker under any harness that simply
+forgot gets the same treatment.
+
+**An artifact is for the operator; a handoff is for the next worker.** The closing block carries
+both lists. `artifacts` are the files the operator should look at, kept on the card and shown on
+the run. `handoff` are the files the next worker on this card should read, a reviewer or a retry:
+the board attaches them to the next brief beside the operator's own files, marked as left by the
+previous run, and only from the last completed implement run, because a brief that enumerates
+what five attempts left is a different problem. Both are paths relative to the run's working
+directory, and a declared file that is not there is a violation, as it always was.
+
+**The worktree is the board's whichever harness runs.** Claude Code makes its own with
+`--worktree`; for the other three the board runs `git worktree add` at the same place,
+`.claude/worktrees/<name>` on branch `worktree-<name>`, because that is the directory the
+board already ignores, inventories and prunes.
+
+### Tools other plugins offer
+
+A Claude worker can be given tools beyond its own, and the board learns of them from the one
+folder the shell reserves for offers, `<userData>/mcp/`, described in docs/plugins.md. The
+board reads every offer there at launch, merges them into one config under
+`<userData>/kanban/mcp.json`, launches with `--mcp-config` and the listed tools allowed by
+name, and ends the brief with a Tools section made of the offers' notes. It knows nothing about
+who offers what: with the folder empty the worker runs as before, and an offer whose command is
+gone from the disk is skipped. Today the one offer is crawlee's `search_corpus`, published only
+while a corpus repository holds pages. The hosted harnesses do not get offers yet.
+
+Three print-mode runs on 2026-09-15 settled the two things that were not obvious:
+
+```text
+RUN   WHAT WAS DIFFERENT                    WHAT HAPPENED                          COST
+----  ------------------------------------  -------------------------------------  --------
+1     config with a cwd, tool not allowed   the tool was listed and the call was   0.61 USD
+                                            blocked for want of permission
+2     tool allowed by name                  the call ran, and the server answered  0.32 USD
+                                            "nothing matches": the client starts
+                                            it in the session directory and
+                                            ignores cwd, so it read no .env
+3     server launched with --root           first URL returned in 7.7 s, 3 turns   0.29 USD
+```
+
+### The review loop, measured
+
+The `changes` verdict is the loop that turns a review into the next implementer's brief, and
+it was the one route no real run had taken until 2026-09-15. A card asked for a guarded
+`divide` with two tests; after the implement run the branch was edited by hand to drop the
+guard and its test while the run's own report still claimed them, and a review was asked for:
+
+```text
+RUN                          MODE      TIME   WHAT HAPPENED
+---------------------------  --------  -----  ---------------------------------------------
+implement                    auto      46 s   guard, tests, 3 passed, committed
+review (branch tampered)     plan      71 s   verdict changes: named the missing guard, the
+                                              missing test and the false "3 passed"; card
+                                              back to ready with the review as a comment
+implement, with the review   auto      85 s   redid the work on a fresh worktree, all three
+review                       plan      80 s   verdict approved, card done
+```
+
+A review is asked for by hand, not claimed by the dispatcher, and the earlier attempt to
+provoke `changes` by telling a reviewer to declare it regardless failed because the reviewer
+judged the work on its merits; a branch that is deficient in fact is the only way to reach it.
+
+### Measured facts about the hosted harnesses
+
+Every row cost a real run on 2026-09-15, against codex-cli 0.154.0, grok 1.0.30 and opencode
+1.18.30 on Windows 11. None of them is inferred.
+
+```text
+FACT                                                      CONSEQUENCE
+--------------------------------------------------------  ----------------------------------
+codex exec --json prints thread.started, item.*,           the reader keys on those four
+turn.completed with usage, turn.failed with the error
+codex -o writes the last message whole                     the closing block is read from it
+codex's workspace-write sandbox refuses .git writes even   the board commits for it
+with --add-dir on .git
+codex -s read-only reviewed and approved a diff            a codex review is a real read-only
+                                                           review
+codex reads stdin when it is not a tty                     stdin is ignored on the spawn
+a model the account cannot use fails after the launch      the error is read from the stream
+with turn.failed, not before it                            and blocks the card as needs_input
+grok -p --output-format streaming-json prints thought      the reader joins deltas and takes
+and text deltas, usage, and end with sessionId and usage   the usage from end
+grok --permission-mode takes claude's vocabulary           the card's mode passes through
+grok models lists the models, authenticated or not         the drawer offers them
+grok reviewed a diff and approved it under plan mode       a grok review works
+opencode is an npm shim through cmd.exe, and cmd.exe ends  the driver launches the .exe the
+a command at the first newline: the model saw one line     shim points at, never the shim
+of the brief
+opencode -f attaches a file the model never opened         the brief goes as the message
+opencode run without --dir searched and wrote in the       --dir is always passed
+directory this app started in, three attempts in a row
+opencode models openrouter lists 367 ids in -m form        the drawer offers them
+opencode over OpenRouter completed a card, commit and       the cycle works end to end
+closing block included, and codex approved it
+the dispatcher lease outlives a killed app for its TTL     a lease whose process is gone is
+                                                           taken at once; the 90 s TTL covers
+                                                           a holder that hangs
+```
+
+A launch that fails before any work is done, because the binary is not on PATH, the model is
+one the harness does not know, or a login lapsed, blocks the card as `needs_input` with the
+error on it. It does not count against the card's retries: nothing was tried.
 
 
 ## Liveness and the failure taxonomy
@@ -123,6 +300,12 @@ Block loop            2 cycles of block, unblock, same block kind       the boar
 The last three are the board's because they are properties of the card, not of a process, which
 is why they survive any change of execution substrate.
 
+Every diagnostic reaches the bar as `health n`. The button opens a list, one row per problem
+with where it sits above the sentence; a row that belongs to a card opens that card, and one
+about the machine (another window holds the dispatcher, a worker outlived the previous app) is
+shown on every board. The list is re-read every thirty seconds, so a problem that resolves
+itself leaves the bar without a board event.
+
 ```text
 claim TTL                  15 minutes, extended on ALIVE or UNKNOWN
 blocked                    never expires. A person is not a timeout
@@ -151,6 +334,24 @@ that completed successfully inside a short guard window: emit a diagnostic and l
 for a later tick. A 401 does not fix itself in five seconds, and a dispatcher without this guard
 burns the whole board against a bad credential.
 
+
+## The inspector
+
+A selected card opens over the board, not beside it: a card-shaped sheet as tall as the
+columns, half the panel wide, with the board still in place underneath. The key in its head
+gives it the whole panel, the choice is remembered per panel, and it closes on Escape, on
+its key, or on a click on the board around it. Without a run it is one column and the brief
+grows to the height. With a run and 720 px of width it is two columns, the form on the left
+and the stage on the right at full height: the terminal while a worker is on the card, the
+transcript once it is gone, and the board's own events on the third tab. Under that width
+the stage sits above the form.
+
+Every setting is a native `select`: harness, model and effort per phase, permission mode,
+workspace kind. A blank inherits, and the option says what it inherits, `board · claude`
+when the board sets it and `default` when the harness decides. The bar carries the board
+name, then three keys for that board (new, settings, worktrees), then dispatch and watch;
+every icon-only control opens a tip on hover or focus and carries an `aria-label`. The board
+picker lists boards and nothing else.
 
 ## Storage and IPC
 
@@ -218,7 +419,7 @@ its board is archived                     empty state naming it, never a fallbac
 
 ## Portability
 
-Claude Code takes `--model` and speaks to Bedrock, Vertex and Foundry as well as the direct API,
-so other models need no work here. Another executor entirely would need its own liveness answer;
-the three board-owned failure rows above survive that change unaltered, which is the point of
-keeping them on the card rather than on the process.
+Another harness is another driver in `src/harness/`: the five operations above, its own
+liveness answer, and its own row in the measured facts. The three board-owned failure rows
+survive that change unaltered, which is the point of keeping them on the card rather than on
+the process.

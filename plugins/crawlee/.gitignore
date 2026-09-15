@@ -12,6 +12,7 @@
 /profiles/*.yaml
 /profiles/*.yml
 /storage/
+/index/
 /docs/reference/
 
 # The follow-up this machine actually runs, which holds its own paths and its own prompt. The

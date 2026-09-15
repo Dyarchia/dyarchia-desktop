@@ -79,19 +79,18 @@ const STYLES = `
 .docviewer-content h2,
 .docviewer-content h3 {
     margin: var(--dya-space-5) 0 var(--dya-space-2);
-    font-family: var(--dya-font-mono);
-    font-weight: var(--dya-weight);
-    line-height: var(--dya-leading-tight);
-    text-transform: uppercase;
-    color: var(--dya-text-2);
+    font-family: var(--dya-font-sans);
+    line-height: var(--dya-leading-heading);
+    color: var(--dya-text);
 }
 .docviewer-content h2 {
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-label);
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight);
+    letter-spacing: var(--dya-tracking-h3);
 }
 .docviewer-content h3 {
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-data);
+    font-size: var(--dya-size-h4);
+    font-weight: var(--dya-weight-medium);
 }
 .docviewer-content p {
     margin: var(--dya-space-2) 0;

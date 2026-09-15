@@ -30,6 +30,12 @@ VERDICTS = {
 _running: subprocess.Popen[str] | None = None
 _lock = threading.Lock()
 
+OFFER_SERVER = 'dyarchia-corpus'
+OFFER_NOTE = (
+    'full-text search over the documentation this machine has snapshotted; it answers with page '
+    'URLs and the passage that matched. Use it before guessing how an API or a platform works.'
+)
+
 
 def _toolkit_root() -> Path:
     """Where the toolkit is checked out.
@@ -115,6 +121,49 @@ def _output_directory() -> Path | None:
     return Path(chosen['output']) if chosen else None
 
 
+def _offer_path() -> Path | None:
+    """Where an offer to other plugins goes, when this host runs under the shell at all."""
+    user_data = os.environ.get('DYARCHIA_USER_DATA')
+    return Path(user_data) / 'mcp' / 'crawlee.json' if user_data else None
+
+
+def _publish() -> None:
+    """Offer the corpus search to other plugins, or withdraw it.
+
+    The shell reserves <userData>/mcp/ for plugins that can serve a tool over the Model Context
+    Protocol: a file there is an offer, and a plugin that launches agents reads the folder without
+    knowing who wrote it. The offer stands only while there is something to search, so a fresh
+    install with no corpus repository publishes nothing, and a round that leaves one behind
+    publishes on its way out.
+    """
+    path = _offer_path()
+    if path is None:
+        return
+    try:
+        state = json.loads(_read(['state', '--json']))
+        pages = sum(
+            corpus.get('pages', 0)
+            for repository in state.get('repositories', [])
+            for corpus in repository.get('corpora', [])
+        )
+    except Exception:
+        pages = 0
+    if pages <= 0:
+        path.unlink(missing_ok=True)
+        return
+    root = _toolkit_root()
+    offer = {
+        'plugin': 'crawlee',
+        'server': OFFER_SERVER,
+        'command': str(_interpreter(root)),
+        'args': ['-m', 'dyarchia_crawlee', 'mcp', '--root', str(root)],
+        'env': {'PYTHONIOENCODING': 'utf-8', 'PYTHONUNBUFFERED': '1'},
+        'tools': [{'name': 'search_corpus', 'note': OFFER_NOTE}],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(offer, indent=4) + '\n', encoding='utf-8')
+
+
 def activate(ctx: Any) -> None:
     def state() -> Any:
         return json.loads(_read(['state', '--json']))
@@ -127,6 +176,15 @@ def activate(ctx: Any) -> None:
 
     def save(name: str, text: str) -> str:
         return _read(['profile', 'save', name], stdin=text).strip()
+
+    def search(payload: dict[str, Any]) -> Any:
+        """Ask the index. The CLI refreshes it first when a manifest moved since it was built."""
+        args = ['search', str(payload['query']), '--json', '--limit', str(int(payload.get('limit') or 20))]
+        if payload.get('repository'):
+            args += ['--repository', str(payload['repository'])]
+        if payload.get('target'):
+            args += ['--target', str(payload['target'])]
+        return json.loads(_read(args))
 
     def start(kind: str, payload: dict[str, Any]) -> str:
         """Begin a round or a probe. The panel hears the rest on `line` and `done`."""
@@ -166,8 +224,10 @@ def activate(ctx: Any) -> None:
     ctx.handle('profiles', profiles)
     ctx.handle('show', show)
     ctx.handle('save', save)
+    ctx.handle('search', search)
     ctx.handle('start', start)
     ctx.handle('stop', stop)
+    threading.Thread(target=_publish, daemon=True).start()
 
 
 def _follow(ctx: Any, kind: str, process: subprocess.Popen[str]) -> None:
@@ -184,6 +244,8 @@ def _follow(ctx: Any, kind: str, process: subprocess.Popen[str]) -> None:
     digest = None
     if kind == 'run' and code == 10:
         digest = _write_digest(ctx)
+    if kind == 'run':
+        _publish()
 
     ctx.broadcast(
         'done',

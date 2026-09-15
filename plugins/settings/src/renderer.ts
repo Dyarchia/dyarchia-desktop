@@ -103,6 +103,14 @@ const STYLES = `
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }
+.set-need > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.set-needs > .dya-button {
+    align-self: flex-start;
+    margin-top: var(--dya-space-1);
+}
 .set-foot {
     display: flex;
     align-items: center;
@@ -246,7 +254,7 @@ export function activate(ctx: PluginContext): void {
             for (const entry of entries) {
                 const item = el('div', 'dya-card set-item')
 
-                const tick = el('input', 'set-tick') as HTMLInputElement
+                const tick = el('input', 'dya-checkbox set-tick') as HTMLInputElement
                 tick.type = 'checkbox'
                 tick.checked = wanted.has(entry.manifest.id)
 

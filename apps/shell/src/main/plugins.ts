@@ -22,6 +22,7 @@ export interface PluginManifest {
     main?: string
     python?: string
     channels?: string[]
+    boot?: boolean
     schemes?: string[]
     description?: string
     optional?: boolean
@@ -259,6 +260,15 @@ async function activatePythonModules(): Promise<void> {
                 invokePythonPlugin(manifest.id, channel, args)
             )
         }
+
+        /*
+         * A host with channels starts on its first invoke, which is fine for a panel and
+         * wrong for a plugin whose activate() has to do something before anyone asks, such
+         * as offering a tool to other plugins: nobody opens its panel, nothing is offered.
+         * boot asks for the interpreter at startup; the channels are still declared, so a
+         * crash still restarts it lazily.
+         */
+        if (manifest.channels && manifest.boot) void startPythonPlugin(manifest.id, dir)
     }
 }
 

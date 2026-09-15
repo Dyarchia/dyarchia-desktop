@@ -6,6 +6,7 @@ import { TopBar } from './components/TopBar'
 import { basePanelId, getRegisteredPanels, onRegistryChange } from './panels/registry'
 import { loadPlugins } from './plugins/host'
 import { applyTheme, readTheme } from './theme'
+import { installShortcuts } from './shortcuts'
 
 export function App(): React.JSX.Element {
     const [api, setApi] = useState<DockviewApi | null>(null)
@@ -62,6 +63,24 @@ export function App(): React.JSX.Element {
         [api]
     )
 
+    const handleOpen = useCallback(
+        (id: string) => {
+            if (!api) return
+            const instance = api.panels.find((panel) => basePanelId(panel.id) === id)
+            if (instance) {
+                instance.api.setActive()
+                return
+            }
+            handleToggle(id)
+        },
+        [api, handleToggle]
+    )
+
+    useEffect(() => {
+        if (!api) return
+        return installShortcuts(api, { openPanel: handleOpen })
+    }, [api, handleOpen])
+
     const handleTheme = useCallback((id: string) => {
         applyTheme(id)
         setTheme(id)
@@ -81,7 +100,7 @@ export function App(): React.JSX.Element {
                     <DockLayout onReady={handleReady} />
                 ) : (
                     <div className="dya-loading shell-loading">
-                        <span className="dya-brand">dyarchia</span>
+                        <span className="dya-carved">dyarchia</span>
                         <span>Loading plugins…</span>
                     </div>
                 )}

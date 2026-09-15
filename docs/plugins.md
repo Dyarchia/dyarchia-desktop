@@ -303,7 +303,7 @@ being a panel rather than the system:
   `token('surface-1')` for exactly that.
 - **`--dya-field` is a surface, not an ink.** Never set `color: var(--dya-field)`.
 - **A label never sits on `--dya-selected` in Gi**, where `--dya-text-4` measures 4.45.
-  Use `--dya-text-3` there. Paper has no such surface.
+  Use `--dya-text-3` there. Slate has no such surface.
 
 The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
 declares it under its own prefix and says so in its README, or proposes it upstream — the

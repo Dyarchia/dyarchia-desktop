@@ -90,12 +90,32 @@ export async function patch(
     }
 }
 
+export interface Given {
+    name: string
+    path: string
+    from?: 'operator' | 'worker'
+}
+
+function listGiven(lines: string[], attachments: Given[], whose: string): void {
+    if (!attachments.length) return
+    lines.push('## Attachments', '')
+    lines.push(`These files were given to ${whose}. Read them where they are:`, '')
+    for (const file of attachments) {
+        lines.push(
+            file.from === 'worker'
+                ? `- \`${file.path}\` (left for you by the previous run on this card)`
+                : `- \`${file.path}\``
+        )
+    }
+    lines.push('')
+}
+
 export function brief(
     card: Card,
     parents: Card[],
     workspace: string,
     isolated: boolean,
-    attachments: { name: string; path: string }[] = [],
+    attachments: Given[] = [],
     commits: boolean = true
 ): string {
     const lines: string[] = []
@@ -117,12 +137,7 @@ export function brief(
         )
     }
 
-    if (attachments.length) {
-        lines.push('## Attachments', '')
-        lines.push('These files were given to this card. Read them where they are:', '')
-        for (const file of attachments) lines.push(`- \`${file.path}\``)
-        lines.push('')
-    }
+    listGiven(lines, attachments, 'this card')
 
     if (card.comments.length) {
         lines.push('## Thread', '')
@@ -181,8 +196,14 @@ export function brief(
         '  "blockKind": "needs_input" | "capability" | "transient" | "dependency" | null,',
         '  "summary": "what changed, what is verified, what is left",',
         '  "artifacts": ["relative/path"],',
+        '  "handoff": ["relative/path"],',
         '  "followups": [ { "title": "...", "body": "..." } ] }',
         '```',
+        '',
+        '`artifacts` is output for the operator: the files they should look at. `handoff` is input',
+        'for the next worker on this card, the notes or files a reviewer or a retry should read;',
+        'the board attaches them to the next brief, and only yours, not those of earlier attempts.',
+        'Both are paths relative to your working directory. Leave either empty rather than guess.',
         '',
         'Use `blocked` when a person has to decide something, when the job needs a capability you',
         'do not have, or when it depends on work that is not done. `followups` is how you file',
@@ -206,7 +227,7 @@ export function reviewBrief(
     card: Card,
     reviewed: Run,
     workspace: string,
-    attachments: { name: string; path: string }[] = [],
+    attachments: Given[] = [],
     change: Patch | null = null,
     patchPath: string | null = null,
     restraint: string[] = CLAUDE_RESTRAINT
@@ -235,12 +256,7 @@ export function reviewBrief(
     lines.push('## What the card asked for', '')
     lines.push(card.body.trim() || 'The card carried no description beyond its title.', '')
 
-    if (attachments.length) {
-        lines.push('## Attachments', '')
-        lines.push('These files were given to the card. Read them where they are:', '')
-        for (const file of attachments) lines.push(`- \`${file.path}\``)
-        lines.push('')
-    }
+    listGiven(lines, attachments, 'the card')
 
     if (card.comments.length) {
         lines.push('## Thread', '')
@@ -332,7 +348,7 @@ export async function start(
     parents: Card[],
     runId: string,
     workspace: string,
-    attachments: { name: string; path: string }[] = [],
+    attachments: Given[] = [],
     reviewing: Run | null = null,
     chosen: Resolved = { harness: harness.DEFAULT_HARNESS, model: null, effort: null }
 ): Promise<Started> {

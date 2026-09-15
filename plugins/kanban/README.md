@@ -136,6 +136,14 @@ Codex needs this by construction: its sandbox refuses every write to the git met
 on `.git` included, so its brief tells it not to try. A worker under any harness that simply
 forgot gets the same treatment.
 
+**An artifact is for the operator; a handoff is for the next worker.** The closing block carries
+both lists. `artifacts` are the files the operator should look at, kept on the card and shown on
+the run. `handoff` are the files the next worker on this card should read, a reviewer or a retry:
+the board attaches them to the next brief beside the operator's own files, marked as left by the
+previous run, and only from the last completed implement run, because a brief that enumerates
+what five attempts left is a different problem. Both are paths relative to the run's working
+directory, and a declared file that is not there is a violation, as it always was.
+
 **The worktree is the board's whichever harness runs.** Claude Code makes its own with
 `--worktree`; for the other three the board runs `git worktree add` at the same place,
 `.claude/worktrees/<name>` on branch `worktree-<name>`, because that is the directory the

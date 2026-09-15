@@ -83,6 +83,37 @@ git commit   PowerShell          Bash(git commit:*)
 Name the tool the worker actually uses.
 
 
+## Who runs a card
+
+A card runs in two phases, implement and review, and each phase names its runner: a harness, a
+model and an effort. A card leaves blank what its board decides, and a board leaves blank what
+the harness decides.
+
+```text
+FIELD     THE CARD SAYS     ELSE THE BOARD SAYS   ELSE
+--------  ----------------  --------------------  ------------------------
+harness   that harness      that harness          claude
+model     that model        that model            the CLI's own default
+effort    that effort       that effort           the CLI's own default
+```
+
+The two phases are separate on purpose. A reviewer on the model that wrote the code is a worse
+judge of it than one on another model, and independence is what the review phase exists for. A
+board written before runners existed carried one model and one effort on the card; they read
+back as the implementer's, and the review phase inherits, which is what it did by omission.
+
+A harness is a driver in `src/harness/`, and the whole of what the board asks of one is five
+operations: launch a run with a brief, answer whether it is alive, stop it, hand back its final
+text, and give the operator a pty to attach. The brief, the closing block, the worktree per
+card, the lease, the stall detector and the verdict never see which driver answered. `claude`
+is the one driver shipped; the harness list, and each one's models and efforts that the drawer
+offers, come from the drivers rather than from the panel.
+
+A launch that fails before any work is done, because the binary is not on PATH, the model is
+one the harness does not know, or a login lapsed, blocks the card as `needs_input` with the
+error on it. It does not count against the card's retries: nothing was tried.
+
+
 ## Liveness and the failure taxonomy
 
 **Liveness has three values, and collapsing `UNKNOWN` into either neighbour is a production bug
@@ -218,7 +249,7 @@ its board is archived                     empty state naming it, never a fallbac
 
 ## Portability
 
-Claude Code takes `--model` and speaks to Bedrock, Vertex and Foundry as well as the direct API,
-so other models need no work here. Another executor entirely would need its own liveness answer;
-the three board-owned failure rows above survive that change unaltered, which is the point of
-keeping them on the card rather than on the process.
+Another harness is another driver in `src/harness/`: the five operations above, its own
+liveness answer, and its own row in the measured facts. The three board-owned failure rows
+survive that change unaltered, which is the point of keeping them on the card rather than on
+the process.

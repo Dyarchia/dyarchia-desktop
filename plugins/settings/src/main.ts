@@ -29,6 +29,7 @@ interface Requirement {
     project?: string
     note?: string
     postInstall?: string[][]
+    verify?: string[]
 }
 
 interface Status {
@@ -128,6 +129,8 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
         const uv = await uvBinary()
         const python = venvPython(pluginId)
         const built = await exists(python)
+        const verdict = built && requirement.verify ? await verify(pluginId, requirement.verify) : null
+        const done = verdict === null ? built : verdict.ok
 
         const parts: Status[] = [
             {
@@ -138,7 +141,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
             },
             {
                 label: requirement.label,
-                met: built,
+                met: done,
                 acquirable: true,
                 detail: built ? python : `to be built in ${python}`
             }
@@ -147,11 +150,23 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
         for (const step of requirement.postInstall ?? []) {
             parts.push({
                 label: `uv ${step.join(' ')}`,
-                met: built,
+                met: done,
                 acquirable: true,
                 detail: built
                     ? 'ran with the environment'
                     : 'runs after the packages, and skips whatever is already on this machine'
+            })
+        }
+
+        if (requirement.verify) {
+            const command = requirement.verify.join(' ')
+            parts.push({
+                label: 'verified',
+                met: done,
+                acquirable: true,
+                detail: verdict
+                    ? `${command} exited ${verdict.code}`
+                    : `${command} runs once the environment is built`
             })
         }
         return parts
@@ -168,6 +183,45 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
 }
 
 type Say = (line: string) => void
+
+interface Verdict {
+    ok: boolean
+    code: number
+}
+
+/*
+ * The plugin's own answer to whether its environment works, run inside that environment. An
+ * environment can exist and still be broken: packages landed and the browser did not, or a step
+ * was interrupted between the two. A directory check cannot tell, so a plugin that knows what
+ * "working" means declares the command that proves it, and Setup reports the exit code and
+ * nothing more. The environment's own scripts directory goes first on PATH, so `python` and any
+ * console script the packages installed are the environment's.
+ */
+async function verify(pluginId: string, command: string[]): Promise<Verdict> {
+    const environment = join(environmentDirectory(pluginId), '.venv')
+    const scripts = join(environment, process.platform === 'win32' ? 'Scripts' : 'bin')
+    const env = {
+        ...process.env,
+        VIRTUAL_ENV: environment,
+        PATH: [scripts, process.env['PATH'] ?? ''].join(delimiter)
+    }
+    return new Promise<Verdict>((resolve) => {
+        const [file, ...args] = command
+        const child = spawn(file, args, { env, windowsHide: true, stdio: 'ignore' })
+        const timer = setTimeout(() => {
+            child.kill()
+            resolve({ ok: false, code: -1 })
+        }, 60_000)
+        child.on('error', () => {
+            clearTimeout(timer)
+            resolve({ ok: false, code: -1 })
+        })
+        child.on('close', (code) => {
+            clearTimeout(timer)
+            resolve({ ok: code === 0, code: code ?? -1 })
+        })
+    })
+}
 
 async function run(say: Say, command: string, args: string[], env: NodeJS.ProcessEnv): Promise<void> {
     say(`$ ${command} ${args.join(' ')}`)
@@ -226,7 +280,7 @@ async function ensureUv(say: Say): Promise<string> {
     await writeFile(archive, Buffer.from(await response.arrayBuffer()))
 
     say('extracting')
-    await run(say, 'tar', ['-xf', archive, '-C', tools], {})
+    await run(say, archiver(), ['-xf', archive, '-C', tools], {})
     await rm(archive, { force: true })
 
     const binary = await findUv(tools)
@@ -235,6 +289,17 @@ async function ensureUv(say: Say): Promise<string> {
 
     say(`uv: ${binary}`)
     return binary
+}
+
+/*
+ * The archiver is named by its absolute path on Windows. The application inherits the PATH of
+ * whatever launched it, and a launch from Git Bash or MSYS puts a GNU tar first, which reads
+ * `C:\...` as a remote host and fails with "Cannot connect to C: resolve failed". The bsdtar in
+ * System32 is the one that reads a zip, and it is there on every supported Windows.
+ */
+function archiver(): string {
+    if (process.platform !== 'win32') return 'tar'
+    return join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'tar.exe')
 }
 
 async function findUv(root: string): Promise<string | null> {
@@ -301,6 +366,15 @@ async function acquirePython(
         await run(say, uv, ['run', '--project', project, '--no-sync', ...step], {
             UV_PROJECT_ENVIRONMENT: environment
         })
+    }
+
+    if (requirement.verify) {
+        say(`verifying: ${requirement.verify.join(' ')}`)
+        const verdict = await verify(pluginId, requirement.verify)
+        if (!verdict.ok) {
+            throw new Error(`the environment was built but its own check exited ${verdict.code}`)
+        }
+        say('verified')
     }
 }
 

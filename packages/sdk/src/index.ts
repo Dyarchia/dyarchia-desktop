@@ -25,6 +25,8 @@ export interface PluginRequirement {
     hint?: string
     note?: string
     project?: string
+    postInstall?: string[][]
+    verify?: string[]
 }
 
 export interface PluginCatalogueEntry {

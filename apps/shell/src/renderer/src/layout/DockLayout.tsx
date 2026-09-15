@@ -77,6 +77,15 @@ function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {
     )
 }
 
+function DockWatermark(): React.JSX.Element {
+    return (
+        <div className="dya-empty dock-empty">
+            <span className="dya-carved">dyarchia</span>
+            <span>Open a panel from the title bar.</span>
+        </div>
+    )
+}
+
 interface DockLayoutProps {
     onReady: (api: DockviewApi) => void
 }
@@ -117,6 +126,7 @@ export function DockLayout({ onReady }: DockLayoutProps): React.JSX.Element {
             theme={dyarchiaTheme}
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
+            watermarkComponent={DockWatermark}
             rightHeaderActionsComponent={GroupActions}
             onReady={handleReady}
         />

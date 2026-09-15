@@ -357,7 +357,7 @@ Four distinctions in that list are easy to collapse and are not the same thing:
   read a filename is unusable at panel width. `log` sets no height and no flex.
 - **`badge` is a chip, `text--*` is a sentence.** Same three tokens; a reported outcome in
   prose must not be dressed as a label.
-- **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 46px,
+- **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 38px,
   the gradient and the hairline; the rhythm is what the modifier keeps.
 - **`field` is full-width by default.** `--auto` opts out; a minimum width is the
   consumer's layout.

@@ -30,7 +30,7 @@ consumer toggling `element.hidden` is guaranteed an effect. Hidden but laid out 
 
 ## Two themes over one contract
 
-`Gi` is the default and lives on `:root`. `Paper` is a single `[data-theme="paper"]`
+`Gi` is the default and lives on `:root`. `Slate` is a single `[data-theme="slate"]`
 block that redefines **colour tokens only** — not a radius, not a spacing step, not a
 duration, not a font size. A product switches by setting the attribute on the root element
 and nothing else.
@@ -39,20 +39,21 @@ and nothing else.
 theme    selector                 ground              the accent that carries the weight
 ------   ----------------------   -----------------   ----------------------------------
 Gi       :root                    warm near-black     an orange ink, used sparingly
-Paper    [data-theme="paper"]     cool light grey     a blue ink, dark enough to be text
+Slate    [data-theme="slate"]     mid blue-grey       five deep inks, blue first
 ```
 
 Components never learn that themes exist. `components.css` names no colour, so a theme is
 a change of values and can never be a change of rules. **A theme that needs a new rule is
 not a theme; it is a second system, and it is refused.**
 
-One is dark and one is light, and the CSS never consults `prefers-color-scheme`. The
+One is dark and one is mid-tone with dark inks, and the CSS never consults
+`prefers-color-scheme`. The
 browser learns which is mounted through `--dya-scheme`, which `reset.css` hands to
 `color-scheme` on the root: a native scrollbar, a form control the system has not replaced
 and the `canvas` colour keyword all follow the theme instead of the operating system.
 
-Gi is warm, every grey carrying a unit or two more red than blue; Paper is cool, a unit or
-two more blue than red, so the two never read as one ramp inverted. The status and syntax
+Gi is warm, every grey carrying a unit or two more red than blue; Slate is cool, a blue-grey
+at mid luminance, so the two never read as one ramp inverted. The status and syntax
 hues are the one place a theme redefines a value that Gi declares functional, because a
 light ground turns a legible pastel into a fail.
 
@@ -115,62 +116,61 @@ panel edge on the chassis; `--dya-hairline` separates rows inside one surface an
 the outline of a container.
 
 
-## Paper
+## Slate
 
-Cool neutral ground, dimmer than a white page. The ramp is not monotonic: relief goes towards
-white, recess goes towards the canvas, so the raised steps are the lightest values and the
-sunken and selected steps are darker than the surface they sit in. The ground sits at 0.70
-luminance rather than at 0.77, because a light theme that glares is a light theme nobody
-keeps; every ink is a neutral near-black, and the accent is a blue dark enough to be text on
-the ground.
+A mid-tone ground, blue-grey at 0.40 luminance, for eyes that a white page hurts and a
+near-black one does not suit either: no white anywhere in the ramp, no ink lighter than the
+ground, and the relief still goes towards light and the recess towards dark, so a button
+stands and a field sinks the same way they do in Gi. Every ink is a deep hue on that ground,
+five of them functional, so the theme reads as ink on tinted paper rather than as a dimmed
+white one.
 
 ```text
 token                  value     relative luminance
 --------------------   -------   ------------------
---dya-bg               #d9d9de              0.69651
---dya-sunken           #cfcfd5              0.62695
---dya-chassis          #e4e4e8              0.77807
---dya-surface-1        #ececef              0.84056
---dya-surface-2        #f2f2f4              0.88913
---dya-flat-hover       #e6e6ea              0.79357
---dya-raised           #f8f8fa              0.93993
---dya-overlay          #fbfbfc              0.96532
---dya-raised-hover     #eeeef1              0.85677
---dya-selected         #d3d3da              0.65499
+--dya-bg               #a4aab7              0.40061
+--dya-sunken           #979ead              0.34050
+--dya-chassis          #aeb3be              0.44957
+--dya-surface-1        #b7bcc6              0.50111
+--dya-surface-2        #bec2cb              0.53843
+--dya-flat-hover       #b4b8c3              0.47924
+--dya-raised           #c5c9d1              0.58247
+--dya-overlay          #cacdd4              0.60973
+--dya-raised-hover     #c0c4cd              0.55094
+--dya-selected         #9ea4b3              0.37075
 ```
 
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
 -------------   -------   ----   ------   ------   -------   ------------   --------
---dya-text      #1d1d1f  11.97    14.27    15.87     16.27          14.53      11.30
---dya-text-2    #2c2c2e   9.91    11.82    13.14     13.48          12.04       9.36
---dya-text-3    #3a3a3c   8.07     9.63    10.70     10.97           9.80       7.62
---dya-text-4    #4a4a4f   6.26     7.47     8.31      8.52           7.61       5.92
---dya-accent    #0a56b3   4.99     5.95     6.61      6.78           6.06       4.71
---dya-accent-2  #4b3fb0   5.66     6.75     7.51      7.70           6.88       5.35
---dya-accent-3  #0d5f45   5.45     6.50     7.23      7.41           6.62       5.15
+--dya-text      #171920   7.53     9.21    10.57     11.03          10.05       7.03
+--dya-text-2    #1f222a   6.82     8.35     9.58      9.99           9.10       6.37
+--dya-text-3    #272b34   6.08     7.44     8.54      8.91           8.11       5.68
+--dya-text-4    #30343d   5.35     6.54     7.51      7.83           7.14       5.00
+--dya-accent    #092d74   5.50     6.72     7.72      8.05           7.33       5.13
+--dya-accent-2  #471d65   5.52     6.76     7.75      8.09           7.37       5.16
+--dya-accent-3  #0a3b23   5.42     6.63     7.61      7.94           7.23       5.06
 ```
 
-Every text level is text on every surface; the lowest reading in the theme is `--dya-text-4`
-on `--dya-sunken` at 5.68. The three accents are text everywhere, `--dya-accent` on
-`--dya-sunken` at 4.52 being the closest to the floor. The status inks hold as text on every
-surface: `--dya-success` #186034 at 4.90 on the sunken step, `--dya-warning` #7a4a00 at
-4.82, `--dya-danger` #a8001c at 5.05, and `--dya-code-comment` #58585f at 4.55.
-`--dya-on-accent`, `--dya-on-field` and `--dya-on-status` are `#ffffff` and measure 7.01 on
-the accent, 7.60 on success, 7.48 on warning and 7.83 on danger.
+Every ink is text on every surface, the accents included; the lowest reading in the theme is
+`--dya-warning` on `--dya-sunken` at 4.53, then `--dya-text-4` there at 4.64. The status
+inks on the sunken step: `--dya-success` #0a3b1f 4.71, `--dya-warning` #542b02 4.53,
+`--dya-danger` #6a0911 4.70; `--dya-code-comment` #31353c 4.58. `--dya-on-accent`,
+`--dya-on-field` and `--dya-on-status` are `#f4f6fa`, the one near-white in the theme and
+never a ground, and measure 11.84 on the accent, 11.70 on success, 11.26 on warning and
+11.69 on danger. `--dya-on-idle` measures 5.91 on `--dya-idle`.
 
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #c4c4cb         1.37           1.47
---dya-border-strong    #a9a9b2         1.84           1.98
---dya-hairline         #d0d0d6         1.21           1.30
+--dya-border           #8f95a3         1.43           1.58
+--dya-border-strong    #808797         1.71           1.89
+--dya-hairline         #9da2ae         1.22           1.34
 ```
 
-The elevation tokens are redefined in Paper because a black contour ring over a light ground
-reads as a hard outline: the ring becomes `#1d1d1f` at 15%, the inset light becomes opaque
-white, and the drop shadows fall to a third of their Gi alpha. Same shape, same offsets,
-same blur.
+The elevation tokens are redefined in Slate because the ground is neither light nor dark: the
+contour ring is the ink `#171920` at 20%, the inset light is white at 35%, never opaque, and
+the drop shadows sit between Gi's and a light theme's. Same shape, same offsets, same blur.
 
 
 ## Colour rules
@@ -184,35 +184,34 @@ same blur.
   the job, legibility, is done on that theme's ground.
 
 ```text
-token           Gi        fill   Paper     fill   role
+token           Gi        fill   Slate     fill   role
 -------------   -------   ----   -------   ----   ------------------------
---dya-success   #63cf95   9.30   #186034   7.60   a positive outcome
---dya-warning   #d6a95c   8.27   #7a4a00   7.48   caution, not failure
---dya-danger    #f59790   8.29   #a8001c   7.83   error, destruction
---dya-idle      per theme  7.73  per theme  8.99  no outcome yet
+--dya-success   #63cf95   9.30   #0a3b1f  11.70   a positive outcome
+--dya-warning   #d6a95c   8.27   #542b02  11.26   caution, not failure
+--dya-danger    #f59790   8.29   #6a0911  11.69   error, destruction
+--dya-idle      per theme  7.73  per theme  5.91  no outcome yet
 ```
 
 `fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue
 has a `-soft` companion at 10% for the ground of a row or a quiet badge. As text rather than
 fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi, on `--dya-selected`, and
-4.90 / 4.82 / 5.05 at worst in Paper, on `--dya-sunken`, so `.dya-text--success` and
+4.71 / 4.53 / 4.70 at worst in Slate, on `--dya-sunken`, so `.dya-text--success` and
 `--danger` carry no reservation on any surface in either theme.
 
 ```text
-token                 Gi        s-2    s-1    Paper     s-2    s-1
+token                 Gi        s-2    s-1    Slate     s-2    s-1
 -------------------   -------   ----   ----   -------   ----   ----
---dya-code-keyword    #cf8fb4   6.69   7.03   #8a2f6a   6.97   6.61
---dya-code-string     #8fb87a   7.56   7.94   #2f6a1f   5.87   5.56
---dya-code-number     #d6a95c   7.87   8.27   #7a4a00   6.69   6.35
---dya-code-function   #7fb0dd   7.44   7.82   #0a56b3   6.27   5.95
---dya-code-punct      #bdbab2   8.79   9.24   #3a3a3c  10.15   9.63
---dya-code-comment    #85857f   4.59   4.83   #58585f   6.31   5.98
+--dya-code-keyword    #cf8fb4   6.69   7.03   #5c1745   7.07   6.63
+--dya-code-string     #8fb87a   7.56   7.94   #0f3b0f   7.12   6.67
+--dya-code-number     #d6a95c   7.87   8.27   #542b02   6.83   6.40
+--dya-code-function   #7fb0dd   7.44   7.82   #092d74   7.18   6.72
+--dya-code-punct      #bdbab2   8.79   9.24   #272b34   7.94   7.44
+--dya-code-comment    #85857f   4.59   4.83   #31353c   6.90   6.46
 ```
 
 `--dya-code-comment` is the lowest ink in the system that is still text, deliberately the
 most recessive of the six and, in Gi, just above the 4.50 floor on the two surfaces a code
-block sits on; Paper's ground is dim enough that the same role holds at 4.55 on the sunken
-step. Keyword and string converge under deuteranopia; a code block accepts that, because
+block sits on; in Slate the same role holds at 4.58 on the sunken step. Keyword and string converge under deuteranopia; a code block accepts that, because
 the reader still has indentation, quotes and delimiters.
 
 `--dya-faint`, the glass tokens and the carve tokens are alphas of the theme's own ink and
@@ -236,11 +235,11 @@ ground. `--dya-elev-focus` follows the accent in each theme.
 - **Hover changes the background, never the shadow.** There is no raised-hover elevation;
   `--dya-raised` moves to `--dya-raised-hover`.
 - **The contour ring is the theme's ink, not its opposite.** Black in Gi, near-black at 15%
-  in Paper. A white ring over a near-black ground reads as a grey outline instead of as
+  in Slate. A white ring over a near-black ground reads as a grey outline instead of as
   depth. No shadow uses positive spread.
 - **Carving is relief for a word.** `--dya-carve` is a two-edged text shadow, one edge lit
   and one in shade, and the theme decides which side the light comes from: from below in
-  Gi, from above in Paper. `--dya-carve-filter` is the same pair as `drop-shadow`, for a
+  Gi, from above in Slate. `--dya-carve-filter` is the same pair as `drop-shadow`, for a
   word whose fill is a gradient of `--dya-carve-a` to `--dya-carve-b` rather than a flat
   ink. Static, and therefore free.
 
@@ -291,7 +290,7 @@ content: sans, and it keeps its case.
 
 `.dya-math` is the exception inside the exception: notation is data, so it is mono at
 `0.94em` of its surroundings carrying `--dya-text-2` — 11.06 and 11.63 on Gi's two
-surfaces, 11.82 and 12.47 on Paper's. The em-relative size is deliberate: an expression
+surfaces, 8.35 and 8.91 on Slate's. The em-relative size is deliberate: an expression
 inside a heading has to scale with it, and no fixed step can. `.dya-math--block` is the
 display form.
 
@@ -388,7 +387,7 @@ There is nothing to build, lint or test. What replaces those commands:
   With the app running in dev, `node scripts/screenshot.mjs out.png` at the workspace root
   captures the window over the Chrome DevTools Protocol, and an optional second argument is
   an expression evaluated in the page first — `document.documentElement.dataset.theme =
-  'paper'` switches the theme, a `.click()` opens a panel. One capture per theme per
+  'slate'` switches the theme, a `.click()` opens a panel. One capture per theme per
   change, and the pair is what a commit body describes.
 - **The invariant.** `components.css` must resolve to zero literal colours. Verify against
   the CSSOM, not by reading the file.
@@ -396,9 +395,9 @@ There is nothing to build, lint or test. What replaces those commands:
 
 ## Open questions
 
-- Paper has been seen against the shell and the panels at two window widths, 1000 and
-  1900. Its interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, are the ones
-  most likely to move once a long session is spent in it.
+- Slate has been seen against the kanban panel at 1400 px and nowhere else yet. Its
+  interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, and the 35% inset light
+  on relief are the values most likely to move once a long session is spent in it.
 - The prose block went with its last consumer, and the SDK's markdown renderer still emits
   `code`, `math` and `prose__scroll`. Whatever renders markdown next needs typography for
   the elements between them. docviewer answers that today with its own prefixed rules,

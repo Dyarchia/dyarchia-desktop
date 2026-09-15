@@ -176,105 +176,105 @@
     --dya-dur-slow: 320ms;
 }
 
-[data-theme="paper"] {
+[data-theme="slate"] {
     --dya-scheme: light;
 
-    --dya-bg: #d9d9de;
-    --dya-sunken: #cfcfd5;
-    --dya-chassis: #e4e4e8;
-    --dya-surface-1: #ececef;
-    --dya-surface-2: #f2f2f4;
-    --dya-flat-hover: #e6e6ea;
-    --dya-raised: #f8f8fa;
-    --dya-overlay: #fbfbfc;
-    --dya-raised-hover: #eeeef1;
-    --dya-selected: #d3d3da;
+    --dya-bg: #a4aab7;
+    --dya-sunken: #979ead;
+    --dya-chassis: #aeb3be;
+    --dya-surface-1: #b7bcc6;
+    --dya-surface-2: #bec2cb;
+    --dya-flat-hover: #b4b8c3;
+    --dya-raised: #c5c9d1;
+    --dya-overlay: #cacdd4;
+    --dya-raised-hover: #c0c4cd;
+    --dya-selected: #9ea4b3;
 
-    --dya-grad-bar: linear-gradient(#f4f4f6, #e9e9ec);
-    --dya-grad-dock: linear-gradient(#ececef, #f6f6f8);
-    --dya-grad-header: linear-gradient(#f4f4f6, #e9e9ec);
+    --dya-grad-bar: linear-gradient(#c5c9d1, #aeb3be);
+    --dya-grad-dock: linear-gradient(#aeb3be, #c5c9d1);
+    --dya-grad-header: linear-gradient(#c5c9d1, #b7bcc6);
 
-    --dya-text: #1d1d1f;
-    --dya-text-2: #2c2c2e;
-    --dya-text-3: #3a3a3c;
-    --dya-text-4: #4a4a4f;
+    --dya-text: #171920;
+    --dya-text-2: #1f222a;
+    --dya-text-3: #272b34;
+    --dya-text-4: #30343d;
 
-    --dya-border: #c4c4cb;
-    --dya-border-strong: #a9a9b2;
-    --dya-hairline: #d0d0d6;
-    --dya-rule: #dcdce1;
-    --dya-dashed: #c4c4cb;
-    --dya-faint: #1d1d1f33;
+    --dya-border: #8f95a3;
+    --dya-border-strong: #808797;
+    --dya-hairline: #9da2ae;
+    --dya-rule: #adb1bc;
+    --dya-dashed: #8f95a3;
+    --dya-faint: #17192040;
 
-    --dya-accent: #0a56b3;
-    --dya-accent-soft: #0a56b31f;
-    --dya-accent-faint: #0a56b30f;
-    --dya-on-accent: #ffffff;
-    --dya-accent-2: #4b3fb0;
-    --dya-accent-2-soft: #4b3fb01f;
-    --dya-accent-3: #0d5f45;
-    --dya-accent-3-soft: #0d5f451f;
+    --dya-accent: #092d74;
+    --dya-accent-soft: #092d7426;
+    --dya-accent-faint: #092d7414;
+    --dya-on-accent: #f4f6fa;
+    --dya-accent-2: #471d65;
+    --dya-accent-2-soft: #471d6526;
+    --dya-accent-3: #0a3b23;
+    --dya-accent-3-soft: #0a3b2326;
 
-    --dya-field: #0a56b3;
-    --dya-on-field: #ffffff;
+    --dya-field: #092d74;
+    --dya-on-field: #f4f6fa;
 
-    --dya-tag-bg: #1d1d1f12;
-    --dya-tag-border: #1d1d1f2b;
+    --dya-tag-bg: #1719201a;
+    --dya-tag-border: #17192040;
 
-    --dya-success: #186034;
-    --dya-success-soft: #1860341a;
-    --dya-warning: #7a4a00;
-    --dya-warning-soft: #7a4a001a;
-    --dya-danger: #a8001c;
-    --dya-danger-soft: #a8001c1a;
-    --dya-on-status: #ffffff;
-    --dya-idle: #cfcfd5;
-    --dya-on-idle: #2c2c2e;
+    --dya-success: #0a3b1f;
+    --dya-success-soft: #0a3b1f26;
+    --dya-warning: #542b02;
+    --dya-warning-soft: #542b0226;
+    --dya-danger: #6a0911;
+    --dya-danger-soft: #6a091126;
+    --dya-on-status: #f4f6fa;
+    --dya-idle: #979ead;
+    --dya-on-idle: #1f222a;
 
-    --dya-code-keyword: #8a2f6a;
-    --dya-code-string: #2f6a1f;
-    --dya-code-number: #7a4a00;
-    --dya-code-comment: #58585f;
-    --dya-code-function: #0a56b3;
-    --dya-code-punct: #3a3a3c;
+    --dya-code-keyword: #5c1745;
+    --dya-code-string: #0f3b0f;
+    --dya-code-number: #542b02;
+    --dya-code-comment: #31353c;
+    --dya-code-function: #092d74;
+    --dya-code-punct: #272b34;
 
     --dya-carve:
-        0 1px 0 #ffffffd9,
-        0 -1px 1px #1d1d1f47;
+        0 1px 0 #ffffff66,
+        0 -1px 1px #17192066;
     --dya-carve-filter:
-        drop-shadow(0 1px 0 #ffffffd9)
-        drop-shadow(0 -1px 1px #1d1d1f47);
-    --dya-carve-a: #3a3a3c;
-    --dya-carve-b: #6b6b72;
+        drop-shadow(0 1px 0 #ffffff66)
+        drop-shadow(0 -1px 1px #17192066);
+    --dya-carve-a: #272b34;
+    --dya-carve-b: #737c91;
 
-    --dya-elev-chassis: inset 0 1px 0 #ffffff;
+    --dya-elev-chassis: inset 0 1px 0 #ffffff40;
 
     --dya-elev-raised:
-        inset 0 1px 0 #ffffff,
-        0 0 0 1px #1d1d1f26,
-        0 1px 2px #1d1d1f14;
+        inset 0 1px 0 #ffffff59,
+        0 0 0 1px #17192033,
+        0 1px 2px #17192026;
 
     --dya-elev-pressed:
-        inset 0 2px 4px #1d1d1f2e,
-        0 0 0 1px #1d1d1f26;
+        inset 0 2px 4px #17192040,
+        0 0 0 1px #17192033;
 
     --dya-elev-sunken:
-        inset 0 2px 4px #1d1d1f2e,
-        0 0 0 1px #1d1d1f26;
+        inset 0 2px 4px #17192040,
+        0 0 0 1px #17192033;
 
     --dya-elev-focus:
-        inset 0 2px 4px #1d1d1f2e,
-        0 0 0 1px #0a56b3;
+        inset 0 2px 4px #17192040,
+        0 0 0 1px #092d74;
 
     --dya-elev-popover:
-        inset 0 1px 0 #ffffff,
-        0 0 0 1px #1d1d1f26,
-        0 2px 4px #1d1d1f1f;
+        inset 0 1px 0 #ffffff59,
+        0 0 0 1px #17192033,
+        0 2px 4px #17192033;
 
     --dya-elev-overlay:
-        inset 0 1px 0 #ffffff,
-        0 0 0 1px #1d1d1f26,
-        0 24px 48px -12px #1d1d1f59;
+        inset 0 1px 0 #ffffff59,
+        0 0 0 1px #17192033,
+        0 24px 48px -12px #1719208c;
 
-    --dya-focus: #0a56b3;
+    --dya-focus: #092d74;
 }

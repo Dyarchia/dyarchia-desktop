@@ -209,20 +209,45 @@ somebody presses the button, and every step skips what the machine already has.
 
     Data                  Path
     ------------------    -------------------------------------------
-    Layout (dev)          %APPDATA%/@dyarchia/shell/layout.json
-    Layout (portable)     %APPDATA%/dyarchia/layout.json
+    Layout                <userData>/layout.json
     Enabled plugins       <userData>/plugins.json
     Acquired tools        <userData>/tools/
     Plugin environments   <userData>/environments/<id>/.venv
     Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
     Theme choice          renderer localStorage, key dyarchia:theme
+    Zoom level            <userData>/zoom.json
+
+`<userData>` is `%APPDATA%/dyarchia` in dev and in the portable build alike, because the
+product name is the same in both.
 
 The theme is the one preference that does not go through the layout store. It is read
 synchronously before the first paint, and an IPC round trip would put a frame of the wrong
 theme on screen at every launch.
 
 
-## 7. Debugging
+## 7. Keyboard
+
+The application menu is null, so nothing here comes from Chromium's own accelerators.
+Zoom is caught in the main process before the page sees the key; the panel shortcuts
+are the renderer's and go through the dockview API.
+
+    Keys                          Effect
+    ---------------------------   --------------------------------------------------
+    Ctrl + = / Ctrl + +           zoom in, half a level (about 10%) per press
+    Ctrl + -                      zoom out
+    Ctrl + 0                      reset zoom
+    Ctrl + wheel                  zoom in or out
+    Ctrl + Tab / Ctrl + Shift+Tab next or previous panel in the active group
+    Ctrl + W                      close the active panel, unless a terminal has focus
+    Ctrl + ,                      open the Setup panel, or bring it to the front
+    F12                           DevTools, in dev or under DYARCHIA_DEBUG=1
+
+Zoom is clamped between three levels out and three in, and the level persists across
+restarts. Ctrl + W leaves a focused terminal alone because there it is the shell's own
+word erase.
+
+
+## 8. Debugging
 
 With the DYARCHIA_DEBUG=1 environment variable, and always in dev, the shell exposes the
 Chrome DevTools Protocol on port 9222. The renderer publishes the dockview API on

@@ -1615,10 +1615,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     branch.title = run.worktree ?? ''
                     row.append(branch)
                 }
-                for (const name of run.kept ?? []) {
+                for (const name of [...(run.kept ?? []), ...(run.handoff ?? [])]) {
                     const file = el('button', 'dya-chip', name)
                     file.type = 'button'
-                    file.title = 'show this artifact on disk'
+                    file.title = (run.handoff ?? []).includes(name)
+                        ? 'handed to the next worker on this card; show it on disk'
+                        : 'show this artifact on disk'
                     file.addEventListener('click', () => {
                         void invoke('reveal', meta?.slug, card.id, name).catch((thrown: unknown) =>
                             failOn(card.id, thrown)

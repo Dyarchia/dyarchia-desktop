@@ -369,7 +369,8 @@ the tool answers the same way the CLI does.
 Under the desktop shell the panel's host publishes that server as an offer to other plugins,
 `<userData>/mcp/crawlee.json` in the shape docs/plugins.md describes, at startup and after
 every round, and only while a corpus repository holds pages: a fresh install offers nothing,
-and no other plugin has to know this one exists to use the tool when it is there.
+and no other plugin has to know this one exists to use the tool when it is there. The manifest declares `boot`, so the host starts with the app and publishes without
+waiting for the panel to be opened.
 
 
 ## The panel

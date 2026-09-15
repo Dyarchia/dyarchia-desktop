@@ -33,6 +33,10 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
 - `schemes` lists custom protocol schemes the plugin serves. The shell declares them
   privileged at boot and the plugin registers the handler with `protocol.handle` in its
   `activate`. Reserved names (`http`, `file`, `dyarchia-plugin`, …) are rejected.
+- `boot` starts a Python plugin's interpreter with the app instead of on its first invoke.
+  The default is lazy, because a panel nobody opens costs nothing that way; set it when the
+  plugin's `activate` has to act before anyone asks, an offer to other plugins being the
+  case that exists.
 - `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
   for somebody deciding whether to turn this on, not for somebody who already has.
 
@@ -352,7 +356,9 @@ imports the other. What one can still do is offer the other a tool, through one 
 shell reserves: `<userData>/mcp/`. A plugin that can serve a tool over the Model Context
 Protocol writes `<userData>/mcp/<its id>.json` while it can serve it and deletes the file when
 it cannot; a plugin that launches agents reads the folder when it launches one and never asks
-who wrote what.
+who wrote what. An offer is only written by a plugin that is running, so a Python plugin that
+offers one declares `"boot": true` in its manifest: otherwise its interpreter starts with its
+panel, and until somebody opens that panel there is nothing in the folder.
 
 ```json
 {

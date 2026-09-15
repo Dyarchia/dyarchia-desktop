@@ -165,7 +165,7 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
         runners: runners.merge(runners.blank(), draft.runners),
         maxRuntimeSeconds: draft.maxRuntimeSeconds ?? null,
         maxRetries: draft.maxRetries ?? null,
-        permissionMode: draft.permissionMode ?? 'acceptEdits',
+        permissionMode: draft.permissionMode ?? 'auto',
         scheduledFor: draft.scheduledFor ?? null,
         parents,
         attachments: [],

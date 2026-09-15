@@ -643,7 +643,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const harnessLabels: Record<string, string> = {
             '': above ? `inherit, ${above.harness ?? fallback}` : `${fallback}, the default`
         }
-        for (const entry of catalogue) harnessLabels[entry.id] = entry.label
+        for (const entry of catalogue) {
+            harnessLabels[entry.id] = entry.available ? entry.label : `${entry.label}, not on PATH`
+        }
         const chosen = current.harness ?? above?.harness ?? fallback
         const info = catalogue.find((entry) => entry.id === chosen)
 

@@ -103,6 +103,14 @@ const STYLES = `
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }
+.set-need > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.set-needs > .dya-button {
+    align-self: flex-start;
+    margin-top: var(--dya-space-1);
+}
 .set-foot {
     display: flex;
     align-items: center;

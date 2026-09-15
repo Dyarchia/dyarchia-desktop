@@ -39,7 +39,7 @@ and nothing else.
 theme    selector                 ground              the accent that carries the weight
 ------   ----------------------   -----------------   ----------------------------------
 Gi       :root                    warm near-black     an orange ink, used sparingly
-Paper    [data-theme="paper"]     warm off-white      the same orange, darkened to read
+Paper    [data-theme="paper"]     cool light grey     a blue ink, dark enough to be text
 ```
 
 Components never learn that themes exist. `components.css` names no colour, so a theme is
@@ -51,9 +51,10 @@ browser learns which is mounted through `--dya-scheme`, which `reset.css` hands 
 `color-scheme` on the root: a native scrollbar, a form control the system has not replaced
 and the `canvas` colour keyword all follow the theme instead of the operating system.
 
-Both grounds are warm: every grey carries a unit or two more red than blue. The status and
-syntax hues are the one place a theme redefines a value that Gi declares functional, because
-a light ground turns a legible pastel into a fail.
+Gi is warm, every grey carrying a unit or two more red than blue; Paper is cool, a unit or
+two more blue than red, so the two never read as one ramp inverted. The status and syntax
+hues are the one place a theme redefines a value that Gi declares functional, because a
+light ground turns a legible pastel into a fail.
 
 
 ## Gi
@@ -116,54 +117,60 @@ the outline of a container.
 
 ## Paper
 
-Warm off-white ground. The ramp is not monotonic: relief goes towards white, recess goes
-towards the canvas, so the raised steps are the lightest values and the sunken and selected
-steps are darker than the surface they sit in.
+Cool neutral ground, dimmer than a white page. The ramp is not monotonic: relief goes towards
+white, recess goes towards the canvas, so the raised steps are the lightest values and the
+sunken and selected steps are darker than the surface they sit in. The ground sits at 0.70
+luminance rather than at 0.77, because a light theme that glares is a light theme nobody
+keeps; every ink is a neutral near-black, and the accent is a blue dark enough to be text on
+the ground.
 
 ```text
 token                  value     relative luminance
 --------------------   -------   ------------------
---dya-bg               #e6e3db              0.76876
---dya-sunken           #dcd9d0              0.69395
---dya-chassis          #eeece6              0.83881
---dya-surface-1        #f6f5f1              0.91249
---dya-surface-2        #fbfaf7              0.95596
---dya-flat-hover       #edebe4              0.83023
---dya-raised           #ffffff              1.00000
---dya-overlay          #ffffff              1.00000
---dya-raised-hover     #f3f1eb              0.87963
---dya-selected         #e2dfd5              0.73748
+--dya-bg               #d9d9de              0.69651
+--dya-sunken           #cfcfd5              0.62695
+--dya-chassis          #e4e4e8              0.77807
+--dya-surface-1        #ececef              0.84056
+--dya-surface-2        #f2f2f4              0.88913
+--dya-flat-hover       #e6e6ea              0.79357
+--dya-raised           #f8f8fa              0.93993
+--dya-overlay          #fbfbfc              0.96532
+--dya-raised-hover     #eeeef1              0.85677
+--dya-selected         #d3d3da              0.65499
 ```
 
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
 -------------   -------   ----   ------   ------   -------   ------------   --------
---dya-text      #181510  14.19    16.69    18.20     18.20          16.12      13.65
---dya-text-2    #2f2b25  10.97    12.89    14.06     14.06          12.45      10.55
---dya-text-3    #4f4a42   6.85     8.05     8.78      8.78           7.78       6.59
---dya-text-4    #5f5a51   5.34     6.27     6.85      6.85           6.06       5.13
---dya-accent    #a2451f   4.81     5.65     6.16      6.16           5.46       4.62
---dya-accent-2  #2b5f8f   5.22     6.14     6.70      6.70           5.93       5.02
---dya-accent-3  #4f6236   5.23     6.14     6.70      6.70           5.93       5.03
+--dya-text      #1d1d1f  11.97    14.27    15.87     16.27          14.53      11.30
+--dya-text-2    #2c2c2e   9.91    11.82    13.14     13.48          12.04       9.36
+--dya-text-3    #3a3a3c   8.07     9.63    10.70     10.97           9.80       7.62
+--dya-text-4    #4a4a4f   6.26     7.47     8.31      8.52           7.61       5.92
+--dya-accent    #0a56b3   4.99     5.95     6.61      6.78           6.06       4.71
+--dya-accent-2  #4b3fb0   5.66     6.75     7.51      7.70           6.88       5.35
+--dya-accent-3  #0d5f45   5.45     6.50     7.23      7.41           6.62       5.15
 ```
 
-Every text level is text on every surface; the lowest reading in the theme is
-`--dya-text-4` on `--dya-sunken` at 4.85. The three accents are text everywhere except
-`--dya-accent` on `--dya-sunken` at 4.37, where it is a ring or a fill and not a word.
-`--dya-on-accent` and `--dya-on-field` are `#fbfaf7` and measure 5.90 on the accent.
+Every text level is text on every surface; the lowest reading in the theme is `--dya-text-4`
+on `--dya-sunken` at 5.68. The three accents are text everywhere, `--dya-accent` on
+`--dya-sunken` at 4.52 being the closest to the floor. The status inks hold as text on every
+surface: `--dya-success` #186034 at 4.90 on the sunken step, `--dya-warning` #7a4a00 at
+4.82, `--dya-danger` #a8001c at 5.05, and `--dya-code-comment` #58585f at 4.55.
+`--dya-on-accent`, `--dya-on-field` and `--dya-on-status` are `#ffffff` and measure 7.01 on
+the accent, 7.60 on success, 7.48 on warning and 7.83 on danger.
 
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #d3cfc5         1.32           1.43
---dya-border-strong    #bab5a9         1.73           1.87
---dya-hairline         #e0ddd4         1.15           1.24
+--dya-border           #c4c4cb         1.37           1.47
+--dya-border-strong    #a9a9b2         1.84           1.98
+--dya-hairline         #d0d0d6         1.21           1.30
 ```
 
-The elevation tokens are redefined in Paper because a black contour ring over an off-white
-ground reads as a hard outline: the ring becomes `#181510` at 15%, the inset light becomes
-opaque white, and the drop shadows fall to a third of their Gi alpha. Same shape, same
-offsets, same blur.
+The elevation tokens are redefined in Paper because a black contour ring over a light ground
+reads as a hard outline: the ring becomes `#1d1d1f` at 15%, the inset light becomes opaque
+white, and the drop shadows fall to a third of their Gi alpha. Same shape, same offsets,
+same blur.
 
 
 ## Colour rules
@@ -179,33 +186,33 @@ offsets, same blur.
 ```text
 token           Gi        fill   Paper     fill   role
 -------------   -------   ----   -------   ----   ------------------------
---dya-success   #63cf95   9.30   #1a6e3d   6.02   a positive outcome
---dya-warning   #d6a95c   8.27   #7d5410   6.39   caution, not failure
---dya-danger    #f59790   8.29   #ab3226   6.26   error, destruction
---dya-idle      per theme  7.73  per theme  9.97  no outcome yet
+--dya-success   #63cf95   9.30   #186034   7.60   a positive outcome
+--dya-warning   #d6a95c   8.27   #7a4a00   7.48   caution, not failure
+--dya-danger    #f59790   8.29   #a8001c   7.83   error, destruction
+--dya-idle      per theme  7.73  per theme  8.99  no outcome yet
 ```
 
 `fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue
 has a `-soft` companion at 10% for the ground of a row or a quiet badge. As text rather than
 fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi, on `--dya-selected`, and
-4.90 / 5.20 / 5.09 at worst in Paper on the canvas, so `.dya-text--success` and
-`--danger` carry no reservation on any surface. On `--dya-sunken` in Paper, success
-measures 4.45 and is a fill there, not a sentence.
+4.90 / 4.82 / 5.05 at worst in Paper, on `--dya-sunken`, so `.dya-text--success` and
+`--danger` carry no reservation on any surface in either theme.
 
 ```text
 token                 Gi        s-2    s-1    Paper     s-2    s-1
 -------------------   -------   ----   ----   -------   ----   ----
---dya-code-keyword    #cf8fb4   6.69   7.03   #9c3874   6.23   5.96
---dya-code-string     #8fb87a   7.56   7.94   #35691f   6.30   6.03
---dya-code-number     #d6a95c   7.87   8.27   #7d5410   6.39   6.12
---dya-code-function   #7fb0dd   7.44   7.82   #2b5f8f   6.42   6.14
---dya-code-punct      #bdbab2   8.79   9.24   #4f4a42   8.42   8.05
---dya-code-comment    #85857f   4.59   4.83   #6f6a60   5.15   4.93
+--dya-code-keyword    #cf8fb4   6.69   7.03   #8a2f6a   6.97   6.61
+--dya-code-string     #8fb87a   7.56   7.94   #2f6a1f   5.87   5.56
+--dya-code-number     #d6a95c   7.87   8.27   #7a4a00   6.69   6.35
+--dya-code-function   #7fb0dd   7.44   7.82   #0a56b3   6.27   5.95
+--dya-code-punct      #bdbab2   8.79   9.24   #3a3a3c  10.15   9.63
+--dya-code-comment    #85857f   4.59   4.83   #58585f   6.31   5.98
 ```
 
 `--dya-code-comment` is the lowest ink in the system that is still text, deliberately the
-most recessive of the six and just above the 4.50 floor on the two surfaces a code block
-sits on. Keyword and string converge under deuteranopia; a code block accepts that, because
+most recessive of the six and, in Gi, just above the 4.50 floor on the two surfaces a code
+block sits on; Paper's ground is dim enough that the same role holds at 4.55 on the sunken
+step. Keyword and string converge under deuteranopia; a code block accepts that, because
 the reader still has indentation, quotes and delimiters.
 
 `--dya-faint`, the glass tokens and the carve tokens are alphas of the theme's own ink and
@@ -284,7 +291,7 @@ content: sans, and it keeps its case.
 
 `.dya-math` is the exception inside the exception: notation is data, so it is mono at
 `0.94em` of its surroundings carrying `--dya-text-2` — 11.06 and 11.63 on Gi's two
-surfaces, 13.47 and 12.89 on Paper's. The em-relative size is deliberate: an expression
+surfaces, 11.82 and 12.47 on Paper's. The em-relative size is deliberate: an expression
 inside a heading has to scale with it, and no fixed step can. `.dya-math--block` is the
 display form.
 
@@ -389,9 +396,9 @@ There is nothing to build, lint or test. What replaces those commands:
 
 ## Open questions
 
-- Paper has been seen against the shell and the six panels at one window size. Its
-  interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, are the ones most likely
-  to move once a long session is spent in it.
+- Paper has been seen against the shell and the panels at two window widths, 1000 and
+  1900. Its interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, are the ones
+  most likely to move once a long session is spent in it.
 - The prose block went with its last consumer, and the SDK's markdown renderer still emits
   `code`, `math` and `prose__scroll`. Whatever renders markdown next needs typography for
   the elements between them. docviewer answers that today with its own prefixed rules,

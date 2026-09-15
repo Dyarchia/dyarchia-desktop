@@ -18,8 +18,8 @@ own panels — draggable, resizable, and persistent across sessions.
 - The look is not the shell's: it is kanon, the shared design system in packages/kanon,
   linked once. Plugins inherit its dya-* component classes and its tokens, and are expected
   to reference them rather than reimplement them.
-- The system carries two dark themes, Gi and Oneiro, switched from the title bar. A theme
-  redefines colour tokens and never rules, so no plugin reads it or branches on it.
+- The system carries two themes, Gi (dark) and Paper (light), switched from the title bar.
+  A theme redefines colour tokens and never rules, so no plugin reads it or branches on it.
 
 ```mermaid
 flowchart LR
@@ -253,6 +253,17 @@ word erase.
 With the DYARCHIA_DEBUG=1 environment variable, and always in dev, the shell exposes the
 Chrome DevTools Protocol on port 9222. The renderer publishes the dockview API on
 window.__dockApi for inspection.
+
+That port is also how a change is photographed without touching the window:
+
+```bash
+node scripts/screenshot.mjs out.png "document.documentElement.dataset.theme = 'paper'" 800
+```
+
+The first argument is the PNG to write, the optional second is an expression evaluated in
+the page before the capture, and the optional third is the delay in milliseconds between
+the two. A visual change ships with one capture per theme, and the commit body says what
+the pair shows.
 
 Known note: dockview 8 logs a console error about the ContextMenu module of
 dockview-enterprise. It is harmless — the free edition is warning that tab context menus

@@ -321,6 +321,16 @@
     color: var(--dya-accent);
 }
 
+.dya-key > svg {
+    width: 14px;
+    height: 14px;
+}
+
+[interestfor] {
+    interest-delay-start: 350ms;
+    interest-delay-end: 120ms;
+}
+
 .dya-chip {
     display: inline-grid;
     place-items: center;
@@ -606,6 +616,27 @@ textarea.dya-field {
     margin-left: auto;
     letter-spacing: 0.08em;
     color: var(--dya-text-3);
+}
+
+.dya-tip {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    position-area: block-end;
+    position-try-fallbacks: flip-block, flip-inline;
+    margin-block-start: var(--dya-space-1);
+    max-width: 280px;
+    padding: var(--dya-space-1) var(--dya-space-2);
+    border: none;
+    border-radius: var(--dya-radius);
+    background: var(--dya-overlay);
+    box-shadow: var(--dya-elev-overlay);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-2);
+    overflow-wrap: anywhere;
 }.dya-tabs {
     display: flex;
     align-items: stretch;

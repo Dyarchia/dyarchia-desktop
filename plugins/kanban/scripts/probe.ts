@@ -5,15 +5,16 @@ import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
 import { adopt, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
-import { liveness, parseLaunch, snapshot } from '../src/agents.js'
+import { liveness, parseLaunch, snapshot } from '../src/harness/claude.js'
 import { nextName, strays } from '../src/artifacts.js'
 import { parse as parseEvents, read as readEvents, record } from '../src/events.js'
 import { brief, reviewBrief } from '../src/worker.js'
+import { parseTerminal } from '../src/closing.js'
 import { decide, drop, hold, read as readLease, TTL_MS } from '../src/lease.js'
-import { parseTerminal } from '../src/worker.js'
 import { isRefusal } from '../src/refusal.js'
+import { blank, merge, resolve, restore } from '../src/runners.js'
 import { ours, parseList, same } from '../src/worktrees.js'
-import type { SessionRecord } from '../src/agents.js'
+import type { SessionRecord } from '../src/harness/claude.js'
 import type { Sink } from '../src/dispatch.js'
 import type { Card, CardPatch, Run } from '../src/types.js'
 
@@ -348,6 +349,7 @@ async function reviews(): Promise<void> {
     const judged: Run = {
         runId: 'r1',
         kind: 'implement',
+        harness: 'claude',
         sessionId: 's1',
         shortId: 'abc',
         worktree: 'C:\\project\\.claude\\worktrees\\kanban-r1',
@@ -521,6 +523,7 @@ async function guards(): Promise<void> {
     const base: Run = {
         runId: 'g1',
         kind: 'implement',
+        harness: 'claude',
         sessionId: 's',
         shortId: 'g',
         worktree: null,
@@ -681,6 +684,7 @@ async function reconciling(): Promise<void> {
         live.runs.push({
             runId: randomUUID(),
             kind: 'implement',
+            harness: 'claude',
             sessionId,
             shortId: 'deadbeef',
             worktree: null,
@@ -844,11 +848,43 @@ async function atomicWrites(): Promise<void> {
     rmSync(root, { recursive: true, force: true })
 }
 
+async function runnersRules(): Promise<void> {
+    console.log('\nrunners per phase')
+    const legacy = restore({ model: 'opus', effort: 'high' })
+    check('a legacy model lands on the implement phase', legacy.implement.model, 'opus')
+    check('and so does its effort', legacy.implement.effort, 'high')
+    check('the review phase inherits, it is not copied', legacy.review, { harness: null, model: null, effort: null })
+    check('a blank legacy card is a blank runner', restore({ model: '', effort: null }), blank())
+    check('a stored runners block is read as it is', restore({ runners: { review: { model: 'sonnet' } } }).review.model, 'sonnet')
+    check('a stored block naming a harness nobody has is dropped whole', restore({ runners: { review: { harness: 'codex' } } }), blank())
+
+    const above = merge(blank(), { implement: { model: 'fable', effort: 'high' }, review: { model: 'opus' } })
+    const own = merge(blank(), { review: { effort: 'max' } })
+    check('the card inherits the board implementer', resolve(above, own, 'implement'), { harness: 'claude', model: 'fable', effort: 'high' })
+    check('and overrides only what it says for the review', resolve(above, own, 'review'), { harness: 'claude', model: 'opus', effort: 'max' })
+    check('nothing set means the default harness and the CLI defaults', resolve(blank(), blank(), 'review'), { harness: 'claude', model: null, effort: null })
+    check('a merge keeps what the patch does not name', merge(above, { implement: { effort: null } }).implement.model, 'fable')
+    check('and a blank string clears rather than stores', merge(above, { implement: { model: '   ' } }).implement.model, null)
+    await refuses('a harness nobody has is refused', async () => merge(blank(), { review: { harness: 'grok' as never } }), 'not a harness')
+    await refuses('a model name has a limit', async () => merge(blank(), { review: { model: 'x'.repeat(81) } }), 'at most 80')
+
+    const meta = await boards.create({ slug: 'runners', name: 'runners', workdir: tmpdir(), runners: { review: { model: 'opus' } } })
+    check('a board stores its runners', meta.runners.review.model, 'opus')
+    const updated = await boards.update('runners', { runners: { implement: { effort: 'low' } } })
+    check('a board patch merges per phase', [updated.runners.implement.effort, updated.runners.review.model], ['low', 'opus'])
+    const created = await board.createCard('runners', { title: 'r', runners: { implement: { model: 'sonnet' } } })
+    check('a card stores its runners', created.runners.implement.model, 'sonnet')
+    const patched = await board.updateCard('runners', created.id, { runners: { implement: { model: null } } })
+    check('and a card patch clears one field without touching the rest', patched.runners.implement, { harness: null, model: null, effort: null })
+    await refuses('a card does not take a model any more', async () => board.updateCard('runners', created.id, { model: 'x' } as never), 'no editable model')
+}
+
 console.log('kanban probe')
 await slugs()
 await livenessRules()
 launches()
 terminals()
+await runnersRules()
 await machine()
 await patches()
 await housekeeping()

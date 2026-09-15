@@ -12,9 +12,13 @@ import type {
     BoardMeta,
     BoardPayload,
     Card,
+    HarnessInfo,
     KanbanEvent,
     Overview,
     Rules,
+    Runner,
+    Runners,
+    RunnersPatch,
     Settings,
     Status,
     WatchRun
@@ -73,7 +77,7 @@ const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="10" rx="1"/><rect x="16" y="4" width="5" height="13" rx="1"/></svg>'
 
 const PERMISSIONS = ['acceptEdits', 'auto', 'bypassPermissions', 'manual', 'dontAsk', 'plan']
-const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
+const OTHER = '\u2026'
 const WORKSPACES: [string, string][] = [
     ['dir', 'the project directory'],
     ['scratch', 'a fresh temporary directory']
@@ -586,6 +590,108 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .catch(fail)
     }
 
+    let catalogue: HarnessInfo[] = []
+    void invoke<HarnessInfo[]>('harnesses')
+        .then((list) => {
+            catalogue = list
+        })
+        .catch(fail)
+
+    const choose = (
+        what: string,
+        current: string,
+        values: string[],
+        labels: Record<string, string>,
+        disabled: boolean,
+        apply: (value: string) => void
+    ): HTMLButtonElement => {
+        const button = el('button', 'dya-button dya-button--quiet dya-button--sm', labels[current] ?? current)
+        button.type = 'button'
+        button.disabled = disabled
+        button.addEventListener('click', () =>
+            openMenu({
+                anchor: button,
+                rows: values.map((value) => ({
+                    key: value,
+                    label: labels[value] ?? value,
+                    group: what,
+                    direct: true,
+                    selected: value === current,
+                    leaves: [{ label: labels[value] ?? value, value }]
+                })),
+                filter: `filter ${what}`,
+                onPick: (row) => apply(row.key)
+            })
+        )
+        return button
+    }
+
+    /*
+     * One row per phase: harness, model, effort. A card inherits from its board what it
+     * leaves blank, so a blank is labelled with what it inherits rather than with nothing,
+     * and the model list is the chosen harness's own. A name the list does not carry is
+     * typed into the field that appears when the last entry is picked.
+     */
+    const runnerRow = (
+        current: Runner,
+        above: Runner | null,
+        disabled: boolean,
+        apply: (next: Partial<Runner>) => void
+    ): HTMLElement => {
+        const row = el('div', 'kanban-row kanban-runner')
+        const fallback = catalogue[0]?.id ?? 'claude'
+        const harnessLabels: Record<string, string> = {
+            '': above ? `inherit, ${above.harness ?? fallback}` : `${fallback}, the default`
+        }
+        for (const entry of catalogue) harnessLabels[entry.id] = entry.label
+        const chosen = current.harness ?? above?.harness ?? fallback
+        const info = catalogue.find((entry) => entry.id === chosen)
+
+        row.appendChild(
+            choose('harness', current.harness ?? '', ['', ...catalogue.map((entry) => entry.id)], harnessLabels, disabled, (value) =>
+                apply({ harness: (value || null) as Runner['harness'] })
+            )
+        )
+
+        const models = info?.models ?? []
+        const listed = current.model === null || models.includes(current.model)
+        const modelLabels: Record<string, string> = {
+            '': above?.model ? `inherit, ${above.model}` : 'the harness default',
+            [OTHER]: 'another name'
+        }
+        const custom = el('input', 'dya-field dya-field--sm')
+        custom.type = 'text'
+        custom.spellcheck = false
+        custom.placeholder = 'full model name'
+        custom.disabled = disabled
+        custom.hidden = listed
+        custom.value = listed ? '' : (current.model ?? '')
+        custom.addEventListener('change', () => apply({ model: custom.value.trim() || null }))
+        row.appendChild(
+            choose('model', listed ? (current.model ?? '') : OTHER, ['', ...models, OTHER], modelLabels, disabled, (value) => {
+                if (value === OTHER) {
+                    custom.hidden = false
+                    custom.focus()
+                    return
+                }
+                apply({ model: value || null })
+            })
+        )
+        row.appendChild(custom)
+
+        if (info?.efforts) {
+            const effortLabels: Record<string, string> = {
+                '': above?.effort ? `inherit, ${above.effort}` : 'the CLI default'
+            }
+            row.appendChild(
+                choose('effort', current.effort ?? '', ['', ...info.efforts], effortLabels, disabled, (value) =>
+                    apply({ effort: value || null })
+                )
+            )
+        }
+        return row
+    }
+
     const capField = (value: number, note: string): HTMLInputElement => {
         const field = el('input', 'dya-field dya-field--sm kanban-cap')
         field.type = 'number'
@@ -643,6 +749,33 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             globalCap
         )
 
+        const runnersLabel = el(
+            'div',
+            'dya-empty',
+            'Which harness, model and effort run each phase, unless a card says otherwise. ' +
+                'A reviewer on a different model than the implementer is a better judge of it.'
+        )
+        const runnersGrid = el('div', 'kanban-settings')
+        const draft: Runners = {
+            implement: { ...current.runners.implement },
+            review: { ...current.runners.review }
+        }
+        const renderRunners = (): void => {
+            runnersGrid.replaceChildren(
+                el('span', 'kanban-setting', 'implement'),
+                runnerRow(draft.implement, null, false, (next) => {
+                    Object.assign(draft.implement, next)
+                    renderRunners()
+                }),
+                el('span', 'kanban-setting', 'review'),
+                runnerRow(draft.review, null, false, (next) => {
+                    Object.assign(draft.review, next)
+                    renderRunners()
+                })
+            )
+        }
+        renderRunners()
+
         const save = el('button', 'dya-button', 'save')
         save.type = 'button'
         save.addEventListener('click', () => {
@@ -651,7 +784,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     invoke('updateBoard', current.slug, {
                         name: name.value,
                         workdir: dir.value,
-                        maxRunning: Number(boardCap.value)
+                        maxRunning: Number(boardCap.value),
+                        runners: draft
                     })
                 )
                 .then(() => {
@@ -701,7 +835,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const actions = el('div', 'kanban-row')
         actions.append(save, back, el('span', 'kanban-spacer'), archive, remove)
 
-        form.append(name, dirRow, capsLabel, capsRow, actions)
+        form.append(name, dirRow, capsLabel, capsRow, runnersLabel, runnersGrid, actions)
         return form
     }
 
@@ -1299,13 +1433,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return input
         }
 
-        const model = el('input', 'dya-field dya-field--sm')
-        model.type = 'text'
-        model.spellcheck = false
-        model.placeholder = 'opus, sonnet, fable, or a full name'
-        model.disabled = card.locked
-        model.value = card.model ?? ''
-        model.addEventListener('change', () => patch(card.id, { model: model.value.trim() || null }))
+        const phase = (kind: keyof Runners): HTMLElement =>
+            runnerRow(card.runners[kind], meta?.runners[kind] ?? null, card.locked, (next) =>
+                patch(card.id, { runners: { [kind]: next } satisfies RunnersPatch })
+            )
 
         const override = el('input', 'dya-field dya-field--sm')
         override.type = 'text'
@@ -1326,7 +1457,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const overrideRow = el('div', 'kanban-row')
         overrideRow.append(override, browse)
 
-        const efforts = ['', ...EFFORTS]
         const labelled = Object.fromEntries(WORKSPACES) as Record<string, string>
 
         settings.append(
@@ -1334,12 +1464,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             chooser('permission mode', card.permissionMode, PERMISSIONS, {}, (value) =>
                 patch(card.id, { permissionMode: value })
             ),
-            el('span', 'kanban-setting', 'model'),
-            model,
-            el('span', 'kanban-setting', 'effort'),
-            chooser('effort', card.effort ?? '', efforts, { '': 'the CLI default' }, (value) =>
-                patch(card.id, { effort: value || null })
-            ),
+            el('span', 'kanban-setting', 'implement'),
+            phase('implement'),
+            el('span', 'kanban-setting', 'review'),
+            phase('review'),
             el('span', 'kanban-setting', 'workspace'),
             chooser('workspace', card.workspaceKind, ['dir', 'scratch'], labelled, (value) =>
                 patch(card.id, { workspaceKind: value as Card['workspaceKind'] })

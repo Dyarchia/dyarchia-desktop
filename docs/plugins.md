@@ -274,7 +274,7 @@ Assistive    dya-sr-only
 ```
 
 Four carry a trap worth knowing before the first render: **`dya-field` is full width** and
-`--auto` opts out; **`dya-bar` is window chrome**, 46px with a gradient and a hairline, and
+`--auto` opts out; **`dya-bar` is window chrome**, 38px with a gradient and a hairline, and
 `--inset` keeps only the rhythm; **`dya-log` is for what a process printed**, wraps instead
 of scrolling sideways, and sets no height; **`dya-text--*` is a sentence and `dya-badge--*`
 is a chip**.
@@ -287,8 +287,8 @@ being a panel rather than the system:
   is a renderer that computes contrast and has to know its ground — the terminal paints
   `token('surface-1')` for exactly that.
 - **`--dya-field` is a surface, not an ink.** Never set `color: var(--dya-field)`.
-- **A label never sits on `--dya-selected` in Gi or `--dya-raised-hover` in Oneiro**, where
-  `--dya-text-4` measures 4.43 and 4.27. Use `--dya-text-3` there.
+- **A label never sits on `--dya-selected` in Gi**, where `--dya-text-4` measures 4.45.
+  Use `--dya-text-3` there. Paper has no such surface.
 
 The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
 declares it under its own prefix and says so in its README, or proposes it upstream — the

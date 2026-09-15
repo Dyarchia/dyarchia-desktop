@@ -13,6 +13,10 @@
     display: none !important;
 }
 
+:root {
+    color-scheme: var(--dya-scheme);
+}
+
 body {
     background: var(--dya-bg);
     color: var(--dya-text);

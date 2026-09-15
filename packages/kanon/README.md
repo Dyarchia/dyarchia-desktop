@@ -1,18 +1,19 @@
 # dyarchia-kanon
 
 The shared visual system: plain CSS custom properties, a layer of `dya-*` component
-classes and two IBM Plex families. No build step, no dependency, no JavaScript, no test
-suite. This file is the authority over the CSS — it states what the system is, not how it
-got there. The before and after of a change belongs in its commit body.
+classes and three families under the SIL Open Font License. No build step, no dependency,
+no JavaScript, no test suite. This file is the authority over the CSS — it states what the
+system is, not how it got there. The before and after of a change belongs in its commit
+body.
 
 ```text
 css/dyarchia.css     the only entry point; imports the five below, in this order
-css/fonts.css        the six IBM Plex @font-face declarations
+css/fonts.css        the eight @font-face declarations
 css/tokens.css       both themes
-css/reset.css        normalisation, [hidden], focus ring, scrollbars, reduced motion
+css/reset.css        normalisation, [hidden], colour scheme, focus ring, scrollbars, reduced motion
 css/motion.css       four keyframes, all prefixed dya-
 css/components.css   the dya-* classes
-fonts/               six static woff2, 336 KB
+fonts/               eight static woff2, 536 KB
 tools/contrast.py    the measurement Verification requires
 ```
 
@@ -29,117 +30,140 @@ consumer toggling `element.hidden` is guaranteed an effect. Hidden but laid out 
 
 ## Two themes over one contract
 
-`Gi` is the default and lives on `:root`. `Oneiro` is a single `[data-theme="oneiro"]`
+`Gi` is the default and lives on `:root`. `Paper` is a single `[data-theme="paper"]`
 block that redefines **colour tokens only** — not a radius, not a spacing step, not a
 duration, not a font size. A product switches by setting the attribute on the root element
 and nothing else.
 
 ```text
-theme    selector                  ground        the accent that carries the weight
-------   -----------------------   -----------   ----------------------------------
-Gi       :root                     achromatic    an orange ink, used sparingly
-Oneiro   [data-theme="oneiro"]     blue-black    a blue field, flooded
+theme    selector                 ground              the accent that carries the weight
+------   ----------------------   -----------------   ----------------------------------
+Gi       :root                    warm near-black     an orange ink, used sparingly
+Paper    [data-theme="paper"]     warm off-white      the same orange, darkened to read
 ```
 
 Components never learn that themes exist. `components.css` names no colour, so a theme is
 a change of values and can never be a change of rules. **A theme that needs a new rule is
 not a theme; it is a second system, and it is refused.**
 
-Both themes are dark. There is no light theme and the CSS never consults
-`prefers-color-scheme`.
+One is dark and one is light, and the CSS never consults `prefers-color-scheme`. The
+browser learns which is mounted through `--dya-scheme`, which `reset.css` hands to
+`color-scheme` on the root: a native scrollbar, a form control the system has not replaced
+and the `canvas` colour keyword all follow the theme instead of the operating system.
+
+Both grounds are warm: every grey carries a unit or two more red than blue. The status and
+syntax hues are the one place a theme redefines a value that Gi declares functional, because
+a light ground turns a legible pastel into a fail.
 
 
 ## Gi
 
-Achromatic ground. Ten surfaces, six sampled from a shipping product and four interpolated
-between them.
+Warm near-black ground. Ten surfaces on a monotonic ramp.
 
 ```text
 token                  value     relative luminance
 --------------------   -------   ------------------
 --dya-bg               #000000              0.00000
---dya-sunken           #0d0d0d              0.00402
---dya-chassis          #111111              0.00561
---dya-surface-1        #151515              0.00750
---dya-surface-2        #1a1a19              0.01029
---dya-flat-hover       #1f1f1e              0.01365
---dya-raised           #232322              0.01675
---dya-overlay          #262625              0.01932
---dya-raised-hover     #2d2d2c              0.02617
---dya-selected         #343433              0.03425
+--dya-sunken           #0e0d0b              0.00405
+--dya-chassis          #131210              0.00608
+--dya-surface-1        #181714              0.00857
+--dya-surface-2        #1d1c18              0.01158
+--dya-flat-hover       #22211d              0.01517
+--dya-raised           #262521              0.01845
+--dya-overlay          #2a2925              0.02212
+--dya-raised-hover     #31302b              0.02941
+--dya-selected         #383733              0.03812
 ```
 
-`--dya-surface-2`, `--dya-flat-hover`, `--dya-overlay` and `--dya-selected` carry one unit
-less blue than red and green. Below them the ramp is neutral. The canvas is the only pure
-black and it carries nothing.
+The canvas is the only pure black and it carries nothing. Everything above it leans red
+over green over blue by one unit at each step, which is the whole of the warmth.
 
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
 -------------   -------   ----   ------   ------   -------   ------------   --------
---dya-text      #d9d8d5  14.73    12.81    11.04     10.63           9.67       8.74
---dya-text-2    #cbcbc8  12.92    11.23     9.67      9.32           8.48       7.67
---dya-text-3    #b7b6b4  10.36     9.01     7.76      7.48           6.80       6.15
---dya-text-4    #9b9a98   7.47     6.50     5.60      5.39           4.90       4.43
---dya-accent    #d97757   6.73     5.85     5.04      4.85           4.42       3.99
---dya-accent-2  #6a9bcc   7.17     6.24     5.37      5.17           4.71       4.26
---dya-accent-3  #788c5d   5.71     4.96     4.28      4.12           3.75       3.39
+--dya-text      #e6e3db  16.38    13.98    11.96     11.35          10.31       9.29
+--dya-text-2    #d3d0c8  13.63    11.63     9.95      9.45           8.58       7.73
+--dya-text-3    #bdbab2  10.83     9.24     7.91      7.51           6.82       6.15
+--dya-text-4    #a19e96   7.85     6.70     5.73      5.44           4.94       4.45
+--dya-accent    #d97757   6.73     5.74     4.91      4.66           4.24       3.82
+--dya-accent-2  #6a9bcc   7.17     6.12     5.24      4.97           4.52       4.07
+--dya-accent-3  #788c5d   5.71     4.87     4.17      3.96           3.59       3.24
 ```
 
-Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.43;
+Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.45;
 on that surface the label level is `--dya-text-3`.
 
 `--dya-accent` is the primary: text up to and including `--dya-overlay`, a graphical
-object above it. It is also `--dya-field`, where `--dya-on-field` `#151515` measures 5.85
+object above it. It is also `--dya-field`, where `--dya-on-field` `#181714` measures 5.74
 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
 right choice for a link, a selected state or an informational mark. `--dya-accent-3` is
-the weakest ink in the system: text on the canvas, the sunken step, the chassis and
-`--dya-surface-1`, and nowhere else.
+the weakest ink in the system: text on the canvas, the sunken step, the chassis,
+`--dya-surface-1` and `--dya-surface-2` at 4.63, and nowhere else.
+
+```text
+token                  value     on chassis   on surface-1
+--------------------   -------   ----------   ------------
+--dya-border           #35332e         1.48           1.42
+--dya-border-strong    #4a473f         2.02           1.93
+--dya-hairline         #262521         1.22           1.17
+```
+
+A border is a graphical object and the 3.00 bar does not apply to it, but a border that
+measures under 1.40 against the ground it separates is not there. `--dya-border` marks a
+panel edge on the chassis; `--dya-hairline` separates rows inside one surface and is never
+the outline of a container.
 
 
-## Oneiro
+## Paper
 
-Blue-black ground. Four surfaces sampled, six interpolated.
+Warm off-white ground. The ramp is not monotonic: relief goes towards white, recess goes
+towards the canvas, so the raised steps are the lightest values and the sunken and selected
+steps are darker than the surface they sit in.
 
 ```text
 token                  value     relative luminance
 --------------------   -------   ------------------
---dya-bg               #04040e              0.00144
---dya-sunken           #070714              0.00248
---dya-chassis          #0a0a20              0.00386
---dya-surface-1        #101026              0.00621
---dya-surface-2        #17172c              0.00977
---dya-flat-hover       #1d1d33              0.01379
---dya-raised           #24243a              0.01942
---dya-overlay          #2a2a42              0.02542
---dya-raised-hover     #32324c              0.03481
---dya-selected         #08084a              0.00720
+--dya-bg               #e6e3db              0.76876
+--dya-sunken           #dcd9d0              0.69395
+--dya-chassis          #eeece6              0.83881
+--dya-surface-1        #f6f5f1              0.91249
+--dya-surface-2        #fbfaf7              0.95596
+--dya-flat-hover       #edebe4              0.83023
+--dya-raised           #ffffff              1.00000
+--dya-overlay          #ffffff              1.00000
+--dya-raised-hover     #f3f1eb              0.87963
+--dya-selected         #e2dfd5              0.73748
 ```
-
-`--dya-selected` breaks the monotonic ramp on purpose: selection here is a saturated
-field, darker than `--dya-flat-hover` and bluer than everything, and reads as a filled
-region rather than as relief.
 
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
--------------   -------   -----   ------   ------   -------   ------------   --------
---dya-text      #ffffff   20.41    18.68    15.12     13.92          12.38      18.36
---dya-text-2    #e8e8f4   16.80    15.37    12.45     11.46          10.19      15.11
---dya-text-3    #cdcdf5   13.26    12.14     9.83      9.05           8.05      11.93
---dya-text-4    #9797a0    7.05     6.45     5.22      4.81           4.27       6.34
---dya-accent    #e0cbf8   13.67    12.51    10.13      9.33           8.29      12.30
---dya-accent-2  #cdcdf5   13.26    12.14     9.83      9.05           8.05      11.93
---dya-accent-3  #9797a0    7.05     6.45     5.22      4.81           4.27       6.34
+-------------   -------   ----   ------   ------   -------   ------------   --------
+--dya-text      #181510  14.19    16.69    18.20     18.20          16.12      13.65
+--dya-text-2    #2f2b25  10.97    12.89    14.06     14.06          12.45      10.55
+--dya-text-3    #4f4a42   6.85     8.05     8.78      8.78           7.78       6.59
+--dya-text-4    #5f5a51   5.34     6.27     6.85      6.85           6.06       5.13
+--dya-accent    #a2451f   4.81     5.65     6.16      6.16           5.46       4.62
+--dya-accent-2  #2b5f8f   5.22     6.14     6.70      6.70           5.93       5.02
+--dya-accent-3  #4f6236   5.23     6.14     6.70      6.70           5.93       5.03
 ```
 
-`--dya-text-4` at 4.27 on `--dya-raised-hover` is the theme's only ink below AA on any
-surface; there the label level is `--dya-text-3`.
+Every text level is text on every surface; the lowest reading in the theme is
+`--dya-text-4` on `--dya-sunken` at 4.85. The three accents are text everywhere except
+`--dya-accent` on `--dya-sunken` at 4.37, where it is a ring or a fill and not a word.
+`--dya-on-accent` and `--dya-on-field` are `#fbfaf7` and measure 5.90 on the accent.
 
-**`--dya-field` is a surface, not an ink.** It is `#0000f2` and it is the point of the
-theme: as text on the chassis it measures 2.12 and fails, which is correct. It carries
-`--dya-on-field` `#ffffff` at 9.20 and whole panels are flooded with it. The lavender
-`--dya-accent` sits 28 degrees from it in hue, so hue does not separate them — luminance
-does, by a factor of ten, at a ratio of 6.16. The field carries weight by area, the
-lavender by contrast. The field floods, the lavender speaks.
+```text
+token                  value     on chassis   on surface-1
+--------------------   -------   ----------   ------------
+--dya-border           #d3cfc5         1.32           1.43
+--dya-border-strong    #bab5a9         1.73           1.87
+--dya-hairline         #e0ddd4         1.15           1.24
+```
+
+The elevation tokens are redefined in Paper because a black contour ring over an off-white
+ground reads as a hard outline: the ring becomes `#181510` at 15%, the inset light becomes
+opaque white, and the drop shadows fall to a third of their Gi alpha. Same shape, same
+offsets, same blur.
 
 
 ## Colour rules
@@ -149,41 +173,43 @@ lavender by contrast. The field floods, the lavender speaks.
   the outcome is.
 - **An ink under 4.50 against what it sits on is not text.** Above 3.00 it may still be a
   graphical object: a dot, a rule, a selection bar, a focus ring, a fill.
-- **The status and syntax hues are functional**, declared once on `:root`, and identical in
-  both themes because their job is legibility, not identity.
+- **The status and syntax hues are functional.** Each theme declares its own values so that
+  the job, legibility, is done on that theme's ground.
 
 ```text
-token           value     fill in Gi   fill in Oneiro   role
--------------   -------   ----------   --------------   ------------------------
---dya-success   #63cf95         9.47            10.58   a positive outcome
---dya-warning   #d6a95c         8.43             9.42   caution, not failure
---dya-danger    #f59790         8.45             9.44   error, destruction
---dya-idle      per theme          —                —   no outcome yet
+token           Gi        fill   Paper     fill   role
+-------------   -------   ----   -------   ----   ------------------------
+--dya-success   #63cf95   9.30   #1a6e3d   6.02   a positive outcome
+--dya-warning   #d6a95c   8.27   #7d5410   6.39   caution, not failure
+--dya-danger    #f59790   8.29   #ab3226   6.26   error, destruction
+--dya-idle      per theme  7.73  per theme  9.97  no outcome yet
 ```
 
-Each hue has a `-soft` companion at 10% for the ground of a row or a quiet badge, and
-`--dya-on-status` is the ink on any status fill. As text rather than fill, the three
-measure 6.46 / 5.75 / 5.76 at worst in Gi and 6.42 / 5.71 / 5.73 at worst in Oneiro, so
-`.dya-text--success`, `--warning` and `--danger` carry no reservation on any surface.
+`fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue
+has a `-soft` companion at 10% for the ground of a row or a quiet badge. As text rather than
+fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi, on `--dya-selected`, and
+4.90 / 5.20 / 5.09 at worst in Paper on the canvas, so `.dya-text--success` and
+`--danger` carry no reservation on any surface. On `--dya-sunken` in Paper, success
+measures 4.45 and is a fill there, not a sentence.
 
 ```text
-token                 value     Gi s-2   Gi s-1   Oneiro s-2   Oneiro s-1
--------------------   -------   ------   ------   ----------   ----------
---dya-code-keyword    #cf8fb4     6.84     7.17         6.89         7.33
---dya-code-string     #8fb87a     7.72     8.09         7.78         8.28
---dya-code-number     #d6a95c     8.04     8.43         8.11         8.62
---dya-code-function   #7fb0dd     7.59     7.96         7.66         8.15
---dya-code-punct      #b7b6b4     8.60     9.01         8.67         9.22
---dya-code-comment    #85857f     4.69     4.92         4.73         5.03
+token                 Gi        s-2    s-1    Paper     s-2    s-1
+-------------------   -------   ----   ----   -------   ----   ----
+--dya-code-keyword    #cf8fb4   6.69   7.03   #9c3874   6.23   5.96
+--dya-code-string     #8fb87a   7.56   7.94   #35691f   6.30   6.03
+--dya-code-number     #d6a95c   7.87   8.27   #7d5410   6.39   6.12
+--dya-code-function   #7fb0dd   7.44   7.82   #2b5f8f   6.42   6.14
+--dya-code-punct      #bdbab2   8.79   9.24   #4f4a42   8.42   8.05
+--dya-code-comment    #85857f   4.59   4.83   #6f6a60   5.15   4.93
 ```
 
 `--dya-code-comment` is the lowest ink in the system that is still text, deliberately the
-most recessive of the six and just above the 4.50 floor on every ground. Keyword and
-string converge under deuteranopia; a code block accepts that, because the reader still
-has indentation, quotes and delimiters.
+most recessive of the six and just above the 4.50 floor on the two surfaces a code block
+sits on. Keyword and string converge under deuteranopia; a code block accepts that, because
+the reader still has indentation, quotes and delimiters.
 
-`--dya-faint`, the elevation shadows and the glass tokens are theme-neutral black and
-white alphas. `--dya-elev-focus` is the exception and each theme overrides it.
+`--dya-faint`, the glass tokens and the carve tokens are alphas of the theme's own ink and
+ground. `--dya-elev-focus` follows the accent in each theme.
 
 
 ## Relief
@@ -198,29 +224,53 @@ white alphas. `--dya-elev-focus` is the exception and each theme overrides it.
   stood up can sink.
 - **A container that groups controls carries no relief**, or the controls inside read as
   sunk into a well. The panel is the single exception, carrying `--dya-elev-chassis`, a
-  1px light at 4%, which is a seam and not relief.
+  1px light on its top edge, which is a seam and not relief.
 - **Only what receives input is recessed**: fields, sliders, and any control being pressed.
 - **Hover changes the background, never the shadow.** There is no raised-hover elevation;
   `--dya-raised` moves to `--dya-raised-hover`.
-- **The contour ring is black, not white.** A white ring over a near-black ground reads as
-  a grey outline instead of as depth. No shadow uses positive spread.
+- **The contour ring is the theme's ink, not its opposite.** Black in Gi, near-black at 15%
+  in Paper. A white ring over a near-black ground reads as a grey outline instead of as
+  depth. No shadow uses positive spread.
+- **Carving is relief for a word.** `--dya-carve` is a two-edged text shadow, one edge lit
+  and one in shade, and the theme decides which side the light comes from: from below in
+  Gi, from above in Paper. `--dya-carve-filter` is the same pair as `drop-shadow`, for a
+  word whose fill is a gradient of `--dya-carve-a` to `--dya-carve-b` rather than a flat
+  ink. Static, and therefore free.
 
 
 ## Type
 
-IBM Plex Sans Condensed for content, IBM Plex Mono for interface. Neither ships a variable
-font, so the system carries six static faces at weights 300, 400 and 500.
+IBM Plex Sans for content, IBM Plex Mono for interface, Spectral for the brand. None ships
+a variable font, so the system carries eight static faces: sans and mono at 300, 400 and
+500, serif at 300 and 500.
 
 - **Hierarchy comes from size and tracking, never from weight.**
 - **Interface text is mono and uppercase; data is not.** A file name, a path, a model name
   or a log line keeps its case, in mono at `--dya-tracking-mono`. `.dya-entry` is the one
   list row that does not uppercase.
+- **The serif is the brand and nothing else.** `.dya-brand` and `.dya-carved` are its two
+  consumers; a heading, a label or a sentence in Spectral is a fork.
+- **Data is never smaller than 12px.** A figure, a date, a size, a count in a table cell or
+  a record is `--dya-size-mono-xs` at the least. The two label sizes exist for words that
+  name things: an eyebrow, a table header, a badge, a key.
+
+```text
+--dya-size-body       14px    prose, sentences, the empty state
+--dya-size-body-sm    13px
+--dya-size-body-xs    12px
+--dya-size-mono       14px    the mono block
+--dya-size-mono-sm    13px    code
+--dya-size-mono-xs    12px    fields, entries, log lines, table cells
+--dya-size-label      11px    buttons, chips, menu items, tabs
+--dya-size-label-sm   10px    eyebrows, labels, table headers, badges, keys
+--dya-size-brand      15px    the brand badge
+```
 
 ```text
 --dya-tracking-mono     0.02em    values, paths, figures, identifiers
 --dya-tracking-data     0.14em    data labels in a table or a record
 --dya-tracking-label    0.2em     section labels, buttons, chips, tabs
---dya-tracking-brand    0.26em    the brand badge, and nothing else
+--dya-tracking-brand    0.16em    the brand and the carved word, and nothing else
 ```
 
 One scale, no breakpoint, no `clamp()`.
@@ -233,8 +283,8 @@ whatever renders it next styles by element under its own prefix, from these size
 content: sans, and it keeps its case.
 
 `.dya-math` is the exception inside the exception: notation is data, so it is mono at
-`0.94em` of its surroundings carrying `--dya-text-2` — 11.23 and 10.71 on Gi's two
-surfaces, 15.37 and 14.46 on Oneiro's. The em-relative size is deliberate: an expression
+`0.94em` of its surroundings carrying `--dya-text-2` — 11.06 and 11.63 on Gi's two
+surfaces, 13.47 and 12.89 on Paper's. The em-relative size is deliberate: an expression
 inside a heading has to scale with it, and no fixed step can. `.dya-math--block` is the
 display form.
 
@@ -260,7 +310,8 @@ to `--dya-space-24` ladder and nothing outside it.
 - **Pressing never changes colour alone.** It scales on `--dya-press-scale` and translates
   on `--dya-press-y`.
 - **Performance outranks aesthetics.** No WebGL, no shaders. `backdrop-filter` is off by
-  default: `--dya-glass` resolves to `none`.
+  default: `--dya-glass` resolves to `none`. The carve filter is two static drop shadows on
+  one word and is the only `filter` in the system.
 
 
 ## Components
@@ -279,7 +330,7 @@ declare builds it ad-hoc under its own prefix and proposes it upstream — which
 wrong in ways the first consumer discovers rather than the author.
 
 ```text
-Structure    bar (--flush --inset) card card__header brand
+Structure    bar (--flush --inset) card card__header brand carved
 Pressable    button (--quiet --sm --danger --bare) key (--active) chip entry (--active)
 Input        field (--sm --auto) checkbox
 Content      tag badge (--success --warning --danger --soft) table row
@@ -295,6 +346,10 @@ Assistive    sr-only
 layout while leaving it in the accessibility tree, which is what a live region needs and
 what `[hidden]` would destroy. Measured 1x1 and still rendered.
 
+`brand` is the word in the title bar: serif, uppercase, carved, with the accent dot after
+it. `carved` is the same word at display size for a region that has nothing else to show:
+transparent text over the carve gradient, cut by the carve filter. Both are static.
+
 Four distinctions in that list are easy to collapse and are not the same thing:
 
 - **`code` is authored, `log` is streamed.** Code is highlighted and scrolls sideways
@@ -302,7 +357,7 @@ Four distinctions in that list are easy to collapse and are not the same thing:
   read a filename is unusable at panel width. `log` sets no height and no flex.
 - **`badge` is a chip, `text--*` is a sentence.** Same three tokens; a reported outcome in
   prose must not be dressed as a label.
-- **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 46px,
+- **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 38px,
   the gradient and the hairline; the rhythm is what the modifier keeps.
 - **`field` is full-width by default.** `--auto` opts out; a minimum width is the
   consumer's layout.
@@ -316,25 +371,26 @@ There is nothing to build, lint or test. What replaces those commands:
   against every surface it can sit on, **in both themes**, and the numbers go in the commit
   body. `py tools/contrast.py <token-suffix>` reads `tokens.css` and prints that grid; a
   literal `#rrggbb` measures a value that is not a token yet.
-- **Visual.** The system carries no render of its own. A page linking `css/dyarchia.css`
-  with the fonts beside it, holding the markup in question in both themes, is the whole
-  method. `scratch/` at the workspace root is gitignored and exists for those pages; serve
-  the workspace over HTTP, or the fonts are blocked as cross-origin and the measurement is
-  made against the wrong faces.
+- **Visual.** The system carries no render of its own; the desktop shell is the render.
+  With the app running in dev, `node scripts/screenshot.mjs out.png` at the workspace root
+  captures the window over the Chrome DevTools Protocol, and an optional second argument is
+  an expression evaluated in the page first — `document.documentElement.dataset.theme =
+  'paper'` switches the theme, a `.click()` opens a panel. One capture per theme per
+  change, and the pair is what a commit body describes.
 - **The invariant.** `components.css` must resolve to zero literal colours. Verify against
   the CSSOM, not by reading the file.
 
 
 ## Open questions
 
-- Six of Oneiro's ten surfaces are interpolated and have not been seen against real
-  content. The theme is also tiring to read over a long session, which is the same
-  observation from the other side.
+- Paper has been seen against the shell and the six panels at one window size. Its
+  interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, are the ones most likely
+  to move once a long session is spent in it.
 - The prose block went with its last consumer, and the SDK's markdown renderer still emits
   `code`, `math` and `prose__scroll`. Whatever renders markdown next needs typography for
-  the elements between them, and the heading scale has one step, which is thin for
-  arbitrary documents. docviewer answers both today with its own prefixed rules, dropping
-  `h2` and `h3` into the mono label idiom.
+  the elements between them. docviewer answers that today with its own prefixed rules,
+  styling by element in sans from `--dya-size-h2` to `--dya-size-h4`; a second consumer
+  is what would move those rules upstream.
 - `text--warning` went and its two siblings stayed, because nothing reports a warning in
   prose yet. The triad returns whole the day something does.
 - The IBM Plex stylistic sets are undetermined.

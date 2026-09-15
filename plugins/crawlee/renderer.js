@@ -83,6 +83,10 @@ const STYLE = `
     width: 210px;
     overflow: auto;
 }
+.crw-list > .dya-button {
+    align-self: flex-start;
+    margin-bottom: var(--dya-space-1);
+}
 .crw-editor {
     display: flex;
     flex-direction: column;
@@ -253,8 +257,10 @@ function mount(ctx, container) {
         const wrap = el('div', 'crw-corpora')
         wrap.appendChild(table)
 
-        const bar = el('div', 'dya-bar--inset crw-bar')
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
+        const scopeBox = el('span', 'dya-select')
+        scopeBox.appendChild(scope)
         const commitBox = el('label', 'crw-check')
         const commit = el('input', 'dya-checkbox')
         commit.type = 'checkbox'
@@ -264,7 +270,7 @@ function mount(ctx, container) {
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
         const status = el('span', 'dya-text crw-status', '')
-        bar.append(el('span', 'dya-key-label', 'round'), scope, commitBox, run, stop, status)
+        bar.append(el('span', 'dya-key-label', 'round'), scopeBox, commitBox, run, stop, status)
 
         const out = el('div', 'crw-out')
         const idle = el('div', 'dya-empty', 'nothing has run yet')
@@ -362,7 +368,7 @@ function mount(ctx, container) {
         const list = el('div', 'crw-list')
         const editor = el('div', 'crw-editor')
 
-        const bar = el('div', 'dya-bar--inset crw-bar')
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const title = el('span', 'dya-mono crw-status', 'pick a target, or add one')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')

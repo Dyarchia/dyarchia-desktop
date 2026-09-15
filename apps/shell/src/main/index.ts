@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'node:path'
 import { registerLayoutStore } from './layoutStore'
 import { registerWindowControls } from './windowControls'
+import { registerZoom } from './zoom'
 import { registerPluginScheme, setupPlugins } from './plugins'
 import { stopPythonPlugins } from './pythonHost'
 
@@ -32,6 +33,7 @@ function createWindow(): void {
     })
 
     win.on('ready-to-show', () => win.show())
+    registerZoom(win)
 
     if (isDev) {
         win.webContents.on('before-input-event', (_event, input) => {

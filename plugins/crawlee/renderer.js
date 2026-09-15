@@ -36,8 +36,8 @@ const STYLE = `
     flex: 1;
 }
 .crw-corpora {
-    flex: none;
-    max-height: 40%;
+    flex: 0 1 auto;
+    min-height: 160px;
     overflow: auto;
 }
 .crw-bar {
@@ -59,8 +59,8 @@ const STYLE = `
 }
 .crw-out {
     display: flex;
-    flex: 1;
-    min-height: 0;
+    flex: 1 1 120px;
+    min-height: 120px;
 }
 .crw-out > .dya-empty {
     flex: 1;

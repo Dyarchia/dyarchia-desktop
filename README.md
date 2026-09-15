@@ -18,7 +18,7 @@ own panels — draggable, resizable, and persistent across sessions.
 - The look is not the shell's: it is kanon, the shared design system in packages/kanon,
   linked once. Plugins inherit its dya-* component classes and its tokens, and are expected
   to reference them rather than reimplement them.
-- The system carries two themes, Gi (dark) and Paper (light), switched from the title bar.
+- The system carries two themes, Gi (dark) and Slate (mid-tone), switched from the title bar.
   A theme redefines colour tokens and never rules, so no plugin reads it or branches on it.
 
 ```mermaid
@@ -258,7 +258,7 @@ window.__dockApi for inspection.
 That port is also how a change is photographed without touching the window:
 
 ```bash
-node scripts/screenshot.mjs out.png "document.documentElement.dataset.theme = 'paper'" 800
+node scripts/screenshot.mjs out.png "document.documentElement.dataset.theme = 'slate'" 800
 ```
 
 The first argument is the PNG to write, the optional second is an expression evaluated in

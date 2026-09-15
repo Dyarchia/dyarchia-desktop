@@ -19,9 +19,12 @@ export type RunKind = 'implement' | 'review'
 
 export type Verdict = 'approved' | 'changes'
 
+export type HarnessId = 'claude'
+
 export interface Run {
     runId: string
     kind: RunKind
+    harness: HarnessId
     sessionId: string | null
     shortId: string | null
     worktree: string | null

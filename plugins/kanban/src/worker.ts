@@ -1,44 +1,17 @@
 import { execFile } from 'node:child_process'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { stat } from 'node:fs/promises'
+import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import * as agents from './agents.js'
-import type { BlockKind, Card, Run, Verdict } from './types.js'
+import { MARKER } from './closing.js'
+import * as harness from './harness/index.js'
+import type { Card, HarnessId, Run } from './types.js'
 
-const MARKER = '===KANBAN==='
-const REVIEW_MODE = 'plan'
-const LAUNCH_TIMEOUT_MS = 60_000
 const INLINE_LIMIT = 8_000
-const SETTLE_TRIES = 10
-const SETTLE_MS = 400
 const DIFF_LIMIT = 120_000
 const DIFF_INLINE = 20_000
-const DENIED = ['Bash', 'PowerShell']
-
-export interface TerminalBlock {
-    outcome: 'completed' | 'blocked'
-    verdict: Verdict | null
-    blockKind: BlockKind | null
-    summary: string
-    artifacts: string[]
-    followups: { title: string; body: string }[]
-}
-
-export interface Progress {
-    tool: string | null
-    inputTokens: number
-    outputTokens: number
-    ended: boolean
-    lastText: string
-    terminal: TerminalBlock | null
-    error: string | null
-    modifiedAt: number
-}
 
 export interface Started {
     shortId: string
     sessionId: string
-    transcript: string | null
     headBefore: string | null
     worktree: string | null
     branch: string | null
@@ -315,10 +288,11 @@ export async function start(
     runId: string,
     workspace: string,
     attachments: { name: string; path: string }[] = [],
-    reviewing: Run | null = null
+    reviewing: Run | null = null,
+    on: HarnessId = harness.DEFAULT_HARNESS
 ): Promise<Started> {
-    const path = await agents.binary()
-    if (!path) throw new Error('claude is not on PATH')
+    const driver = harness.driver(on)
+    if (!(await driver.binary())) throw new Error(`${on} is not on PATH`)
 
     const info = await stat(workspace).catch(() => null)
     if (!info?.isDirectory()) throw new Error(`'${workspace}' is not an existing directory`)
@@ -330,7 +304,7 @@ export async function start(
 
     const isolate =
         !reviewing && (await tracked(workspace)) ? `kanban-${runId.slice(0, 8)}` : null
-    const predicted = isolate ? join(workspace, '.claude', 'worktrees', isolate) : workspace
+    const predicted = isolate ? driver.worktreePath(workspace, isolate) : workspace
 
     let change: Patch | null = null
     let patchPath: string | null = null
@@ -357,260 +331,25 @@ export async function start(
         if (!dirs.includes(holder)) dirs.push(holder)
     }
 
-    const argv = agents.launchArgv({
+    const launched = await driver.launch({
+        kind: reviewing ? 'review' : 'implement',
         name: (reviewing ? `review: ${card.title}` : card.title).slice(0, 60),
-        permissionMode: reviewing ? REVIEW_MODE : card.permissionMode,
+        prompt,
+        workspace,
         addDirs: dirs,
+        isolate,
+        permissionMode: card.permissionMode,
         model: card.model,
-        effort: card.effort,
-        worktree: isolate,
-        deny: reviewing ? DENIED : [],
-        prompt
+        effort: card.effort
     })
 
-    const call = agents.invocation(path, argv)
-    const stdout = await new Promise<string>((resolve, reject) => {
-        execFile(
-            call.file,
-            call.args,
-            { cwd: workspace, env: agents.childEnv(), timeout: LAUNCH_TIMEOUT_MS, windowsHide: true },
-            (error, out) => (error ? reject(error) : resolve(out))
-        )
-    })
-
-    const launched = agents.parseLaunch(stdout, await agents.snapshot())
-    if (!launched?.sessionId) throw new Error('the launcher printed no session id')
-
-    const isolated = isolate ? await settle(join(workspace, '.claude', 'worktrees', isolate)) : null
-    const place = isolated ?? workspace
+    const place = launched.worktree ?? workspace
 
     return {
         shortId: launched.shortId,
         sessionId: launched.sessionId,
-        transcript: await agents.transcript(place, launched.sessionId),
         headBefore: await head(place),
-        worktree: isolated,
-        branch: isolated ? await git(isolated, ['rev-parse', '--abbrev-ref', 'HEAD']) : null
+        worktree: launched.worktree,
+        branch: launched.worktree ? await git(launched.worktree, ['rev-parse', '--abbrev-ref', 'HEAD']) : null
     }
-}
-
-async function settle(path: string): Promise<string | null> {
-    for (let attempt = 0; attempt < SETTLE_TRIES; attempt += 1) {
-        if ((await stat(path).catch(() => null))?.isDirectory()) return path
-        await new Promise((resume) => setTimeout(resume, SETTLE_MS))
-    }
-    return null
-}
-
-export function parseTerminal(text: string): TerminalBlock | null {
-    const at = text.lastIndexOf(MARKER)
-    if (at < 0) return null
-
-    const rest = text.slice(at + MARKER.length)
-    const open = rest.indexOf('{')
-    if (open < 0) return null
-
-    let depth = 0
-    let end = -1
-    for (let index = open; index < rest.length; index += 1) {
-        if (rest[index] === '{') depth += 1
-        else if (rest[index] === '}') {
-            depth -= 1
-            if (depth === 0) {
-                end = index + 1
-                break
-            }
-        }
-    }
-    if (end < 0) return null
-
-    try {
-        const raw = JSON.parse(rest.slice(open, end)) as Record<string, unknown>
-        const outcome = raw.outcome === 'blocked' ? 'blocked' : 'completed'
-        const followups = Array.isArray(raw.followups) ? raw.followups : []
-        return {
-            outcome,
-            verdict:
-                raw.verdict === 'approved' || raw.verdict === 'changes'
-                    ? (raw.verdict as Verdict)
-                    : null,
-            blockKind: (raw.blockKind as BlockKind) ?? null,
-            summary: typeof raw.summary === 'string' ? raw.summary : '',
-            artifacts: Array.isArray(raw.artifacts) ? raw.artifacts.map(String) : [],
-            followups: followups
-                .map((entry) => entry as Record<string, unknown>)
-                .filter((entry) => typeof entry?.title === 'string')
-                .map((entry) => ({ title: String(entry.title), body: String(entry.body ?? '') }))
-        }
-    } catch {
-        return null
-    }
-}
-
-export async function progress(path: string): Promise<Progress | null> {
-    const info = await stat(path).catch(() => null)
-    if (!info) return null
-
-    let raw = ''
-    try {
-        raw = await readFile(path, 'utf-8')
-    } catch {
-        return null
-    }
-
-    const counted = new Set<string>()
-    const result: Progress = {
-        tool: null,
-        inputTokens: 0,
-        outputTokens: 0,
-        ended: false,
-        lastText: '',
-        terminal: null,
-        error: null,
-        modifiedAt: info.mtimeMs
-    }
-
-    const texts: string[] = []
-
-    for (const line of raw.split('\n')) {
-        if (!line.trim()) continue
-        let entry: Record<string, unknown>
-        try {
-            entry = JSON.parse(line) as Record<string, unknown>
-        } catch {
-            continue
-        }
-
-        if (entry.type === 'system') {
-            if (entry.subtype === 'turn_duration') result.ended = true
-            continue
-        }
-
-        if (entry.type !== 'assistant') continue
-        result.ended = false
-
-        const message = entry.message as Record<string, unknown> | undefined
-        if (!message) continue
-
-        const id = typeof message.id === 'string' ? message.id : ''
-        const usage = message.usage as Record<string, number> | undefined
-        if (usage && id && !counted.has(id)) {
-            counted.add(id)
-            result.inputTokens +=
-                (usage.input_tokens ?? 0) +
-                (usage.cache_creation_input_tokens ?? 0) +
-                (usage.cache_read_input_tokens ?? 0)
-            result.outputTokens += usage.output_tokens ?? 0
-        }
-
-        for (const block of (message.content as Record<string, unknown>[] | undefined) ?? []) {
-            if (block.type === 'tool_use' && typeof block.name === 'string') result.tool = block.name
-            if (block.type === 'text' && typeof block.text === 'string') {
-                texts.push(block.text)
-                result.lastText = block.text
-            }
-        }
-    }
-
-    result.terminal = parseTerminal(texts.join('\n'))
-    return result
-}
-
-export interface HistoryRow {
-    at: number
-    kind: 'text' | 'thinking' | 'tool' | 'result' | 'end'
-    label: string
-    body: string
-    error: boolean
-}
-
-const TELLING = ['file_path', 'command', 'pattern', 'path', 'url', 'query', 'prompt']
-const MAX_ROWS = 400
-const MAX_BODY = 4_000
-
-function summarise(input: unknown): string {
-    const record = (input ?? {}) as Record<string, unknown>
-    for (const key of TELLING) {
-        const value = record[key]
-        if (typeof value === 'string' && value.trim()) return value.replace(/\s+/g, ' ').slice(0, 200)
-    }
-    const rendered = JSON.stringify(record) ?? ''
-    return rendered.length > 200 ? `${rendered.slice(0, 200)}...` : rendered
-}
-
-function stamp(entry: Record<string, unknown>): number {
-    const raw = entry.timestamp
-    const at = typeof raw === 'string' ? Date.parse(raw) : 0
-    return Number.isNaN(at) ? 0 : at
-}
-
-export async function history(path: string): Promise<HistoryRow[]> {
-    let raw = ''
-    try {
-        raw = await readFile(path, 'utf-8')
-    } catch {
-        return []
-    }
-
-    const rows: HistoryRow[] = []
-
-    for (const line of raw.split('\n')) {
-        if (!line.trim()) continue
-        let entry: Record<string, unknown>
-        try {
-            entry = JSON.parse(line) as Record<string, unknown>
-        } catch {
-            continue
-        }
-
-        const at = stamp(entry)
-
-        if (entry.type === 'system' && entry.subtype === 'turn_duration') {
-            const ms = typeof entry.durationMs === 'number' ? entry.durationMs : 0
-            const count = typeof entry.messageCount === 'number' ? entry.messageCount : 0
-            rows.push({
-                at,
-                kind: 'end',
-                label: 'turn',
-                body: `${(ms / 1000).toFixed(1)}s over ${count} messages`,
-                error: false
-            })
-            continue
-        }
-
-        if (entry.type === 'user' && entry.toolUseResult !== undefined) {
-            const value = entry.toolUseResult
-            const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '')
-            rows.push({
-                at,
-                kind: 'result',
-                label: '',
-                body: text.slice(0, MAX_BODY),
-                error: /^error\b|"is_error":\s*true/i.test(text)
-            })
-            continue
-        }
-
-        if (entry.type !== 'assistant') continue
-        const message = entry.message as Record<string, unknown> | undefined
-        for (const block of (message?.content as Record<string, unknown>[] | undefined) ?? []) {
-            if (block.type === 'text' && typeof block.text === 'string' && block.text.trim()) {
-                rows.push({ at, kind: 'text', label: '', body: block.text.slice(0, MAX_BODY), error: false })
-            }
-            if (block.type === 'thinking' && typeof block.thinking === 'string' && block.thinking.trim()) {
-                rows.push({
-                    at,
-                    kind: 'thinking',
-                    label: '',
-                    body: block.thinking.slice(0, MAX_BODY),
-                    error: false
-                })
-            }
-            if (block.type === 'tool_use' && typeof block.name === 'string') {
-                rows.push({ at, kind: 'tool', label: block.name, body: summarise(block.input), error: false })
-            }
-        }
-    }
-
-    return rows.slice(-MAX_ROWS)
 }

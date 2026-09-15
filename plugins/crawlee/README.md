@@ -74,6 +74,39 @@ picked, it would be writing somebody's corpus into somebody else's, and it would
 edit saved through `profile save` lands where the profile already is, for the same reason; only a
 name that exists nowhere yet is new, and new goes to the default repository.
 
+### Your first corpus repository
+
+A fresh clone of this toolkit holds no corpus, and the folder `DYARCHIA_CRAWLEE_REPOSITORIES_DIR`
+names is created empty on purpose. Making the first repository is three directories, one profile
+and one line in `.env`:
+
+```bash
+mkdir -p ~/corpora/my-docs/profiles ~/corpora/my-docs/data ~/corpora/my-docs/output
+git -C ~/corpora/my-docs init
+```
+
+```yaml
+# ~/corpora/my-docs/profiles/my-site.yaml
+name: my-site
+group: my-docs
+start_urls:
+  - https://docs.example.com/guide/
+snapshot: true
+```
+
+```text
+# .env, in this checkout
+DYARCHIA_CRAWLEE_REPOSITORIES_DIR=~/corpora
+```
+
+`name` is how every command refers to the target, `group` is the folder its snapshots share with
+its neighbours under `data/`, `start_urls` is where the crawl begins, and `snapshot` is what makes
+a round keep the pages rather than only reporting them. Everything else has a default the
+Profiles section explains. The first `crawl --profile my-site --snapshot --commit` writes
+`data/my-docs/my-site/` and commits it into the repository's own history; `state` lists it from
+then on, and the Setup panel of the desktop app never has to know, because it resolves the
+Python environment and not the corpus.
+
 
 ## Commands
 
@@ -88,6 +121,9 @@ name that exists nowhere yet is new, and new goes to the default repository.
     state        Report every corpus across every repository, in one answer
     profiles     List the profiles this project knows about
     profile      Print one profile as written, or save one from standard input
+    search       Find the chunks of the corpus that carry some words, best first
+    index        Bring the search index level with the snapshots, or rebuild it
+    mcp          Serve that search to an agent as a Model Context Protocol tool
     version      Print the installed version
 
 ```bash
@@ -292,6 +328,39 @@ through its exit code:
 by weight, which is how a sitemap's bulk gets separated from the sections paying their way.
 `--depth` rolls the grouping up to the first N segments; `--list` prints one URL per line for
 piping.
+
+
+## Search
+
+    dyarchia-crawlee search "record type picklist"
+    dyarchia-crawlee search "callout timeout" --repository crawlee-salesforce-data --limit 5 --json
+    dyarchia-crawlee index --rebuild
+
+Every snapshotted page is split at its headings into chunks and kept in an SQLite FTS5 index, one
+file per corpus repository under `DYARCHIA_CRAWLEE_INDEX_DIR`, ranked by BM25 with the title and
+the heading weighing more than the body. Nothing outside the standard library, no model and no
+service: a query answers in milliseconds on 7,000 pages, and the first search after a round
+brings the index level with the manifests first, page by page from their content hashes, so it
+costs the pages that changed and nothing more.
+
+Words are matched together first. When no chunk holds all of them the query is widened to any
+of them, and the score says which it was. Punctuation never reaches the parser: `foo(bar)` is
+the two words foo and bar. The index is derived and never versioned; delete the file and the
+next search rebuilds it.
+
+The files are written in write-ahead mode inside one transaction per refresh, so a search that
+lands while a refresh is running reads the index as it was and waits at most a minute for a
+lock, and a refresh killed halfway leaves the previous index rather than half of a new one. The
+rows a page produced are contiguous and the page table keeps the range, which is what makes
+dropping a page a delete by rowid and not a scan of every chunk. `search.log` beside the index
+files records every refresh: when, which process, which repository, what triggered it, and
+what it cost. An index that changed when nobody asked is explained there.
+
+`mcp` serves the same search to an agent as one tool, `search_corpus`, over stdio: JSON-RPC 2.0
+one message per line, the `initialize`, `tools/list`, `tools/call` and `ping` methods, nothing
+else. A Claude Code session reaches it with an `--mcp-config` naming this environment's
+interpreter and `-m dyarchia_crawlee mcp`; what an agent does with a documentation search is the
+agent's business, and the tool answers the same way the CLI does.
 
 
 ## The panel

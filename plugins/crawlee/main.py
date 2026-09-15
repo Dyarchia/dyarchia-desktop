@@ -128,6 +128,15 @@ def activate(ctx: Any) -> None:
     def save(name: str, text: str) -> str:
         return _read(['profile', 'save', name], stdin=text).strip()
 
+    def search(payload: dict[str, Any]) -> Any:
+        """Ask the index. The CLI refreshes it first when a manifest moved since it was built."""
+        args = ['search', str(payload['query']), '--json', '--limit', str(int(payload.get('limit') or 20))]
+        if payload.get('repository'):
+            args += ['--repository', str(payload['repository'])]
+        if payload.get('target'):
+            args += ['--target', str(payload['target'])]
+        return json.loads(_read(args))
+
     def start(kind: str, payload: dict[str, Any]) -> str:
         """Begin a round or a probe. The panel hears the rest on `line` and `done`."""
         global _running
@@ -166,6 +175,7 @@ def activate(ctx: Any) -> None:
     ctx.handle('profiles', profiles)
     ctx.handle('show', show)
     ctx.handle('save', save)
+    ctx.handle('search', search)
     ctx.handle('start', start)
     ctx.handle('stop', stop)
 

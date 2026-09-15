@@ -55,47 +55,57 @@ and the reason is NOT settled
 transcripts
 A stopped session reads as alive                         the card never lands on its own
 'blocked' does not mean the worker is still working      liveness needs three values
-Permission modes are not interchangeable under --bg      see below
+Two modes finish a card unattended, auto and dontAsk    see below
 Plan mode does not stop a reviewer from stalling         plan mode is not a safety net
 os.kill(pid, 0) is not a liveness query on Windows       it lies in both directions
 ```
 
-**Which permission mode.** An unattended run goes on `auto`: the worker decides for itself, the
-CLI's safety classifier is the backstop, and it is the only mode that gets a commit made with
-nobody watching. A run you intend to sit in front of can go on `acceptEdits`, which applies edits
-without asking and then stops on every command, the commit included. `bypassPermissions` **refuses
-to launch under `--bg` at all** — the CLI wants a one-time interactive disclaimer and a detached
-session has nobody to give it, so the run never starts. The refusal names its remedy: `Run claude
---dangerously-skip-permissions once interactively`, which records the acceptance in the operator's
-own `~/.claude.json`. That is a decision for the person at the keyboard and nothing in this plugin
-takes it for them; whether a background worker then launches and finishes under that mode has not
-been measured from here, because the acceptance is not something a tool should perform on an
-operator's behalf.
-
-**The Windows allowlist trap.** A repository can pre-authorise commands in its own
-`.claude/settings.json`, but on Windows a rule written as `Bash(...)` never fires: the worker
-reaches for the PowerShell tool, so the rule names a tool that is never asked for and the worker
-stops for approval anyway. Measured on the proof repository, four commands, all four covered on
-paper and none in fact.
+**Which permission mode.** Two modes finish a card with nobody watching, measured on
+2026-09-15 with the same brief (write a file, add it, commit it) in a fresh repository under
+`--bg`:
 
 ```text
-COMMAND      REQUESTED THROUGH   RULE THAT WAS MEANT TO COVER IT
------------  ------------------  ---------------------------------
-node         PowerShell          Bash(node:*)
-git status   PowerShell          Bash(git status:*)
-git add      PowerShell          Bash(git add:*)
-git commit   PowerShell          Bash(git commit:*)
+MODE        FLAGS                                  OUTCOME                         TIME   COST
+----------  -------------------------------------  ------------------------------  -----  --------
+auto        --permission-mode auto                 committed; the classifier       50 s   0.35 USD
+                                                   passed a compound shell
+                                                   command, no prompt
+dontAsk     --permission-mode dontAsk              committed in its worktree;      45 s   0.79 USD
+            --allowedTools EnterWorktree Edit      what the list does not name
+            Write Read Glob Grep                   is denied, never asked, and
+            "Bash(git add:*)" "Bash(git commit:*)" the worker routes round a
+            "PowerShell(git add:*)"                denial
+            "PowerShell(git commit:*)"
+acceptEdits --permission-mode acceptEdits          edits applied, then a stop at   -      0.39 USD
+                                                   the first command
+bypass      --permission-mode bypassPermissions    refuses to launch under --bg    -      -
 ```
 
-Name the tool the worker actually uses, and know that it varies. Measured again on 2026-09-15
-with both spellings allowed in the repository's own `.claude/settings.json` — `Bash(git add:*)`,
-`Bash(git commit:*)`, `PowerShell(git add:*)`, `PowerShell(git commit:*)` — under `--bg` and
-`acceptEdits`: the worker wrote its file, reached for **Bash** this time, ran
-`git add note.txt && git commit -m e2` as one command, and stopped at the permission prompt
-anyway. Whether the compound command or the background session defeated the rules is not settled;
-the run cost 0.39 USD of the operator's plan and the question stays open in the mode table. Until
-it closes, `auto` is the only mode measured to commit unattended.
+`auto` is the default for a new card and the mode for unattended implementation: the worker
+decides for itself and the CLI's classifier reviews what is not read-only, blocking what
+escalates beyond the brief. Its one documented gap is that gap: a blocked action is retried
+another way, and after three blocks in a row a session that cannot prompt keeps working without
+the action. Auto mode also drops blanket `Bash(*)` and `PowerShell(*)` allow rules on entry, so
+an allowlist does not widen it. An earlier measurement, on 2026-09-11, saw two `auto` workers
+stop on ordinary edits; the CLI documents that a session asked for `auto` starts in Manual when
+the model does not support it, when a settings file disables it or when the server declines it,
+which is the reading that fits, and today's runs replace that row.
 
+`dontAsk` with `--allowedTools` is the CLI's own recipe for CI: exact, and nothing outside the
+list ever prompts. It costs more than `auto` on the same brief because a denied call is a turn
+spent. `acceptEdits` is for a run you sit in front of. `bypassPermissions` wants a one-time
+interactive acceptance that writes to the operator's `~/.claude.json`; nothing in this plugin
+performs it, and the operator has chosen not to.
+
+**The allowlist trap has two halves.** Allow rules in a repository's own `.claude/settings.json`
+grant capability, so the CLI applies them only after the operator accepts the workspace trust
+dialog for that folder, which an interactive session shows and a background or `-p` session
+never does. A background worker therefore ignores every rule the repository carries, whichever
+tool they name; the E2 run of 2026-09-15 stopped for that reason and not for the compound
+command. Rules meant for a worker go on the command line as `--allowedTools`, where the board
+puts them. The second half is Windows: the worker reaches for `PowerShell` as readily as for
+`Bash`, one run each way on the same brief, so a rule that names one tool covers half the runs.
+Name both.
 
 ## Who runs a card
 

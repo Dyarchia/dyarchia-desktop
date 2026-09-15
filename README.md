@@ -64,6 +64,7 @@ The pieces:
             player/              audio/video player (dyarchia-media://)
             kanban/              a task board that dispatches work to Claude Code
             crawlee/             a crawling toolkit and the panel that drives it (python)
+            costs/               what every prompt to Claude Code cost, live from its transcripts
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module

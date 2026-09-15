@@ -1025,7 +1025,7 @@ export function begin(sink: Sink): () => void {
     return () => {
         if (timer) clearInterval(timer)
         timer = null
-        void lease.drop(OWNER).catch(() => undefined)
+        lease.drop(OWNER)
     }
 }
 

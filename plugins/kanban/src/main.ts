@@ -9,6 +9,7 @@ import * as boards from './boards.js'
 import * as dispatch from './dispatch.js'
 import * as events from './events.js'
 import * as harness from './harness/index.js'
+import * as hosted from './harness/hosted.js'
 import { rules } from './rules.js'
 import * as worktrees from './worktrees.js'
 import type {
@@ -139,6 +140,9 @@ export function activate(ctx: PluginMainContext): void {
         await boards.find(target)
         if ((await running(target)).length) throw new Refusal('that board still has a card running')
 
+        for (const card of await board.cards(target)) {
+            for (const run of card.runs) await hosted.forget(run)
+        }
         await boards.forget(target)
         board.forget(target)
         await reclaim(boards.boardRoot(target), boards.root())

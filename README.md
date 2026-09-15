@@ -216,6 +216,7 @@ somebody presses the button, and every step skips what the machine already has.
     Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
     Theme choice          renderer localStorage, key dyarchia:theme
     Zoom level            <userData>/zoom.json
+    Hosted kanban runs    <userData>/kanban/hosted/<runId>.jsonl, .final.md, .stderr.txt
 
 `<userData>` is `%APPDATA%/dyarchia` in dev and in the portable build alike, because the
 product name is the same in both.

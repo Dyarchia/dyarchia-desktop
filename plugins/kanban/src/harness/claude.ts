@@ -368,15 +368,25 @@ async function attach(run: Run): Promise<Invocation> {
 export const driver: Driver = {
     id: 'claude',
     label: 'Claude Code',
-    models: ['fable', 'opus', 'sonnet', 'haiku'],
+    isolates: true,
+    commits: true,
     efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
     binary: () => findBinary(BINARY),
+    models: async () => ['fable', 'opus', 'sonnet', 'haiku'],
+    restraint: () => [
+        'You are in PLAN MODE and you have NO SHELL: Bash and PowerShell are denied to you, on',
+        'purpose. You are not being trusted less than the implementer was. It is that a review',
+        'which reaches for a shell stops dead waiting for a permission nobody is there to give,',
+        'and a stopped review is worth less than no review. Do not try to leave plan mode, and do',
+        'not end by proposing a plan. The judgement below IS your output.'
+    ],
     launch,
     worktreePath,
     poll: snapshot,
     liveness: (held, run) => (run.sessionId ? liveness(sessions(held), run.sessionId) : 'dead'),
     state: (held, run) => (run.sessionId ? (find(sessions(held), run.sessionId)?.state ?? null) : null),
     waiting: (held, run) => (run.sessionId ? waiting(find(sessions(held), run.sessionId)) : false),
+    orphaned: () => false,
     stop: async (run) => {
         if (run.shortId) await stopSession(run.shortId)
     },

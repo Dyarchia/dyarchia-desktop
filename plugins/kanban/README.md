@@ -5,9 +5,11 @@ talk to it while it does. What is wrong, missing or unproven is kept in a regist
 repository; anything found while building goes there before the commit that found it, and nothing
 leaves it silently.
 
-A worker is **a real interactive session, not a batch run**: `claude --bg` in a git worktree, with
-a pty the operator can attach to. Print mode exists and this design does not use it, because a
-session you cannot talk to cannot be unblocked.
+A worker under Claude Code is **a real interactive session, not a batch run**: `claude --bg` in a
+git worktree, with a pty the operator can attach to. Print mode exists and this design does not
+use it, because a session you cannot talk to cannot be unblocked. The three other harnesses the
+board can run, Codex CLI, Grok CLI and OpenCode, have no detached mode, so under them a worker
+is a child process of this app whose event stream the board keeps; see *Who runs a card*.
 
 
 ## Build and verify
@@ -105,9 +107,75 @@ back as the implementer's, and the review phase inherits, which is what it did b
 A harness is a driver in `src/harness/`, and the whole of what the board asks of one is five
 operations: launch a run with a brief, answer whether it is alive, stop it, hand back its final
 text, and give the operator a pty to attach. The brief, the closing block, the worktree per
-card, the lease, the stall detector and the verdict never see which driver answered. `claude`
-is the one driver shipped; the harness list, and each one's models and efforts that the drawer
-offers, come from the drivers rather than from the panel.
+card, the lease, the stall detector and the verdict never see which driver answered. Four are
+shipped, and the harness list, each one's models and whether it is on PATH, come from the
+drivers rather than from the panel.
+
+```text
+HARNESS    BINARY     MODELS COME FROM                    RUNS AS
+---------  ---------  ----------------------------------  ---------------------------------
+claude     claude     four aliases                        claude --bg, detached, a registry
+codex      codex      ~/.codex/models_cache.json, the     codex exec --json, a child of this
+                      ones it would list                  app
+grok       grok       grok models                         grok -p, streaming json, a child
+opencode   opencode   opencode models openrouter          opencode run --format json, a child
+```
+
+**A hosted run is a child of this app.** Its stdout is the event stream and goes to
+`<userData>/kanban/hosted/<runId>.jsonl`, which is what progress and the history tab read;
+its exit is the liveness answer; the terminal tab tails that file, because there is no
+session to talk to. When this app closes, the run closes with it: the board marks it crashed
+with that reason, sends the card back to its phase, and does not count the attempt. That is
+the trade the plan accepted on 2026-09-15 rather than a second supervisor of our own.
+
+**The board lands what a worker leaves uncommitted.** A change left in the working tree is not
+on the branch, so nothing can review it and the worktree may go. When an implement run
+completes in a worktree with a dirty tree, the board commits it as one commit named after the
+card, says so in the message and in the event log, and only then hands the card to review.
+Codex needs this by construction: its sandbox refuses every write to the git metadata, `--add-dir`
+on `.git` included, so its brief tells it not to try. A worker under any harness that simply
+forgot gets the same treatment.
+
+**The worktree is the board's whichever harness runs.** Claude Code makes its own with
+`--worktree`; for the other three the board runs `git worktree add` at the same place,
+`.claude/worktrees/<name>` on branch `worktree-<name>`, because that is the directory the
+board already ignores, inventories and prunes.
+
+### Measured facts about the hosted harnesses
+
+Every row cost a real run on 2026-09-15, against codex-cli 0.154.0, grok 1.0.30 and opencode
+1.18.30 on Windows 11. None of them is inferred.
+
+```text
+FACT                                                      CONSEQUENCE
+--------------------------------------------------------  ----------------------------------
+codex exec --json prints thread.started, item.*,           the reader keys on those four
+turn.completed with usage, turn.failed with the error
+codex -o writes the last message whole                     the closing block is read from it
+codex's workspace-write sandbox refuses .git writes even   the board commits for it
+with --add-dir on .git
+codex -s read-only reviewed and approved a diff            a codex review is a real read-only
+                                                           review
+codex reads stdin when it is not a tty                     stdin is ignored on the spawn
+a model the account cannot use fails after the launch      the error is read from the stream
+with turn.failed, not before it                            and blocks the card as needs_input
+grok -p --output-format streaming-json prints thought      the reader joins deltas and takes
+and text deltas, usage, and end with sessionId and usage   the usage from end
+grok --permission-mode takes claude's vocabulary           the card's mode passes through
+grok models lists the models, authenticated or not         the drawer offers them
+grok reviewed a diff and approved it under plan mode       a grok review works
+opencode is an npm shim through cmd.exe, and cmd.exe ends  the driver launches the .exe the
+a command at the first newline: the model saw one line     shim points at, never the shim
+of the brief
+opencode -f attaches a file the model never opened         the brief goes as the message
+opencode run without --dir searched and wrote in the       --dir is always passed
+directory this app started in, three attempts in a row
+opencode models openrouter lists 367 ids in -m form        the drawer offers them
+opencode over OpenRouter completed a card, commit and       the cycle works end to end
+closing block included, and codex approved it
+the dispatcher lease outlives a killed app for its TTL     a relaunch within 90 s watches,
+                                                           not claims, until it expires
+```
 
 A launch that fails before any work is done, because the binary is not on PATH, the model is
 one the harness does not know, or a login lapsed, blocks the card as `needs_input` with the

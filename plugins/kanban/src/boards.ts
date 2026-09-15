@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import type { BoardDraft, BoardMeta, Settings } from './types.js'
 import { Refusal } from './refusal.js'
+import * as runners from './runners.js'
 
 export const PER_BOARD = 1
 export const GLOBAL = 2
@@ -165,7 +166,8 @@ export async function list(): Promise<BoardMeta[]> {
         return (parsed as BoardMeta[])
             .map((entry) => ({
                 ...entry,
-                maxRunning: typeof entry.maxRunning === 'number' ? entry.maxRunning : null
+                maxRunning: typeof entry.maxRunning === 'number' ? entry.maxRunning : null,
+                runners: runners.restore(entry as unknown as Record<string, unknown>)
             }))
             .sort((a, b) => a.order - b.order)
     } catch {
@@ -201,7 +203,8 @@ export async function create(draft: BoardDraft): Promise<BoardMeta> {
         archived: false,
         createdAt: Date.now(),
         order: boards.length,
-        maxRunning: draft.maxRunning === undefined || draft.maxRunning === null ? null : assertCap(draft.maxRunning)
+        maxRunning: draft.maxRunning === undefined || draft.maxRunning === null ? null : assertCap(draft.maxRunning),
+        runners: runners.merge(runners.blank(), draft.runners)
     }
 
     await mkdir(boardRoot(slug), { recursive: true })
@@ -227,7 +230,12 @@ export async function update(slug: string, patch: Partial<BoardDraft>): Promise<
               ? null
               : assertCap(patch.maxRunning)
 
-    boards[index] = { ...boards[index], name, workdir, maxRunning }
+    const chosen =
+        patch.runners === undefined
+            ? boards[index].runners
+            : runners.merge(boards[index].runners, patch.runners)
+
+    boards[index] = { ...boards[index], name, workdir, maxRunning, runners: chosen }
     await persist(boards)
     return boards[index]
 }

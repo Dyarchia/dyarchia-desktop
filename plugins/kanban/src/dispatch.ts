@@ -9,6 +9,7 @@ import * as harness from './harness/index.js'
 import type { Fleet, Liveness, Progress } from './harness/types.js'
 import * as lease from './lease.js'
 import { isClosed } from './rules.js'
+import * as runners from './runners.js'
 import * as worker from './worker.js'
 import * as worktrees from './worktrees.js'
 import type {
@@ -36,6 +37,7 @@ const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
 const PRUNE_MS = 10 * 60_000
 const CREDENTIAL = /401|429|quota|credit|not logged in|refresh your login/i
+const CONFIGURATION = /not on PATH|model|not logged in|api key|unauthori[sz]ed|403/i
 const YOUNG_MS = 20_000
 
 export interface CardProgress {
@@ -600,14 +602,28 @@ async function launch(
             path: join(boards.attachmentsRoot(meta.slug, card.id), entry.name)
         }))
 
-        const started = await worker.start(card, parents, run.runId, where, held, reviewing, run.harness)
+        const chosen = runners.resolve(meta.runners, card.runners, run.kind)
+        const started = await worker.start(card, parents, run.runId, where, held, reviewing, chosen)
         run.sessionId = started.sessionId
         run.shortId = started.shortId
         run.headBefore = started.headBefore
         run.worktree = started.worktree
         run.branch = started.branch
     } catch (error) {
-        close(run, 'crashed', null, error instanceof Error ? error.message : String(error))
+        const message = error instanceof Error ? error.message : String(error)
+        close(run, 'crashed', null, message)
+        if (CONFIGURATION.test(message)) {
+            card.comments.push({
+                at: Date.now(),
+                author: 'agent',
+                text: `The launch failed before any work was done, so this attempt does not count: ${message}`
+            })
+            block(meta.slug, card, 'needs_input', back)
+            void events.record(meta.slug, card.id, 'crashed', message, run.runId)
+            ended(sink, meta, card, run)
+            sink.runEnded(meta.slug, card.id, 'crashed')
+            return
+        }
         card.consecutiveFailures += 1
         if (card.consecutiveFailures >= (card.maxRetries ?? RETRIES)) {
             block(meta.slug, card, 'capability', back)
@@ -620,8 +636,8 @@ async function launch(
     }
 }
 
-function take(card: Card, kind: RunKind): Run {
-    const run = blank(randomUUID(), kind, harness.DEFAULT_HARNESS)
+function take(meta: BoardMeta, card: Card, kind: RunKind): Run {
+    const run = blank(randomUUID(), kind, runners.resolve(meta.runners, card.runners, kind).harness)
     card.runs.push(run)
     card.status = 'running'
     card.locked = true
@@ -638,7 +654,7 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
     const card = claimable(file, Date.now())[0]
     if (!card) return false
 
-    const run = take(card, 'implement')
+    const run = take(meta, card, 'implement')
     await board.save(meta.slug, file)
     await events.record(meta.slug, card.id, 'claimed', `attempt ${card.runs.length}`, run.runId)
     sink.boardChanged(meta.slug)
@@ -656,7 +672,7 @@ export async function review(meta: BoardMeta, cardId: string, sink: Sink): Promi
     const judged = reviewed(card)
     if (!judged) throw new Error('that card has no finished run for a reviewer to read')
 
-    const run = take(card, 'review')
+    const run = take(meta, card, 'review')
     await board.save(meta.slug, file)
     await events.record(
         meta.slug,

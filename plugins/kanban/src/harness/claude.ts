@@ -367,6 +367,9 @@ async function attach(run: Run): Promise<Invocation> {
 
 export const driver: Driver = {
     id: 'claude',
+    label: 'Claude Code',
+    models: ['fable', 'opus', 'sonnet', 'haiku'],
+    efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
     binary: () => findBinary(BINARY),
     launch,
     worktreePath,

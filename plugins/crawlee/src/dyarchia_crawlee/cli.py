@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
@@ -948,10 +949,22 @@ def search_command(
 
 
 @app.command(name='mcp')
-def mcp_command() -> None:
-    """Serve the corpus search as a Model Context Protocol tool over stdio, until stdin closes."""
+def mcp_command(
+    root: Annotated[
+        Path | None,
+        typer.Option('--root', help='the checkout whose .env names the corpus repositories'),
+    ] = None,
+) -> None:
+    """Serve the corpus search as a Model Context Protocol tool over stdio, until stdin closes.
+
+    An MCP client starts the server wherever its own session lives and ignores any working
+    directory the configuration names, so the settings would read no .env and see no corpus.
+    `--root` moves the process there first.
+    """
     from dyarchia_crawlee.mcp import serve
 
+    if root is not None:
+        os.chdir(root)
     serve()
 
 

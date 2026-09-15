@@ -17,14 +17,13 @@ export const STYLES = `
 .kanban-spacer { flex: 1; }
 
 .kanban-meta {
-    min-width: 0;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-4);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex: none;
+    cursor: help;
+}
+
+.kanban-lede {
+    text-align: center;
+    text-wrap: balance;
 }
 
 .kanban-main {
@@ -47,10 +46,39 @@ export const STYLES = `
 }
 
 .kanban-column {
-    flex: 0 0 262px;
+    flex: 1 1 168px;
+    min-width: 168px;
+    max-width: 340px;
     min-height: 0;
     display: flex;
     flex-direction: column;
+}
+
+.kanban-column[data-collapsed='true'] {
+    flex: 0 0 36px;
+    min-width: 36px;
+}
+
+.kanban-column[data-collapsed='true'] .kanban-column-head {
+    flex-direction: column;
+    height: auto;
+    padding: var(--dya-space-2) 0;
+    gap: var(--dya-space-2);
+}
+
+.kanban-column[data-collapsed='true'] .kanban-column-title {
+    flex: none;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+}
+
+.kanban-column[data-collapsed='true'] .kanban-list,
+.kanban-column[data-collapsed='true'] .kanban-empty {
+    display: none;
+}
+
+.kanban-new {
+    margin-bottom: var(--dya-space-2);
 }
 
 .kanban-column[data-drop='accept'] { border-color: var(--dya-accent); }
@@ -78,7 +106,7 @@ export const STYLES = `
     min-height: 0;
     overflow-y: auto;
     padding: var(--dya-space-2);
-    background: var(--dya-sunken);
+    background: var(--dya-chassis);
     border-bottom-left-radius: var(--dya-radius);
     border-bottom-right-radius: var(--dya-radius);
 }
@@ -166,7 +194,7 @@ export const STYLES = `
     flex: 1;
     min-width: 0;
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-label-sm);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-4);
     white-space: nowrap;
@@ -220,6 +248,8 @@ export const STYLES = `
     flex-direction: column;
     gap: var(--dya-space-1);
 }
+
+.kanban-group > .dya-button { align-self: flex-start; }
 
 .kanban-row {
     display: flex;
@@ -357,6 +387,11 @@ export const STYLES = `
     flex-direction: column;
     gap: var(--dya-space-2);
     width: min(420px, 100%);
+}
+
+.kanban-setup-form > .dya-button {
+    align-self: center;
+    margin-top: var(--dya-space-2);
 }
 
 .kanban-stage {

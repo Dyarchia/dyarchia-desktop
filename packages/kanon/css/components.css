@@ -12,7 +12,7 @@
 }.dya-label,
 .dya-eyebrow {
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-label-sm);
     font-weight: var(--dya-weight);
     letter-spacing: var(--dya-tracking-label);
     line-height: var(--dya-leading-tight);
@@ -145,7 +145,7 @@
 }
 
 .dya-bar {
-    height: 46px;
+    height: 38px;
     background: var(--dya-grad-bar);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }.dya-bar--flush {
@@ -178,15 +178,15 @@
     display: inline-flex;
     align-items: center;
     gap: var(--dya-space-2);
-    padding: 5px 11px 5px 12px;
-    border: var(--dya-border-width) solid var(--dya-border-strong);
-    border-radius: var(--dya-radius);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    padding: 0 var(--dya-space-3);
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-brand);
     font-weight: var(--dya-weight-medium);
     letter-spacing: var(--dya-tracking-brand);
+    line-height: var(--dya-leading-tight);
     text-transform: uppercase;
     color: var(--dya-text);
+    text-shadow: var(--dya-carve);
 }
 
 .dya-brand::after {
@@ -196,6 +196,20 @@
     border-radius: var(--dya-radius-full);
     background: var(--dya-accent);
     flex: none;
+}
+
+.dya-carved {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-display);
+    font-weight: var(--dya-weight-light);
+    letter-spacing: var(--dya-tracking-brand);
+    line-height: var(--dya-leading-tight);
+    text-transform: uppercase;
+    color: transparent;
+    background: linear-gradient(var(--dya-carve-a), var(--dya-carve-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: var(--dya-carve-filter);
 }
 
 .dya-button {
@@ -262,7 +276,7 @@
 .dya-button--sm {
     height: 22px;
     padding: 0 var(--dya-space-2);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-label-sm);
     letter-spacing: var(--dya-tracking-data);
 }
 
@@ -285,7 +299,7 @@
     border-radius: var(--dya-radius);
     background: transparent;
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-label-sm);
     color: var(--dya-text-4);
     cursor: pointer;
     transition:
@@ -403,6 +417,31 @@ textarea.dya-field {
     padding: var(--dya-space-2) var(--dya-space-3);
     line-height: var(--dya-leading-body);
     resize: vertical;
+}
+
+.dya-select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.dya-select > .dya-field {
+    appearance: none;
+    padding-right: var(--dya-space-6);
+    cursor: pointer;
+}
+
+.dya-select::after {
+    content: "";
+    position: absolute;
+    right: var(--dya-space-3);
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--dya-text-4);
+    border-bottom: 1.5px solid var(--dya-text-4);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
 }.dya-checkbox {
     appearance: none;
     display: grid;
@@ -450,7 +489,7 @@ textarea.dya-field {
     border-radius: var(--dya-radius);
     background: var(--dya-idle);
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-label-sm);
     font-weight: var(--dya-weight-medium);
     letter-spacing: var(--dya-tracking-data);
     text-transform: uppercase;
@@ -496,7 +535,7 @@ textarea.dya-field {
     width: 100%;
     border-collapse: collapse;
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-xs);
+    font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
 }
@@ -504,6 +543,7 @@ textarea.dya-field {
 .dya-table th {
     padding: 7px var(--dya-space-3);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    font-size: var(--dya-size-label-sm);
     font-weight: var(--dya-weight);
     letter-spacing: var(--dya-tracking-data);
     text-transform: uppercase;
@@ -599,14 +639,19 @@ textarea.dya-field {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--dya-space-2);
+    gap: var(--dya-space-3);
     padding: var(--dya-space-6) var(--dya-space-4);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    line-height: var(--dya-leading-body);
     text-align: center;
+    text-wrap: balance;
     color: var(--dya-text-4);
+}
+
+.dya-empty > span,
+.dya-loading > span {
+    max-width: 44ch;
 }.dya-sr-only {
     position: absolute;
     width: 1px;

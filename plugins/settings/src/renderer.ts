@@ -246,7 +246,7 @@ export function activate(ctx: PluginContext): void {
             for (const entry of entries) {
                 const item = el('div', 'dya-card set-item')
 
-                const tick = el('input', 'set-tick') as HTMLInputElement
+                const tick = el('input', 'dya-checkbox set-tick') as HTMLInputElement
                 tick.type = 'checkbox'
                 tick.checked = wanted.has(entry.manifest.id)
 

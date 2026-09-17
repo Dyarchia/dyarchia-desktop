@@ -69,6 +69,12 @@ export function TopBar({
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <span className="dya-brand">dyarchia</span>
+            <span
+                className="dya-tag topbar-alpha"
+                title="Alpha build. Expect breakage, and do not keep anything here you cannot lose."
+            >
+                {__DYARCHIA_VERSION__}
+            </span>
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {visible.map((panel) => (

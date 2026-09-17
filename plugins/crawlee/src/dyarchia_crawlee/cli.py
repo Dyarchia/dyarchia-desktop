@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from dyarchia_crawlee import __version__, digest, inventory, locking, registry, repositories, search, state
@@ -943,9 +944,9 @@ def search_command(
         return
     for hit in hits:
         head = f'{hit.title} — {hit.heading}' if hit.heading else hit.title
-        console.print(f'[bold]{head}[/bold]')
-        console.print(f'  {hit.url}')
-        console.print(f'  [{hit.repository}/{hit.target}] {hit.snippet}')
+        console.print(f'[bold]{escape(head)}[/bold]')
+        console.print(f'  {escape(hit.url)}')
+        console.print(f'  [{escape(hit.repository)}/{escape(hit.target)}] {escape(hit.snippet)}')
 
 
 @app.command(name='mcp')

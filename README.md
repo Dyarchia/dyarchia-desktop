@@ -1,5 +1,24 @@
 # dyarchia-desktop
 
+**ALPHA — 0.1.0-alpha.1. Not a release. Expect breakage, and do not keep anything here that
+you cannot afford to lose.**
+
+This is an early build published so it can be installed and exercised on a second machine.
+It has never been run on a computer other than the one that built it, it is unsigned, and
+several of its parts are documented as working but unproven. What that means in practice:
+
+- Windows SmartScreen will warn about an unknown publisher, because the executable carries
+  no code-signing certificate. That warning is accurate; the binary is not certified by
+  anyone.
+- No release carries a promise about the next one. Layout, plugin data and the on-disk
+  formats under `%APPDATA%/dyarchia` may change without a migration.
+- The shell ships every plugin and enables none. A fresh install opens an empty window on
+  purpose; the Setup panel is what turns a plugin on and acquires what it needs.
+- The kanban plugin drives real agent CLIs, and those spend real money on your account when
+  you point them at a real model. Read `plugins/kanban/README.md` before running a card.
+- The crawlee plugin needs a corpus repository that a fresh clone does not have, plus a
+  local `.env`. Its own README is the authority.
+
 Desktop shell for the dyarchia ecosystem. A panel container in the style of the Claude
 Desktop Code tab: it starts empty, and every feature registers itself as a plugin with its
 own panels — draggable, resizable, and persistent across sessions.

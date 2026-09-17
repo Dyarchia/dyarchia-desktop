@@ -18,6 +18,11 @@ body,
     user-select: none;
 }
 
+.topbar-alpha {
+    margin-right: auto;
+    margin-left: var(--dya-space-2);
+}
+
 .topbar-right {
     display: flex;
     align-items: center;

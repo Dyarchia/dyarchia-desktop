@@ -25,30 +25,43 @@ const DEBOUNCE_MS = 500
 const PROMPT_CHARS = 160
 
 /*
- * USD per million tokens for input, output, cache write and cache read, per model name, the
- * most specific name first. Fitted on 2026-09-15 to the cost-state lines of every session on
- * this machine, fifty-one of them: a non-negative least squares over the four token kinds where
- * a model had four samples or more, and one scalar under the usual multipliers (output five
- * times input, cache write 1.25, cache read a tenth) where it had fewer. Worst error on the
- * samples: 13% for haiku, 10% for opus, 8% for sonnet; the two fable rows rest on one session
- * each. The opus row is the 1M-context tier the CLI billed fifteen of eighteen opus sessions
- * under; an assistant line names the model without the tier, so the tier cannot be told apart
- * and the common one is used. A session that carries its own cost-state line after its last
- * request never uses this table, and a model not named here gets the opus row.
+ * USD per million tokens for input, output and cache read, per model name, the most specific
+ * name first, as published. Cache write is not a row of its own because it is a multiple of
+ * input and the multiple depends on the lifetime the write asked for: a five-minute entry
+ * costs 1.25 times input, a one-hour entry twice input. An assistant line carries that split
+ * in usage.cache_creation, and Claude Code writes every entry at one hour, which is why a
+ * single cache-write rate cannot reproduce the CLI's own figure.
+ *
+ * Measured on 2026-09-17 against the cost-state lines of the forty-two sessions on this
+ * machine that carry one: the split reproduces the CLI exactly, to four decimals, on the
+ * twenty-two sessions that were never compacted and carry the modern breakdown. It is not an
+ * approximation of those, it is the formula that produced them. The sessions that still
+ * diverge are the compacted ones, where what the transcript holds and what the turn was
+ * billed stop being the same thing, and the pre-breakdown transcripts, whose writes carry no
+ * lifetime and are therefore priced at the five-minute rate.
+ *
+ * A model named <synthetic> is the CLI's own placeholder and is never billed. A session that
+ * carries its own cost-state line after its last request never uses this table, and a model
+ * not named here gets the opus row.
  */
-const PRICES: Array<[string, [number, number, number, number]]> = [
-    ['opus-5', [0.0, 22.8, 8.91, 0.511]],
-    ['fable-5-1', [6.1, 30.49, 7.62, 0.61]],
-    ['fable-5', [10.61, 53.05, 13.26, 1.061]],
-    ['sonnet-5', [0.0, 12.13, 4.13, 0.106]],
-    ['haiku-4-5', [1.0, 6.88, 1.72, 0.082]]
+const PRICES: Array<[string, [number, number, number]]> = [
+    ['opus-5', [5.0, 25.0, 0.5]],
+    ['fable-5-1', [10.0, 50.0, 0.25]],
+    ['fable-5', [10.0, 50.0, 1.0]],
+    ['sonnet-5', [2.0, 10.0, 0.2]],
+    ['haiku-4-5', [1.0, 5.0, 0.1]]
 ]
-const FALLBACK: [number, number, number, number] = [5.0, 25.0, 6.25, 0.5]
+const FALLBACK: [number, number, number] = [5.0, 25.0, 0.5]
+const SYNTHETIC = '<synthetic>'
+const WRITE_HOUR = 2
+const WRITE_MINUTE = 1.25
 
 interface Usage {
     input: number
     output: number
     cacheWrite: number
+    cacheWriteHour: number
+    cacheWriteMinute: number
     cacheRead: number
 }
 
@@ -83,7 +96,7 @@ interface Tracked {
 
 const tracked = new Map<string, Tracked>()
 
-function priceOf(model: string): [number, number, number, number] {
+function priceOf(model: string): [number, number, number] {
     for (const [needle, price] of PRICES) {
         if (model.includes(needle)) return price
     }
@@ -91,8 +104,10 @@ function priceOf(model: string): [number, number, number, number] {
 }
 
 function costOf(model: string, usage: Usage): number {
-    const [input, output, cacheWrite, cacheRead] = priceOf(model)
-    return (usage.input * input + usage.output * output + usage.cacheWrite * cacheWrite + usage.cacheRead * cacheRead) / 1_000_000
+    if (model === SYNTHETIC) return 0
+    const [input, output, cacheRead] = priceOf(model)
+    const write = usage.cacheWriteHour * input * WRITE_HOUR + usage.cacheWriteMinute * input * WRITE_MINUTE
+    return (usage.input * input + usage.output * output + write + usage.cacheRead * cacheRead) / 1_000_000
 }
 
 function textOf(content: unknown): string | null {
@@ -136,6 +151,8 @@ function consume(held: Tracked, line: string): void {
             input: 0,
             output: 0,
             cacheWrite: 0,
+            cacheWriteHour: 0,
+            cacheWriteMinute: 0,
             cacheRead: 0,
             cost: 0
         })
@@ -147,7 +164,7 @@ function consume(held: Tracked, line: string): void {
 
     if (type === 'assistant') {
         if (event['isSidechain'] === true) return
-        const usage = (message['usage'] ?? null) as Record<string, number> | null
+        const usage = (message['usage'] ?? null) as Record<string, unknown> | null
         const model = typeof message['model'] === 'string' ? message['model'] : session.model
         if (model) session.model = model
         const request = typeof event['requestId'] === 'string' ? event['requestId'] : null
@@ -158,16 +175,24 @@ function consume(held: Tracked, line: string): void {
         if (message['stop_reason'] === 'end_turn') current.endedAt = at
         if (!usage || (request && held.requests.has(request))) return
         if (request) held.requests.add(request)
+        const number = (value: unknown): number => (typeof value === 'number' ? value : 0)
+        const creation = (usage['cache_creation'] ?? null) as Record<string, unknown> | null
+        const cacheWrite = number(usage['cache_creation_input_tokens'])
+        const cacheWriteHour = creation ? number(creation['ephemeral_1h_input_tokens']) : 0
         const spent: Usage = {
-            input: usage['input_tokens'] ?? 0,
-            output: usage['output_tokens'] ?? 0,
-            cacheWrite: usage['cache_creation_input_tokens'] ?? 0,
-            cacheRead: usage['cache_read_input_tokens'] ?? 0
+            input: number(usage['input_tokens']),
+            output: number(usage['output_tokens']),
+            cacheWrite,
+            cacheWriteHour,
+            cacheWriteMinute: creation ? number(creation['ephemeral_5m_input_tokens']) : cacheWrite,
+            cacheRead: number(usage['cache_read_input_tokens'])
         }
         current.requests += 1
         current.input += spent.input
         current.output += spent.output
         current.cacheWrite += spent.cacheWrite
+        current.cacheWriteHour += spent.cacheWriteHour
+        current.cacheWriteMinute += spent.cacheWriteMinute
         current.cacheRead += spent.cacheRead
         current.cost += costOf(model, spent)
         session.exactStale = true

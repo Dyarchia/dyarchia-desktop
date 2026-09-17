@@ -16,7 +16,8 @@ at, took      when it was sent and how long until the model stopped
 requests      API requests the turn made; one per model call, tools included
 input         uncached input tokens
 cache read    input served from the prompt cache, a tenth of the input price
-cache write   input written to the cache, 1.25 times the input price
+cache write   input written to the cache, 1.25 times input for a five-minute
+              entry and twice input for a one-hour one
 output        output tokens, five times the input price
 usd           the row's cost
 ```
@@ -26,11 +27,30 @@ usd           the row's cost
 A background session (`claude --bg`) and a print run (`claude -p`) close with a `cost-state`
 line holding the figure the CLI computed, and the panel shows that figure and says so. An
 interactive session carries no such line, so its cost is tokens times a price table and is
-shown with a tilde. The table holds one input price per model family, with the output and cache
-multipliers every Anthropic price list shares; the values were fitted to the cost lines of fifty
-sessions on one machine on 2026-09-15 and are exact for opus-5, within a third for the others,
-and a guess for a model the table does not name. On a subscription none of this is a bill: it
-is the usage window being spent, at the price the API would charge.
+shown with a tilde. The table holds the published input, output and cache-read price per model
+family; cache write is not a row of its own, because it is a multiple of input and the multiple
+depends on the lifetime the entry asked for. An assistant line carries that split in
+`usage.cache_creation`, and Claude Code writes every entry at one hour, so a single cache-write
+rate cannot reproduce the CLI's own figure — pricing the two lifetimes apart is what closes the
+gap.
+
+Measured on 2026-09-17 against the forty-two sessions on this machine that carry a cost-state
+line, by driving the built plugin and comparing its estimate to that figure:
+
+```text
+                                   median error   sessions exact to 4 dp
+--------------------------------   ------------   ----------------------
+one cache-write rate                      29.9%                        0
+five-minute and one-hour apart             0.0%                    24/37
+```
+
+The estimate is not an approximation of those twenty-four figures, it is the formula that
+produced them. What still diverges is the compacted sessions, where what the transcript holds
+and what the turn was billed stop being the same thing, and transcripts written before the
+lifetime split existed, whose writes are priced at the five-minute rate. A model the table does
+not name gets the opus row, and `<synthetic>` — the CLI's own placeholder — is never billed. On
+a subscription none of this is a bill: it is the usage window being spent, at the price the API
+would charge.
 
 ## Verification
 

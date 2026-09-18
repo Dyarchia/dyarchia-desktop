@@ -1,6 +1,6 @@
 import { marked } from 'marked'
 import { injectStyles } from '@dyarchia/sdk'
-import type { PluginContext } from '@dyarchia/sdk'
+import type { OpenRequest, PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
     canceled?: boolean
@@ -146,6 +146,14 @@ const STYLES = `
     border: none;
     border-top: var(--dya-border-width) solid var(--dya-hairline);
 }
+.docviewer-line {
+    display: block;
+    min-height: 1lh;
+}
+.docviewer-line--at {
+    background: var(--dya-selected);
+    box-shadow: -3px 0 0 var(--dya-accent);
+}
 `
 
 const DOCS_ICON =
@@ -163,8 +171,37 @@ const MODES = [
 
 type Mode = (typeof MODES)[number]['id']
 
+/*
+ * The kinds of file this panel answers for. It renders markdown and shows everything else as
+ * source, which is worth having for any of these; a format it would only mangle is not listed.
+ */
+const OPENS = [
+    '.md', '.txt', '.json', '.yaml', '.yml', '.js', '.ts', '.css', '.html',
+    '.xml', '.csv', '.log', '.ps1', '.py', '.cls', '.trigger', '.apex'
+]
+
 
 export function activate(ctx: PluginContext): void {
+    /*
+     * The opener is declared now, not when a panel mounts, because a plugin that has never been
+     * opened still answers for what it can render — otherwise the offer to open a file appears
+     * only after the reader has already been opened by hand, which is backwards.
+     *
+     * The shell shows the panel and then hands the request over, and mounting is not synchronous,
+     * so a request that arrives before there is anything to show it in waits here and the panel
+     * collects it as it mounts.
+     */
+    let deliver: ((request: OpenRequest) => Promise<void>) | null = null
+    let waiting: OpenRequest | null = null
+
+    ctx.registerOpener({ panelId: 'docviewer', extensions: OPENS }, async (request) => {
+        if (deliver) {
+            await deliver(request)
+            return
+        }
+        waiting = request
+    })
+
     ctx.registerPanel(
         { id: 'docviewer', title: 'Docs', icon: DOCS_ICON, duplicable: true },
         (container) => {
@@ -191,6 +228,7 @@ export function activate(ctx: PluginContext): void {
             let diagram = 0
             let current: OpenResult | null = null
             let mode: Mode = 'rendered'
+            let target: number | null = null
 
             const modeButtons = MODES.map((entry) => {
                 const button = document.createElement('button')
@@ -261,10 +299,43 @@ export function activate(ctx: PluginContext): void {
                     await renderDiagrams(content)
                 } else {
                     const pre = document.createElement('pre')
-                    pre.textContent = current.content ?? ''
+                    /*
+                     * One element per line, so a line can be pointed at. A plugin that found a
+                     * passage knows which line it was on, and scrolling the reader to the top of
+                     * a nine-hundred-line page is not showing it to anybody.
+                     */
+                    const lines = (current.content ?? '').split('\n')
+                    for (const [index, line] of lines.entries()) {
+                        const row = document.createElement('span')
+                        row.className = 'docviewer-line'
+                        row.dataset.line = String(index + 1)
+                        if (index + 1 === target) row.classList.add('docviewer-line--at')
+                        row.textContent = line
+                        pre.append(row)
+                    }
                     content.replaceChildren(pre)
                 }
                 content.scrollTop = 0
+                if (target !== null) {
+                    const at = content.querySelector('.docviewer-line--at')
+                    at?.scrollIntoView({ block: 'center' })
+                }
+            }
+
+            async function present(result: OpenResult, line?: number): Promise<void> {
+                current = result
+                target = line ?? null
+                /*
+                 * A document asked for at a line opens on its source, because that is the only
+                 * view where a line number means anything: the rendered view is HTML and has no
+                 * lines to point at. The mode buttons are right there when the reader wants prose.
+                 */
+                mode = line ? 'source' : 'rendered'
+                name.textContent = result.name ?? ''
+                header.hidden = false
+                modes.hidden = !result.markdown
+                syncModes()
+                await renderCurrent()
             }
 
             async function openFile(): Promise<void> {
@@ -277,13 +348,7 @@ export function activate(ctx: PluginContext): void {
                         showEmpty(result.error)
                         return
                     }
-                    current = result
-                    mode = 'rendered'
-                    name.textContent = result.name ?? ''
-                    header.hidden = false
-                    modes.hidden = !result.markdown
-                    syncModes()
-                    await renderCurrent()
+                    await present(result)
                 } catch {
                     showEmpty('Cannot open that file')
                 } finally {
@@ -339,7 +404,32 @@ export function activate(ctx: PluginContext): void {
             header.append(openButton())
             showEmpty()
 
+            async function accept(request: OpenRequest): Promise<void> {
+                if (busy) return
+                busy = true
+                try {
+                    const result = (await ctx.invoke('read', request.path)) as OpenResult
+                    if (result.error) {
+                        showEmpty(result.error)
+                        return
+                    }
+                    await present(result, request.line)
+                } catch {
+                    showEmpty('Cannot open that file')
+                } finally {
+                    busy = false
+                }
+            }
+
+            deliver = accept
+            if (waiting) {
+                const request = waiting
+                waiting = null
+                void accept(request)
+            }
+
             return () => {
+                if (deliver === accept) deliver = null
                 container.replaceChildren()
             }
         }

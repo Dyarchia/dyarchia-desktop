@@ -53,6 +53,26 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+def _tolerate_unicode() -> None:
+    """Stop a console that cannot spell a character from killing the command that found it.
+
+    The corpus is other people's documentation and holds whatever they wrote: box drawing, dashes,
+    CJK. A Windows console is cp1252, and printing a character it has no mapping for raises
+    UnicodeEncodeError from deep inside the encoder, so a search crashed on the page rather than
+    on the query. Replacing the character costs one glyph; raising costs the answer.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, 'reconfigure', None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(errors='replace')
+        except (ValueError, OSError):
+            pass
+
+
+_tolerate_unicode()
+
 console = Console()
 error_console = Console(stderr=True)
 
@@ -946,7 +966,10 @@ def search_command(
         head = f'{hit.title} — {hit.heading}' if hit.heading else hit.title
         console.print(f'[bold]{escape(head)}[/bold]')
         console.print(f'  {escape(hit.url)}')
-        console.print(f'  [{escape(hit.repository)}/{escape(hit.target)}] {escape(hit.snippet)}')
+        console.print(
+            f'  [{escape(hit.repository)}/{escape(hit.target)}] '
+            f'[dim]({escape(hit.match)})[/dim] {escape(hit.snippet)}'
+        )
 
 
 @app.command(name='mcp')

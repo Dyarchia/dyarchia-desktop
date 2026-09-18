@@ -19,5 +19,5 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
         }
     }, [props.api.id])
 
-    return <div ref={containerRef} className="plugin-panel-container" />
+    return <div ref={containerRef} className="dya-pane plugin-panel-container" />
 }

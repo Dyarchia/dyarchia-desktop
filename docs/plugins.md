@@ -379,3 +379,43 @@ file is the offering plugin's own business: crawlee publishes only when a corpus
 holds pages, and withdraws after a round that leaves none. The kanban is the one reader today;
 it merges every offer into one `--mcp-config`, allows the listed tools by name, and ends the
 brief with a Tools section made of the notes.
+
+
+## 8. Opening a file in somebody else's panel
+
+The same refusal applies to panels. A plugin that finds something worth reading — a search hit,
+a log line, an artifact — should be able to put it in front of the user without knowing who will
+render it, because the renderer is optional and deletable and naming it makes the finder depend
+on it.
+
+A reader declares what it answers for, and which of its panels does it:
+
+```ts
+ctx.registerOpener({ panelId: 'docviewer', extensions: ['.md', '.log'] }, async (request) => {
+    await show(request.path, request.line)
+})
+```
+
+A finder asks whether anything answers, and hands the file over without naming anyone:
+
+```ts
+if (ctx.shell.canOpen(file)) {
+    await ctx.shell.open({ path: file, line: 273 })
+} else {
+    await ctx.shell.reveal(file)
+}
+```
+
+`canOpen` is the whole point: the offer to open appears only when something would answer it, and
+the fallback needs no plugin at all — `reveal` shows the file in the platform's file manager and
+is always available. `reveal` answers false for a path that is not there, rather than opening a
+window on nothing.
+
+Three things the shell does and a reader does not have to:
+
+- It shows the declared panel before handing the request over, so a reader only has to read.
+- It keeps the first registration for an extension, so a second reader cannot silently take over
+  what a first already answers for.
+- It delivers nothing itself. A request that arrives before the panel has mounted is the reader's
+  to hold; register the opener in `activate` rather than inside a panel's mount, or the offer
+  only exists once the user has opened that panel by hand, which is backwards.

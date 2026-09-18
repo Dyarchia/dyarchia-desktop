@@ -4,17 +4,6 @@
  * than imported. A plugin that cannot be read without first being compiled is harder to trust.
  */
 
-/*
- * What a hit's rung means, said in a tooltip rather than assumed. A reader who cannot tell an
- * exact-phrase hit from an any-word one cannot tell an answer from a coincidence.
- */
-const RUNGS = {
-    phrase: 'the page holds your words in that order',
-    near: 'your words appear close together on the page',
-    all: 'the page holds all of your words, anywhere on it',
-    any: 'the page holds some of your words; a lead, not an answer'
-}
-
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/></svg>'
 
@@ -219,6 +208,15 @@ const STYLE = `
 .crw-hit-snippet mark {
     background: var(--dya-accent-soft);
     color: var(--dya-text);
+}
+.crw-hit-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    flex-wrap: wrap;
+}
+.crw-hit-at {
+    color: var(--dya-text-4);
 }
 `
 
@@ -477,11 +475,40 @@ function mount(ctx, container) {
      * CLI's, refreshed on the way in when a round moved a manifest, so the first search after a
      * round pays for the pages that changed and nothing else.
      */
+    /*
+     * What a reader can do with a hit, which is the difference between being told a page exists
+     * and being shown it. The snapshot is a file on disk, so there are two ways in: hand it to
+     * whatever plugin in this installation renders that kind of file, at the line the passage
+     * starts on, or show it where it lives.
+     *
+     * Which of the two is offered is decided by asking the shell whether anything opens it, never
+     * by naming a plugin. A reader is optional and deletable, and an installation without one
+     * still gets the file manager.
+     */
+    function hitActions(hit) {
+        if (!hit.file) return null
+        const actions = el('div', 'crw-hit-actions')
+        if (hit.line > 1) {
+            actions.append(el('span', 'dya-key-label crw-hit-at', `line ${hit.line}`))
+        }
+        if (ctx.shell.canOpen(hit.file)) {
+            const open = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Open')
+            open.title = `Open the snapshot at line ${hit.line}`
+            open.onclick = () => void ctx.shell.open({ path: hit.file, line: hit.line })
+            actions.append(open)
+        }
+        const reveal = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Reveal')
+        reveal.title = hit.file
+        reveal.onclick = () => void ctx.shell.reveal(hit.file)
+        actions.append(reveal)
+        return actions
+    }
+
     function buildSearch() {
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const query = el('input', 'dya-field crw-query')
         query.type = 'search'
-        query.placeholder = 'words to look for, enter to search'
+        query.placeholder = 'ask it in words, enter to search'
         query.spellcheck = false
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
@@ -490,7 +517,11 @@ function mount(ctx, container) {
         bar.append(query, scopeBox, go)
 
         const hits = el('div', 'crw-hits')
-        const idle = el('div', 'dya-empty', 'Words are matched together first, then any of them.')
+        const idle = el(
+            'div',
+            'dya-empty',
+            'Ask a question in words. The exact phrase is tried first, then the words near each other, then all of them.'
+        )
         hits.appendChild(idle)
         searching.append(bar, hits)
 
@@ -541,11 +572,6 @@ function mount(ctx, container) {
                 const head = el('div', 'crw-hit-head')
                 head.append(el('span', 'dya-text', hit.title))
                 if (hit.heading) head.append(el('span', 'dya-key-label', hit.heading))
-                if (hit.match) {
-                    const rung = el('span', 'dya-badge dya-badge--soft', hit.match)
-                    rung.title = RUNGS[hit.match] || hit.match
-                    head.append(rung)
-                }
                 head.append(el('span', 'dya-key-label crw-hit-where', `${hit.repository} / ${hit.target}`))
                 const url = el('div', 'dya-mono crw-hit-url', hit.url)
                 const snippet = el('div', 'dya-text crw-hit-snippet')
@@ -553,6 +579,8 @@ function mount(ctx, container) {
                     snippet.append(index % 2 ? el('mark', undefined, part) : part)
                 }
                 row.append(head, url, snippet)
+                const actions = hitActions(hit)
+                if (actions) row.append(actions)
                 hits.appendChild(row)
             }
         }

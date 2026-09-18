@@ -336,7 +336,7 @@ declare builds it ad-hoc under its own prefix and proposes it upstream — which
 wrong in ways the first consumer discovers rather than the author.
 
 ```text
-Structure    bar (--flush --inset) card card__header brand carved
+Structure    pane bar (--flush --inset) card card__header brand carved
 Pressable    button (--quiet --sm --danger --bare) key (--active) chip entry (--active)
 Input        field (--sm --auto) checkbox
 Content      tag badge (--success --warning --danger --soft) table row
@@ -347,6 +347,21 @@ Navigation   tabs tab
 Absence      empty loading
 Assistive    sr-only
 ```
+
+`pane` is not a component either: it declares an element a query container under the name
+`pane` and carries no look at all. It exists because a panel's width is its own — in a dock
+it has nothing to do with the window's, so a viewport query answers the wrong question and
+is wrong at every split. A consumer writes `@container pane (max-width: 700px)` and gets the
+panel, not whichever container happens to be nearest. **The three widths the system is
+measured at are 400, 700 and 1900**: below 700 a pane is one column and nothing sits beside
+anything, at 700 a second column is affordable, and 1900 is the whole window, where a layout
+stops gaining from more room.
+
+A consumer that needs a threshold of its own declares its own container rather than bending
+the pane's. The cost panel does: its list is a fixed 300px, so the pane decides whether the
+list sits beside the detail, and the detail — a container in its own right — decides whether
+its ten columns are a table or a stack of cards. At a 1000px pane those two answers differ,
+which is the case a single query cannot express.
 
 `sr-only` is the one class that is not a component: it takes an element out of the visual
 layout while leaving it in the accessibility tree, which is what a live region needs and
@@ -395,6 +410,14 @@ There is nothing to build, lint or test. What replaces those commands:
 
 ## Open questions
 
+- `pane` has been measured against all six panels at 400, 700 and 1900, in Gi only. The
+  sweep walks every descendant for a box crossing the pane's right edge or an element
+  scrolling on x; the terminal cannot be measured that way, because xterm refits from a
+  `ResizeObserver` and a background window is given no frames to deliver one in. Its
+  behaviour under a real resize is untested here.
+- The two thresholds in use are properties of their content, not of the system: 640 for a
+  corpus row and 900 for the cost panel's ten columns, both measured against the data on one
+  machine. A corpus with longer names or a column added to that table moves them.
 - Slate has been seen against the kanban panel at 1400 px and nowhere else yet. Its
   interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, and the 35% inset light
   on relief are the values most likely to move once a long session is spent in it.

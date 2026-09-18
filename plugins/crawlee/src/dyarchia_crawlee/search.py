@@ -45,6 +45,25 @@ BUSY_SECONDS = 60.0
 LOG_NAME = 'search.log'
 HEADING = re.compile(r'^#{1,6}\s+(.*\S)\s*$')
 WORD = re.compile(r'[\w][\w\-./:]*', re.UNICODE)
+NEAR_TOKENS = 12
+
+"""
+The words a technical corpus holds on every page, so requiring one narrows nothing and ranking by
+one is ranking by noise. Deliberately short and English: the corpus is English documentation, and
+a word that carries meaning somewhere is not on this list. `how`, `what` and `why` are not here —
+in documentation they are titles.
+"""
+STOPWORDS = frozenset(
+    {
+        'a', 'an', 'the',
+        'and', 'or', 'but', 'if', 'then', 'else',
+        'of', 'to', 'in', 'on', 'at', 'by', 'for', 'from', 'with', 'into', 'over', 'under',
+        'is', 'are', 'was', 'were', 'be', 'been', 'being', 'do', 'does', 'did',
+        'this', 'that', 'these', 'those', 'it', 'its',
+        'as', 'so', 'than', 'too', 'very', 'can', 'will', 'just',
+        'i', 'you', 'we', 'they', 'me', 'my', 'your', 'our',
+    }
+)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pages (
@@ -76,6 +95,7 @@ class Hit:
     heading: str
     snippet: str
     score: float
+    match: str = 'all'
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -86,6 +106,7 @@ class Hit:
             'heading': self.heading,
             'snippet': self.snippet,
             'score': round(self.score, 3),
+            'match': self.match,
         }
 
 
@@ -310,11 +331,63 @@ def match_expression(query: str) -> str:
     chunks holding both words and `foo(bar)` does not reach the parser as an operator. An empty
     query is refused rather than matched against everything.
     """
+    words = _words(query)
+    return ' '.join(f'"{word}"' for word in words)
+
+
+def _words(query: str) -> list[str]:
     words = [word.replace('"', '') for word in WORD.findall(query)]
     words = [word for word in words if word]
     if not words:
         raise DyarchiaCrawleeError('a search needs at least one word')
-    return ' '.join(f'"{word}"' for word in words)
+    return words
+
+
+def _carrying(words: list[str]) -> list[str]:
+    """The words that carry the question, which is every word that is not furniture.
+
+    A stopword is dropped from what a chunk is required to hold, never from the phrase: asking for
+    `how to create a skill` and requiring `to` and `a` is asking for nothing, because every page
+    in the corpus holds both, and BM25 then ranks by the words that mean least. It stays in the
+    phrase rung because `state of the art` is not the same question as `state art`.
+    """
+    carrying = [word for word in words if word.lower() not in STOPWORDS]
+    return carrying or words
+
+
+def ladder(query: str) -> list[tuple[str, str]]:
+    """The rungs a query is tried on, most exacting first, each labelled with what it proved.
+
+    A reader who types a sentence means the sentence, and a chunk holding it verbatim is a better
+    answer than one holding its words scattered over sixteen hundred characters. Nothing above the
+    last rung existed before: every query went straight to the words-together rung and fell to
+    any-word when that was empty, so a five-word question was answered by whatever page happened
+    to hold `to` and `a` near something relevant.
+
+    Each rung is tried across every repository before the next one is, so a weaker match elsewhere
+    never outranks a stronger match here.
+    """
+    words = _words(query)
+    carrying = _carrying(words)
+    rungs: list[tuple[str, str]] = []
+
+    if len(words) > 1:
+        rungs.append(('phrase', '"{}"'.format(' '.join(words))))
+    if len(carrying) > 1:
+        near = ' '.join(f'"{word}"' for word in carrying)
+        rungs.append(('near', f'NEAR({near}, {NEAR_TOKENS})'))
+    rungs.append(('all', ' '.join(f'"{word}"' for word in carrying)))
+    if len(carrying) > 1:
+        rungs.append(('any', ' OR '.join(f'"{word}"' for word in carrying)))
+
+    seen: set[str] = set()
+    unique: list[tuple[str, str]] = []
+    for label, expression in rungs:
+        if expression in seen:
+            continue
+        seen.add(expression)
+        unique.append((label, expression))
+    return unique
 
 
 def _roots(repository: str | None, settings: Settings) -> list[Path]:
@@ -339,38 +412,56 @@ def search(
     """Answer a query across one repository or every one, best chunks first.
 
     The index is brought up to date before it is read when a manifest moved since it was built,
-    so a search after a round sees the round. Words are ANDed; when nothing holds all of them the
-    query is widened to any of them, which is the difference between an empty answer and a
-    weaker one, and the score says which it was.
+    so a search after a round sees the round.
+
+    The rungs of `ladder` are walked in order and their hits appended, each rung sorted among
+    itself by BM25, until there are enough. Order therefore carries precision: everything the
+    phrase rung found comes before anything the any-word rung did, and `Hit.match` names which
+    rung a hit came from. Accumulating rather than stopping at the first rung that answers is
+    deliberate — one page holding the sentence verbatim should not hide nine that answer the
+    question, which is the difference between a search and a lookup.
     """
     settings = settings or get_settings()
-    expression = match_expression(query)
-    widened = ' OR '.join(expression.split(' '))
-    hits: list[Hit] = []
+    roots = _roots(repository, settings)
 
-    for root in _roots(repository, settings):
+    readable: list[Path] = []
+    for root in roots:
         if refresh_first:
             reason = stale(root, settings)
             if reason:
                 refresh(root, settings, trigger=f'search:{reason}')
         path = index_path(root, settings)
-        if not path.is_file():
-            continue
-        connection = _reader(path)
-        try:
-            found = _query(connection, root.name, expression, target, limit)
-            if not found and widened != expression:
-                found = _query(connection, root.name, widened, target, limit)
-        except sqlite3.OperationalError as error:
-            if 'no such table' in str(error):
-                found = []
-            else:
-                raise
-        finally:
-            connection.close()
-        hits.extend(found)
+        if path.is_file():
+            readable.append(root)
 
-    hits.sort(key=lambda hit: hit.score)
+    hits: list[Hit] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    for label, expression in ladder(query):
+        rung: list[Hit] = []
+        for root in readable:
+            connection = _reader(index_path(root, settings))
+            try:
+                found = _query(connection, root.name, expression, target, limit, label)
+            except sqlite3.OperationalError as error:
+                if 'no such table' in str(error) or 'fts5: syntax error' in str(error):
+                    found = []
+                else:
+                    raise
+            finally:
+                connection.close()
+            rung.extend(found)
+
+        rung.sort(key=lambda hit: hit.score)
+        for hit in rung:
+            key = (hit.repository, hit.url, hit.heading)
+            if key in seen:
+                continue
+            seen.add(key)
+            hits.append(hit)
+        if len(hits) >= limit:
+            break
+
     return hits[:limit]
 
 
@@ -380,6 +471,7 @@ def _query(
     expression: str,
     target: str | None,
     limit: int,
+    match: str = 'all',
 ) -> list[Hit]:
     clauses = ['chunks MATCH ?']
     params: list[object] = [expression]
@@ -403,6 +495,7 @@ def _query(
             heading=row[3],
             snippet=' '.join(str(row[4]).split()),
             score=float(row[5]),
+            match=match,
         )
         for row in rows
     ]

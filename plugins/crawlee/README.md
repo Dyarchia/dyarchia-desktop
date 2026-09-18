@@ -343,10 +343,28 @@ service: a query answers in milliseconds on 7,000 pages, and the first search af
 brings the index level with the manifests first, page by page from their content hashes, so it
 costs the pages that changed and nothing more.
 
-Words are matched together first. When no chunk holds all of them the query is widened to any
-of them, and the score says which it was. Punctuation never reaches the parser: `foo(bar)` is
-the two words foo and bar. The index is derived and never versioned; delete the file and the
-next search rebuilds it.
+Ask it a question in words, not keywords. A query is tried on four rungs, most exacting first,
+and the answers come back in that order with each hit labelled by the rung it matched on:
+
+    rung     what it proves
+    ------   ----------------------------------------------------------------
+    phrase   the chunk holds the query verbatim, in that order
+    near     the words that carry the question appear within 12 tokens
+    all      the chunk holds every carrying word, anywhere in it
+    any      the chunk holds some of them; a lead, not an answer
+
+Rungs are accumulated rather than stopped at, so one page holding the sentence verbatim never
+hides nine that answer the question — it just comes first. A hit labelled `any` is the weakest
+kind of answer there is, and saying so is the point of the label.
+
+**A stopword is never required.** `the`, `to`, `a` and their kin are dropped from what a chunk
+must hold, because every page holds them and requiring one narrows nothing while BM25 then ranks
+by the words that mean least. They stay in the phrase rung, because `state of the art` is not the
+question `state art`. A query of nothing but stopwords still asks for them, since dropping every
+word would match the whole corpus.
+
+Punctuation never reaches the parser: `foo(bar)` is the two words foo and bar. The index is
+derived and never versioned; delete the file and the next search rebuilds it.
 
 The files are written in write-ahead mode inside one transaction per refresh, so a search that
 lands while a refresh is running reads the index as it was and waits at most a minute for a

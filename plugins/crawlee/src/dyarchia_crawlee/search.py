@@ -40,7 +40,7 @@ from dyarchia_crawlee.versioning.manifest import load_manifest
 
 CHUNK_CHARS = 1600
 SNIPPET_TOKENS = 28
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 BUSY_SECONDS = 60.0
 LOG_NAME = 'search.log'
 HEADING = re.compile(r'^#{1,6}\s+(.*\S)\s*$')
@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS pages (
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks USING fts5(
     target UNINDEXED,
     url UNINDEXED,
+    path UNINDEXED,
+    line UNINDEXED,
     title,
     heading,
     body,
@@ -96,6 +98,8 @@ class Hit:
     snippet: str
     score: float
     match: str = 'all'
+    file: str = ''
+    line: int = 1
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -107,6 +111,8 @@ class Hit:
             'snippet': self.snippet,
             'score': round(self.score, 3),
             'match': self.match,
+            'file': self.file,
+            'line': self.line,
         }
 
 
@@ -155,26 +161,33 @@ def _note(settings: Settings, line: str) -> None:
         handle.write(f'{stamp} pid={os.getpid()} {line}\n')
 
 
-def chunk(text: str) -> list[tuple[str, str]]:
-    """Split a markdown page into (heading, body) pieces at its headings and at length.
+def chunk(text: str) -> list[tuple[str, str, int]]:
+    """Split a markdown page into (heading, body, line) pieces at its headings and at length.
 
     The heading attached to a piece is the nearest one above it, so a long section split at a
     paragraph keeps its heading on every piece. Blank pieces are dropped.
+
+    The line is where the piece's first non-blank line sits in the file, counted from one, so a
+    hit can be opened at the passage rather than at the top of a page that may be hundreds of
+    lines long. It is recorded when the buffer takes its first line rather than when the piece is
+    flushed, because the leading blank lines a flush skips would otherwise be counted in.
     """
-    pieces: list[tuple[str, str]] = []
+    pieces: list[tuple[str, str, int]] = []
     heading = ''
     buffer: list[str] = []
     size = 0
+    start = 0
 
     def flush() -> None:
-        nonlocal buffer, size
+        nonlocal buffer, size, start
         body = '\n'.join(buffer).strip()
         if body:
-            pieces.append((heading, body))
+            pieces.append((heading, body, start or 1))
         buffer = []
         size = 0
+        start = 0
 
-    for line in text.splitlines():
+    for number, line in enumerate(text.splitlines(), start=1):
         matched = HEADING.match(line)
         if matched:
             flush()
@@ -183,6 +196,8 @@ def chunk(text: str) -> list[tuple[str, str]]:
         if size + len(line) > CHUNK_CHARS and not line.strip():
             flush()
             continue
+        if not start and line.strip():
+            start = number
         buffer.append(line)
         size += len(line) + 1
     flush()
@@ -264,11 +279,13 @@ def refresh(
                     connection.execute(
                         'DELETE FROM chunks WHERE rowid BETWEEN ? AND ?', (previous[2], previous[3])
                     )
+                relative = page.resolve().relative_to(root.resolve()).as_posix()
                 first = last = 0
-                for heading, body in chunk(text):
+                for heading, body, line in chunk(text):
                     cursor = connection.execute(
-                        'INSERT INTO chunks (target, url, title, heading, body) VALUES (?, ?, ?, ?, ?)',
-                        (name, url, title, heading, body),
+                        'INSERT INTO chunks (target, url, path, line, title, heading, body) '
+                        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        (name, url, relative, line, title, heading, body),
                     )
                     last = int(cursor.lastrowid or 0)
                     first = first or last
@@ -442,7 +459,7 @@ def search(
         for root in readable:
             connection = _reader(index_path(root, settings))
             try:
-                found = _query(connection, root.name, expression, target, limit, label)
+                found = _query(connection, root, expression, target, limit, label)
             except sqlite3.OperationalError as error:
                 if 'no such table' in str(error) or 'fts5: syntax error' in str(error):
                     found = []
@@ -465,9 +482,19 @@ def search(
     return hits[:limit]
 
 
+"""
+The columns of `chunks`, in the order the table declares them, because FTS5 addresses them by
+position: `snippet()` takes the index of the column to quote and `bm25()` takes one weight per
+column, in order. Adding a column shifts both, silently — a stale snippet index quotes the wrong
+field and a short weight list is a different ranking, neither of which fails loudly.
+"""
+BODY_COLUMN = 6
+COLUMN_WEIGHTS = '0, 0, 0, 0, 3.0, 2.0, 1.0'
+
+
 def _query(
     connection: sqlite3.Connection,
-    repository: str,
+    root: Path,
     expression: str,
     target: str | None,
     limit: int,
@@ -480,21 +507,23 @@ def _query(
         params.append(target)
     params.append(limit)
     rows = connection.execute(
-        'SELECT target, url, title, heading, '
-        f"snippet(chunks, 4, '[', ']', ' ... ', {SNIPPET_TOKENS}), "
-        'bm25(chunks, 0, 0, 3.0, 2.0, 1.0) AS score '
+        'SELECT target, url, path, line, title, heading, '
+        f"snippet(chunks, {BODY_COLUMN}, '[', ']', ' ... ', {SNIPPET_TOKENS}), "
+        f'bm25(chunks, {COLUMN_WEIGHTS}) AS score '
         f'FROM chunks WHERE {" AND ".join(clauses)} ORDER BY score LIMIT ?',
         params,
     ).fetchall()
     return [
         Hit(
-            repository=repository,
+            repository=root.name,
             target=row[0],
             url=row[1],
-            title=row[2],
-            heading=row[3],
-            snippet=' '.join(str(row[4]).split()),
-            score=float(row[5]),
+            file=str(root / str(row[2])) if row[2] else '',
+            line=int(row[3] or 1),
+            title=row[4],
+            heading=row[5],
+            snippet=' '.join(str(row[6]).split()),
+            score=float(row[7]),
             match=match,
         )
         for row in rows

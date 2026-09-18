@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron'
+import { stat } from 'node:fs/promises'
 
 const savedBounds = new WeakMap<BrowserWindow, Electron.Rectangle>()
 
@@ -58,5 +59,25 @@ export function registerWindowControls(): void {
     ipcMain.handle('shell:app:relaunch', () => {
         app.relaunch()
         app.quit()
+    })
+
+    /*
+     * Show a file where it lives, in whatever the platform calls its file manager. This is the
+     * fallback for a plugin that found something no plugin here renders: it needs no reader, no
+     * panel and no agreement between plugins, and it is the one answer that is always available.
+     *
+     * The path is checked before it is handed over. showItemInFolder on a path that does not
+     * exist opens a window on nothing, which reads as the application losing the file rather than
+     * as the file being gone.
+     */
+    ipcMain.handle('shell:app:reveal', async (_event, target: unknown) => {
+        if (typeof target !== 'string' || !target) return false
+        try {
+            await stat(target)
+        } catch {
+            return false
+        }
+        shell.showItemInFolder(target)
+        return true
     })
 }

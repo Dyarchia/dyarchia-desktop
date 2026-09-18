@@ -1,6 +1,8 @@
 import { token } from '@dyarchia/kanon'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
+import { canOpen, openFile, registerOpener } from '../panels/openers'
+import type { OpenerDescriptor, OpenHandler, OpenRequest } from '../panels/openers'
 
 interface PluginListEntry {
     manifest: {
@@ -23,6 +25,9 @@ interface ShellApi {
     catalogue(): Promise<PluginCatalogue>
     enable(ids: string[]): Promise<string[]>
     relaunch(): Promise<void>
+    canOpen(path: string): boolean
+    open(request: OpenRequest): Promise<boolean>
+    reveal(path: string): Promise<boolean>
 }
 
 export interface PluginCatalogueEntry {
@@ -49,6 +54,7 @@ interface PluginModule {
         pluginId: string
         token(name: string): string
         registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
+        registerOpener(descriptor: OpenerDescriptor, open: OpenHandler): void
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         onThemeChange(listener: () => void): () => void
@@ -85,6 +91,8 @@ export async function loadPlugins(): Promise<void> {
                 pluginId: id,
                 token,
                 registerPanel,
+                registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
+                    registerOpener(id, descriptor, open),
                 invoke: (channel, ...args) => bridge.invoke(`plugin:${id}:${channel}`, ...args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 onThemeChange,
@@ -92,7 +100,11 @@ export async function loadPlugins(): Promise<void> {
                     catalogue: () =>
                         bridge.invoke('shell:plugins:catalogue') as Promise<PluginCatalogue>,
                     enable: (ids) => bridge.invoke('shell:plugins:enable', ids) as Promise<string[]>,
-                    relaunch: () => bridge.invoke('shell:app:relaunch') as Promise<void>
+                    relaunch: () => bridge.invoke('shell:app:relaunch') as Promise<void>,
+                    canOpen,
+                    open: (request: OpenRequest) => openFile(request),
+                    reveal: (path: string) =>
+                        bridge.invoke('shell:app:reveal', path) as Promise<boolean>
                 }
             })
         } catch (error) {

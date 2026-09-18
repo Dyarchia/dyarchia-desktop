@@ -10,8 +10,17 @@ registerPluginScheme()
 
 const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'] || process.env['DYARCHIA_DEBUG'])
 
+/*
+ * The debugging port is settable because it is a port: two instances cannot share one, and the
+ * second to start loses it silently — Chromium logs a bind error into a stream nobody is reading
+ * and carries on without a protocol endpoint, which reads as the second instance being broken.
+ * A workspace checkout running beside a packaged build is the ordinary case, not an exotic one.
+ */
 if (isDev) {
-    app.commandLine.appendSwitch('remote-debugging-port', '9222')
+    app.commandLine.appendSwitch(
+        'remote-debugging-port',
+        process.env['DYARCHIA_DEBUG_PORT'] || '9222'
+    )
 }
 
 function createWindow(): void {

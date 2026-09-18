@@ -4,6 +4,7 @@ import { DockLayout } from './layout/DockLayout'
 import { Notices } from './components/Notices'
 import { TopBar } from './components/TopBar'
 import { basePanelId, getRegisteredPanels, onRegistryChange } from './panels/registry'
+import { installOpeners } from './panels/openers'
 import { loadPlugins } from './plugins/host'
 import { applyTheme, readTheme } from './theme'
 import { installShortcuts } from './shortcuts'
@@ -79,6 +80,11 @@ export function App(): React.JSX.Element {
     useEffect(() => {
         if (!api) return
         return installShortcuts(api, { openPanel: handleOpen })
+    }, [api, handleOpen])
+
+    useEffect(() => {
+        if (!api) return
+        return installOpeners(handleOpen)
     }, [api, handleOpen])
 
     const handleTheme = useCallback((id: string) => {

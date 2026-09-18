@@ -73,12 +73,32 @@ export interface Prompt extends Usage {
     cost: number
 }
 
+/*
+ * What the cost-state line reports per model, which is more than the total it also carries. The
+ * model is named here with its tier — `claude-opus-5[1m]` rather than the bare `claude-opus-5` an
+ * assistant line carries — so this is the only place in the transcript where the tier a turn was
+ * billed under can be read at all. `unknown` is the CLI saying it could not price part of the
+ * session itself, which is worth repeating rather than hiding behind a total.
+ */
+export interface ModelSpend {
+    model: string
+    input: number
+    output: number
+    thinking: number
+    cacheWrite: number
+    cacheRead: number
+    cost: number
+}
+
 export interface Session {
     id: string
     file: string
     title: string
     cwd: string
     model: string
+    spend: ModelSpend[]
+    unknownCost: boolean
+    declaredKind: string | null
     startedAt: number
     updatedAt: number
     prompts: Prompt[]
@@ -137,6 +157,9 @@ function consume(held: Tracked, line: string): void {
     const session = held.session
     const type = event['type']
     const message = (event['message'] ?? {}) as Record<string, unknown>
+
+    const declared = event['sessionKind']
+    if (typeof declared === 'string' && declared) session.declaredKind = declared
 
     if (type === 'user') {
         if (event['isSidechain'] === true) return
@@ -205,6 +228,20 @@ function consume(held: Tracked, line: string): void {
             session.exactCost = total
             session.exactStale = false
         }
+        session.unknownCost = event['hasUnknownModelCost'] === true
+        const reported = (event['modelUsage'] ?? null) as Record<string, Record<string, unknown>> | null
+        if (reported) {
+            const count = (value: unknown): number => (typeof value === 'number' ? value : 0)
+            session.spend = Object.entries(reported).map(([model, spent]) => ({
+                model,
+                input: count(spent['inputTokens']),
+                output: count(spent['outputTokens']),
+                thinking: count(spent['thinkingTokens']),
+                cacheWrite: count(spent['cacheCreationInputTokens']),
+                cacheRead: count(spent['cacheReadInputTokens']),
+                cost: count(spent['costUSD'])
+            }))
+        }
         return
     }
 
@@ -233,6 +270,9 @@ async function follow(file: string, id: string, folder: string): Promise<Tracked
                 title: '',
                 cwd: folder,
                 model: '',
+                spend: [],
+                unknownCost: false,
+                declaredKind: null,
                 startedAt: 0,
                 updatedAt: info.mtimeMs,
                 prompts: [],
@@ -267,7 +307,20 @@ async function follow(file: string, id: string, folder: string): Promise<Tracked
         await handle.close()
     }
     held.session.updatedAt = Math.max(held.session.updatedAt, info.mtimeMs)
-    if (held.session.exactCost !== null) {
+    /*
+     * A transcript says what it is. `sessionKind` is written by the CLI itself and settles the
+     * interactive-or-not question that carrying a cost line only hints at: eight of the fifty-one
+     * interactive sessions on this machine carry one, and inferring from the cost line alone
+     * called every one of them a background run. Older transcripts carry no such field, so the
+     * inference stays as the fallback, and telling a print run from a longer background one is
+     * still a guess either way.
+     */
+    const declared = held.session.declaredKind
+    if (declared === 'interactive') {
+        held.session.kind = 'interactive'
+    } else if (declared === 'bg' || declared === 'background' || declared === 'print') {
+        held.session.kind = held.session.prompts.length <= 1 ? 'print' : 'background'
+    } else if (held.session.exactCost !== null) {
         held.session.kind = held.session.prompts.length <= 1 ? 'print' : 'background'
     }
     return held
@@ -312,6 +365,8 @@ function summarise(session: Session, now: number): Record<string, unknown> {
         title: session.title || session.prompts[0]?.text || session.id,
         cwd: session.cwd,
         model: session.model,
+        spend: session.spend,
+        unknownCost: session.unknownCost,
         kind: session.kind,
         startedAt: session.startedAt,
         updatedAt: session.updatedAt,

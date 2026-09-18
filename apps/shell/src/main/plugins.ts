@@ -7,6 +7,7 @@ import { registerNotices, showNotice } from './notices'
 import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
 import { hasChosen, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
+import { withdrawDisabledOffers } from './offers'
 
 export interface PluginRequirement {
     kind: string
@@ -174,6 +175,9 @@ async function discoverPlugins(): Promise<void> {
         catalogue.set(id, entry)
         if (isEnabled(id, enabled, app.isPackaged)) plugins.set(id, entry)
     }
+
+    const withdrawn = await withdrawDisabledOffers(new Set(catalogue.keys()), (id) => plugins.has(id))
+    for (const id of withdrawn) console.log(`[plugins] withdrew the MCP offer of ${id}, which is not enabled`)
 }
 
 function servePluginFile(request: Request): Promise<Response> | Response {

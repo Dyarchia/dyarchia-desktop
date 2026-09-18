@@ -4,6 +4,17 @@
  * than imported. A plugin that cannot be read without first being compiled is harder to trust.
  */
 
+/*
+ * What a hit's rung means, said in a tooltip rather than assumed. A reader who cannot tell an
+ * exact-phrase hit from an any-word one cannot tell an answer from a coincidence.
+ */
+const RUNGS = {
+    phrase: 'the page holds your words in that order',
+    near: 'your words appear close together on the page',
+    all: 'the page holds all of your words, anywhere on it',
+    any: 'the page holds some of your words; a lead, not an answer'
+}
+
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/></svg>'
 
@@ -39,6 +50,52 @@ const STYLE = `
     flex: 0 1 auto;
     min-height: 160px;
     overflow: auto;
+}
+
+/*
+ * Six columns and a state badge stop fitting well before the pane runs out of uses. Below 640px a
+ * corpus becomes a card carrying the labels the header row was holding, so the table never scrolls
+ * sideways in a split pane.
+ */
+@container pane (max-width: 640px) {
+    .crw-corpora {
+        overflow-x: hidden;
+    }
+
+    .crw-corpora table,
+    .crw-corpora tbody,
+    .crw-corpora tr,
+    .crw-corpora td {
+        display: block;
+    }
+
+    .crw-corpora tr:has(th) {
+        display: none;
+    }
+
+    .crw-corpora tr {
+        padding: var(--dya-space-2) 0;
+        border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    }
+
+    .crw-corpora td {
+        display: grid;
+        grid-template-columns: 8ch 1fr;
+        align-items: baseline;
+        gap: var(--dya-space-3);
+        border: 0;
+        padding: 1px var(--dya-space-3);
+        text-align: left;
+    }
+
+    .crw-corpora td::before {
+        content: attr(data-label);
+        font-family: var(--dya-font-mono);
+        font-size: var(--dya-size-label-sm);
+        letter-spacing: var(--dya-tracking-label);
+        text-transform: uppercase;
+        color: var(--dya-text-4);
+    }
 }
 .crw-bar {
     flex: none;
@@ -346,19 +403,25 @@ function mount(ctx, container) {
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
             table.replaceChildren()
+            const labels = ['target', 'group', 'pages', 'size', 'swept', 'state']
             const header = el('tr', 'dya-row')
-            for (const label of ['target', 'group', 'pages', 'size', 'swept', 'state']) {
+            for (const label of labels) {
                 header.appendChild(el('th', undefined, label))
             }
             table.appendChild(header)
             for (const corpus of corpora) {
                 const row = el('tr', 'dya-row')
-                row.appendChild(el('td', 'dya-mono', corpus.name))
-                row.appendChild(el('td', undefined, corpus.group || '-'))
-                row.appendChild(el('td', undefined, String(corpus.pages)))
-                row.appendChild(el('td', undefined, bytes(corpus.bytes)))
-                row.appendChild(el('td', undefined, day(corpus.swept_at)))
-                row.appendChild(verdictCell(corpus))
+                row.append(
+                    el('td', 'dya-mono', corpus.name),
+                    el('td', undefined, corpus.group || '-'),
+                    el('td', undefined, String(corpus.pages)),
+                    el('td', undefined, bytes(corpus.bytes)),
+                    el('td', undefined, day(corpus.swept_at)),
+                    verdictCell(corpus)
+                )
+                row.querySelectorAll('td').forEach((cell, column) => {
+                    cell.dataset.label = labels[column] ?? ''
+                })
                 table.appendChild(row)
             }
 
@@ -478,6 +541,11 @@ function mount(ctx, container) {
                 const head = el('div', 'crw-hit-head')
                 head.append(el('span', 'dya-text', hit.title))
                 if (hit.heading) head.append(el('span', 'dya-key-label', hit.heading))
+                if (hit.match) {
+                    const rung = el('span', 'dya-badge dya-badge--soft', hit.match)
+                    rung.title = RUNGS[hit.match] || hit.match
+                    head.append(rung)
+                }
                 head.append(el('span', 'dya-key-label crw-hit-where', `${hit.repository} / ${hit.target}`))
                 const url = el('div', 'dya-mono crw-hit-url', hit.url)
                 const snippet = el('div', 'dya-text crw-hit-snippet')

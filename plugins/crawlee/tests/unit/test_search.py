@@ -145,15 +145,21 @@ def test_a_target_filter_narrows_the_answer(tmp_path: Path) -> None:
     assert [hit.target for hit in search.search('shared', target='two', settings=settings)] == ['two']
 
 
-def test_words_are_required_together_and_then_widened(tmp_path: Path) -> None:
+def test_words_together_outrank_words_apart_and_the_answer_says_so(tmp_path: Path) -> None:
+    """Order carries precision: a weaker rung may answer, never ahead of a stronger one."""
     root = repository(
         tmp_path / 'corpus', 'docs', {'https://s/one': 'apple pie\n', 'https://s/two': 'apple tart\n'}
     )
     settings = settings_for(tmp_path, root)
 
-    assert [hit.url for hit in search.search('apple pie', settings=settings)] == ['https://s/one']
+    together = search.search('apple pie', settings=settings)
+    assert together[0].url == 'https://s/one'
+    assert together[0].match == 'phrase'
+    assert all(hit.match == 'any' for hit in together[1:])
+
     widened = search.search('pie cake', settings=settings)
     assert [hit.url for hit in widened] == ['https://s/one']
+    assert widened[0].match == 'any'
 
 
 def test_punctuation_never_reaches_the_parser() -> None:
@@ -201,3 +207,75 @@ def test_the_mcp_server_lists_and_calls_its_one_tool(tmp_path: Path, monkeypatch
     assert 'https://s/one' in answers[2]['result']['content'][0]['text']
     assert answers[2]['result']['structuredContent']['hits'][0]['title'] == 'One'
     assert answers[3]['error']['code'] == -32601
+
+
+def test_a_sentence_prefers_the_page_that_holds_it_verbatim(tmp_path: Path) -> None:
+    """The rung a query is answered on is the difference between an answer and a coincidence."""
+    root = repository(
+        tmp_path / 'corpus',
+        'docs',
+        {
+            'https://s/verbatim': 'You can create a skill by hand.\n',
+            'https://s/scattered': 'To learn how zero data retention applies, create a request and skill up.\n',
+        },
+    )
+    settings = settings_for(tmp_path, root)
+
+    hits = search.search('create a skill', settings=settings)
+    assert hits[0].url == 'https://s/verbatim'
+    assert hits[0].match == 'phrase'
+    assert 'https://s/scattered' in [hit.url for hit in hits[1:]]
+
+
+def test_a_stopword_is_never_what_a_chunk_is_required_to_hold(tmp_path: Path) -> None:
+    """`the` on every page narrows nothing, so it must not decide what comes back."""
+    root = repository(
+        tmp_path / 'corpus',
+        'docs',
+        {
+            'https://s/one': 'The quota applies to the workspace.\n',
+            'https://s/two': 'Quota limits are enforced per workspace.\n',
+        },
+    )
+    settings = settings_for(tmp_path, root)
+
+    urls = {hit.url for hit in search.search('the quota', settings=settings)}
+    assert urls == {'https://s/one', 'https://s/two'}
+
+
+def test_the_ladder_falls_from_phrase_to_any_and_says_where_it_landed(tmp_path: Path) -> None:
+    root = repository(
+        tmp_path / 'corpus',
+        'docs',
+        {
+            'https://s/one': 'Apple pie is baked.\n',
+            'https://s/two': 'A tart needs pastry.\n',
+        },
+    )
+    settings = settings_for(tmp_path, root)
+
+    exact = search.search('apple pie', settings=settings)
+    assert exact[0].match == 'phrase'
+
+    apart = search.search('apple baked', settings=settings)
+    assert apart[0].url == 'https://s/one'
+    assert apart[0].match in {'near', 'all'}
+
+    widened = search.search('apple pastry', settings=settings)
+    assert {hit.url for hit in widened} == {'https://s/one', 'https://s/two'}
+    assert {hit.match for hit in widened} == {'any'}
+
+    assert search.search('nothing whatsoever here', settings=settings) == []
+
+
+def test_a_query_of_nothing_but_stopwords_still_asks_for_them(tmp_path: Path) -> None:
+    """Dropping every word would turn a query into a match against the whole corpus."""
+    root = repository(tmp_path / 'corpus', 'docs', {'https://s/one': 'Of the thing.\n'})
+    settings = settings_for(tmp_path, root)
+
+    assert [label for label, _ in search.ladder('of the')] == ['phrase', 'near', 'all', 'any']
+    assert [hit.url for hit in search.search('of the', settings=settings)] == ['https://s/one']
+
+
+def test_one_word_has_a_single_rung(tmp_path: Path) -> None:
+    assert search.ladder('skill') == [('all', '"skill"')]

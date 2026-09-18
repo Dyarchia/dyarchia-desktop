@@ -13,11 +13,23 @@ interface Prompt {
     cost: number
 }
 
+interface ModelSpend {
+    model: string
+    input: number
+    output: number
+    thinking: number
+    cacheWrite: number
+    cacheRead: number
+    cost: number
+}
+
 interface Session {
     id: string
     title: string
     cwd: string
     model: string
+    spend: ModelSpend[]
+    unknownCost: boolean
     kind: 'interactive' | 'background' | 'print'
     startedAt: number
     updatedAt: number
@@ -26,6 +38,24 @@ interface Session {
     totals: { requests: number; input: number; output: number; cacheWrite: number; cacheRead: number; cost: number }
     exactCost: number | null
 }
+
+/*
+ * The columns, named once. The header reads the labels from here and each cell carries its own on
+ * a data-label, which is what lets a narrow pane drop the header row and put the label back beside
+ * the value it belongs to. Two lists would drift the first time a column moved.
+ */
+const COLUMNS: Array<[string, boolean]> = [
+    ['#', true],
+    ['prompt', false],
+    ['at', false],
+    ['took', true],
+    ['requests', true],
+    ['input', true],
+    ['cache read', true],
+    ['cache write', true],
+    ['output', true],
+    ['usd', true]
+]
 
 const COINS_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>'
@@ -72,6 +102,8 @@ const STYLES = `
     min-height: 0;
     display: flex;
     flex-direction: column;
+    container-type: inline-size;
+    container-name: detail;
 }
 .costs-head {
     flex: none;
@@ -82,9 +114,19 @@ const STYLES = `
     padding: var(--dya-space-3) var(--dya-space-4);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }
-.costs-head-title {
-    flex: 1;
+.costs-head-model {
+    flex: 0 1 auto;
     min-width: 0;
+    overflow-wrap: anywhere;
+}
+/*
+ * The title may shrink, but not below something readable. Without a floor it is a flex item with
+ * min-width zero next to a model name that cannot break, and the name wins every pixel: a session
+ * billed across three models squeezed the title to one character per line.
+ */
+.costs-head-title {
+    flex: 1 1 16ch;
+    min-width: 12ch;
     overflow-wrap: anywhere;
 }
 .costs-scroll {
@@ -115,6 +157,108 @@ const STYLES = `
     border-top: var(--dya-border-width) solid var(--dya-hairline);
 }
 .costs-foot .dya-value { text-transform: none; }
+.costs-breakdown {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    column-gap: var(--dya-space-3);
+    row-gap: var(--dya-space-1);
+}
+.costs-breakdown > .dya-key-label {
+    grid-column: 1 / -1;
+}
+.costs-breakdown-model {
+    color: var(--dya-text-2);
+}
+.costs-breakdown-sum {
+    justify-self: end;
+}
+
+/*
+ * Two questions, two containers, because they do not have the same answer. Whether the session
+ * list sits beside the detail or above it is about the pane: the list is a fixed 300px, so below
+ * 700px the detail is left with nothing worth having. Whether the prompts read as a table or as
+ * cards is about the detail, which is the pane minus the list when they are side by side and the
+ * whole pane when they are stacked — a pane-width query would get that wrong in one of the two
+ * arrangements, every time.
+ */
+@container pane (max-width: 700px) {
+    .costs {
+        flex-direction: column;
+    }
+
+    .costs-list {
+        flex: 0 1 auto;
+        max-height: 38%;
+        border-right: 0;
+        border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    }
+}
+
+/*
+ * Ten columns need room a split pane does not have, and a table that cannot fit either scrolls
+ * sideways or truncates. Below 900px, which is what these ten columns measured as needing, each
+ * prompt becomes a card instead: the header row goes and every cell carries the label it was
+ * holding. Nothing is dropped and nothing scrolls across, which is the point of measuring an
+ * element rather than the window.
+ */
+@container detail (max-width: 900px) {
+    .costs-scroll {
+        overflow-x: hidden;
+    }
+
+    .costs-table,
+    .costs-table tbody,
+    .costs-table tr,
+    .costs-table td {
+        display: block;
+    }
+
+    .costs-table tr:not(.dya-row) {
+        display: none;
+    }
+
+    .costs-table .dya-row {
+        padding: var(--dya-space-2) 0;
+        border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    }
+
+    .costs-table td,
+    .costs-table td.costs-num {
+        display: grid;
+        grid-template-columns: 14ch 1fr;
+        align-items: baseline;
+        gap: var(--dya-space-3);
+        border: 0;
+        padding: 1px var(--dya-space-4);
+        text-align: right;
+    }
+
+    .costs-table td::before {
+        content: attr(data-label);
+        font-family: var(--dya-font-mono);
+        font-size: var(--dya-size-label-sm);
+        letter-spacing: var(--dya-tracking-label);
+        text-transform: uppercase;
+        text-align: left;
+        color: var(--dya-text-4);
+    }
+
+    .costs-table td:not(.costs-num) {
+        text-align: left;
+    }
+
+    .costs-table td.costs-prompt {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .costs-table td[data-label="#"] {
+        display: none;
+    }
+}
 `
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -203,9 +347,14 @@ export function activate(ctx: PluginContext): void {
             const exact = session.exactCost !== null
 
             const head = el('div', 'costs-head')
-            head.append(
-                el('span', 'dya-text costs-head-title', session.title),
-                el('span', 'dya-mono', session.model || 'model unknown'),
+            const billed = session.spend.map((entry) => entry.model)
+            const named =
+                billed.length > 1
+                    ? `${billed[0]} +${billed.length - 1}`
+                    : billed[0] || session.model || 'model unknown'
+            const model = el('span', 'dya-mono costs-head-model', named)
+            if (billed.length > 1) model.title = billed.join('\n')
+            head.append(el('span', 'dya-text costs-head-title', session.title), model,
                 el('span', 'dya-badge dya-badge--soft', session.kind)
             )
             if (session.live) head.appendChild(el('span', 'dya-badge dya-badge--success', 'live'))
@@ -213,18 +362,7 @@ export function activate(ctx: PluginContext): void {
             const scroll = el('div', 'costs-scroll')
             const table = el('table', 'dya-table costs-table')
             const header = el('tr')
-            for (const [label, numeric] of [
-                ['#', true],
-                ['prompt', false],
-                ['at', false],
-                ['took', true],
-                ['requests', true],
-                ['input', true],
-                ['cache read', true],
-                ['cache write', true],
-                ['output', true],
-                ['usd', true]
-            ] as Array<[string, boolean]>) {
+            for (const [label, numeric] of COLUMNS) {
                 header.appendChild(el('th', numeric ? 'costs-num' : undefined, label))
             }
             table.appendChild(header)
@@ -247,6 +385,7 @@ export function activate(ctx: PluginContext): void {
                 cells.forEach(([text, numeric], column) => {
                     const cell = el('td', numeric ? 'costs-num' : column === 1 ? 'costs-prompt' : undefined, text)
                     if (column === 1) cell.title = prompt.text
+                    cell.dataset.label = COLUMNS[column]?.[0] ?? ''
                     row.appendChild(cell)
                 })
                 table.appendChild(row)
@@ -261,6 +400,26 @@ export function activate(ctx: PluginContext): void {
                 el('span', 'dya-value', `${tokens(totals.input + totals.cacheRead + totals.cacheWrite)} in · ${tokens(totals.output)} out`),
                 el('span', 'dya-value', exact ? `${usd(session.exactCost ?? 0, true)}, the CLI's own figure` : `${usd(totals.cost, false)}, estimated from tokens`)
             )
+            if (session.spend.length) {
+                const breakdown = el('div', 'costs-breakdown')
+                breakdown.appendChild(el('span', 'dya-key-label', 'billed as'))
+                for (const entry of session.spend) {
+                    breakdown.append(
+                        el('span', 'dya-mono costs-breakdown-model', entry.model),
+                        el(
+                            'span',
+                            'dya-value',
+                            `${tokens(entry.input + entry.cacheRead + entry.cacheWrite)} in · ${tokens(entry.output)} out` +
+                                (entry.thinking ? ` · ${tokens(entry.thinking)} thinking` : '')
+                        ),
+                        el('span', 'dya-value costs-breakdown-sum', usd(entry.cost, true))
+                    )
+                }
+                foot.appendChild(breakdown)
+            }
+            if (session.unknownCost) {
+                foot.appendChild(el('span', 'dya-text', 'The CLI reported that it could not price part of this session, so its own figure is short by whatever it could not name.'))
+            }
             if (!exact) {
                 foot.appendChild(el('span', 'dya-text', 'An interactive session carries no cost line, so this is tokens times a price table; a background or print run shows the figure the CLI wrote.'))
             }

@@ -1,3 +1,20 @@
+/*
+ * A pane is a query container named `pane`. It carries no look of its own: it exists so that what
+ * is inside it can ask how wide it is, which is the only question that matters in a dock where a
+ * panel's width has nothing to do with the window's. A viewport query would answer about the
+ * window and be wrong at every split.
+ *
+ * The three widths the system is measured at are 400, 700 and 1900. Below 700 a pane is a single
+ * column and nothing sits beside anything; at 700 a second column is affordable; 1900 is the whole
+ * window and is where a layout stops gaining from more room. A consumer writes
+ * `@container pane (min-width: 700px)` and gets the panel rather than the nearest container, which
+ * is what an unnamed query would find.
+ */
+.dya-pane {
+    container-type: inline-size;
+    container-name: pane;
+}
+
 .dya-text {
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body);

@@ -27,8 +27,12 @@ TOOL = {
     'description': (
         'Full-text search over the documentation this machine has snapshotted with '
         'dyarchia-crawlee: one or more corpus repositories, each holding many targets. '
-        'Words are matched together first and separately when nothing holds them all. '
-        'Returns the best chunks with their page URL, title, heading and a snippet.'
+        'Ask it a question in words, not keywords: the query is tried as an exact phrase '
+        'first, then as its words near each other, then as all of them, then as any, and '
+        'results come back in that order. Each hit is labelled with the rung it matched on '
+        '— phrase, near, all or any — so a hit labelled any is a weak one and should be '
+        'treated as a lead rather than an answer. Returns the best chunks with their page '
+        'URL, title, heading and a snippet.'
     ),
     'inputSchema': {
         'type': 'object',
@@ -76,7 +80,7 @@ def _call(arguments: dict[str, Any]) -> dict[str, Any]:
     for hit in hits:
         where = f'{hit.repository}/{hit.target}'
         head = f'{hit.title} — {hit.heading}' if hit.heading else hit.title
-        lines.append(f'{head}\n{hit.url}\n[{where}] {hit.snippet}')
+        lines.append(f'{head}\n{hit.url}\n[{where}] ({hit.match}) {hit.snippet}')
     return {
         'content': [{'type': 'text', 'text': '\n\n'.join(lines)}],
         'structuredContent': {'hits': [hit.to_dict() for hit in hits]},

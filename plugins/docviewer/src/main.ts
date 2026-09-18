@@ -26,22 +26,37 @@ async function choose(): Promise<string | null> {
     return result.canceled ? null : (result.filePaths[0] ?? null)
 }
 
+async function load(filePath: string): Promise<Record<string, unknown>> {
+    try {
+        const info = await stat(filePath)
+        if (info.size > MAX_FILE_SIZE) {
+            return { error: `File too large (${Math.round(info.size / 1024)} KB)` }
+        }
+        return {
+            name: basename(filePath),
+            path: filePath,
+            markdown: extname(filePath).toLowerCase() === '.md',
+            content: await readFile(filePath, 'utf-8')
+        }
+    } catch {
+        return { error: 'Cannot read that file' }
+    }
+}
+
 export function activate(ctx: PluginMainContext): void {
     ctx.handle('open', async () => {
         const filePath = await choose()
         if (!filePath) return { canceled: true }
-        try {
-            const info = await stat(filePath)
-            if (info.size > MAX_FILE_SIZE) {
-                return { error: `File too large (${Math.round(info.size / 1024)} KB)` }
-            }
-            return {
-                name: basename(filePath),
-                markdown: extname(filePath).toLowerCase() === '.md',
-                content: await readFile(filePath, 'utf-8')
-            }
-        } catch {
-            return { error: 'Cannot read that file' }
-        }
+        return load(filePath)
+    })
+
+    /*
+     * Read a file somebody else found. The dialog is the other way in and stays; this one exists
+     * because a plugin that locates something should be able to show it without asking the user
+     * to find it again in a file picker.
+     */
+    ctx.handle('read', async (target: unknown) => {
+        if (typeof target !== 'string' || !target) return { error: 'No file to open' }
+        return load(target)
     })
 }

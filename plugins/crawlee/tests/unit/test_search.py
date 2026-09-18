@@ -86,7 +86,7 @@ def test_a_word_in_a_section_finds_that_section(tmp_path: Path) -> None:
 def test_chunks_break_at_headings_and_keep_the_nearest_one() -> None:
     pieces = search.chunk(PAGE)
 
-    assert [heading for heading, _ in pieces] == ['Record types', 'Assigning a record type', 'Limits']
+    assert [heading for heading, _, _ in pieces] == ['Record types', 'Assigning a record type', 'Limits']
     assert pieces[2][1] == 'Two hundred record types per object.'
 
 
@@ -95,7 +95,7 @@ def test_a_long_section_splits_at_a_paragraph_and_keeps_its_heading() -> None:
     pieces = search.chunk(f'# Long\n\n{body}\n')
 
     assert len(pieces) > 1
-    assert {heading for heading, _ in pieces} == {'Long'}
+    assert {heading for heading, _, _ in pieces} == {'Long'}
 
 
 def test_the_index_follows_the_manifest_page_by_page(tmp_path: Path) -> None:
@@ -279,3 +279,27 @@ def test_a_query_of_nothing_but_stopwords_still_asks_for_them(tmp_path: Path) ->
 
 def test_one_word_has_a_single_rung(tmp_path: Path) -> None:
     assert search.ladder('skill') == [('all', '"skill"')]
+
+
+def test_a_chunk_remembers_the_line_it_starts_on() -> None:
+    """A hit is opened at its passage, so the line must be the body's, not the heading's."""
+    page = '# One\n\nfirst body line\n\n## Two\n\nsecond body line\n'
+    pieces = search.chunk(page)
+
+    assert [(heading, line) for heading, _, line in pieces] == [('One', 3), ('Two', 7)]
+
+
+def test_a_hit_carries_the_file_and_the_line_to_open_it_at(tmp_path: Path) -> None:
+    root = repository(
+        tmp_path / 'corpus',
+        'docs',
+        {'https://s/one': '# Top\n\nnothing here\n\n## Deeper\n\nthe cartouche word\n'},
+    )
+    settings = settings_for(tmp_path, root)
+
+    hit = search.search('cartouche', settings=settings)[0]
+    assert hit.line == 7
+    assert Path(hit.file).is_file()
+    assert Path(hit.file).read_text(encoding='utf-8').splitlines()[hit.line - 1].strip() == (
+        'the cartouche word'
+    )

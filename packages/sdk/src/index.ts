@@ -52,16 +52,39 @@ export interface PluginCatalogue {
  * to its own id; this is not, so it stays small on purpose. It exists for the setup panel: what
  * this installation holds, which of it loads, and the restart that makes a change take effect.
  */
+export interface OpenRequest {
+    path: string
+    line?: number
+}
+
+export interface OpenerDescriptor {
+    panelId: string
+    extensions: string[]
+}
+
 export interface ShellApi {
     catalogue(): Promise<PluginCatalogue>
     enable(ids: string[]): Promise<string[]>
     relaunch(): Promise<void>
+    /*
+     * Whether any plugin in this installation renders a file of that kind. A finder asks this
+     * before offering to open something, so the offer never appears when nothing would answer it,
+     * and never names the plugin that would.
+     */
+    canOpen(path: string): boolean
+    open(request: OpenRequest): Promise<boolean>
+    reveal(path: string): Promise<boolean>
 }
 
 export interface PluginContext {
     readonly pluginId: string
     token(name: string): string
     registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
+    /*
+     * Declare that this plugin renders files of these kinds, and which of its panels does it. The
+     * shell shows that panel before handing the request over, so a reader only has to read.
+     */
+    registerOpener(descriptor: OpenerDescriptor, open: (request: OpenRequest) => void | Promise<void>): void
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
     onThemeChange(listener: () => void): () => void

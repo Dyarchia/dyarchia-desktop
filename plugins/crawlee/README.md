@@ -366,6 +366,13 @@ word would match the whole corpus.
 Punctuation never reaches the parser: `foo(bar)` is the two words foo and bar. The index is
 derived and never versioned; delete the file and the next search rebuilds it.
 
+A hit carries the snapshot it came from and the line the passage starts on, so it can be opened
+rather than only reported. The panel offers to open it in whatever plugin in that installation
+renders markdown, positioned at the line, and to reveal it in the file manager; which of the two
+it offers is decided by asking the shell, never by naming a plugin, so an installation with no
+reader still gets the file manager. `search --json` and the MCP tool both carry `file` and
+`line` for the same reason.
+
 The files are written in write-ahead mode inside one transaction per refresh, so a search that
 lands while a refresh is running reads the index as it was and waits at most a minute for a
 lock, and a refresh killed halfway leaves the previous index rather than half of a new one. The

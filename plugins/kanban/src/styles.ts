@@ -43,11 +43,6 @@ export const STYLES = `
     cursor: help;
 }
 
-.kanban-lede {
-    text-align: center;
-    text-wrap: balance;
-}
-
 .kanban-main {
     position: relative;
     flex: 1;
@@ -155,8 +150,15 @@ export const STYLES = `
 }
 
 .kanban-empty {
-    padding: var(--dya-space-4) var(--dya-space-2);
-    text-align: center;
+    min-height: var(--dya-space-12);
+    border: var(--dya-border-width) dashed var(--dya-dashed);
+    border-radius: var(--dya-radius);
+    opacity: 0.45;
+}
+
+/* An empty column steps back: it is a place for something, not a thing. */
+.kanban-column[data-empty='true'] .kanban-scroll {
+    background: var(--dya-sunken);
 }
 
 .kanban-card {
@@ -212,6 +214,7 @@ export const STYLES = `
 .kanban-dot[data-tone='accent-3'] { background: var(--dya-accent-3); }
 .kanban-dot[data-tone='warning'] { background: var(--dya-warning); }
 .kanban-dot[data-tone='success'] { background: var(--dya-success); }
+.kanban-dot[data-tone='danger'] { background: var(--dya-danger); }
 
 .kanban-card-note {
     flex: 1;
@@ -532,29 +535,60 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     overflow-wrap: anywhere;
 }
 
+/*
+ * A form sits near the top of the panel, not in the middle of it. Centred vertically it floats in
+ * whatever height the panel happens to have, which at full height is a small box adrift in an
+ * empty screen — and that is what this looked like.
+ */
 .kanban-setup {
     flex: 1;
     min-height: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: var(--dya-space-6);
+    padding: var(--dya-space-6) var(--dya-space-5);
+    overflow-y: auto;
 }
 
-.kanban-setup-form {
+/*
+ * The two forms want opposite things. Settings is a page you came to on purpose, so it starts at
+ * the top where a page starts. The first-run form is the whole window and the only thing to do in
+ * it, so it sits in the middle and wears a card: pinned to the top of an empty panel it reads as
+ * a fragment of a screen that failed to load the rest.
+ */
+.kanban-setup[data-mode='welcome'] {
+    align-items: center;
+}
+
+.kanban-welcome {
+    padding: var(--dya-space-5);
+}
+
+.kanban-chooser-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--dya-space-3);
+}
+
+.kanban-chooser-path {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    overflow-wrap: anywhere;
+}
+
+.kanban-setup-shell {
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-2);
-    width: min(420px, 100%);
+    gap: var(--dya-space-4);
+    width: min(560px, 100%);
 }
 
-.kanban-setup-form > .dya-button {
-    align-self: center;
-    margin-top: var(--dya-space-2);
-}
-
-.kanban-setup-form > .dya-title {
-    margin-bottom: var(--dya-space-1);
+.kanban-setup-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-3);
+    flex-wrap: wrap;
 }
 
 .kanban-stage {
@@ -598,6 +632,45 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     flex-direction: column;
     gap: var(--dya-space-4);
     padding: var(--dya-space-4);
+}
+
+.kanban-watch-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-3);
+    flex-wrap: wrap;
+    padding-bottom: var(--dya-space-2);
+}
+
+.kanban-watch-count {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-metric);
+    font-weight: var(--dya-weight-light);
+    letter-spacing: var(--dya-tracking-metric);
+    line-height: var(--dya-leading-tight);
+    color: var(--dya-text);
+}
+
+.kanban-run-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* A number and the word for it, quiet and never wrapping mid-phrase. */
+.kanban-tally {
+    flex: none;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    white-space: nowrap;
+    color: var(--dya-text-4);
+}
+
+.kanban-when {
+    margin-inline-start: auto;
+    flex: none;
+    text-align: right;
 }
 
 .kanban-watch-body {

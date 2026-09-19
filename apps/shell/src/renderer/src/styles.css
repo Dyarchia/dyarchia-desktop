@@ -213,15 +213,6 @@ body,
     text-align: center;
 }
 
-.launcher-brand {
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-display);
-    font-weight: var(--dya-weight-light);
-    letter-spacing: var(--dya-tracking-brand);
-    line-height: var(--dya-leading-tight);
-    text-transform: uppercase;
-}
-
 .launcher-lede {
     text-wrap: balance;
 }

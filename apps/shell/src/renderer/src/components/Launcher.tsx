@@ -23,7 +23,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
     return (
         <div className="launcher">
             <div className="launcher-head">
-                <span className="dya-carved launcher-brand">dyarchia</span>
+                <span className="dya-carved">dyarchia</span>
                 <p className="dya-lede launcher-lede">
                     A window made of panels. Open what you need, drag it where you want it, and
                     the layout is there again next time.

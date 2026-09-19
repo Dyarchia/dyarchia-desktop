@@ -715,6 +715,47 @@ textarea.dya-field {
     color: var(--dya-on-status);
 }
 
+/*
+ * The three accents were fills nothing could use. A badge could say success, warning or danger and
+ * nothing else, so anything that is a kind rather than an outcome — a queue, a phase, a sort of
+ * event — either borrowed a status hue it did not mean or wore the same grey as its neighbours.
+ * Kinds that differ have to look different, and a system with six hues that lets a label reach
+ * three of them has three it declared and never spends.
+ *
+ * `--dya-on-accent` over each fill: accent 5.74 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
+ * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 5.74 / 6.12 /
+ * 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
+ */
+.dya-badge--accent {
+    background: var(--dya-accent);
+    color: var(--dya-on-accent);
+}
+
+.dya-badge--accent-2 {
+    background: var(--dya-accent-2);
+    color: var(--dya-on-accent);
+}
+
+.dya-badge--accent-3 {
+    background: var(--dya-accent-3);
+    color: var(--dya-on-accent);
+}
+
+.dya-badge--accent.dya-badge--soft {
+    background: var(--dya-accent-soft);
+    color: var(--dya-accent);
+}
+
+.dya-badge--accent-2.dya-badge--soft {
+    background: var(--dya-accent-2-soft);
+    color: var(--dya-accent-2);
+}
+
+.dya-badge--accent-3.dya-badge--soft {
+    background: var(--dya-accent-3-soft);
+    color: var(--dya-accent-3);
+}
+
 .dya-badge--soft {
     background: var(--dya-tag-bg);
     color: var(--dya-text-2);

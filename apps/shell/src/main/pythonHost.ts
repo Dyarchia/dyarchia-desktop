@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { join, resolve } from 'node:path'
+import { dataHome } from './paths'
 
 const READY_TIMEOUT_MS = 15_000
 const INVOKE_TIMEOUT_MS = 60_000
@@ -48,7 +49,8 @@ class PythonPlugin {
                     PYTHONIOENCODING: 'utf-8',
                     PYTHONUNBUFFERED: '1',
                     DYARCHIA_PLUGIN_ENV: pluginEnvironment(this.pluginId),
-                    DYARCHIA_USER_DATA: app.getPath('userData')
+                    DYARCHIA_USER_DATA: app.getPath('userData'),
+                    DYARCHIA_DATA_HOME: dataHome()
                 }
             }) as ChildProcessWithoutNullStreams
         } catch (error) {

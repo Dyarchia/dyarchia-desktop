@@ -26,17 +26,23 @@ const STYLE = `
     gap: var(--dya-space-3);
     min-height: 0;
 }
+/*
+ * The head and the footer sit on the table's left edge, not on the panel's. A cell carries its own
+ * padding, so a bar flush with the panel starts a whole cell inset to the left of every value
+ * under it and nothing in the view lines up with anything.
+ */
 .crw-head {
     display: flex;
     align-items: baseline;
     gap: var(--dya-space-3);
     flex: none;
+    padding-inline: var(--dya-space-3);
 }
 .crw-headline {
     flex: 1;
 }
 .crw-corpora {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-height: 160px;
     overflow: auto;
 }
@@ -89,6 +95,9 @@ const STYLE = `
 .crw-bar {
     flex: none;
     flex-wrap: wrap;
+    gap: var(--dya-space-5);
+    padding: var(--dya-space-3);
+    border-top: var(--dya-border-width) solid var(--dya-border);
 }
 .crw-scope {
     min-width: 220px;
@@ -103,13 +112,17 @@ const STYLE = `
     flex: 1;
     min-width: 120px;
 }
+/*
+ * The output area exists while there is output. It used to hold a fifth of the panel open whether
+ * or not a round had ever run, which is the void the corpus table should have been filling.
+ */
 .crw-out {
     display: flex;
     flex: 1 1 120px;
     min-height: 120px;
 }
-.crw-out > .dya-empty {
-    flex: 1;
+.crw-out:has(> .dya-log[hidden]) {
+    display: none;
 }
 .crw-log {
     flex: 1;
@@ -186,13 +199,26 @@ const STYLE = `
     flex-direction: column;
     gap: var(--dya-space-1);
     padding: var(--dya-space-2) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
 }
 .crw-hit-head {
     display: flex;
     align-items: baseline;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
+}
+/*
+ * The title is the one thing a reader scans down, so it carries the top ink rank. Everything else
+ * in the head is where the passage came from, and sits a rank below in mono at label size.
+ */
+.crw-hit-title {
+    color: var(--dya-text);
+    overflow-wrap: anywhere;
+}
+.crw-hit-in,
+.crw-hit-where {
+    font-size: var(--dya-size-mono-xs);
+    color: var(--dya-text-4);
 }
 .crw-hit-where {
     margin-left: auto;
@@ -276,7 +302,14 @@ function firstUrl(yaml) {
 
 export function activate(ctx) {
     injectStyles(ctx.pluginId, STYLE)
-    ctx.registerPanel({ id: 'crawlee', title: 'Crawlee', icon: ICON }, (container) =>
+    ctx.registerPanel(
+        {
+            id: 'crawlee',
+            title: 'Crawlee',
+            icon: ICON,
+            note: 'Snapshot documentation on a schedule and search everything it has kept.'
+        },
+        (container) =>
         mount(ctx, container)
     )
 }
@@ -358,26 +391,45 @@ function mount(ctx, container) {
         const wrap = el('div', 'crw-corpora')
         wrap.appendChild(table)
 
+        /*
+         * The footer is two groups, not six controls in a row: what the round covers, and what to
+         * do about it. They were evenly spaced with everything else, so the label, the select, the
+         * checkbox and the button read as one undifferentiated clump, and the clump started at the
+         * panel's edge while the table above started a cell's padding further in. It sits on the
+         * table's own left edge now, with a rule above it, which is what makes it a footer rather
+         * than a row of controls that happen to be last.
+         */
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
+        const scopeGroup = el('div', 'dya-bar__group')
+        scopeGroup.append(el('span', 'dya-key-label', 'round'), scopeBox)
+
         const commitBox = el('label', 'crw-check')
         const commit = el('input', 'dya-checkbox')
         commit.type = 'checkbox'
         commit.checked = true
         commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = el('button', 'dya-button', 'Run')
+        const run = el('button', 'dya-button dya-button--primary', 'Run')
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
-        const status = el('span', 'dya-text crw-status', '')
-        bar.append(el('span', 'dya-key-label', 'round'), scopeBox, commitBox, run, stop, status)
+        const actionGroup = el('div', 'dya-bar__group')
+        actionGroup.append(commitBox, run, stop)
 
+        const status = el('span', 'dya-text crw-status', '')
+        bar.append(scopeGroup, actionGroup, status)
+
+        /*
+         * Nothing sits here until a round writes something. The area used to carry a title and a
+         * sentence explaining what a round is, under a bar whose RUN button is the answer to the
+         * question it was asking — a paragraph of onboarding pinned to a panel somebody opens
+         * every day.
+         */
         const out = el('div', 'crw-out')
-        const idle = el('div', 'dya-empty', 'nothing has run yet')
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
-        out.append(idle, log)
+        out.append(log)
         rounds.append(head, wrap, bar, out)
 
         refresh.addEventListener('click', () => void refreshState())
@@ -401,34 +453,43 @@ function mount(ctx, container) {
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
             table.replaceChildren()
+            /*
+             * A real head and a real body: the header row is not a row somebody can hover, and the
+             * last row of the body is the one that drops its rule. Pages and size are figures, so
+             * they are read down a right edge rather than left-aligned against words.
+             */
             const labels = ['target', 'group', 'pages', 'size', 'swept', 'state']
-            const header = el('tr', 'dya-row')
+            const numeric = new Set(['pages', 'size'])
+            const thead = el('thead')
+            const header = el('tr')
             for (const label of labels) {
-                header.appendChild(el('th', undefined, label))
+                header.appendChild(el('th', numeric.has(label) ? 'dya-table__num' : undefined, label))
             }
-            table.appendChild(header)
+            thead.appendChild(header)
+            const body = el('tbody')
             for (const corpus of corpora) {
                 const row = el('tr', 'dya-row')
                 row.append(
                     el('td', 'dya-mono', corpus.name),
                     el('td', undefined, corpus.group || '-'),
-                    el('td', undefined, String(corpus.pages)),
-                    el('td', undefined, bytes(corpus.bytes)),
+                    el('td', 'dya-table__num', String(corpus.pages)),
+                    el('td', 'dya-table__num', bytes(corpus.bytes)),
                     el('td', undefined, day(corpus.swept_at)),
                     verdictCell(corpus)
                 )
                 row.querySelectorAll('td').forEach((cell, column) => {
                     cell.dataset.label = labels[column] ?? ''
                 })
-                table.appendChild(row)
+                body.appendChild(row)
             }
+            table.append(thead, body)
 
             const groups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
             scope.replaceChildren()
-            scope.appendChild(new Option('every target that asks for snapshots', 'all'))
-            for (const group of groups) scope.appendChild(new Option(`group ${group}`, `group:${group}`))
+            scope.appendChild(new Option('all targets', 'all'))
+            for (const group of groups) scope.appendChild(new Option(group, `group:${group}`))
             for (const corpus of corpora) {
-                scope.appendChild(new Option(`target ${corpus.name}`, `name:${corpus.name}`))
+                scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
             }
         }
 
@@ -452,7 +513,7 @@ function mount(ctx, container) {
             const payload = { commit: commit.checked }
             if (kind === 'group') payload.group = value
             if (kind === 'name') payload.names = [value]
-            await begin('run', payload, log, status, { run, stop, idle })
+            await begin('run', payload, log, status, { run, stop })
         }
 
         return {
@@ -513,7 +574,7 @@ function mount(ctx, container) {
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
-        const go = el('button', 'dya-button', 'Search')
+        const go = el('button', 'dya-button dya-button--primary', 'Search')
         bar.append(query, scopeBox, go)
 
         const hits = el('div', 'crw-hits')
@@ -568,17 +629,33 @@ function mount(ctx, container) {
                 return
             }
             for (const hit of found) {
+                /*
+                 * A heading, a repository and a target are names a crawl found, not words this
+                 * panel chose, so they keep their case. The uppercase label is for what the
+                 * interface calls things, and spending it on data is how a result page ends up
+                 * shouting a URL at the reader.
+                 *
+                 * A page whose title is its own address says its address twice, once as a title
+                 * it does not have and once as the line under it. It gets the line.
+                 */
                 const row = el('div', 'crw-hit')
                 const head = el('div', 'crw-hit-head')
-                head.append(el('span', 'dya-text', hit.title))
-                if (hit.heading) head.append(el('span', 'dya-key-label', hit.heading))
-                head.append(el('span', 'dya-key-label crw-hit-where', `${hit.repository} / ${hit.target}`))
+                const titled = hit.title && hit.title !== hit.url
+                head.append(
+                    titled
+                        ? el('span', 'dya-text crw-hit-title', hit.title)
+                        : el('span', 'dya-mono crw-hit-title', hit.url)
+                )
+                if (hit.heading) head.append(el('span', 'dya-mono crw-hit-in', hit.heading))
+                head.append(el('span', 'dya-mono crw-hit-where', `${hit.repository} / ${hit.target}`))
                 const url = el('div', 'dya-mono crw-hit-url', hit.url)
                 const snippet = el('div', 'dya-text crw-hit-snippet')
                 for (const [index, part] of String(hit.snippet).split(/[\[\]]/).entries()) {
                     snippet.append(index % 2 ? el('mark', undefined, part) : part)
                 }
-                row.append(head, url, snippet)
+                row.append(head)
+                if (titled) row.append(url)
+                row.append(snippet)
                 const actions = hitActions(hit)
                 if (actions) row.append(actions)
                 hits.appendChild(row)
@@ -766,7 +843,6 @@ function mount(ctx, container) {
         sink = into
         into.textContent = ''
         into.hidden = false
-        if (controls.idle) controls.idle.hidden = true
         controls.run.disabled = true
         if (controls.stop) controls.stop.hidden = false
         status.className = 'dya-text crw-status'

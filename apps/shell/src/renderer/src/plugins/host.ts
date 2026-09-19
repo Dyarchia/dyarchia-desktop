@@ -21,8 +21,15 @@ interface PluginListEntry {
  * installation holds, changing which of them load, and asking for the restart that makes the change
  * take. Nothing here is namespaced, so it stays deliberately small.
  */
+interface ShellPaths {
+    dataHome: string
+    userData: string
+    application: string
+}
+
 interface ShellApi {
     catalogue(): Promise<PluginCatalogue>
+    paths(): Promise<ShellPaths>
     enable(ids: string[]): Promise<string[]>
     relaunch(): Promise<void>
     canOpen(path: string): boolean
@@ -37,9 +44,15 @@ export interface PluginCatalogueEntry {
         version: string
         description?: string
         optional?: boolean
+        data?: string
         requires?: { kind: string; label: string; [key: string]: unknown }[]
     }
     directory: string
+    /*
+     * Whether this plugin is part of the application rather than a choice. A core plugin is always
+     * loaded, is never written to the enabled list, and the setup panel shows it without a tick.
+     */
+    core: boolean
     enabled: boolean
     loaded: boolean
 }
@@ -99,6 +112,7 @@ export async function loadPlugins(): Promise<void> {
                 shell: {
                     catalogue: () =>
                         bridge.invoke('shell:plugins:catalogue') as Promise<PluginCatalogue>,
+                    paths: () => bridge.invoke('shell:app:paths') as Promise<ShellPaths>,
                     enable: (ids) => bridge.invoke('shell:plugins:enable', ids) as Promise<string[]>,
                     relaunch: () => bridge.invoke('shell:app:relaunch') as Promise<void>,
                     canOpen,

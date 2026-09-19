@@ -6,7 +6,8 @@ import { pathToFileURL } from 'node:url'
 import { registerNotices, showNotice } from './notices'
 import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
-import { hasChosen, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
+import { root } from './paths'
+import { hasChosen, isCore, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
 import { withdrawDisabledOffers } from './offers'
 
 export interface PluginRequirement {
@@ -27,6 +28,12 @@ export interface PluginManifest {
     schemes?: string[]
     description?: string
     optional?: boolean
+    /*
+     * The folder this plugin writes into, named relative to the shell's data home. Declared so
+     * the setup panel can say where what a plugin produces will end up before anybody installs
+     * it, which is the question a packaged build had no answer to at all.
+     */
+    data?: string
     requires?: PluginRequirement[]
 }
 
@@ -103,7 +110,7 @@ export function registerPluginScheme(): void {
  * The bundled root is the one that ships inside the application, and it is the workspace tree in
  * development and `resources/plugins` in a packaged build: the same set either way, so what a
  * developer sees is what a user gets. `%APPDATA%` stays what it was, the place a plugin nobody
- * shipped can be dropped.
+ * shipped can be dropped: `~/.dyarchia/plugins`, beside everything else this application keeps.
  *
  * Bundled wins. In development that is the rule this project has always had — an installed copy
  * must never shadow the one being worked on — and it holds for the same reason once packaged: a
@@ -122,7 +129,7 @@ function pluginRoots(): string[] {
     if (!app.isPackaged && process.env['DYARCHIA_EXAMPLES']) {
         roots.push(join(resolve(import.meta.dirname, '../../../..'), 'examples'))
     }
-    roots.push(join(app.getPath('appData'), 'dyarchia', 'plugins'))
+    roots.push(join(root(), 'plugins'))
     return roots
 }
 
@@ -303,6 +310,7 @@ export async function setupPlugins(): Promise<void> {
             entries: [...catalogue.values()].map(({ manifest, dir }) => ({
                 manifest,
                 directory: dir,
+                core: isCore(manifest.id),
                 enabled: isEnabled(manifest.id, enabled, app.isPackaged),
                 loaded: plugins.has(manifest.id)
             }))

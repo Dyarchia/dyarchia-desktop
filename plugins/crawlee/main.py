@@ -75,11 +75,52 @@ def _interpreter(root: Path) -> Path:
     raise RuntimeError(f'no virtual environment in {looked}: install this plugin from Setup')
 
 
+def _installed_paths(root: Path) -> dict[str, str]:
+    """Where an installed copy keeps the corpus, and nothing at all in a checkout.
+
+    Every path the toolkit reads defaults to a relative one, resolved against the directory its
+    `pyproject.toml` sits in. In a checkout that is the repository and it is the right answer. In
+    an installation it is a directory inside the application, which the user did not choose, cannot
+    find and may not write to — and under the portable build this plugin shipped with until now, it
+    was a folder in %TEMP% that Windows deleted between launches, taking the corpus with it.
+
+    So an installed copy is told where to write instead. The shell names one directory,
+    DYARCHIA_DATA_HOME, inside `~/.dyarchia`; the corpus repositories go there, one per
+    subdirectory, with `local` as the default one a command falls back to. Derived data does not:
+    the index is rebuilt from the snapshots and the crawler's working directory is purged on every
+    run, so both live beside the application's own state rather than in the user's folders.
+
+    A checkout is left alone, and is recognised by the `.env` beside its `pyproject.toml` — the
+    file whose whole purpose is to say where that machine keeps its corpora. Overriding it from
+    here would answer a question the developer has already answered, and an environment variable
+    wins over `.env` in the settings the toolkit loads, so it would win silently.
+    """
+    home = os.environ.get('DYARCHIA_DATA_HOME')
+    if not home or (root / '.env').is_file():
+        return {}
+
+    corpora = Path(home) / 'crawlee'
+    default = corpora / 'local'
+    derived = Path(os.environ.get('DYARCHIA_USER_DATA', home)) / 'crawlee'
+    for directory in (default / 'profiles', default / 'data', default / 'output'):
+        directory.mkdir(parents=True, exist_ok=True)
+
+    return {
+        'DYARCHIA_CRAWLEE_REPOSITORIES_DIR': str(corpora),
+        'DYARCHIA_CRAWLEE_DATA_DIR': str(default / 'data'),
+        'DYARCHIA_CRAWLEE_PROFILES_DIR': str(default / 'profiles'),
+        'DYARCHIA_CRAWLEE_OUTPUT_DIR': str(default / 'output'),
+        'DYARCHIA_CRAWLEE_INDEX_DIR': str(derived / 'index'),
+        'DYARCHIA_CRAWLEE_STORAGE_DIR': str(derived / 'storage'),
+    }
+
+
 def _spawn(args: list[str], **extra: Any) -> subprocess.Popen[str]:
     """Run the CLI under the toolkit's own interpreter, with no console window of its own."""
     root = _toolkit_root()
     environment = dict(os.environ)
     environment.update(PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1', COLUMNS=CONSOLE_WIDTH)
+    environment.update(_installed_paths(root))
     return subprocess.Popen(
         [str(_interpreter(root)), '-m', 'dyarchia_crawlee', *args],
         cwd=root,

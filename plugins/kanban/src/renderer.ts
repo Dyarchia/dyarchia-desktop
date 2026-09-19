@@ -176,14 +176,47 @@ function order(cards: Card[]): Card[] {
     return cards.slice().sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
 }
 
-const FOLDABLE: Status[] = ['done', 'archived']
+/*
+ * Every stage folds. Two of them arrive folded, which is a default rather than a capability: a
+ * board is read left to right and its tail is history, but a stage somebody does not use is a
+ * stage they should be able to put away, and until now six of the eight refused.
+ */
+const FOLDED_BY_DEFAULT: Status[] = ['done', 'archived']
+
+/*
+ * What colour a decision wears. Kinds that differ have to look different — a row saying a card was
+ * created and a row saying one was deleted wore the same soft tag, so the list read as one texture
+ * and the eye had nothing to catch on. Four families: routine, motion, good, bad.
+ */
+const DECISION_TONE: Record<string, string> = {
+    created: 'dya-badge--accent-3',
+    edited: 'dya-badge--soft',
+    commented: 'dya-badge--soft',
+    attached: 'dya-badge--soft',
+    detached: 'dya-badge--soft',
+    moved: 'dya-badge--accent',
+    promoted: 'dya-badge--accent',
+    claimed: 'dya-badge--accent',
+    completed: 'dya-badge--accent-3',
+    reviewed: 'dya-badge--accent-3',
+    unblocked: 'dya-badge--accent-3',
+    landed: 'dya-badge--accent-3',
+    blocked: 'dya-badge--warning',
+    guarded: 'dya-badge--warning',
+    violation: 'dya-badge--warning',
+    block_loop: 'dya-badge--warning',
+    stopped: 'dya-badge--warning',
+    crashed: 'dya-badge--danger',
+    gave_up: 'dya-badge--danger',
+    deleted: 'dya-badge--danger'
+}
 
 function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle): () => void {
     const pinKey = `${PIN}${handle.instanceId}`
     const foldKey = (status: Status): string => `${pinKey}:fold:${status}`
     const folded = (status: Status): boolean => {
         const stored = read(foldKey(status))
-        return stored === null ? true : stored === 'true'
+        return stored === null ? FOLDED_BY_DEFAULT.includes(status) : stored === 'true'
     }
 
     let registry: BoardMeta[] = []
@@ -328,6 +361,46 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         live.textContent = text
     }
 
+    /*
+     * Which of the three regions is on screen, decided in one place.
+     *
+     * It was five places setting three `hidden` flags between them, and they disagreed. Opening
+     * the new-board form or the board settings from the dispatcher left the dispatcher mounted
+     * underneath, so the window showed a form stacked on a live list of every board. The same gap
+     * left the bar advertising a board `meta` no longer pointed at, with the worktree key still
+     * live and still asking about `meta?.slug` — which is where `no board 'undefined'` came from.
+     *
+     * Everything that depends on the view is decided here: what is mounted, what the bar says it
+     * is looking at, and which keys make sense to press.
+     */
+    type View = 'board' | 'watch' | 'form'
+
+    const stopWatching = (): void => {
+        watching = false
+        overview = null
+        watch.replaceChildren()
+        if (watchTimer) {
+            window.clearTimeout(watchTimer)
+            watchTimer = 0
+        }
+    }
+
+    const show = (next: View): void => {
+        if (next !== 'watch' && watching) stopWatching()
+        main.hidden = next !== 'board'
+        watch.hidden = next !== 'watch'
+        setup.hidden = next !== 'form'
+        marks.hidden = next !== 'board' || marked.size === 0
+
+        const onBoard = next === 'board' && meta !== null
+        settingsKey.hidden = !onBoard
+        treesKey.hidden = !onBoard
+        boardButton.textContent = meta?.name ?? 'board'
+        watchButton.classList.toggle('dya-key--active', next === 'watch')
+        watchButton.setAttribute('aria-pressed', String(next === 'watch'))
+        withTip(watchButton, next === 'watch' ? 'back to the board' : WATCH_TIP)
+    }
+
     const problems = new Map<string, string>()
     let boardProblem: string | null = null
 
@@ -406,10 +479,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         list.setAttribute('role', 'list')
         const indicator = el('div', 'kanban-indicator')
         indicator.hidden = true
-        const empty = el('div', 'dya-empty kanban-empty', 'nothing here')
+        /*
+         * An empty column says nothing. It used to say "nothing here", and a board at rest has six
+         * or seven empty columns, so the sentence appeared seven times across the widest part of
+         * the screen and was the loudest thing on a board whose actual content was one card. The
+         * count in the header already says the column is empty. What is left is a drop target,
+         * which needs a box and no words.
+         */
+        const empty = el('div', 'kanban-drop')
 
         if (status === 'triage') {
-            const plus = el('button', 'dya-key', '+')
+            const plus = el('button', 'dya-key kanban-new-key', '+')
             plus.type = 'button'
             plus.setAttribute('aria-label', 'new card')
             withTip(plus, 'a new card in triage')
@@ -439,23 +519,21 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             scroller.appendChild(draft)
         }
 
-        if (FOLDABLE.includes(status)) {
-            const fold = el('button', 'dya-key kanban-fold')
-            fold.type = 'button'
-            const apply = (closed: boolean): void => {
-                shell.dataset.collapsed = String(closed)
-                fold.textContent = closed ? '+' : '−'
-                withTip(fold, closed ? `show ${label}` : `fold ${label}`)
-                fold.setAttribute('aria-expanded', String(!closed))
-            }
-            apply(folded(status))
-            fold.addEventListener('click', () => {
-                const next = shell.dataset.collapsed !== 'true'
-                write(foldKey(status), String(next))
-                apply(next)
-            })
-            head.appendChild(fold)
+        const fold = el('button', 'dya-key kanban-fold')
+        fold.type = 'button'
+        const apply = (closed: boolean): void => {
+            shell.dataset.collapsed = String(closed)
+            fold.textContent = closed ? '+' : '−'
+            withTip(fold, closed ? `show ${label}` : `fold ${label}`)
+            fold.setAttribute('aria-expanded', String(!closed))
         }
+        apply(folded(status))
+        fold.addEventListener('click', () => {
+            const next = shell.dataset.collapsed !== 'true'
+            write(foldKey(status), String(next))
+            apply(next)
+        })
+        head.appendChild(fold)
 
         scroller.append(list, empty, indicator)
         shell.append(head, scroller)
@@ -573,8 +651,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 cursor = next
             }
 
-            column.count.textContent = String(wantedHere.length)
+            column.count.textContent = wantedHere.length > 0 ? String(wantedHere.length) : ''
             column.empty.hidden = wantedHere.length > 0
+            column.root.dataset.empty = String(wantedHere.length === 0)
         }
 
         for (const [id, node] of nodes) {
@@ -585,7 +664,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             if (first) first.root.tabIndex = 0
         }
 
-        meter.hidden = meta === null
+        meter.hidden = meta === null || cards.length === 0
         meter.textContent = `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`
         meter.title = meta ? `${meta.name} · ${meta.workdir}` : ''
         paintMarks()
@@ -618,6 +697,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             for (const status of rules.order) {
                 columns.set(status, buildColumn(status, rules.labels[status]))
             }
+            /*
+             * A folded stage turns its name on its side, so the name's length becomes the header's
+             * height and every folded column put its count and its fold key at a different height.
+             * One measure for all of them: the longest name on this board, in characters, which
+             * the mono face and the label tracking turn into an exact height in CSS.
+             */
+            const names = rules.labels
+            const longest = Math.max(...rules.order.map((status) => names[status].length))
+            board.style.setProperty('--kanban-stage-chars', String(longest))
         }
 
         for (const id of [...problems.keys()]) {
@@ -628,62 +716,78 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         clearError()
 
-        setup.hidden = true
-        main.hidden = watching
-        watch.hidden = !watching
         bar.hidden = false
-        boardButton.textContent = meta.name
-        settingsKey.hidden = false
-        treesKey.hidden = false
+        show(watching ? 'watch' : 'board')
         reconcile()
         void health().catch(() => undefined)
     }
 
     const renderAbsence = (missing: string | null): void => {
-        if (watching) closeWatch()
         if (marked.size) clearMarks()
-        marks.hidden = true
-        main.hidden = true
+        meta = null
         bar.hidden = registry.length === 0
-        boardButton.textContent = 'board'
-        settingsKey.hidden = true
-        treesKey.hidden = true
-        setup.hidden = false
+        show('form')
+        setup.dataset.mode = 'welcome'
         setup.replaceChildren()
 
         const open = registry.filter((entry) => !entry.archived)
         if (missing && !open.some((entry) => entry.slug === missing)) {
             const gone = el('div', 'dya-empty')
-            gone.append(el('span', undefined, `The board '${missing}' is gone or archived.`))
-            const pick = el('button', 'dya-button', 'choose a board')
+            gone.append(
+                el('span', 'dya-title', 'That board is gone'),
+                el('span', 'dya-text', `'${missing}' was deleted or archived.`)
+            )
+            const actions = el('div', 'dya-empty__actions')
+            const pick = el('button', 'dya-button dya-button--primary', 'choose another')
             pick.type = 'button'
             pick.addEventListener('click', () => openBoardMenu(pick))
-            gone.appendChild(pick)
+            actions.append(pick)
+            gone.appendChild(actions)
             setup.appendChild(gone)
             return
         }
 
-        setup.appendChild(buildBoardForm())
+        /*
+         * A machine that already holds boards is not asked to make another one. It was: with three
+         * boards on disk and none of them pinned, the first screen offered an empty create form
+         * and the way back to real work was a control in the bar. The boards are the answer to
+         * "what now", so they are what the screen shows.
+         */
+        setup.appendChild(open.length > 0 ? buildBoardChooser(open) : buildBoardForm())
+    }
+
+    /*
+     * One labelled row of a form. The explanation, when there is one, is a tip on the label: it is
+     * needed once, by somebody who has not met the field before, and a sentence that is always on
+     * screen to serve that reader buries the field from everybody else.
+     */
+    const field = (form: HTMLElement, label: string, control: HTMLElement, hint?: string): void => {
+        const name = el('span', 'dya-label', label)
+        if (hint) withTip(name, hint)
+        form.append(name, control)
     }
 
     const buildBoardForm = (): HTMLElement => {
-        const form = el('div', 'kanban-setup-form')
-        const label = el('div', 'dya-text kanban-lede', 'A board is a project. Name it and point it at a directory.')
+        const shell = el('div', 'dya-card kanban-setup-shell kanban-welcome')
+        const heading = el('div', 'dya-title', 'Make a board')
+        const label = el('div', 'dya-lede', 'A board is a project, and its cards go to an agent working in it.')
+
+        const form = el('div', 'dya-form')
 
         const name = el('input', 'dya-field')
         name.type = 'text'
-        name.placeholder = 'project name'
+        name.placeholder = 'what the project is called'
 
         const dirRow = el('div', 'kanban-row')
         const dir = el('input', 'dya-field')
         dir.type = 'text'
-        dir.placeholder = 'absolute project directory'
+        dir.placeholder = 'absolute path'
         dir.spellcheck = false
         const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
         browse.type = 'button'
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button', 'create board')
+        const create = el('button', 'dya-button dya-button--primary', 'create board')
         create.type = 'button'
 
         browse.addEventListener('click', () => {
@@ -704,8 +808,14 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        form.append(label, name, dirRow, create)
-        return form
+        field(form, 'name', name)
+        field(form, 'directory', dirRow, 'where the agent works: the project this board is about')
+        const actions = el('div', 'dya-form__actions')
+        actions.append(create)
+        form.append(actions)
+
+        shell.append(heading, label, form)
+        return shell
     }
 
     const showBoardSettings = (): void => {
@@ -713,8 +823,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const current = meta
         void invoke<Settings>('settings')
             .then((across) => {
-                main.hidden = true
-                setup.hidden = false
+                show('form')
+                setup.dataset.mode = 'settings'
                 setup.replaceChildren(buildBoardSettings(current, across))
             })
             .catch(fail)
@@ -834,14 +944,14 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardSettings = (current: BoardMeta, across: Settings): HTMLElement => {
-        const form = el('div', 'kanban-setup-form')
-        form.append(
-            el(
-                'div',
-                'dya-text kanban-lede',
-                `${current.name}. The slug '${current.slug}' names its storage and never changes.`
-            )
-        )
+        const shell = el('div', 'kanban-setup-shell')
+        const heading = el('div', 'kanban-setup-head')
+        heading.append(el('span', 'dya-title', current.name))
+        const slug = el('span', 'dya-mono dya-text', current.slug)
+        withTip(slug, 'names this board\u2019s storage on disk, and never changes')
+        heading.append(slug)
+
+        const form = el('div', 'dya-form')
 
         const name = el('input', 'dya-field')
         name.type = 'text'
@@ -863,28 +973,14 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         dirRow.append(dir, browse)
 
-        const capsLabel = el(
-            'div',
-            'dya-text kanban-lede',
-            'How many workers may run at once. 0 pauses: nothing new is claimed, and what is ' +
-                'already running finishes. A reviewer you ask for by hand starts regardless.'
-        )
+        const CAP_HINT =
+            '0 pauses it: nothing new is claimed and what is running finishes. A reviewer you ask ' +
+            'for by hand starts regardless.'
         const capsRow = el('div', 'kanban-row')
         const boardCap = capField(current.maxRunning ?? 1, 'on this board')
         const globalCap = capField(across.maxRunning, 'across every board')
-        capsRow.append(
-            el('span', 'dya-label', 'on this board'),
-            boardCap,
-            el('span', 'dya-label', 'across every board'),
-            globalCap
-        )
+        capsRow.append(boardCap, el('span', 'dya-label', 'everywhere'), globalCap)
 
-        const runnersLabel = el(
-            'div',
-            'dya-text kanban-lede',
-            'Which harness, model and effort run each phase, unless a card says otherwise. ' +
-                'A reviewer on a different model than the implementer is a better judge of it.'
-        )
         const runnersGrid = el('div', 'kanban-settings')
         const draft: Runners = {
             implement: { ...current.runners.implement },
@@ -906,7 +1002,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         renderRunners()
 
-        const save = el('button', 'dya-button', 'save')
+        const save = el('button', 'dya-button dya-button--primary', 'save')
         save.type = 'button'
         save.addEventListener('click', () => {
             void invoke('updateSettings', { maxRunning: Number(globalCap.value) })
@@ -929,9 +1025,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         back.type = 'button'
         back.addEventListener('click', () => void refresh().catch(fail))
 
-        const archive = el('button', 'dya-button dya-button--quiet dya-button--sm', 'archive')
+        const archive = el('button', 'dya-button dya-button--quiet dya-button--sm dya-form__push', 'archive')
         archive.type = 'button'
-        archive.title = 'the files are kept and the board leaves the picker'
+        withTip(archive, 'the files are kept and the board leaves the picker')
         archive.addEventListener('click', () => {
             if (!window.confirm(`Archive ${current.name}? Its cards and files are kept, and it leaves the picker.`)) {
                 return
@@ -962,11 +1058,23 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        const actions = el('div', 'kanban-row')
-        actions.append(save, back, el('span', 'kanban-spacer'), archive, remove)
+        const actions = el('div', 'dya-form__actions')
+        actions.append(save, back, archive, remove)
 
-        form.append(name, dirRow, capsLabel, capsRow, runnersLabel, runnersGrid, actions)
-        return form
+        field(form, 'name', name)
+        field(form, 'directory', dirRow, 'where the agent works: the project this board is about')
+        field(form, 'workers', capsRow, CAP_HINT)
+        field(
+            form,
+            'phases',
+            runnersGrid,
+            'which harness, model and effort run each phase, unless a card says otherwise. A ' +
+                'reviewer on a different model than the implementer is a better judge of it.'
+        )
+        form.append(actions)
+
+        shell.append(heading, form)
+        return shell
     }
 
     const openBoardMenu = (anchor: HTMLElement): void => {
@@ -998,13 +1106,40 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
     }
 
+    const buildBoardChooser = (open: BoardMeta[]): HTMLElement => {
+        const shell = el('div', 'kanban-setup-shell kanban-chooser')
+        shell.append(el('div', 'dya-title', 'Pick up where you left off'))
+
+        const grid = el('div', 'kanban-chooser-grid')
+        for (const entry of open) {
+            const tile = el('button', 'dya-tile')
+            tile.type = 'button'
+            tile.append(el('span', 'dya-tile__name', entry.name))
+            tile.append(el('span', 'dya-tile__note kanban-chooser-path', entry.workdir))
+            tile.addEventListener('click', () => {
+                write(pinKey, entry.slug)
+                void refresh().catch(fail)
+            })
+            grid.append(tile)
+        }
+        shell.append(grid)
+
+        const actions = el('div', 'dya-form__actions')
+        const make = el('button', 'dya-button dya-button--quiet', 'new board')
+        make.type = 'button'
+        make.addEventListener('click', () => newBoard())
+        actions.append(make)
+        shell.append(actions)
+        return shell
+    }
+
     const newBoard = (): void => {
         meta = null
         columns.clear()
         nodes.clear()
         board.replaceChildren()
-        main.hidden = true
-        setup.hidden = false
+        show('form')
+        setup.dataset.mode = 'welcome'
         setup.replaceChildren(buildBoardForm())
     }
 
@@ -1303,7 +1438,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 if (!into.isConnected) return
                 into.replaceChildren()
                 if (!rows.length) {
-                    into.appendChild(el('div', 'dya-empty kanban-empty', 'no transcript for this run: the CLI keeps that file, and it is gone'))
+                    into.appendChild(el('div', 'dya-empty', 'no transcript for this run: the CLI keeps that file, and it is gone'))
                     return
                 }
                 const stick = into.scrollTop + into.clientHeight >= into.scrollHeight - 8
@@ -1320,7 +1455,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 into.replaceChildren()
                 if (!rows.length) {
                     into.appendChild(
-                        el('div', 'dya-empty kanban-empty', 'the board has decided nothing about this card yet')
+                        el('div', 'dya-empty', 'the board has decided nothing about this card yet')
                     )
                     return
                 }
@@ -1585,7 +1720,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const filesGroup = el('div', 'kanban-group')
         filesGroup.append(el('span', 'dya-label', 'files'))
-        const files = el('div', 'kanban-parents')
+        const files = el('div', 'dya-pills')
 
         for (const file of card.attachments ?? []) {
             const holder = el('span', 'kanban-file')
@@ -1640,7 +1775,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const depsGroup = el('div', 'kanban-group')
         depsGroup.append(el('span', 'dya-label', 'depends on'))
-        const parents = el('div', 'kanban-parents')
+        const parents = el('div', 'dya-pills')
         for (const parentId of card.parents) {
             const parent = cardById(parentId)
             const chip = el('button', 'dya-chip', parent ? parent.title : parentId)
@@ -2146,73 +2281,174 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const shape = overview
         const holder = el('div', 'kanban-watch-body')
 
-        const head = el('div', 'kanban-row')
-        head.append(
-            el('span', 'dya-text', `${shape.running} running of ${shape.across}`),
-            el(
-                'span',
-                'kanban-card-note',
-                `across every board · ` +
-                    `${shape.holding ? 'this window is the dispatcher' : 'another window holds the dispatcher'}` +
-                    `${shape.across === 0 ? ' · everything is paused' : ''}`
-            )
+        /*
+         * The headline is the number, not a sentence containing it. Which window holds the
+         * dispatcher is a fact about the machine that matters twice a month, so it is a tag with a
+         * tip rather than half a line of running text on every refresh.
+         */
+        /*
+         * A masthead, then the boards, then what was decided.
+         *
+         * What was here said "running" three times before it said anything: a headline reading
+         * "0 running of 2", a section called RUNNING NOW, and under it the sentence "nothing is
+         * running". The count is the headline; the section exists only when something is in it.
+         *
+         * The numeral is set in the serif, which until now this system spent on one word in the
+         * title bar. A figure that is the whole point of a screen is allowed to be the one thing
+         * on it that is not mono.
+         */
+        const masthead = el('div', 'dya-masthead')
+        const stat = el('div', 'dya-stat')
+        const figure = el('div', 'dya-stat__figure')
+        figure.append(
+            el('span', 'dya-stat__value', String(shape.running)),
+            el('span', 'dya-stat__unit', `/${shape.across}`)
         )
-        holder.append(head)
+        const statText = el('div', 'dya-stat__text')
+        statText.append(
+            el('span', 'dya-label', shape.running === 1 ? 'run in flight' : 'runs in flight'),
+            el('span', 'dya-stat__note', `${shape.boards.length} boards on this machine`)
+        )
+        stat.append(figure, statText)
+        masthead.append(stat, el('span', 'kanban-spacer'))
 
-        const boardsGroup = el('div', 'kanban-group')
-        boardsGroup.append(el('span', 'dya-label', 'boards'))
-        for (const entry of shape.boards) {
-            const row = el('div', 'kanban-run')
-            const dot = el('span', 'kanban-dot')
-            dot.dataset.tone = entry.running ? 'accent' : 'idle'
-            const queued = [
-                `${entry.running}/${entry.cap} running`,
-                `${entry.counts.ready} ready`,
-                `${entry.counts.blocked} blocked`,
-                `${entry.counts.review} in review`,
-                `${entry.counts.todo + entry.counts.triage + entry.counts.scheduled} waiting`
-            ].join(' · ')
-            row.append(dot, el('span', 'dya-text', entry.name), el('span', 'kanban-card-note', queued))
-            if (entry.cap === 0) row.append(el('span', 'dya-tag', 'paused'))
-            boardsGroup.appendChild(row)
+        if (shape.across === 0) {
+            masthead.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
         }
+        const role = el(
+            'span',
+            `dya-badge ${shape.holding ? 'dya-badge--accent' : 'dya-badge--soft'}`,
+            shape.holding ? 'dispatcher' : 'follower'
+        )
+        withTip(
+            role,
+            shape.holding
+                ? 'this window is the one sweeping the boards'
+                : 'another window holds the dispatcher; this one is watching'
+        )
+        masthead.append(role)
+        holder.append(masthead)
+
+        /*
+         * A board is a card you can press, and pressing it opens that board — which is what makes
+         * the relief honest rather than decorative. The tallies are pills whose hue says which
+         * queue they are: a number beside the word "blocked" in the same grey as the number beside
+         * "ready" is two facts dressed as one.
+         */
+        const boardsGroup = el('div', 'kanban-group')
+        boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
+        const grid = el('div', 'kanban-board-grid')
+        for (const entry of shape.boards) {
+            const card = el('button', 'dya-tile dya-tile--dense')
+            card.type = 'button'
+            card.addEventListener('click', () => {
+                write(pinKey, entry.slug)
+                closeWatch()
+                void refresh().catch(fail)
+            })
+
+            const top = el('div', 'dya-tile__head')
+            top.append(el('span', 'dya-tile__name', entry.name))
+            if (entry.cap === 0) {
+                top.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
+            } else if (entry.running > 0) {
+                top.append(el('span', 'dya-badge dya-badge--accent', `${entry.running} running`))
+            }
+            card.append(top)
+
+            const pills = el('div', 'dya-pills')
+            const tallies: [number, string, string][] = [
+                [entry.counts.ready, 'ready', 'dya-badge--accent-3'],
+                [entry.counts.review, 'in review', 'dya-badge--accent-2'],
+                [entry.counts.blocked, 'blocked', 'dya-badge--danger'],
+                [
+                    entry.counts.todo + entry.counts.triage + entry.counts.scheduled,
+                    'waiting',
+                    'dya-badge--soft'
+                ]
+            ]
+            const shown = tallies.filter(([n]) => n > 0)
+            if (shown.length === 0) {
+                pills.append(el('span', 'dya-empty dya-empty--inline', 'nothing queued'))
+            } else {
+                for (const [n, word, tone] of shown) {
+                    pills.append(el('span', `dya-badge dya-badge--soft ${tone}`, `${n} ${word}`))
+                }
+            }
+            card.append(pills)
+
+            /*
+             * One mark per worker this board may run, filled while it is, and only where there is
+             * more than one: a single pip is a stray dash rather than a meter. Static, because a
+             * board being busy is a fact and not something to animate at somebody for as long as
+             * the panel is open.
+             */
+            if (entry.cap > 1) {
+                const caps = el('div', 'dya-meter')
+                withTip(caps, `${entry.running} of ${entry.cap} workers busy`)
+                for (let slot = 0; slot < Math.min(entry.cap, 8); slot += 1) {
+                    const pip = el('span', 'dya-meter__pip')
+                    pip.dataset.on = String(slot < entry.running)
+                    caps.append(pip)
+                }
+                card.append(caps)
+            }
+
+            grid.append(card)
+        }
+        boardsGroup.append(grid)
         holder.appendChild(boardsGroup)
 
-        const runsGroup = el('div', 'kanban-group')
-        runsGroup.append(el('span', 'dya-label', 'running now'))
-        if (!shape.runs.length) {
-            runsGroup.appendChild(el('div', 'dya-empty', 'nothing is running'))
+        /* The section exists when something is in it. */
+        if (shape.runs.length) {
+            const runsGroup = el('div', 'kanban-group')
+            runsGroup.append(el('span', 'dya-eyebrow', 'in flight'))
+            for (const run of shape.runs) runsGroup.appendChild(watchRow(run))
+            holder.appendChild(runsGroup)
         }
-        for (const run of shape.runs) runsGroup.appendChild(watchRow(run))
-        holder.appendChild(runsGroup)
 
         if (shape.problems.length) {
             const problemGroup = el('div', 'kanban-group')
-            problemGroup.append(el('span', 'dya-label', 'problems'))
+            problemGroup.append(el('span', 'dya-eyebrow', 'problems'))
             for (const entry of shape.problems) {
                 const row = el('div', 'kanban-run')
-                const dot = el('span', 'kanban-dot')
-                dot.dataset.tone = 'warning'
+                row.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'check'))
                 const where = shape.boards.find((board) => board.slug === entry.slug)?.name ?? 'this machine'
-                row.append(dot, el('span', 'dya-text', where), el('span', 'kanban-card-note', entry.problem))
+                row.append(el('span', 'dya-text', where), el('span', 'kanban-card-note', entry.problem))
                 problemGroup.appendChild(row)
             }
             holder.appendChild(problemGroup)
         }
 
-        const log = el('div', 'kanban-group')
-        log.append(el('span', 'dya-label', 'recent decisions'))
-        if (!shape.decisions.length) log.appendChild(el('div', 'dya-empty', 'nothing yet'))
-        for (const row of shape.decisions) {
-            const line = el('div', 'kanban-run')
-            line.append(
-                el('span', 'dya-tag', row.kind),
-                el('span', 'dya-text', row.title),
-                el('span', 'kanban-card-note', `${row.board} · ${when(row.at)}${row.detail ? ` · ${row.detail}` : ''}`)
-            )
-            log.appendChild(line)
+        if (shape.decisions.length) {
+            const log = el('div', 'kanban-group')
+            log.append(el('span', 'dya-eyebrow', 'decided'))
+            const logTable = el('table', 'dya-table')
+            const logBody = el('tbody')
+            for (const row of shape.decisions) {
+                const line = el('tr', 'dya-row')
+                const gone = row.title === row.cardId
+                const lead = gone && row.detail ? row.detail : row.title
+                const rest = gone && row.detail ? '' : row.detail
+
+                const kind = el('td', 'dya-table__fit')
+                const pill = el(
+                    'span',
+                    `dya-badge dya-badge--soft ${DECISION_TONE[row.kind] ?? 'dya-badge--soft'}`,
+                    row.kind.replace('_', ' ')
+                )
+                if (gone) withTip(pill, row.cardId)
+                kind.append(pill)
+
+                const first = el('td', 'kanban-cell-name', lead)
+                line.append(kind, first, el('td', 'kanban-tally', rest))
+                line.append(el('td', 'kanban-cell-end', `${row.board} \u00b7 ${when(row.at)}`))
+                logBody.appendChild(line)
+            }
+            logTable.append(logBody)
+            log.appendChild(logTable)
+            holder.appendChild(log)
         }
-        holder.appendChild(log)
 
         watch.replaceChildren(holder)
     }
@@ -2225,31 +2461,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const openWatch = (): void => {
         watching = true
-        watchButton.classList.add('dya-key--active')
-        watchButton.setAttribute('aria-pressed', 'true')
-        withTip(watchButton, 'back to the board')
-        marks.hidden = true
-        main.hidden = true
-        setup.hidden = true
-        watch.hidden = false
-        watch.replaceChildren(el('div', 'dya-empty', 'reading every board'))
+        show('watch')
+        watch.replaceChildren(el('div', 'dya-empty dya-empty--inline', 'reading every board'))
         void loadWatch().catch(fail)
     }
 
     function closeWatch(): void {
-        watching = false
-        watchButton.classList.remove('dya-key--active')
-        watchButton.setAttribute('aria-pressed', 'false')
-        withTip(watchButton, WATCH_TIP)
-        watch.hidden = true
-        main.hidden = meta === null
-        marks.hidden = marked.size === 0
-        watch.replaceChildren()
-        overview = null
-        if (watchTimer) {
-            window.clearTimeout(watchTimer)
-            watchTimer = 0
-        }
+        show(meta === null ? 'form' : 'board')
     }
 
     const restock = (): void => {
@@ -2343,7 +2561,13 @@ export function activate(ctx: PluginContext): void {
     injectStyles('kanban', `${xtermCss}
 ${STYLES}`)
     ctx.registerPanel(
-        { id: 'kanban', title: 'Kanban', icon: ICON, duplicable: true },
+        {
+            id: 'kanban',
+            title: 'Kanban',
+            icon: ICON,
+            note: 'Write a card, hand it to an agent, and watch the run as it happens.',
+            duplicable: true
+        },
         (container, handle) => mount(ctx, container, handle)
     )
 }

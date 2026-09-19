@@ -52,14 +52,15 @@ const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-5) var(--dya-space-6);
 }
+.docviewer-open {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
 .docviewer-open svg {
     display: block;
-    width: 14px;
-    height: 14px;
-}
-.docviewer-open--lg svg {
-    width: 28px;
-    height: 28px;
+    width: 13px;
+    height: 13px;
 }
 .docviewer-content--empty {
     display: flex;
@@ -144,7 +145,7 @@ const STYLES = `
 .docviewer-content hr {
     margin: var(--dya-space-5) 0;
     border: none;
-    border-top: var(--dya-border-width) solid var(--dya-hairline);
+    border-top: var(--dya-border-width) solid var(--dya-border);
 }
 .docviewer-line {
     display: block;
@@ -203,16 +204,27 @@ export function activate(ctx: PluginContext): void {
     })
 
     ctx.registerPanel(
-        { id: 'docviewer', title: 'Docs', icon: DOCS_ICON, duplicable: true },
+        {
+            id: 'docviewer',
+            title: 'Docs',
+            icon: DOCS_ICON,
+            note: 'Read markdown with its diagrams and its code, or the source behind it.',
+            duplicable: true
+        },
         (container) => {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'docviewer'
 
+            /*
+             * The bar stays. It used to hide itself whenever the panel had nothing open, which is
+             * exactly when the only control that matters — open something — needs to be reachable,
+             * and it is why the empty panel had to grow a button of its own in the middle of it.
+             * The panel is simply empty now, with its bar where every other panel's bar is.
+             */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
-            header.hidden = true
             const name = document.createElement('span')
             name.className = 'dya-mono docviewer-name'
             const modes = document.createElement('div')
@@ -255,30 +267,38 @@ export function activate(ctx: PluginContext): void {
                 void renderCurrent()
             }
 
+            /*
+             * An empty panel is empty. It said "Read a document" over a sentence over a button, in
+             * the middle of an otherwise blank panel, which is an advertisement for a panel the
+             * reader has already opened. Only a failure has anything to say here.
+             */
             function showEmpty(message?: string): void {
                 current = null
-                header.hidden = true
+                name.textContent = ''
                 modes.hidden = true
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
-                const empty = document.createElement('div')
-                empty.className = 'dya-empty'
-                empty.append(openButton(true))
-                if (message) {
-                    const label = document.createElement('span')
-                    label.textContent = message
-                    empty.append(label)
+
+                if (!message) {
+                    content.replaceChildren()
+                    return
                 }
-                content.replaceChildren(empty)
+
+                const line = document.createElement('div')
+                line.className = 'dya-empty dya-empty--inline dya-text--danger'
+                line.textContent = message
+                content.replaceChildren(line)
             }
 
-            function openButton(large = false): HTMLButtonElement {
+            /*
+             * A word, not a bare icon. An empty panel says nothing, which leaves its bar as the
+             * only thing on the screen telling a reader what to do with it — and a 14px glyph in
+             * the far corner of an otherwise blank rectangle tells nobody anything. The bare
+             * variant is for a control beside something that already has a name.
+             */
+            function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = large
-                    ? 'dya-button dya-button--bare docviewer-open docviewer-open--lg'
-                    : 'dya-button dya-button--bare docviewer-open'
-                button.title = 'Open document'
-                button.setAttribute('aria-label', 'Open document')
-                button.innerHTML = DOCS_ICON
+                button.className = 'dya-button dya-button--quiet dya-button--sm docviewer-open'
+                button.innerHTML = `${DOCS_ICON}<span>Open</span>`
                 button.onclick = () => void openFile()
                 return button
             }

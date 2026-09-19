@@ -147,9 +147,12 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
             }
         ]
 
+        /* The step is named by what it fetches, not by the argv that fetches it: the command is the
+         * detail, one hover away, and `uv playwright install chromium` as a label is a chip wider
+         * than the card it sits in. */
         for (const step of requirement.postInstall ?? []) {
             parts.push({
-                label: `uv ${step.join(' ')}`,
+                label: step[step.length - 1] ?? step.join(' '),
                 met: done,
                 acquirable: true,
                 detail: built

@@ -34,14 +34,15 @@ const STYLES = `
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.player-open {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
 .player-open svg {
     display: block;
-    width: 14px;
-    height: 14px;
-}
-.player-open--lg svg {
-    width: 28px;
-    height: 28px;
+    width: 13px;
+    height: 13px;
 }
 .player-stage {
     flex: 1;
@@ -71,16 +72,27 @@ const STYLES = `
 
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
-        { id: 'player', title: 'Player', icon: PLAYER_ICON, duplicable: true },
+        {
+            id: 'player',
+            title: 'Player',
+            icon: PLAYER_ICON,
+            note: 'Play audio and video from this machine, without leaving the window.',
+            duplicable: true
+        },
         (container) => {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'player'
 
+            /*
+             * The bar stays. It used to hide itself whenever the panel had nothing open, which is
+             * exactly when the only control that matters — open something — needs to be reachable,
+             * and it is why the empty panel had to grow a button of its own in the middle of it.
+             * The panel is simply empty now, with its bar where every other panel's bar is.
+             */
             const header = document.createElement('div')
             header.className = 'player-header'
-            header.hidden = true
             const name = document.createElement('span')
             name.className = 'dya-mono player-name'
             header.append(name)
@@ -92,29 +104,31 @@ export function activate(ctx: PluginContext): void {
 
             let busy = false
 
-            function openButton(large = false): HTMLButtonElement {
+            /*
+             * A word, not a bare icon, for the same reason as the reader's: an empty panel says
+             * nothing, so its bar is the only thing left telling a reader what the panel is for.
+             */
+            function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = large
-                    ? 'dya-button dya-button--bare player-open player-open--lg'
-                    : 'dya-button dya-button--bare player-open'
-                button.title = 'Open media'
-                button.setAttribute('aria-label', 'Open media')
-                button.innerHTML = PLAYER_ICON
+                button.className = 'dya-button dya-button--quiet dya-button--sm player-open'
+                button.innerHTML = `${PLAYER_ICON}<span>Open</span>`
                 button.onclick = () => void openMedia()
                 return button
             }
 
+            /* An empty stage is empty; only a failure has anything to say. */
             function showEmpty(message?: string): void {
-                header.hidden = true
-                const empty = document.createElement('div')
-                empty.className = 'dya-empty'
-                empty.append(openButton(true))
-                if (message) {
-                    const label = document.createElement('span')
-                    label.textContent = message
-                    empty.append(label)
+                name.textContent = ''
+
+                if (!message) {
+                    stage.replaceChildren()
+                    return
                 }
-                stage.replaceChildren(empty)
+
+                const line = document.createElement('div')
+                line.className = 'dya-empty dya-empty--inline dya-text--danger'
+                line.textContent = message
+                stage.replaceChildren(line)
             }
 
             async function openMedia(): Promise<void> {

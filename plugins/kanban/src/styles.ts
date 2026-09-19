@@ -43,11 +43,6 @@ export const STYLES = `
     cursor: help;
 }
 
-.kanban-lede {
-    text-align: center;
-    text-wrap: balance;
-}
-
 .kanban-main {
     position: relative;
     flex: 1;
@@ -82,17 +77,33 @@ export const STYLES = `
     min-width: 36px;
 }
 
+/*
+ * The header, not the name, carries the measure. Its height is the longest stage name on this
+ * board — one character being 1ch plus the label tracking — plus room for the two controls, and
+ * the controls are pushed to the bottom of it. So the count and the fold key of every folded
+ * stage land on one line across the board, which is the only way a row of folded stages reads as
+ * a row, and no name is stretched, padded or otherwise touched to get there.
+ */
 .kanban-column[data-collapsed='true'] .kanban-column-head {
     flex-direction: column;
-    height: auto;
+    height: calc(var(--kanban-stage-chars, 9) * (1ch + var(--dya-tracking-label)) + var(--dya-space-12));
     padding: var(--dya-space-2) 0;
     gap: var(--dya-space-2);
+}
+
+.kanban-column[data-collapsed='true'] .kanban-count {
+    margin-top: auto;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-column-title {
     flex: none;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+}
+
+/* Adding a card is not something you do to a stage you have put away. */
+.kanban-column[data-collapsed='true'] .kanban-new-key {
+    display: none;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-list,
@@ -154,9 +165,25 @@ export const STYLES = `
     transition: transform var(--dya-dur-fast) var(--dya-ease);
 }
 
-.kanban-empty {
-    padding: var(--dya-space-4) var(--dya-space-2);
-    text-align: center;
+/*
+ * The drop target, and it exists while something is being dropped. A dashed box in every empty
+ * column is seven boxes of nothing across the widest part of the screen on a board at rest, which
+ * is the same sentence the column used to say, drawn instead of written.
+ */
+.kanban-drop {
+    display: none;
+    min-height: var(--dya-space-12);
+    border: var(--dya-border-width) dashed var(--dya-dashed);
+    border-radius: var(--dya-radius);
+}
+
+.kanban-board[data-dragging='true'] .kanban-drop {
+    display: block;
+}
+
+/* An empty column steps back: it is a place for something, not a thing. */
+.kanban-column[data-empty='true'] .kanban-scroll {
+    background: var(--dya-sunken);
 }
 
 .kanban-card {
@@ -212,6 +239,7 @@ export const STYLES = `
 .kanban-dot[data-tone='accent-3'] { background: var(--dya-accent-3); }
 .kanban-dot[data-tone='warning'] { background: var(--dya-warning); }
 .kanban-dot[data-tone='success'] { background: var(--dya-success); }
+.kanban-dot[data-tone='danger'] { background: var(--dya-danger); }
 
 .kanban-card-note {
     flex: 1;
@@ -391,12 +419,6 @@ export const STYLES = `
     gap: 2px;
 }
 
-.kanban-parents {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dya-space-1);
-}
-
 .kanban-comment {
     display: flex;
     flex-direction: column;
@@ -518,9 +540,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
 }
 
 .kanban-health-where > .dya-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .kanban-health-problem {
@@ -532,25 +552,60 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     overflow-wrap: anywhere;
 }
 
+/*
+ * A form sits near the top of the panel, not in the middle of it. Centred vertically it floats in
+ * whatever height the panel happens to have, which at full height is a small box adrift in an
+ * empty screen — and that is what this looked like.
+ */
 .kanban-setup {
     flex: 1;
     min-height: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: var(--dya-space-6);
+    padding: var(--dya-space-6) var(--dya-space-5);
+    overflow-y: auto;
 }
 
-.kanban-setup-form {
+/*
+ * The two forms want opposite things. Settings is a page you came to on purpose, so it starts at
+ * the top where a page starts. The first-run form is the whole window and the only thing to do in
+ * it, so it sits in the middle and wears a card: pinned to the top of an empty panel it reads as
+ * a fragment of a screen that failed to load the rest.
+ */
+.kanban-setup[data-mode='welcome'] {
+    align-items: center;
+}
+
+.kanban-welcome {
+    padding: var(--dya-space-5);
+}
+
+.kanban-chooser-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--dya-space-3);
+}
+
+.kanban-chooser-path {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    overflow-wrap: anywhere;
+}
+
+.kanban-setup-shell {
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-2);
-    width: min(420px, 100%);
+    gap: var(--dya-space-4);
+    width: min(560px, 100%);
 }
 
-.kanban-setup-form > .dya-button {
-    align-self: center;
-    margin-top: var(--dya-space-2);
+.kanban-setup-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-3);
+    flex-wrap: wrap;
 }
 
 .kanban-stage {
@@ -577,7 +632,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     flex-wrap: wrap;
     gap: var(--dya-space-2);
     padding: var(--dya-space-1) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
 }
 
 .kanban-run > .kanban-comment-text {
@@ -596,12 +651,19 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     padding: var(--dya-space-4);
 }
 
+/* The boards, as many across as the panel affords. */
+.kanban-board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+    gap: var(--dya-space-3);
+}
+
 .kanban-watch-body {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-4);
     width: 100%;
-    max-width: 68rem;
+    max-width: 96rem;
 }
 
 .kanban-watch-run {
@@ -609,7 +671,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     text-align: left;
     background: none;
     border: none;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
     color: inherit;
     font: inherit;
     cursor: pointer;
@@ -653,7 +715,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     flex-direction: column;
     gap: 2px;
     padding: var(--dya-space-1) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
 }
 
 .kanban-row-entry[data-kind='text'] { padding: var(--dya-space-2) 0; }

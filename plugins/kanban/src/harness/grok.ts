@@ -180,7 +180,8 @@ async function progress(_place: string, run: Run): Promise<Progress | null> {
         lastText: reading.text.trim(),
         terminal: parseTerminal(reading.text),
         error,
-        modifiedAt: held.modifiedAt
+        modifiedAt: held.modifiedAt,
+        permissionMode: null
     }
 }
 

@@ -191,7 +191,8 @@ async function progress(_place: string, run: Run): Promise<Progress | null> {
         lastText: (final ?? reading.texts[reading.texts.length - 1] ?? '').trim(),
         terminal: parseTerminal(text),
         error,
-        modifiedAt: held.modifiedAt
+        modifiedAt: held.modifiedAt,
+        permissionMode: null
     }
 }
 

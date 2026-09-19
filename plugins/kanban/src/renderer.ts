@@ -1605,8 +1605,22 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const view = el('div', 'kanban-terminal')
         stageView.replaceChildren(view)
+        /*
+         * A run that ends takes its session with it, and the terminal attached to it fails on the
+         * next reattach. That is the run finishing, not the card failing: a card that completed
+         * and was approved was showing "that card has no session to attach to" in red at the top
+         * of its own drawer. The view falls back to the transcript, which is what a finished run
+         * has to show.
+         */
         terminal = openTerminal(ctx, view, meta?.slug ?? '', card.id, (thrown) => {
             closeTerminal()
+            if (reason(thrown).includes('no session to attach to')) {
+                terminalFor = ''
+                const list = el('div', 'kanban-history')
+                stageView.replaceChildren(list)
+                paintHistory(card, list)
+                return
+            }
             failOn(card.id, thrown)
         })
     }

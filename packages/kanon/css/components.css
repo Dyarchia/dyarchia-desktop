@@ -24,9 +24,47 @@
 
 .dya-text--success {
     color: var(--dya-success);
-}.dya-text--danger {
+}
+
+.dya-text--danger {
     color: var(--dya-danger);
-}.dya-label,
+}
+
+/*
+ * The emphasis layer.
+ *
+ * Every other rule in this file prevents something: do not glare, do not truncate, never below
+ * 4.50. Prohibitions reliably produce a screen where nothing is wrong and nothing is first, which
+ * is what a panel of this system looked like — labels, values, rows and headings all quiet, and
+ * the eye with nowhere to land. These six say what matters instead of what is forbidden.
+ *
+ * A title is a size and a tracking, never a weight: hierarchy in this system comes from the type
+ * scale and the ink rank, and reaching for 500 is how a screen ends up with four kinds of bold and
+ * still no order.
+ */
+.dya-title {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight);
+    letter-spacing: var(--dya-tracking-h3);
+    line-height: var(--dya-leading-heading);
+    color: var(--dya-text);
+}
+
+.dya-title--lg {
+    font-size: var(--dya-size-h2);
+    letter-spacing: var(--dya-tracking-h2);
+}
+
+.dya-lede {
+    max-width: 68ch;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
+}
+
+.dya-label,
 .dya-eyebrow {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-label-sm);
@@ -73,7 +111,9 @@
     font-size: var(--dya-size-mono);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
-}.dya-math {
+}
+
+.dya-math {
     font-family: var(--dya-font-mono);
     font-size: 0.94em;
     letter-spacing: var(--dya-tracking-mono);
@@ -95,7 +135,9 @@
 .dya-prose__scroll {
     margin: 0 0 var(--dya-space-3);
     overflow-x: auto;
-}.dya-code {
+}
+
+.dya-code {
     display: block;
     margin: 0 0 var(--dya-space-3);
     padding: var(--dya-space-3);
@@ -154,7 +196,9 @@
     color: var(--dya-text-3);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-}.dya-bar {
+}
+
+.dya-bar {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
@@ -165,7 +209,9 @@
     height: 38px;
     background: var(--dya-grad-bar);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
-}.dya-bar--flush {
+}
+
+.dya-bar--flush {
     padding-right: 0;
 }
 
@@ -174,6 +220,18 @@
     padding: 0;
     background: none;
     border-bottom: none;
+}
+
+/*
+ * Controls that belong together inside a bar. The group is what wraps: a bar at panel width
+ * breaks between groups and never inside one, so a scope and its field are never left on
+ * separate lines with the field's label three controls away from it.
+ */
+.dya-bar__group {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    flex: none;
 }
 
 .dya-card {
@@ -191,7 +249,28 @@
     padding: 0 var(--dya-space-3);
     background: var(--dya-grad-header);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
-}.dya-brand {
+}
+
+/*
+ * The band at the head of a view: what the view is about, said once, on a ground of its own.
+ *
+ * Three panels arrived at this shape independently and each drew it differently, which is the
+ * failure the system exists to prevent. It is flat and not relief, because a header is not
+ * pressable: `--dya-elev-chassis` is a seam under its top edge, the same seam the panel carries.
+ * It wraps, because at 400px a stat, a name and two badges are three lines and not one.
+ */
+.dya-masthead {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-4);
+    flex-wrap: wrap;
+    padding: var(--dya-space-4);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-2);
+    box-shadow: var(--dya-elev-chassis);
+}
+
+.dya-brand {
     display: inline-flex;
     align-items: center;
     gap: var(--dya-space-2);
@@ -272,6 +351,20 @@
     color: var(--dya-text-2);
 }
 
+/*
+ * The one action a screen is about. At most one per view: a second primary is two firsts, which is
+ * none. It is the only filled control in the system that is not a status, and the hover step is a
+ * token rather than a filter because a transition may name background-color and nothing else.
+ */
+.dya-button--primary {
+    background: var(--dya-accent);
+    color: var(--dya-on-accent);
+}
+
+.dya-button--primary:hover {
+    background-color: var(--dya-accent-hover);
+}
+
 .dya-button--bare {
     height: auto;
     padding: 0;
@@ -303,7 +396,93 @@
 }
 
 .dya-button--danger:hover {
-    background-color: var(--dya-danger);
+    background-color: var(--dya-danger-hover);
+}
+
+/*
+ * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
+ * nothing on it yet offers what to do next, rather than stating that there is nothing — which is
+ * the shape every empty state in this application had.
+ */
+.dya-tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    padding: var(--dya-space-4);
+    border: none;
+    border-radius: var(--dya-radius);
+    background: var(--dya-raised);
+    box-shadow: var(--dya-elev-raised);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        transform var(--dya-dur-press) var(--dya-ease-press),
+        background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-tile:hover {
+    background-color: var(--dya-raised-hover);
+}
+
+.dya-tile:active {
+    transform: translateY(var(--dya-press-y));
+}
+
+.dya-tile__icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+    color: var(--dya-accent);
+}
+
+.dya-tile__icon > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.dya-tile__name {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label);
+    letter-spacing: var(--dya-tracking-label);
+    text-transform: uppercase;
+    color: var(--dya-text);
+}
+
+.dya-tile__note {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
+}
+
+/*
+ * A tile whose content is a row instead of an icon: a name, what is happening to it, and the
+ * tallies under. The same relief and the same press, tighter, because a grid of these is a list
+ * of things to open rather than the one thing a blank region offers.
+ *
+ * Its name is data — a board, a file, a host — so it keeps its case and its mono tracking, where
+ * the icon tile names a panel and is therefore a label. That is the system's own division between
+ * interface text and data, and a tile sits on both sides of it.
+ */
+.dya-tile--dense {
+    padding: var(--dya-space-3);
+}
+
+.dya-tile__head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+}
+
+.dya-tile--dense .dya-tile__name {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    text-transform: none;
+    overflow-wrap: anywhere;
 }
 
 .dya-key {
@@ -348,6 +527,17 @@
     interest-delay-end: 120ms;
 }
 
+/*
+ * A tip on something that is not a control. The cursor is the only thing saying a word is
+ * explained rather than pressable, and a reader who cannot tell does not hover. A button, a key
+ * or a chip carrying a tip keeps its own cursor: it is pressable and the tip is extra.
+ */
+.dya-badge[interestfor],
+.dya-tag[interestfor],
+.dya-meter[interestfor] {
+    cursor: help;
+}
+
 .dya-chip {
     display: inline-grid;
     place-items: center;
@@ -373,7 +563,9 @@
 
 .dya-chip:active {
     transform: translateY(var(--dya-press-y));
-}.dya-entry {
+}
+
+.dya-entry {
     display: block;
     width: 100%;
     padding: 3px var(--dya-space-3);
@@ -400,7 +592,9 @@
 
 .dya-entry:active {
     transform: scale(var(--dya-press-scale));
-}.dya-entry--active {
+}
+
+.dya-entry--active {
     background-color: var(--dya-selected);
     box-shadow: inset 2px 0 0 var(--dya-accent);
     color: var(--dya-text);
@@ -446,6 +640,45 @@ textarea.dya-field {
     resize: vertical;
 }
 
+/*
+ * A form is a two-column grid: what the field is called, and the field. Nothing else.
+ *
+ * The system had no form, so every consumer invented one, and each of them reached for the same
+ * wrong answer — a centred paragraph above the input explaining what it does. Three of those in a
+ * column is a page of prose with three boxes in it, and the reader has to parse a sentence to find
+ * out that the next box takes a number. A label names; the sentence behind it is a tip on the
+ * label, which is where an explanation that is not always needed belongs.
+ */
+.dya-form {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: var(--dya-space-3) var(--dya-space-4);
+}
+
+.dya-form > .dya-label {
+    justify-self: start;
+}
+
+.dya-form > .dya-label[interestfor] {
+    cursor: help;
+    text-decoration: underline dotted var(--dya-border-strong);
+    text-underline-offset: 3px;
+}
+
+.dya-form__actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    margin-top: var(--dya-space-2);
+}
+
+/* Whatever carries this, and everything after it, sits at the far end: destructive actions go there. */
+.dya-form__push {
+    margin-inline-start: auto;
+}
+
 .dya-select {
     position: relative;
     display: inline-flex;
@@ -469,7 +702,9 @@ textarea.dya-field {
     border-bottom: 1.5px solid var(--dya-text-4);
     transform: translateY(-70%) rotate(45deg);
     pointer-events: none;
-}.dya-checkbox {
+}
+
+.dya-checkbox {
     appearance: none;
     display: grid;
     place-items: center;
@@ -480,7 +715,9 @@ textarea.dya-field {
     border-radius: var(--dya-radius-sm);
     background: var(--dya-sunken);
     cursor: pointer;
-}.dya-checkbox::after {
+}
+
+.dya-checkbox::after {
     content: "";
     width: 7px;
     height: 4px;
@@ -489,11 +726,17 @@ textarea.dya-field {
     transform: rotate(-45deg) translate(0.5px, -1px);
     opacity: 0;
     transition: opacity var(--dya-dur-fast) var(--dya-ease);
-}.dya-checkbox:checked {
+}
+
+.dya-checkbox:checked {
     border-color: var(--dya-accent);
-}.dya-checkbox:checked::after {
+}
+
+.dya-checkbox:checked::after {
     opacity: 1;
-}.dya-tag {
+}
+
+.dya-tag {
     display: inline-flex;
     align-items: center;
     gap: 3px;
@@ -538,6 +781,47 @@ textarea.dya-field {
     color: var(--dya-on-status);
 }
 
+/*
+ * The three accents were fills nothing could use. A badge could say success, warning or danger and
+ * nothing else, so anything that is a kind rather than an outcome — a queue, a phase, a sort of
+ * event — either borrowed a status hue it did not mean or wore the same grey as its neighbours.
+ * Kinds that differ have to look different, and a system with six hues that lets a label reach
+ * three of them has three it declared and never spends.
+ *
+ * `--dya-on-accent` over each fill: accent 5.74 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
+ * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 5.74 / 6.12 /
+ * 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
+ */
+.dya-badge--accent {
+    background: var(--dya-accent);
+    color: var(--dya-on-accent);
+}
+
+.dya-badge--accent-2 {
+    background: var(--dya-accent-2);
+    color: var(--dya-on-accent);
+}
+
+.dya-badge--accent-3 {
+    background: var(--dya-accent-3);
+    color: var(--dya-on-accent);
+}
+
+.dya-badge--accent.dya-badge--soft {
+    background: var(--dya-accent-soft);
+    color: var(--dya-accent);
+}
+
+.dya-badge--accent-2.dya-badge--soft {
+    background: var(--dya-accent-2-soft);
+    color: var(--dya-accent-2);
+}
+
+.dya-badge--accent-3.dya-badge--soft {
+    background: var(--dya-accent-3-soft);
+    color: var(--dya-accent-3);
+}
+
 .dya-badge--soft {
     background: var(--dya-tag-bg);
     color: var(--dya-text-2);
@@ -558,18 +842,137 @@ textarea.dya-field {
     color: var(--dya-danger);
 }
 
+/*
+ * A row of badges that wraps. A badge is a word, several are a line, and several at panel width
+ * are two lines: the wrap is the component, and every consumer that laid badges out by hand got
+ * it wrong in the same direction.
+ */
+.dya-pills {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-1);
+    flex-wrap: wrap;
+}
+
+/*
+ * One figure that is the point of a screen, its unit, and what it is called.
+ *
+ * The numeral is set in the serif — the family this system otherwise spends on a single word in
+ * the title bar — at display size and weight 300. This is the one place a panel is allowed to be
+ * loud, and it is loud by size and never by weight: `--dya-size-display` against the
+ * `--dya-size-label-sm` beside it is a ratio of four, which no weight in this system can reach.
+ *
+ * `__value` carries `--dya-text`, 13.30 in Gi and 13.24 in Rei over `--dya-surface-2`, the
+ * masthead ground it usually sits on. `__unit` and `__note` carry `--dya-text-4`, 6.37 and 7.61.
+ * What the figure is called is `.dya-label`: a stat does not redeclare a class the system has.
+ */
+.dya-stat {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-2);
+    flex: none;
+}
+
+.dya-stat__figure {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.dya-stat__value {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-display);
+    font-weight: var(--dya-weight-light);
+    letter-spacing: var(--dya-tracking-display);
+    line-height: var(--dya-leading-tight);
+    color: var(--dya-text);
+}
+
+.dya-stat__unit {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight-light);
+    line-height: var(--dya-leading-tight);
+    color: var(--dya-text-4);
+}
+
+.dya-stat__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.dya-stat__note {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-4);
+}
+
+/*
+ * n marks, filled while what they count is busy. A capacity and not a progress bar: it does not
+ * move on its own and it never animates, because a machine being busy is a fact rather than
+ * something to pulse at a reader for as long as the panel is open.
+ *
+ * An empty mark has to be countable or the meter reports nothing, so the track is an ink rather
+ * than a surface step. Over `--dya-raised`, the tile ground it usually sits on, `--dya-text-4`
+ * measures 5.73 in Gi and 6.52 in Rei, where `--dya-selected` measures 1.29 and 1.40 and cannot
+ * be seen at all. A filled mark is `--dya-accent`, 4.91 and 6.05 on the same ground. Neither is
+ * text; both clear the 3.00 a graphical object owes.
+ */
+.dya-meter {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+
+.dya-meter__pip {
+    width: 14px;
+    height: 3px;
+    flex: none;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-text-4);
+}
+
+.dya-meter__pip[data-on="true"] {
+    background: var(--dya-accent);
+}
+
+/*
+ * A table has to look like one, and this one did not: it read as a run of loose lines with words
+ * drifting under headings. Two causes, both measured.
+ *
+ * Its row rule was `--dya-rule`, which measures 1.05 against `--dya-surface-1` in Gi and 1.06 in
+ * Rei — and this system's own rule is that a border under 1.40 against the ground it separates is
+ * not there. It was not there. The rule is `--dya-border` now, 1.42 in Gi and 1.53 in Rei, which
+ * is the only step in either ramp that clears the bar the system sets for itself. That contradicts
+ * the note saying border marks a panel edge and hairline separates rows; the note loses, because
+ * hairline measures 1.17 and 1.23 and a row separator nobody can see separates nothing.
+ *
+ * The head rule follows from the same arithmetic and was wrong in the same way. A header that
+ * separates its column names from the rows less than the rows separate from each other is a
+ * heading that reads as one more row: `--dya-hairline` under a `--dya-border` body. It is
+ * `--dya-border-strong` now, 1.93 in Gi and 2.24 in Rei, a step above the body rule rather than
+ * two below it.
+ *
+ * And its digits were proportional, so 4102 sat narrower than 1111 and no column of numbers ever
+ * lined up. `tabular-nums` is what a column of figures is for.
+ */
 .dya-table {
     width: 100%;
     border-collapse: collapse;
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-xs);
+    font-variant-numeric: tabular-nums;
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
 }
 
 .dya-table th {
     padding: 7px var(--dya-space-3);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
     font-size: var(--dya-size-label-sm);
     font-weight: var(--dya-weight);
     letter-spacing: var(--dya-tracking-data);
@@ -579,8 +982,51 @@ textarea.dya-field {
 }
 
 .dya-table td {
-    padding: var(--dya-space-1) var(--dya-space-3);
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    padding: var(--dya-space-2) var(--dya-space-3);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    overflow-wrap: anywhere;
+}
+
+.dya-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* A column of figures is read down, so it is aligned down its right edge. */
+.dya-table .dya-table__num {
+    text-align: right;
+}
+
+/*
+ * Four column shapes every consumer re-invented, all of them a column as wide as its content and
+ * no wider: a cell that simply fits, the two ways a row names itself, and the end of the row,
+ * which is where an action sits.
+ *
+ * `__key` and `__name` are the same column and not the same thing. A key is interface text — it
+ * says what the value beside it is — so it is uppercase, tracked and `--dya-text-4`. A name is
+ * data — a plugin, a board, a file — so it keeps its case and takes `--dya-text`, the rank the
+ * subject of a row is owed. Getting that backwards is how a table of paths ends up shouting the
+ * word PATH at a reader who wanted to read the path.
+ */
+.dya-table .dya-table__fit,
+.dya-table .dya-table__key,
+.dya-table .dya-table__name,
+.dya-table .dya-table__end {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.dya-table .dya-table__key {
+    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-data);
+    color: var(--dya-text-4);
+}
+
+.dya-table .dya-table__name {
+    color: var(--dya-text);
+}
+
+.dya-table .dya-table__end {
+    text-align: right;
 }
 
 .dya-row {
@@ -590,7 +1036,9 @@ textarea.dya-field {
 
 .dya-row:hover {
     background-color: var(--dya-surface-2);
-}.dya-menu {
+}
+
+.dya-menu {
     padding: 5px;
     border-radius: var(--dya-radius);
     background: var(--dya-overlay);
@@ -629,10 +1077,6 @@ textarea.dya-field {
 .dya-menu__item--selected {
     background-color: var(--dya-selected);
     color: var(--dya-text);
-}.dya-menu__shortcut {
-    margin-left: auto;
-    letter-spacing: 0.08em;
-    color: var(--dya-text-3);
 }
 
 .dya-tip {
@@ -654,7 +1098,9 @@ textarea.dya-field {
     line-height: var(--dya-leading-body);
     color: var(--dya-text-2);
     overflow-wrap: anywhere;
-}.dya-tabs {
+}
+
+.dya-tabs {
     display: flex;
     align-items: stretch;
     gap: var(--dya-space-4);
@@ -681,7 +1127,9 @@ textarea.dya-field {
 .dya-tab[aria-selected="true"] {
     border-bottom-color: var(--dya-accent);
     color: var(--dya-text);
-}.dya-empty,
+}
+
+.dya-empty,
 .dya-loading {
     display: flex;
     flex-direction: column;
@@ -700,7 +1148,37 @@ textarea.dya-field {
 .dya-empty > span,
 .dya-loading > span {
     max-width: 44ch;
-}.dya-sr-only {
+}
+
+/*
+ * What to do about it. An empty state that only says the view is empty has described the problem
+ * and left; this is where the answer goes, and it is a row so that the obvious action and the
+ * secondary one sit side by side rather than stacked into a list of equals.
+ */
+/*
+ * The same absence, inside a list rather than instead of a screen. A region that is empty gets the
+ * centred block above; a group inside a populated view gets one quiet line where its first row
+ * would be, because centring 'nothing is running' in a band of its own makes the emptiest part of
+ * the screen the loudest.
+ */
+.dya-empty--inline {
+    align-items: flex-start;
+    padding: var(--dya-space-2) 0;
+    text-align: left;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
+.dya-empty__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--dya-space-2);
+    flex-wrap: wrap;
+}
+
+.dya-sr-only {
     position: absolute;
     width: 1px;
     height: 1px;

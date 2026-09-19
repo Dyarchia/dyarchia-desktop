@@ -40,7 +40,7 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
 - `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
   for somebody deciding whether to turn this on, not for somebody who already has.
 
-**Four more fields say what the plugin is made of, and every one of them is read rather than
+**Five more fields say what the plugin is made of, and every one of them is read rather than
 guessed.** This is what lets the installer carry a plugin correctly without knowing anything
 about it.
 
@@ -52,6 +52,20 @@ about it.
                   binaries, copied into node_modules/
     requires      what has to be true before the plugin runs      the Setup panel
     description   one line for the Setup panel                    the Setup panel
+    data          the folder it writes into, under the data home  the Setup panel
+
+`data` is a single folder name, never a path. The shell keeps one directory for everything a
+plugin produces on the user's behalf — `~/.dyarchia/data`, handed to a Python plugin as
+`DYARCHIA_DATA_HOME` and to a renderer by `ctx.shell.paths()` — and `data` is this plugin's
+folder inside it. Setup prints that path on the plugin's card, before anything is installed,
+so what a plugin will do to the machine is visible while it is still a question.
+
+**Nothing durable goes beside the plugin's own code.** A packaged plugin directory is
+read-only, and the build that shipped as 0.1.0-alpha.1 was portable, which unpacks itself
+into `%TEMP%\<guid>` on every launch: a plugin resolving its storage against its own
+location wrote into a folder Windows deletes, at a different address each time. Derived
+state that can be rebuilt — an index, a cache, a scratch directory — goes under `userData`,
+which is `~/.dyarchia` itself; only what the user would miss goes in `data/` beneath it.
 
 A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two kinds exist:
 
@@ -65,12 +79,13 @@ A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two k
 ```
 
 `command` is checked on PATH and never installed: Setup reports it and shows the hint.
-`python` is acquired with uv, into `%APPDATA%/dyarchia/environments/<id>/.venv`, and the
+`python` is acquired with uv, into `~/.dyarchia/environments/<id>/.venv`, and the
 plugin is told where through `DYARCHIA_PLUGIN_ENV`. The sync is `--frozen --no-dev
 --no-editable`: frozen because the shipped lockfile is the one to install and resolving again
-would try to rewrite a read-only directory, and **non-editable because a portable build
-unpacks its resources to a new temporary directory on every launch** — an editable install
-records that path and is broken by the second start. Verified by deleting the plugin
+would try to rewrite a read-only directory, and **non-editable because an editable install
+records the absolute path of the project** — which the installer may move, and which the
+portable build this replaced moved on every single launch, breaking the environment by the
+second start. Verified by deleting the plugin
 directory and importing the package anyway. Its optional `postInstall` is a list of
 uv argument lists run after the packages land, for whatever the project needs beyond them —
 crawlee's is `playwright install chromium`, and leaving it out is an installation that looks
@@ -99,11 +114,15 @@ An ESM module exporting `activate(ctx)`:
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
     onThemeChange(listener)       fires when the theme changes; returns unsubscribe
-    shell                         the shell itself: catalogue(), enable(ids), relaunch()
+    shell                         the shell itself: catalogue(), paths(), enable(ids),
+                                  relaunch(), canOpen(), open(), reveal()
 
 **`ctx.shell` is the one member that is not namespaced to the plugin**, and it stays small
-because of it. It exists for the Setup panel: what this installation holds, which of it
-loads, and the relaunch that makes a change take effect. A plugin reaching for it to do
+because of it. It exists for the Setup panel: what this installation holds, where it writes,
+which of it loads, and the relaunch that makes a change take effect. `paths()` answers with
+`dataHome`, `userData` and `application` — the first is where a plugin puts anything the
+user would miss, the second where it puts anything it can rebuild, and the third is not
+writable. A plugin reaching for it to do
 anything else is answering a question that is not its own.
 
 `injectStyles(pluginId, css)` is exported by the SDK outside the context and adds the
@@ -225,14 +244,14 @@ external, and it is the only case.
     dev          plugins/<folder>/                          the shell scans the workspace
     example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     packaged     resources/plugins/<id>/                    staged into the installer
-    by hand      %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
+    by hand      ~/.dyarchia/plugins/<id>/                  node scripts/install-plugins.mjs
 
-**The bundled root wins over `%APPDATA%`**, in development and once packaged. An installed
+**The bundled root wins over `~/.dyarchia/plugins`**, in development and once packaged. An installed
 copy must never shadow the one being worked on, and a copy left behind by an older version is
 stale: letting it win reads the plugin from a manifest it no longer ships, silently. A plugin
-of an id nobody ships still loads from `%APPDATA%`, which is the case that root exists for; an
+of an id nobody ships still loads from `~/.dyarchia/plugins`, which is the case that root exists for; an
 installed copy of a plugin **deleted** from the workspace is discovered again for the same
-reason, so delete it from `%APPDATA%/dyarchia/plugins/` too.
+reason, so delete it from `~/.dyarchia/plugins/` too.
 
 **In a packaged build, being discovered is not being loaded.** The shell loads what
 `<userData>/plugins.json` names, which is what the Setup panel writes, and a fresh
@@ -307,7 +326,7 @@ being a panel rather than the system:
   `token('surface-1')` for exactly that.
 - **`--dya-field` is a surface, not an ink.** Never set `color: var(--dya-field)`.
 - **A label never sits on `--dya-selected` in Gi**, where `--dya-text-4` measures 4.45.
-  Use `--dya-text-3` there. Slate has no such surface.
+  Use `--dya-text-3` there. In Rei the same pair measures 4.65 and needs no reservation.
 
 The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
 declares it under its own prefix and says so in its README, or proposes it upstream — the

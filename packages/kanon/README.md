@@ -112,8 +112,16 @@ token                  value     on chassis   on surface-1
 
 A border is a graphical object and the 3.00 bar does not apply to it, but a border that
 measures under 1.40 against the ground it separates is not there. `--dya-border` marks a
-panel edge on the chassis; `--dya-hairline` separates rows inside one surface and is never
-the outline of a container.
+panel edge on the chassis and **the row rule inside a table**; `--dya-hairline` separates
+rows inside one surface and is never the outline of a container.
+
+**A table's rule is `--dya-border`, and that is a correction.** It was `--dya-rule`, which
+measures 1.05 against `--dya-surface-1` in Gi and 1.06 in Rei: a separator this system's own
+sentence says is not there, and a table whose rows it separated read as a run of loose lines
+with words drifting under headings. `--dya-hairline` does not save it either, at 1.17 and
+1.23. `--dya-border` is the only step in either ramp that clears 1.40 — 1.42 in Gi, 1.53 in
+Rei — so the rule that says where a border goes loses to the rule that says what a border
+has to measure.
 
 
 ## Rei
@@ -340,7 +348,7 @@ Structure    pane bar (--flush --inset) card card__header brand carved
 Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (__icon __name __note)
 Input        field (--sm --auto) checkbox form (__wide __actions __push)
-Content      tag badge (--success --warning --danger --soft) table row
+Content      tag badge (--success --warning --danger --soft) table (__num) row
              title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
 Layers       menu menu__item (--selected) menu__shortcut tip
@@ -368,10 +376,16 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile` and
 - **`tile` is a pressable card**: an icon, a name and one line. It is how a region with
   nothing in it yet offers what to do next, and the shell's launcher is built from nothing
   else.
-- **`empty__actions` is the row under an empty state.** An empty state that only reports
-  the absence has described the problem and left. `empty--inline` is the same absence inside
-  a populated view: one quiet line where the first row would be, because centring "nothing is
-  running" in a band of its own makes the emptiest part of the screen the loudest.
+- **`empty__actions` is the row under an empty state, and it is for a decision, not for a
+  panel with nothing in it yet.** A panel that is simply empty says nothing at all: its
+  controls live in its bar, which is where a reader who wants to open something is already
+  looking. A title, a sentence and a button centred in a blank panel is an advertisement for
+  a panel that has already been opened, and it was removed from the reader and the player for
+  exactly that. What is left for this class is the case where the reader has to choose —
+  a board that is gone, and the choice of which board to open instead.
+- **`empty--inline` is absence inside a populated view**: one quiet line where the first row
+  would be, because centring "nothing is running" in a band of its own makes the emptiest
+  part of the screen the loudest.
 
 `form` belongs to the same argument from the other side. The system had no form, so every
 consumer invented one and each reached for the same wrong answer: a centred paragraph above

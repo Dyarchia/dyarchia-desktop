@@ -651,12 +651,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     color: var(--dya-text);
 }
 
-.kanban-run-name {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-
 /* A number and the word for it, quiet and never wrapping mid-phrase. */
 .kanban-tally {
     flex: none;
@@ -667,10 +661,26 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     color: var(--dya-text-4);
 }
 
-.kanban-when {
-    margin-inline-start: auto;
-    flex: none;
+/* A name cell carries its dot; the end cell is the one the eye reads down the right edge. */
+.kanban-cell-name {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    color: var(--dya-text);
+    overflow-wrap: anywhere;
+}
+
+/* The detail hugs what it says, so the name keeps the width instead of wrapping beside a gap. */
+td.kanban-tally {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.kanban-cell-end {
+    width: 1%;
+    white-space: nowrap;
     text-align: right;
+    color: var(--dya-text-4);
 }
 
 .kanban-watch-body {

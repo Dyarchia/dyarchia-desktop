@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { registerNotices, showNotice } from './notices'
 import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
-import { hasChosen, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
+import { hasChosen, isCore, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
 import { withdrawDisabledOffers } from './offers'
 
 export interface PluginRequirement {
@@ -27,6 +27,12 @@ export interface PluginManifest {
     schemes?: string[]
     description?: string
     optional?: boolean
+    /*
+     * The folder this plugin writes into, named relative to the shell's data home. Declared so
+     * the setup panel can say where what a plugin produces will end up before anybody installs
+     * it, which is the question a packaged build had no answer to at all.
+     */
+    data?: string
     requires?: PluginRequirement[]
 }
 
@@ -303,6 +309,7 @@ export async function setupPlugins(): Promise<void> {
             entries: [...catalogue.values()].map(({ manifest, dir }) => ({
                 manifest,
                 directory: dir,
+                core: isCore(manifest.id),
                 enabled: isEnabled(manifest.id, enabled, app.isPackaged),
                 loaded: plugins.has(manifest.id)
             }))

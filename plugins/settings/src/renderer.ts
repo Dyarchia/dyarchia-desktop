@@ -4,9 +4,15 @@ import type { PluginContext } from '@dyarchia/sdk'
 /*
  * The panel that decides what this installation is.
  *
- * The shell arrives empty and every plugin is off, so this is the first and sometimes the only
- * thing a new install has to show. It answers three questions in one screen: what is here, what
- * each one costs, and what is missing before it can run.
+ * It used to list every plugin as a tick, which asked the wrong question. Four of them are the
+ * application — Setup, a terminal, a reader, a player — and nobody is better off without a
+ * terminal, so they are stated rather than offered. The two that are left are the ones that reach
+ * outside for something: an agent CLI that spends money, and an interpreter with a browser behind
+ * it. Those are a decision, and this panel exists to make that decision legible.
+ *
+ * Legible means three things per plugin, in this order: what it does, what it will go and get, and
+ * where what it produces ends up. The last one was missing entirely, which is how a corpus came to
+ * be written into a temporary folder for a whole release without anybody being able to see it.
  */
 
 interface Requirement {
@@ -23,9 +29,11 @@ interface CatalogueEntry {
         name: string
         version: string
         description?: string
+        data?: string
         requires?: Requirement[]
     }
     directory: string
+    core: boolean
     enabled: boolean
     loaded: boolean
 }
@@ -33,6 +41,12 @@ interface CatalogueEntry {
 interface Catalogue {
     chosen: boolean
     entries: CatalogueEntry[]
+}
+
+interface Paths {
+    dataHome: string
+    userData: string
+    application: string
 }
 
 interface Status {
@@ -53,30 +67,45 @@ const STYLES = `
     overflow: hidden;
 }
 .set-head {
-    padding: var(--dya-space-4) var(--dya-space-4) var(--dya-space-3);
+    padding: var(--dya-space-5) var(--dya-space-5) var(--dya-space-4);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
 }
 .set-lede {
     margin-top: var(--dya-space-2);
     max-width: 68ch;
 }
-.set-list {
+.set-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-3) var(--dya-space-4);
+    padding: var(--dya-space-4) var(--dya-space-5) var(--dya-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-5);
+}
+.set-section {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-3);
 }
+.set-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-3);
+    flex-wrap: wrap;
+}
+.set-section-note {
+    flex: 1;
+    min-width: 24ch;
+}
 .set-item {
     display: flex;
-    gap: var(--dya-space-3);
+    gap: var(--dya-space-4);
     align-items: flex-start;
-    padding: var(--dya-space-3);
+    padding: var(--dya-space-4);
 }
 .set-tick {
-    margin-top: 2px;
+    margin-top: 3px;
     flex: none;
 }
 .set-body {
@@ -92,10 +121,14 @@ const STYLES = `
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }
+.set-title > .dya-badge {
+    margin-inline-start: auto;
+}
 .set-needs {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-1);
+    margin-top: var(--dya-space-1);
 }
 .set-need {
     display: flex;
@@ -109,13 +142,42 @@ const STYLES = `
 }
 .set-needs > .dya-button {
     align-self: flex-start;
-    margin-top: var(--dya-space-1);
+    margin-top: var(--dya-space-2);
+}
+.set-included {
+    display: flex;
+    flex-direction: column;
+}
+.set-included > .dya-entry {
+    display: flex;
+    gap: var(--dya-space-3);
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+.set-included-name {
+    min-width: 12ch;
+}
+.set-paths {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+}
+.set-path {
+    display: flex;
+    gap: var(--dya-space-3);
+    align-items: center;
+    flex-wrap: wrap;
+}
+.set-path-value {
+    flex: 1;
+    min-width: 20ch;
+    overflow-wrap: anywhere;
 }
 .set-foot {
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
-    padding: var(--dya-space-3) var(--dya-space-4);
+    padding: var(--dya-space-3) var(--dya-space-5);
     border-top: var(--dya-border-width) dashed var(--dya-dashed);
 }
 .set-foot-note {
@@ -125,12 +187,17 @@ const STYLES = `
 .set-log {
     max-height: 40%;
     overflow-y: auto;
-    margin: 0 var(--dya-space-4) var(--dya-space-3);
+    margin: 0 var(--dya-space-5) var(--dya-space-3);
 }
 .set-log[hidden] {
     display: none;
 }
 `
+
+/* A path under the data home, in whatever separator the shell just handed back. */
+function join(home: string, folder: string): string {
+    return home.includes('\\') ? `${home}\\${folder}` : `${home}/${folder}`
+}
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
     const node = document.createElement(tag)
@@ -150,7 +217,7 @@ export function activate(ctx: PluginContext): void {
         const lede = el('p', 'dya-text set-lede')
         head.append(lede)
 
-        const list = el('div', 'set-list')
+        const scroll = el('div', 'set-scroll')
         const log = el('pre', 'dya-log set-log')
         log.hidden = true
 
@@ -160,11 +227,16 @@ export function activate(ctx: PluginContext): void {
         restart.hidden = true
         foot.append(note, restart)
 
-        root.append(head, list, log, foot)
+        root.append(head, scroll, log, foot)
         container.append(root)
 
         const wanted = new Set<string>()
-        let entries: CatalogueEntry[] = []
+        let optional: CatalogueEntry[] = []
+        let home = ''
+
+        function under(folder: string): string {
+            return join(home, folder)
+        }
         let loadedIds = new Set<string>()
 
         function say(line: string): void {
@@ -174,7 +246,7 @@ export function activate(ctx: PluginContext): void {
         }
 
         function pendingRestart(): boolean {
-            return entries.some(
+            return optional.some(
                 (entry) => wanted.has(entry.manifest.id) !== loadedIds.has(entry.manifest.id)
             )
         }
@@ -184,7 +256,7 @@ export function activate(ctx: PluginContext): void {
             restart.hidden = !changed
             note.textContent = changed
                 ? 'A plugin only loads at startup, so these changes take effect on the next launch.'
-                : `${wanted.size} of ${entries.length} plugins enabled.`
+                : `${wanted.size} of ${optional.length} optional plugins enabled.`
         }
 
         async function persist(): Promise<void> {
@@ -217,13 +289,13 @@ export function activate(ctx: PluginContext): void {
                 return
             }
 
-            const note = requires.find((requirement) => requirement.note)?.note
-            if (note) box.append(el('p', 'dya-text', note))
+            const hint = requires.find((requirement) => requirement.note)?.note
+            if (hint) box.append(el('p', 'dya-text', `This downloads ${hint}`))
 
             const install = el(
                 'button',
                 'dya-button dya-button--sm',
-                `Install the ${missing.length} missing`
+                `Install what ${entry.manifest.name} needs`
             ) as HTMLButtonElement
             install.addEventListener('click', () => {
                 install.disabled = true
@@ -237,55 +309,157 @@ export function activate(ctx: PluginContext): void {
             box.append(install)
         }
 
+        /*
+         * One card per optional plugin: the tick, what it is, what state it is in, and the list of
+         * things it needs before it can run. The badge says which of three states it is in —
+         * loaded now, ticked for the next launch, or off — because "enabled" and "running" are
+         * different answers and a panel that shows one of them is the reason somebody ticks a box
+         * and then wonders why nothing happened.
+         */
+        function renderOptional(entry: CatalogueEntry): HTMLElement {
+            const item = el('div', 'dya-card set-item')
+
+            const tick = el('input', 'dya-checkbox set-tick') as HTMLInputElement
+            tick.type = 'checkbox'
+            tick.checked = wanted.has(entry.manifest.id)
+            tick.setAttribute('aria-label', `Load ${entry.manifest.name}`)
+
+            const body = el('div', 'set-body')
+            const title = el('div', 'set-title')
+            title.append(el('strong', 'dya-text', entry.manifest.name))
+            title.append(el('span', 'dya-mono dya-text', `v${entry.manifest.version}`))
+
+            const state = loadedIds.has(entry.manifest.id)
+                ? { text: 'loaded', kind: 'dya-badge--success' }
+                : wanted.has(entry.manifest.id)
+                  ? { text: 'next launch', kind: 'dya-badge--warning' }
+                  : { text: 'not loaded', kind: 'dya-badge--soft' }
+            const badge = el('span', `dya-badge ${state.kind}`, state.text)
+            title.append(badge)
+            body.append(title)
+
+            if (entry.manifest.description) {
+                body.append(el('p', 'dya-text', entry.manifest.description))
+            }
+
+            if (entry.manifest.data && home) {
+                const where = el('div', 'set-need')
+                where.append(el('span', 'dya-key-label', 'Keeps its files in'))
+                where.append(el('span', 'dya-mono dya-text', under(entry.manifest.data)))
+                body.append(where)
+            }
+
+            const needs = el('div', 'set-needs')
+            body.append(needs)
+
+            tick.addEventListener('change', () => {
+                if (tick.checked) wanted.add(entry.manifest.id)
+                else wanted.delete(entry.manifest.id)
+                badge.className = `dya-badge ${
+                    loadedIds.has(entry.manifest.id)
+                        ? 'dya-badge--success'
+                        : tick.checked
+                          ? 'dya-badge--warning'
+                          : 'dya-badge--soft'
+                }`
+                badge.textContent = loadedIds.has(entry.manifest.id)
+                    ? 'loaded'
+                    : tick.checked
+                      ? 'next launch'
+                      : 'not loaded'
+                void persist()
+            })
+
+            item.append(tick, body)
+
+            void ctx
+                .invoke('inspect', {
+                    pluginId: entry.manifest.id,
+                    requires: entry.manifest.requires ?? []
+                })
+                .then((statuses) => renderNeeds(entry, needs, statuses as Status[]))
+
+            return item
+        }
+
+        function section(title: string, hint: string): HTMLElement {
+            const box = el('section', 'set-section')
+            const header = el('div', 'set-section-head')
+            header.append(el('span', 'dya-eyebrow', title))
+            header.append(el('span', 'dya-text set-section-note', hint))
+            box.append(header)
+            return box
+        }
+
+        function renderPaths(paths: Paths): HTMLElement {
+            const box = section(
+                'Where things go',
+                'Anything a plugin makes for you is yours and lives where you can find it.'
+            )
+            const list = el('div', 'set-paths')
+
+            const rows: [string, string, boolean][] = [
+                ['Your files', paths.dataHome, true],
+                ['This installation', paths.application, false],
+                ['Settings and state', paths.userData, false]
+            ]
+            for (const [label, value, openable] of rows) {
+                const row = el('div', 'set-path')
+                row.append(el('span', 'dya-key-label', label))
+                row.append(el('span', 'dya-mono dya-text set-path-value', value))
+                if (openable) {
+                    const open = el('button', 'dya-button dya-button--sm', 'Open')
+                    open.addEventListener('click', () => void ctx.shell.reveal(value))
+                    row.append(open)
+                }
+                list.append(row)
+            }
+            box.append(list)
+            return box
+        }
+
         async function draw(): Promise<void> {
-            const catalogue = (await ctx.shell.catalogue()) as Catalogue
-            entries = catalogue.entries.filter((entry) => entry.manifest.id !== ctx.pluginId)
+            const [catalogue, paths] = (await Promise.all([
+                ctx.shell.catalogue(),
+                ctx.shell.paths()
+            ])) as [Catalogue, Paths]
+            home = paths.dataHome
+            const entries = catalogue.entries.filter((entry) => entry.manifest.id !== ctx.pluginId)
+            optional = entries.filter((entry) => !entry.core)
+            const core = entries.filter((entry) => entry.core)
             loadedIds = new Set(
                 catalogue.entries.filter((entry) => entry.loaded).map((entry) => entry.manifest.id)
             )
             wanted.clear()
-            for (const entry of entries) if (entry.enabled) wanted.add(entry.manifest.id)
+            for (const entry of optional) if (entry.enabled) wanted.add(entry.manifest.id)
 
-            lede.textContent = catalogue.chosen
-                ? 'Everything Dyarchia ships is here. Tick what you want this installation to load.'
-                : 'Dyarchia ships as an empty shell. Tick the plugins you want and it will install whatever each one needs.'
+            lede.textContent =
+                'A terminal, a reader and a player are part of Dyarchia and always load. ' +
+                'What is below needs something this application cannot carry, so it is yours to ask for.'
 
-            list.replaceChildren()
-            for (const entry of entries) {
-                const item = el('div', 'dya-card set-item')
+            scroll.replaceChildren()
 
-                const tick = el('input', 'dya-checkbox set-tick') as HTMLInputElement
-                tick.type = 'checkbox'
-                tick.checked = wanted.has(entry.manifest.id)
+            const choices = section(
+                'Optional',
+                'Each one installs what it needs the first time you ask for it, and says what that is before it starts.'
+            )
+            for (const entry of optional) choices.append(renderOptional(entry))
+            scroll.append(choices)
 
-                const body = el('div', 'set-body')
-                const title = el('div', 'set-title')
-                title.append(el('strong', 'dya-text', entry.manifest.name))
-                title.append(el('span', 'dya-mono dya-text', `v${entry.manifest.version}`))
-                body.append(title)
-                if (entry.manifest.description) {
-                    body.append(el('p', 'dya-text', entry.manifest.description))
+            if (core.length > 0) {
+                const included = section('Included', 'Always loaded. Nothing to install.')
+                const rows = el('div', 'set-included')
+                for (const entry of core) {
+                    const row = el('div', 'dya-entry')
+                    row.append(el('strong', 'dya-text set-included-name', entry.manifest.name))
+                    row.append(el('span', 'dya-text', entry.manifest.description ?? ''))
+                    rows.append(row)
                 }
-
-                const needs = el('div', 'set-needs')
-                body.append(needs)
-
-                tick.addEventListener('change', () => {
-                    if (tick.checked) wanted.add(entry.manifest.id)
-                    else wanted.delete(entry.manifest.id)
-                    void persist()
-                })
-
-                item.append(tick, body)
-                list.append(item)
-
-                void ctx
-                    .invoke('inspect', {
-                        pluginId: entry.manifest.id,
-                        requires: entry.manifest.requires ?? []
-                    })
-                    .then((statuses) => renderNeeds(entry, needs, statuses as Status[]))
+                included.append(rows)
+                scroll.append(included)
             }
+
+            scroll.append(renderPaths(paths))
 
             refreshFoot()
         }

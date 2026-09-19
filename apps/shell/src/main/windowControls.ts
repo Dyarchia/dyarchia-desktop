@@ -72,10 +72,21 @@ export function registerWindowControls(): void {
      */
     ipcMain.handle('shell:app:reveal', async (_event, target: unknown) => {
         if (typeof target !== 'string' || !target) return false
+        let entry: Awaited<ReturnType<typeof stat>>
         try {
-            await stat(target)
+            entry = await stat(target)
         } catch {
             return false
+        }
+        /*
+         * A directory is opened, a file is selected in the one that holds it. showItemInFolder on
+         * a directory opens its parent with the directory highlighted, which is the wrong answer
+         * when what was asked for is "show me what is in here" — and that is what Setup asks when
+         * it prints where this installation keeps the user's own material.
+         */
+        if (entry.isDirectory()) {
+            const failure = await shell.openPath(target)
+            return failure === ''
         }
         shell.showItemInFolder(target)
         return true

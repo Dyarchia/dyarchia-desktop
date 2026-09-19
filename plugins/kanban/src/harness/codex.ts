@@ -225,6 +225,7 @@ export const driver: Driver = {
     waiting: () => false,
     orphaned: (run) => hosted.orphaned(run),
     stop: (run) => hosted.stop(run),
+    release: (run) => hosted.stop(run),
     progress,
     history,
     attach: async (run) => {

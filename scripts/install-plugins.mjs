@@ -1,4 +1,5 @@
 import { mkdir } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { stagePlugins } from './stage-plugins.mjs'
 
@@ -9,7 +10,9 @@ import { stagePlugins } from './stage-plugins.mjs'
  */
 
 const repoRoot = resolve(import.meta.dirname, '..')
-const target = join(process.env.APPDATA, 'dyarchia', 'plugins')
+
+/* The same root the shell reads, derived the same way: see apps/shell/src/main/paths.ts. */
+const target = join(process.env.DYARCHIA_HOME || join(homedir(), '.dyarchia'), 'plugins')
 
 await mkdir(target, { recursive: true })
 const staged = await stagePlugins(join(repoRoot, 'plugins'), target, {

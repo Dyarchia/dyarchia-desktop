@@ -1,12 +1,19 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'node:path'
 import { registerLayoutStore } from './layoutStore'
-import { registerPaths } from './paths'
+import { adoptUserData, registerPaths } from './paths'
 import { registerWindowControls } from './windowControls'
 import { registerZoom } from './zoom'
 import { registerPluginScheme, setupPlugins } from './plugins'
 import { stopPythonPlugins } from './pythonHost'
 
+/*
+ * Before anything else, and in this order. `userData` is read when the first session is created,
+ * so it has to be pointed at `~/.dyarchia` while there is still nothing to move; and plugin
+ * discovery reads that root to collect the custom schemes, which `registerSchemesAsPrivileged`
+ * demands before the application is ready.
+ */
+adoptUserData()
 registerPluginScheme()
 
 const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'] || process.env['DYARCHIA_DEBUG'])

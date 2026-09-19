@@ -400,6 +400,24 @@
 }
 
 /*
+ * A destructive action is not an emphasis. A filled danger button is exactly as loud as the one
+ * primary a view is allowed, so spending it on delete makes the most destructive control the
+ * first thing the eye lands on — which is what every panel here did, with a red DELETE beside a
+ * grey MOVE. Quiet danger is the ordinary shape: a button that looks like a button, with an ink
+ * that says what it does, `--dya-danger` over `--dya-raised` at 7.09 in both themes and 6.11 and
+ * 5.80 on the hover step. The fill is for the confirmation, where destroying is the action being
+ * asked for rather than one of several offered.
+ */
+.dya-button--danger.dya-button--quiet {
+    background: var(--dya-raised);
+    color: var(--dya-danger);
+}
+
+.dya-button--danger.dya-button--quiet:hover {
+    background-color: var(--dya-raised-hover);
+}
+
+/*
  * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
  * nothing on it yet offers what to do next, rather than stating that there is nothing — which is
  * the shape every empty state in this application had.
@@ -660,7 +678,13 @@ textarea.dya-field {
     justify-self: start;
 }
 
-.dya-form > .dya-label[interestfor] {
+/*
+ * A label that carries a tip, wherever it is. A sentence explaining a control does not go inside
+ * the control — a field whose placeholder reads "seconds, blank for none" is an instruction
+ * standing where the value goes, and it vanishes the moment anyone types. It goes on the label,
+ * and the dotted underline is what says there is one to read.
+ */
+.dya-label[interestfor] {
     cursor: help;
     text-decoration: underline dotted var(--dya-border-strong);
     text-underline-offset: 3px;

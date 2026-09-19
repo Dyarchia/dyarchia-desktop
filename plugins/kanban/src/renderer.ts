@@ -5,6 +5,7 @@ import { installDrag } from './drag.js'
 import type { DragColumn } from './drag.js'
 import { openMenu, openSurface } from './menu.js'
 import type { MenuRow } from './menu.js'
+import { resolve as resolveRunner } from './runners.js'
 import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
@@ -104,6 +105,7 @@ const PIN = 'kanban:board:'
 interface CardNode {
     root: HTMLElement
     title: HTMLElement
+    who: HTMLElement
     dot: HTMLElement
     note: HTMLElement
 }
@@ -148,6 +150,19 @@ function ago(from: number, now: number): string {
     const hours = Math.round(minutes / 60)
     return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`
 }
+
+/*
+ * How long ago, when that is worth saying. A card touched a moment ago reported `0s`, on every
+ * card on a board nobody had run yet: nine identical zeroes down a screen, each one the answer to
+ * a question the reader had not asked. Under a minute the age is noise and the line goes without
+ * it.
+ */
+function since(from: number, now: number): string | null {
+    return now - from < 60_000 ? null : ago(from, now)
+}
+
+/* The states a card is on its way to an agent in. Everywhere else, naming one would be a guess. */
+const DISPATCHING = new Set<Status>(['todo', 'scheduled', 'ready', 'running', 'review'])
 
 function size(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`
@@ -549,11 +564,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.tabIndex = -1
 
         const title = el('div', 'kanban-card-title')
+        const who = el('div', 'kanban-card-who')
         const foot = el('div', 'kanban-card-foot')
         const dot = el('span', 'kanban-dot')
         const note = el('span', 'kanban-card-note')
         foot.append(dot, note)
-        shell.append(title, foot)
+        shell.append(title, who, foot)
 
         shell.addEventListener('focus', () => {
             focused = card.id
@@ -574,7 +590,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         shell.addEventListener('dblclick', () => select(card.id))
 
-        return { root: shell, title, dot, note }
+        return { root: shell, title, who, dot, note }
     }
 
     const paintCard = (card: Card): CardNode => {
@@ -599,8 +615,27 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             if (status === 'blocked' && card.blockKind) bits.push(card.blockKind.replace('_', ' '))
             if (status === 'scheduled' && card.scheduledFor) bits.push(when(card.scheduledFor))
             if (blocked) bits.push(`${card.parents.length} open`)
-            if (card.comments.length) bits.push(`${card.comments.length} notes`)
-            bits.push(ago(card.updatedAt, clock))
+            if (card.comments.length) {
+                bits.push(`${card.comments.length} ${card.comments.length === 1 ? 'note' : 'notes'}`)
+            }
+            const waited = since(card.updatedAt, clock)
+            if (waited) bits.push(waited)
+        }
+
+        /*
+         * Who this card goes to. It is the money question and the board answered none of it: a
+         * card bound for an agent showed a title and a grey note, and which harness and which
+         * model were two panels away, behind the board's settings and the card's own override.
+         * They resolve exactly as the dispatcher resolves them, card over board over default.
+         */
+        const dispatching = meta !== null && DISPATCHING.has(status)
+        node.who.hidden = !dispatching
+        if (dispatching && meta) {
+            const runner = resolveRunner(meta.runners, card.runners, status === 'review' ? 'review' : 'implement')
+            node.who.replaceChildren(
+                el('span', 'kanban-card-harness', runner.harness),
+                el('span', 'kanban-card-model', runner.model ?? 'default model')
+            )
         }
 
         node.title.textContent = card.title
@@ -927,7 +962,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 )
             )
         } else {
-            row.appendChild(el('span', 'kanban-setting', 'no effort setting'))
+            row.appendChild(el('span', 'dya-empty dya-empty--inline', 'no effort setting'))
         }
         return row
     }
@@ -988,12 +1023,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         const renderRunners = (): void => {
             runnersGrid.replaceChildren(
-                el('span', 'kanban-setting', 'implement'),
+                el('span', 'dya-label kanban-setting', 'implement'),
                 runnerRow(draft.implement, null, false, (next) => {
                     Object.assign(draft.implement, next)
                     renderRunners()
                 }),
-                el('span', 'kanban-setting', 'review'),
+                el('span', 'dya-label kanban-setting', 'review'),
                 runnerRow(draft.review, null, false, (next) => {
                     Object.assign(draft.review, next)
                     renderRunners()
@@ -1041,7 +1076,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        const remove = el('button', 'dya-button dya-button--danger dya-button--sm', 'delete')
+        const remove = el('button', 'dya-button dya-button--danger dya-button--quiet dya-button--sm', 'delete')
         remove.type = 'button'
         remove.addEventListener('click', () => {
             const warning =
@@ -1243,7 +1278,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             })
         })
 
-        const removeAll = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete')
+        const removeAll = el('button', 'dya-button dya-button--sm dya-button--danger dya-button--quiet', 'delete')
         removeAll.type = 'button'
         removeAll.addEventListener('click', () => bulkDelete())
 
@@ -1681,25 +1716,36 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const labelled = Object.fromEntries(WORKSPACES) as Record<string, string>
 
+        /*
+         * A label names, and the sentence behind it is a tip on the label. Two of these fields
+         * used to carry their explanation as a placeholder — an instruction standing where the
+         * value goes, which the first keystroke deletes. The placeholder is the unit now.
+         */
+        const setting = (text: string, tip: string): HTMLElement => {
+            const node = el('span', 'dya-label kanban-setting', text)
+            withTip(node, tip)
+            return node
+        }
+
         settings.append(
-            el('span', 'kanban-setting', 'priority'),
+            setting('priority', 'higher goes first when the dispatcher picks from ready'),
             priority,
-            el('span', 'kanban-setting', 'permission'),
+            setting('permission', 'what the agent may do without stopping to ask'),
             choose('permission mode', card.permissionMode, PERMISSIONS, {}, card.locked, (value) =>
                 patch(card.id, { permissionMode: value })
             ),
-            el('span', 'kanban-setting', 'workspace'),
+            setting('workspace', 'the project directory itself, or a scratch copy the run throws away'),
             choose('workspace', card.workspaceKind, ['dir', 'scratch'], labelled, card.locked, (value) =>
                 patch(card.id, { workspaceKind: value as Card['workspaceKind'] })
             ),
-            el('span', 'kanban-setting', 'directory'),
+            setting('directory', 'where this card runs, when it is not where the board runs'),
             overrideRow,
-            el('span', 'kanban-setting', 'runtime cap'),
-            number(card.maxRuntimeSeconds, 'seconds, blank for none', (next) =>
+            setting('runtime cap', 'how long a run may take before the board stops it; blank is no cap'),
+            number(card.maxRuntimeSeconds, 'seconds', (next) =>
                 patch(card.id, { maxRuntimeSeconds: next })
             ),
-            el('span', 'kanban-setting', 'retries'),
-            number(card.maxRetries, 'blank for the default 2', (next) =>
+            setting('retries', 'how many times a failed run is tried again before the card blocks; blank is 2'),
+            number(card.maxRetries, '2', (next) =>
                 patch(card.id, { maxRetries: next })
             )
         )
@@ -1711,9 +1757,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             el('span', 'dya-label', 'harness'),
             el('span', 'dya-label', 'model'),
             el('span', 'dya-label', 'effort'),
-            el('span', 'kanban-setting', 'implement'),
+            setting('implement', 'who writes the change'),
             phase('implement'),
-            el('span', 'kanban-setting', 'review'),
+            setting('review', 'who judges it afterwards'),
             phase('review')
         )
         settingsGroup.appendChild(runnersGrid)
@@ -1949,7 +1995,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const moveButton = el('button', 'dya-button dya-button--sm', 'move')
         moveButton.type = 'button'
         moveButton.addEventListener('click', () => openMoveMenu(card.id, moveButton))
-        const remove = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete')
+        const remove = el('button', 'dya-button dya-button--sm dya-button--danger dya-button--quiet', 'delete')
         remove.type = 'button'
         remove.addEventListener('click', () => {
             if (!window.confirm(`Delete '${card.title}'? Its history goes with it.`)) return
@@ -1961,7 +2007,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 })
                 .catch((thrown: unknown) => failOn(card.id, thrown))
         })
-        actions.append(moveButton, remove)
+        actions.append(moveButton, el('span', 'kanban-spacer'), remove)
 
         form.append(
             problemRow,

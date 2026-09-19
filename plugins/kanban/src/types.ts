@@ -19,7 +19,9 @@ export type RunKind = 'implement' | 'review'
 
 export type Verdict = 'approved' | 'changes'
 
-export type HarnessId = 'claude' | 'codex' | 'grok' | 'opencode'
+import type { HarnessId } from './harness/ids.js'
+
+export type { HarnessId }
 
 export interface Runner {
     harness: HarnessId | null

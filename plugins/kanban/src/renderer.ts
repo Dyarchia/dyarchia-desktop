@@ -176,7 +176,12 @@ function order(cards: Card[]): Card[] {
     return cards.slice().sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
 }
 
-const FOLDABLE: Status[] = ['done', 'archived']
+/*
+ * Every stage folds. Two of them arrive folded, which is a default rather than a capability: a
+ * board is read left to right and its tail is history, but a stage somebody does not use is a
+ * stage they should be able to put away, and until now six of the eight refused.
+ */
+const FOLDED_BY_DEFAULT: Status[] = ['done', 'archived']
 
 /*
  * What colour a decision wears. Kinds that differ have to look different — a row saying a card was
@@ -184,26 +189,26 @@ const FOLDABLE: Status[] = ['done', 'archived']
  * and the eye had nothing to catch on. Four families: routine, motion, good, bad.
  */
 const DECISION_TONE: Record<string, string> = {
-    created: 'idle',
-    edited: 'idle',
-    commented: 'idle',
-    attached: 'idle',
-    detached: 'idle',
-    moved: 'accent',
-    promoted: 'accent',
-    claimed: 'accent',
-    completed: 'success',
-    reviewed: 'success',
-    unblocked: 'success',
-    landed: 'success',
-    blocked: 'warning',
-    guarded: 'warning',
-    violation: 'warning',
-    block_loop: 'warning',
-    stopped: 'warning',
-    crashed: 'danger',
-    gave_up: 'danger',
-    deleted: 'danger'
+    created: 'dya-badge--accent-3',
+    edited: 'dya-badge--soft',
+    commented: 'dya-badge--soft',
+    attached: 'dya-badge--soft',
+    detached: 'dya-badge--soft',
+    moved: 'dya-badge--accent',
+    promoted: 'dya-badge--accent',
+    claimed: 'dya-badge--accent',
+    completed: 'dya-badge--accent-3',
+    reviewed: 'dya-badge--accent-3',
+    unblocked: 'dya-badge--accent-3',
+    landed: 'dya-badge--accent-3',
+    blocked: 'dya-badge--warning',
+    guarded: 'dya-badge--warning',
+    violation: 'dya-badge--warning',
+    block_loop: 'dya-badge--warning',
+    stopped: 'dya-badge--warning',
+    crashed: 'dya-badge--danger',
+    gave_up: 'dya-badge--danger',
+    deleted: 'dya-badge--danger'
 }
 
 function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle): () => void {
@@ -211,7 +216,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const foldKey = (status: Status): string => `${pinKey}:fold:${status}`
     const folded = (status: Status): boolean => {
         const stored = read(foldKey(status))
-        return stored === null ? true : stored === 'true'
+        return stored === null ? FOLDED_BY_DEFAULT.includes(status) : stored === 'true'
     }
 
     let registry: BoardMeta[] = []
@@ -484,7 +489,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const empty = el('div', 'kanban-empty')
 
         if (status === 'triage') {
-            const plus = el('button', 'dya-key', '+')
+            const plus = el('button', 'dya-key kanban-new-key', '+')
             plus.type = 'button'
             plus.setAttribute('aria-label', 'new card')
             withTip(plus, 'a new card in triage')
@@ -514,23 +519,21 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             scroller.appendChild(draft)
         }
 
-        if (FOLDABLE.includes(status)) {
-            const fold = el('button', 'dya-key kanban-fold')
-            fold.type = 'button'
-            const apply = (closed: boolean): void => {
-                shell.dataset.collapsed = String(closed)
-                fold.textContent = closed ? '+' : '−'
-                withTip(fold, closed ? `show ${label}` : `fold ${label}`)
-                fold.setAttribute('aria-expanded', String(!closed))
-            }
-            apply(folded(status))
-            fold.addEventListener('click', () => {
-                const next = shell.dataset.collapsed !== 'true'
-                write(foldKey(status), String(next))
-                apply(next)
-            })
-            head.appendChild(fold)
+        const fold = el('button', 'dya-key kanban-fold')
+        fold.type = 'button'
+        const apply = (closed: boolean): void => {
+            shell.dataset.collapsed = String(closed)
+            fold.textContent = closed ? '+' : '−'
+            withTip(fold, closed ? `show ${label}` : `fold ${label}`)
+            fold.setAttribute('aria-expanded', String(!closed))
         }
+        apply(folded(status))
+        fold.addEventListener('click', () => {
+            const next = shell.dataset.collapsed !== 'true'
+            write(foldKey(status), String(next))
+            apply(next)
+        })
+        head.appendChild(fold)
 
         scroller.append(list, empty, indicator)
         shell.append(head, scroller)
@@ -694,6 +697,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             for (const status of rules.order) {
                 columns.set(status, buildColumn(status, rules.labels[status]))
             }
+            /*
+             * A folded stage turns its name on its side, so the name's length becomes the header's
+             * height and every folded column put its count and its fold key at a different height.
+             * One measure for all of them: the longest name on this board, in characters, which
+             * the mono face and the label tracking turn into an exact height in CSS.
+             */
+            const names = rules.labels
+            const longest = Math.max(...rules.order.map((status) => names[status].length))
+            board.style.setProperty('--kanban-stage-chars', String(longest))
         }
 
         for (const id of [...problems.keys()]) {
@@ -2274,120 +2286,167 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * dispatcher is a fact about the machine that matters twice a month, so it is a tag with a
          * tip rather than half a line of running text on every refresh.
          */
-        const head = el('div', 'kanban-watch-head')
-        const count = el('span', 'kanban-watch-count', `${shape.running}/${shape.across}`)
-        head.append(count, el('span', 'dya-label', 'running, every board'))
-        if (shape.across === 0) head.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
-        const holder_tag = el('span', 'dya-tag', shape.holding ? 'dispatcher' : 'follower')
+        /*
+         * A masthead, then the boards, then what was decided.
+         *
+         * What was here said "running" three times before it said anything: a headline reading
+         * "0 running of 2", a section called RUNNING NOW, and under it the sentence "nothing is
+         * running". The count is the headline; the section exists only when something is in it.
+         *
+         * The numeral is set in the serif, which until now this system spent on one word in the
+         * title bar. A figure that is the whole point of a screen is allowed to be the one thing
+         * on it that is not mono.
+         */
+        const masthead = el('div', 'kanban-masthead')
+        const metric = el('div', 'kanban-metric')
+        metric.append(
+            el('span', 'kanban-metric-value', String(shape.running)),
+            el('span', 'kanban-metric-of', `/${shape.across}`)
+        )
+        const metricText = el('div', 'kanban-metric-text')
+        metricText.append(
+            el('span', 'dya-label', shape.running === 1 ? 'run in flight' : 'runs in flight'),
+            el('span', 'kanban-metric-note', `${shape.boards.length} boards on this machine`)
+        )
+        masthead.append(metric, metricText, el('span', 'kanban-spacer'))
+
+        if (shape.across === 0) {
+            masthead.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
+        }
+        const role = el(
+            'span',
+            `dya-badge ${shape.holding ? 'dya-badge--accent' : 'dya-badge--soft'}`,
+            shape.holding ? 'dispatcher' : 'follower'
+        )
         withTip(
-            holder_tag,
+            role,
             shape.holding
                 ? 'this window is the one sweeping the boards'
                 : 'another window holds the dispatcher; this one is watching'
         )
-        head.append(holder_tag)
-        holder.append(head)
+        masthead.append(role)
+        holder.append(masthead)
 
-        const boardsGroup = el('div', 'kanban-group')
-        boardsGroup.append(el('span', 'dya-label', 'boards'))
-        const boardsTable = el('table', 'dya-table')
-        const boardsBody = el('tbody')
         /*
-         * A count of zero is not news. Five of them joined by middots is a line that says nothing
-         * and takes the width to say it, which is what this row was: "0 ready · 0 blocked · 0 in
-         * review" on every idle board. Only what is there is shown, and an idle board says so in
-         * one word.
+         * A board is a card you can press, and pressing it opens that board — which is what makes
+         * the relief honest rather than decorative. The tallies are pills whose hue says which
+         * queue they are: a number beside the word "blocked" in the same grey as the number beside
+         * "ready" is two facts dressed as one.
          */
+        const boardsGroup = el('div', 'kanban-group')
+        boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
+        const grid = el('div', 'kanban-board-grid')
         for (const entry of shape.boards) {
-            const row = el('tr', 'dya-row')
+            const card = el('button', 'kanban-board-card')
+            card.type = 'button'
+            card.addEventListener('click', () => {
+                write(pinKey, entry.slug)
+                closeWatch()
+                void refresh().catch(fail)
+            })
 
-            const first = el('td', 'kanban-cell-name')
-            const dot = el('span', 'kanban-dot')
-            dot.dataset.tone = entry.running ? 'accent' : 'idle'
-            first.append(dot, el('span', undefined, entry.name))
-            row.append(first)
+            const top = el('div', 'kanban-board-top')
+            top.append(el('span', 'kanban-board-name', entry.name))
+            if (entry.cap === 0) {
+                top.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
+            } else if (entry.running > 0) {
+                top.append(el('span', 'dya-badge dya-badge--accent', `${entry.running} running`))
+            }
+            card.append(top)
 
-            const tallies: [number, string][] = [
-                [entry.running, `of ${entry.cap} running`],
-                [entry.counts.ready, 'ready'],
-                [entry.counts.blocked, 'blocked'],
-                [entry.counts.review, 'in review'],
-                [entry.counts.todo + entry.counts.triage + entry.counts.scheduled, 'waiting']
+            const pills = el('div', 'kanban-pills')
+            const tallies: [number, string, string][] = [
+                [entry.counts.ready, 'ready', 'dya-badge--accent-3'],
+                [entry.counts.review, 'in review', 'dya-badge--accent-2'],
+                [entry.counts.blocked, 'blocked', 'dya-badge--danger'],
+                [
+                    entry.counts.todo + entry.counts.triage + entry.counts.scheduled,
+                    'waiting',
+                    'dya-badge--soft'
+                ]
             ]
             const shown = tallies.filter(([n]) => n > 0)
-            const middle = el('td')
             if (shown.length === 0) {
-                middle.append(el('span', 'kanban-tally', 'idle'))
+                pills.append(el('span', 'kanban-board-quiet', 'nothing queued'))
             } else {
-                for (const [n, word] of shown) {
-                    middle.append(el('span', 'kanban-tally', `${n} ${word}`))
+                for (const [n, word, tone] of shown) {
+                    pills.append(el('span', `dya-badge dya-badge--soft ${tone}`, `${n} ${word}`))
                 }
             }
-            row.append(middle)
+            card.append(pills)
 
-            const last = el('td', 'kanban-cell-end')
-            if (entry.cap === 0) last.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
-            row.append(last)
+            /*
+             * One mark per worker this board may run, filled while it is, and only where there is
+             * more than one: a single pip is a stray dash rather than a meter. Static, because a
+             * board being busy is a fact and not something to animate at somebody for as long as
+             * the panel is open.
+             */
+            if (entry.cap > 1) {
+                const caps = el('div', 'kanban-caps')
+                withTip(caps, `${entry.running} of ${entry.cap} workers busy`)
+                for (let slot = 0; slot < Math.min(entry.cap, 8); slot += 1) {
+                    const pip = el('span', 'kanban-pip')
+                    pip.dataset.on = String(slot < entry.running)
+                    caps.append(pip)
+                }
+                card.append(caps)
+            }
 
-            boardsBody.appendChild(row)
+            grid.append(card)
         }
-        boardsTable.append(boardsBody)
-        boardsGroup.appendChild(boardsTable)
+        boardsGroup.append(grid)
         holder.appendChild(boardsGroup)
 
-        const runsGroup = el('div', 'kanban-group')
-        runsGroup.append(el('span', 'dya-label', 'running now'))
-        if (!shape.runs.length) {
-            runsGroup.appendChild(el('div', 'dya-empty dya-empty--inline', 'nothing is running'))
+        /* The section exists when something is in it. */
+        if (shape.runs.length) {
+            const runsGroup = el('div', 'kanban-group')
+            runsGroup.append(el('span', 'dya-eyebrow', 'in flight'))
+            for (const run of shape.runs) runsGroup.appendChild(watchRow(run))
+            holder.appendChild(runsGroup)
         }
-        for (const run of shape.runs) runsGroup.appendChild(watchRow(run))
-        holder.appendChild(runsGroup)
 
         if (shape.problems.length) {
             const problemGroup = el('div', 'kanban-group')
-            problemGroup.append(el('span', 'dya-label', 'problems'))
+            problemGroup.append(el('span', 'dya-eyebrow', 'problems'))
             for (const entry of shape.problems) {
                 const row = el('div', 'kanban-run')
-                const dot = el('span', 'kanban-dot')
-                dot.dataset.tone = 'warning'
+                row.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'check'))
                 const where = shape.boards.find((board) => board.slug === entry.slug)?.name ?? 'this machine'
-                row.append(dot, el('span', 'dya-text', where), el('span', 'kanban-card-note', entry.problem))
+                row.append(el('span', 'dya-text', where), el('span', 'kanban-card-note', entry.problem))
                 problemGroup.appendChild(row)
             }
             holder.appendChild(problemGroup)
         }
 
-        const log = el('div', 'kanban-group')
-        log.append(el('span', 'dya-label', 'recent decisions'))
-        if (!shape.decisions.length) log.appendChild(el('div', 'dya-empty dya-empty--inline', 'nothing yet'))
-        /*
-         * The row leads with what happened to, not with an identifier. A card the board no longer
-         * holds has no title to look up, so the overview falls back to its id — which is how this
-         * list came to lead every deleted row with a 36-character uuid, the widest and least
-         * useful thing on the line, while the card's actual name sat last and dimmest. When that
-         * happens the detail is the name, so the two swap and the id goes to a tip.
-         */
-        const logTable = el('table', 'dya-table')
-        const logBody = el('tbody')
-        for (const row of shape.decisions) {
-            const line = el('tr', 'dya-row')
-            const gone = row.title === row.cardId
-            const lead = gone && row.detail ? row.detail : row.title
-            const rest = gone && row.detail ? '' : row.detail
+        if (shape.decisions.length) {
+            const log = el('div', 'kanban-group')
+            log.append(el('span', 'dya-eyebrow', 'decided'))
+            const logTable = el('table', 'dya-table')
+            const logBody = el('tbody')
+            for (const row of shape.decisions) {
+                const line = el('tr', 'dya-row')
+                const gone = row.title === row.cardId
+                const lead = gone && row.detail ? row.detail : row.title
+                const rest = gone && row.detail ? '' : row.detail
 
-            const dot = el('span', 'kanban-dot')
-            dot.dataset.tone = DECISION_TONE[row.kind] ?? 'idle'
-            withTip(dot, gone ? `${row.kind} \u00b7 ${row.cardId}` : row.kind)
+                const kind = el('td', 'kanban-cell-kind')
+                const pill = el(
+                    'span',
+                    `dya-badge dya-badge--soft ${DECISION_TONE[row.kind] ?? 'dya-badge--soft'}`,
+                    row.kind.replace('_', ' ')
+                )
+                if (gone) withTip(pill, row.cardId)
+                kind.append(pill)
 
-            const first = el('td', 'kanban-cell-name')
-            first.append(dot, el('span', undefined, lead))
-            line.append(first, el('td', 'kanban-tally', rest))
-            line.append(el('td', 'kanban-cell-end', `${row.board} \u00b7 ${when(row.at)}`))
-            logBody.appendChild(line)
+                const first = el('td', 'kanban-cell-name', lead)
+                line.append(kind, first, el('td', 'kanban-tally', rest))
+                line.append(el('td', 'kanban-cell-end', `${row.board} \u00b7 ${when(row.at)}`))
+                logBody.appendChild(line)
+            }
+            logTable.append(logBody)
+            log.appendChild(logTable)
+            holder.appendChild(log)
         }
-        logTable.append(logBody)
-        if (shape.decisions.length) log.appendChild(logTable)
-        holder.appendChild(log)
 
         watch.replaceChildren(holder)
     }

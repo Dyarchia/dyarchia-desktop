@@ -190,6 +190,11 @@ shape, same offsets, same blur.
   graphical object: a dot, a rule, a selection bar, a focus ring, a fill.
 - **The status and syntax hues are functional.** Each theme declares its own values so that
   the job, legibility, is done on that theme's ground.
+- **A badge may wear an accent as well as a status.** A status says how something turned out;
+  an accent says what kind of thing it is, and a system with six hues that let a label reach
+  three has three it declared and never spends. `--dya-on-accent` over each fill measures
+  5.74 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
+  5.74 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
 
 ```text
 token           Gi        fill   Rei       fill   role
@@ -348,7 +353,8 @@ Structure    pane bar (--flush --inset) card card__header brand carved
 Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (__icon __name __note)
 Input        field (--sm --auto) checkbox form (__wide __actions __push)
-Content      tag badge (--success --warning --danger --soft) table (__num) row
+Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
+             table (__num) row
              title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
 Layers       menu menu__item (--selected) menu__shortcut tip

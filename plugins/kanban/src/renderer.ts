@@ -486,7 +486,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * count in the header already says the column is empty. What is left is a drop target,
          * which needs a box and no words.
          */
-        const empty = el('div', 'kanban-empty')
+        const empty = el('div', 'kanban-drop')
 
         if (status === 'triage') {
             const plus = el('button', 'dya-key kanban-new-key', '+')
@@ -651,7 +651,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 cursor = next
             }
 
-            column.count.textContent = String(wantedHere.length)
+            column.count.textContent = wantedHere.length > 0 ? String(wantedHere.length) : ''
             column.empty.hidden = wantedHere.length > 0
             column.root.dataset.empty = String(wantedHere.length === 0)
         }
@@ -664,7 +664,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             if (first) first.root.tabIndex = 0
         }
 
-        meter.hidden = meta === null
+        meter.hidden = meta === null || cards.length === 0
         meter.textContent = `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`
         meter.title = meta ? `${meta.name} · ${meta.workdir}` : ''
         paintMarks()
@@ -1438,7 +1438,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 if (!into.isConnected) return
                 into.replaceChildren()
                 if (!rows.length) {
-                    into.appendChild(el('div', 'dya-empty kanban-empty', 'no transcript for this run: the CLI keeps that file, and it is gone'))
+                    into.appendChild(el('div', 'dya-empty', 'no transcript for this run: the CLI keeps that file, and it is gone'))
                     return
                 }
                 const stick = into.scrollTop + into.clientHeight >= into.scrollHeight - 8
@@ -1455,7 +1455,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 into.replaceChildren()
                 if (!rows.length) {
                     into.appendChild(
-                        el('div', 'dya-empty kanban-empty', 'the board has decided nothing about this card yet')
+                        el('div', 'dya-empty', 'the board has decided nothing about this card yet')
                     )
                     return
                 }

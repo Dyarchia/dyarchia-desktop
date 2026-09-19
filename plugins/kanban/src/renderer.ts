@@ -106,6 +106,7 @@ interface CardNode {
     root: HTMLElement
     title: HTMLElement
     who: HTMLElement
+    marks: HTMLElement
     dot: HTMLElement
     note: HTMLElement
 }
@@ -510,7 +511,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             withTip(plus, 'a new card in triage')
             const draft = el('div', 'kanban-new')
             draft.hidden = true
-            const field = el('input', 'dya-field dya-field--sm')
+            const field = el('input', 'dya-field dya-field--sm dya-field--prose')
             field.type = 'text'
             field.placeholder = 'card title, enter to add'
             field.spellcheck = false
@@ -565,11 +566,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const title = el('div', 'kanban-card-title')
         const who = el('div', 'kanban-card-who')
+        const marks = el('div', 'dya-pills')
         const foot = el('div', 'kanban-card-foot')
         const dot = el('span', 'kanban-dot')
         const note = el('span', 'kanban-card-note')
         foot.append(dot, note)
-        shell.append(title, who, foot)
+        shell.append(title, who, marks, foot)
 
         shell.addEventListener('focus', () => {
             focused = card.id
@@ -590,7 +592,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         shell.addEventListener('dblclick', () => select(card.id))
 
-        return { root: shell, title, who, dot, note }
+        return { root: shell, title, who, marks, dot, note }
     }
 
     const paintCard = (card: Card): CardNode => {
@@ -604,22 +606,39 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const tone = rules?.tone[status] ?? 'idle'
         const blocked = card.parents.length > 0 && status === 'todo'
         const live = status === 'running' ? progress.get(card.id) : undefined
+
+        /*
+         * What is unusual about this card, each thing its own badge.
+         *
+         * These were one grey string joined by a middle dot: `p2 · 1 note · 42m`. Three problems
+         * in eight words — `p2` was a code nobody outside this file could read, the middle dot at
+         * ten pixels of grey is a glyph a reader cannot identify, and with the dot gone the words
+         * run together, because `priority 2 1 note` is four numbers and two nouns in a row. A
+         * badge has an edge, so nothing needs a character to say where one fact stops.
+         *
+         * The row exists when something is in it. A card with nothing unusual carries a title,
+         * who will run it, and how long it has waited.
+         */
+        const marks: string[] = []
         const bits: string[] = []
 
         if (live) {
-            bits.push(live.waiting ? 'waiting on you' : (live.tool ?? live.state))
-            bits.push(ago(live.startedAt, clock))
-            if (live.outputTokens) bits.push(`${tokens(live.inputTokens + live.outputTokens)} tok`)
+            marks.push(live.waiting ? 'waiting on you' : (live.tool ?? live.state))
+            if (live.outputTokens) marks.push(`${tokens(live.inputTokens + live.outputTokens)} tok`)
+            bits.push(`${ago(live.startedAt, clock)} in flight`)
         } else {
-            if (card.priority) bits.push(`p${card.priority}`)
-            if (status === 'blocked' && card.blockKind) bits.push(card.blockKind.replace('_', ' '))
-            if (status === 'scheduled' && card.scheduledFor) bits.push(when(card.scheduledFor))
-            if (blocked) bits.push(`${card.parents.length} open`)
-            if (card.comments.length) {
-                bits.push(`${card.comments.length} ${card.comments.length === 1 ? 'note' : 'notes'}`)
+            if (card.priority) marks.push(`priority ${card.priority}`)
+            if (status === 'blocked' && card.blockKind) marks.push(card.blockKind.replace('_', ' '))
+            if (blocked) {
+                const open = card.parents.length
+                marks.push(`${open} ${open === 1 ? 'dependency' : 'dependencies'}`)
             }
+            if (card.comments.length) {
+                marks.push(`${card.comments.length} ${card.comments.length === 1 ? 'note' : 'notes'}`)
+            }
+            if (status === 'scheduled' && card.scheduledFor) bits.push(when(card.scheduledFor))
             const waited = since(card.updatedAt, clock)
-            if (waited) bits.push(waited)
+            if (waited) bits.push(`${waited} ago`)
         }
 
         /*
@@ -640,7 +659,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         node.title.textContent = card.title
         node.dot.dataset.tone = tone
-        node.note.textContent = bits.join(' · ')
+        node.marks.hidden = marks.length === 0
+        node.marks.replaceChildren(
+            ...marks.map((mark) => el('span', 'dya-badge dya-badge--soft', mark))
+        )
+        node.note.replaceChildren(...bits.map((bit) => el('span', undefined, bit)))
         node.root.dataset.status = status
         node.root.dataset.locked = String(card.locked)
         node.root.dataset.waiting = String(live?.waiting === true)
@@ -1606,7 +1629,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         applySize()
 
         const head = el('div', 'dya-card__header kanban-drawer-head')
-        const heading = el('span', 'dya-tag kanban-drawer-state', rules.labels[shown(card)])
+        /*
+         * The state, and the control that changes it, are one thing. A button reading `move`
+         * beside a badge reading `TODO` asks the reader to work out that the first moves the
+         * second — and it sat halfway down a scrolling form, under the dependencies and over the
+         * thread, where nobody looks for what to do with a card. The badge is pressable: this is
+         * where the card is, press it to send it somewhere else.
+         */
+        const heading = el('button', 'dya-chip kanban-drawer-state', rules.labels[shown(card)])
+        heading.type = 'button'
+        withTip(heading, 'move this card to another stage')
+        heading.addEventListener('click', () => openMoveMenu(card.id, heading))
         const named = el('span', 'dya-text kanban-drawer-title', card.title)
         const sizeKey = key('expand', 'take the whole panel')
         const paintSize = (): void => {
@@ -1654,7 +1687,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const titleGroup = el('div', 'kanban-group')
         titleGroup.append(el('span', 'dya-label', 'title'))
-        const title = el('input', 'dya-field')
+        const title = el('input', 'dya-field dya-field--prose')
         title.type = 'text'
         title.value = card.title
         title.addEventListener('change', () => patch(card.id, { title: title.value }))
@@ -1662,7 +1695,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const bodyGroup = el('div', 'kanban-group kanban-grow')
         bodyGroup.append(el('span', 'dya-label', 'brief'))
-        const text = el('textarea', 'dya-field kanban-body-field')
+        const text = el('textarea', 'dya-field dya-field--prose kanban-body-field')
         text.value = card.body
         text.addEventListener('change', () => patch(card.id, { body: text.value }))
         bodyGroup.appendChild(text)
@@ -1765,7 +1798,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         settingsGroup.appendChild(runnersGrid)
 
         const filesGroup = el('div', 'kanban-group')
-        filesGroup.append(el('span', 'dya-label', 'files'))
+        const filesHead = el('div', 'kanban-group-head')
+        filesHead.append(el('span', 'dya-label', 'files'))
+        filesGroup.append(filesHead)
         const files = el('div', 'dya-pills')
 
         for (const file of card.attachments ?? []) {
@@ -1817,10 +1852,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 })
                 .catch((thrown: unknown) => failOn(card.id, thrown))
         })
-        filesGroup.append(files, addFile)
+        filesHead.append(addFile)
+        filesGroup.append(files)
 
         const depsGroup = el('div', 'kanban-group')
-        depsGroup.append(el('span', 'dya-label', 'depends on'))
+        const depsHead = el('div', 'kanban-group-head')
+        depsHead.append(el('span', 'dya-label', 'depends on'))
+        depsGroup.append(depsHead)
         const parents = el('div', 'dya-pills')
         for (const parentId of card.parents) {
             const parent = cardById(parentId)
@@ -1835,7 +1873,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const addParent = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add dependency')
         addParent.type = 'button'
         addParent.addEventListener('click', () => openParentMenu(card, addParent))
-        depsGroup.append(parents, addParent)
+        depsHead.append(addParent)
+        depsGroup.append(parents)
 
         const notesGroup = el('div', 'kanban-group')
         notesGroup.append(el('span', 'dya-label', 'thread'))
@@ -1850,7 +1889,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             notesGroup.appendChild(item)
         }
 
-        const note = el('textarea', 'dya-field')
+        const note = el('textarea', 'dya-field dya-field--prose')
         note.placeholder = 'leave a note for the next run'
         note.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
@@ -1912,9 +1951,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const scheduleGroup = el('div', 'kanban-group')
         if (shown(card) === 'ready' || shown(card) === 'scheduled') {
-            scheduleGroup.append(el('span', 'dya-label', 'park until'))
-            const row = el('div', 'kanban-row')
-            const at = el('input', 'dya-field dya-field--sm')
+            const scheduleHead = el('div', 'kanban-group-head')
+            scheduleHead.append(el('span', 'dya-label', 'park until'))
+            scheduleGroup.append(scheduleHead)
+            const at = el('input', 'dya-field dya-field--sm dya-field--auto')
             at.type = 'datetime-local'
             if (card.scheduledFor) at.value = local(card.scheduledFor)
             const park = el('button', 'dya-button dya-button--quiet dya-button--sm', 'park')
@@ -1935,8 +1975,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     })
                     .catch((thrown: unknown) => failOn(card.id, thrown))
             })
-            row.append(at, park)
-            scheduleGroup.appendChild(row)
+            scheduleHead.append(at, park)
         }
 
         const actions = el('div', 'kanban-row')
@@ -1992,10 +2031,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             })
             actions.append(stop)
         }
-        const moveButton = el('button', 'dya-button dya-button--sm', 'move')
-        moveButton.type = 'button'
-        moveButton.addEventListener('click', () => openMoveMenu(card.id, moveButton))
-        const remove = el('button', 'dya-button dya-button--sm dya-button--danger dya-button--quiet', 'delete')
+        /*
+         * Deleting a card is rare, deliberate and the end of it, so it is the last thing in the
+         * drawer and not a red button in the middle of one. It says what it deletes.
+         */
+        const danger = el('div', 'kanban-row kanban-danger')
+        const remove = el(
+            'button',
+            'dya-button dya-button--sm dya-button--danger dya-button--quiet',
+            'delete this card'
+        )
         remove.type = 'button'
         remove.addEventListener('click', () => {
             if (!window.confirm(`Delete '${card.title}'? Its history goes with it.`)) return
@@ -2007,10 +2052,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 })
                 .catch((thrown: unknown) => failOn(card.id, thrown))
         })
-        actions.append(moveButton, el('span', 'kanban-spacer'), remove)
+        danger.append(el('span', 'kanban-spacer'), remove)
 
+        /*
+         * What to do about this card comes first. Approve, request changes, unblock and stop are
+         * the reason a reader opened the drawer, and they were below the dependencies, above the
+         * thread, in the one band of a scrolling form nobody reaches on purpose.
+         */
         form.append(
             problemRow,
+            actions,
             titleGroup,
             bodyGroup,
             filesGroup,
@@ -2018,8 +2069,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             depsGroup,
             scheduleGroup,
             runsGroup,
-            actions,
-            notesGroup
+            notesGroup,
+            danger
         )
         const body = el('div', 'kanban-drawer-body')
         body.append(stage, form)
@@ -2486,9 +2537,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 if (gone) withTip(pill, row.cardId)
                 kind.append(pill)
 
-                const first = el('td', 'kanban-cell-name', lead)
-                line.append(kind, first, el('td', 'kanban-tally', rest))
-                line.append(el('td', 'kanban-cell-end', `${row.board} \u00b7 ${when(row.at)}`))
+                const first = el('td', 'dya-table__prose', lead)
+                line.append(kind, first, el('td', undefined, rest))
+                line.append(el('td', 'dya-table__end', `${row.board} \u00b7 ${when(row.at)}`))
                 logBody.appendChild(line)
             }
             logTable.append(logBody)

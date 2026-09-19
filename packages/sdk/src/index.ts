@@ -6,6 +6,8 @@ export interface PanelDescriptor {
     id: string
     title: string
     icon: string
+    /* One line saying what this panel is for, shown on its tile when nothing is open. */
+    note?: string
     duplicable?: boolean
 }
 

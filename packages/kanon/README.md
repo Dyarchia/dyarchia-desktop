@@ -30,32 +30,32 @@ consumer toggling `element.hidden` is guaranteed an effect. Hidden but laid out 
 
 ## Two themes over one contract
 
-`Gi` is the default and lives on `:root`. `Slate` is a single `[data-theme="slate"]`
-block that redefines **colour tokens only** — not a radius, not a spacing step, not a
-duration, not a font size. A product switches by setting the attribute on the root element
-and nothing else.
+`Gi` is the default and lives on `:root`. `Rei` is a single `[data-theme="rei"]` block that
+redefines **colour tokens only** — not a radius, not a spacing step, not a duration, not a
+font size. A product switches by setting the attribute on the root element and nothing else.
 
 ```text
-theme    selector                 ground              the accent that carries the weight
-------   ----------------------   -----------------   ----------------------------------
-Gi       :root                    warm near-black     an orange ink, used sparingly
-Slate    [data-theme="slate"]     mid blue-grey       five deep inks, blue first
+theme    selector               ground             the accent that carries the weight
+------   --------------------   ----------------   ----------------------------------
+Gi       :root                  warm near-black    an orange ink, used sparingly
+Rei      [data-theme="rei"]     deep blue          an azure ink, with amber and mint
 ```
 
 Components never learn that themes exist. `components.css` names no colour, so a theme is
 a change of values and can never be a change of rules. **A theme that needs a new rule is
 not a theme; it is a second system, and it is refused.**
 
-One is dark and one is mid-tone with dark inks, and the CSS never consults
-`prefers-color-scheme`. The
-browser learns which is mounted through `--dya-scheme`, which `reset.css` hands to
-`color-scheme` on the root: a native scrollbar, a form control the system has not replaced
-and the `canvas` colour keyword all follow the theme instead of the operating system.
+Both are dark, and the CSS never consults `prefers-color-scheme`. The browser learns which
+is mounted through `--dya-scheme`, which `reset.css` hands to `color-scheme` on the root: a
+native scrollbar, a form control the system has not replaced and the `canvas` colour keyword
+all follow the theme instead of the operating system.
 
-Gi is warm, every grey carrying a unit or two more red than blue; Slate is cool, a blue-grey
-at mid luminance, so the two never read as one ramp inverted. The status and syntax
-hues are the one place a theme redefines a value that Gi declares functional, because a
-light ground turns a legible pastel into a fail.
+Gi is warm, every grey carrying a unit or two more red than blue; Rei is cold, every step a
+blue whose red channel is about two thirds of its blue one, so the two never read as one ramp
+tinted. They differ in hue, not in luminance: no surface in either theme reaches 0.06, and
+**no ink is ever darker than the surface under it.** The status and syntax hues are declared
+per theme anyway, because a hue that separates cleanly from a warm ground is not the same hue
+that separates from a cold one.
 
 
 ## Gi
@@ -116,61 +116,61 @@ panel edge on the chassis; `--dya-hairline` separates rows inside one surface an
 the outline of a container.
 
 
-## Slate
+## Rei
 
-A mid-tone ground, blue-grey at 0.40 luminance, for eyes that a white page hurts and a
-near-black one does not suit either: no white anywhere in the ramp, no ink lighter than the
-ground, and the relief still goes towards light and the recess towards dark, so a button
-stands and a field sinks the same way they do in Gi. Every ink is a deep hue on that ground,
-five of them functional, so the theme reads as ink on tinted paper rather than as a dimmed
-white one.
+A deep blue ground, tinted rather than neutral, for eyes that a pale surface hurts. No white
+anywhere in the ramp and no pure black either: `--dya-bg` is `#05080f`, which is a blue and
+reads as one. The ten steps climb the same distances Gi's do, so a component lands on the
+same relative depth in both themes, and the ink ranks stay four deep and evenly spaced.
 
 ```text
 token                  value     relative luminance
 --------------------   -------   ------------------
---dya-bg               #a4aab7              0.40061
---dya-sunken           #979ead              0.34050
---dya-chassis          #aeb3be              0.44957
---dya-surface-1        #b7bcc6              0.50111
---dya-surface-2        #bec2cb              0.53843
---dya-flat-hover       #b4b8c3              0.47924
---dya-raised           #c5c9d1              0.58247
---dya-overlay          #cacdd4              0.60973
---dya-raised-hover     #c0c4cd              0.55094
---dya-selected         #9ea4b3              0.37075
+--dya-bg               #05080f              0.00240
+--dya-sunken           #090e19              0.00442
+--dya-chassis          #0d1322              0.00667
+--dya-surface-1        #111829              0.00933
+--dya-surface-2        #151d32              0.01268
+--dya-flat-hover       #1a233c              0.01748
+--dya-raised           #1f2946              0.02319
+--dya-overlay          #242f4f              0.02973
+--dya-raised-hover     #2a3759              0.03946
+--dya-selected         #324063              0.05246
 ```
 
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
--------------   -------   ----   ------   ------   -------   ------------   --------
---dya-text      #171920   7.53     9.21    10.57     11.03          10.05       7.03
---dya-text-2    #1f222a   6.82     8.35     9.58      9.99           9.10       6.37
---dya-text-3    #272b34   6.08     7.44     8.54      8.91           8.11       5.68
---dya-text-4    #30343d   5.35     6.54     7.51      7.83           7.14       5.00
---dya-accent    #092d74   5.50     6.72     7.72      8.05           7.33       5.13
---dya-accent-2  #471d65   5.52     6.76     7.75      8.09           7.37       5.16
---dya-accent-3  #0a3b23   5.42     6.63     7.61      7.94           7.23       5.06
+-------------   -------   -----   ------   ------   -------   ------------   --------
+--dya-text      #dde5f5   15.84    13.99    11.34     10.41           9.28       8.10
+--dya-text-2    #c8d3ea   13.32    11.77     9.54      8.76           7.80       6.81
+--dya-text-3    #aebcd9   10.49     9.27     7.51      6.90           6.15       5.37
+--dya-text-4    #a1afce    9.10     8.04     6.52      5.98           5.33       4.65
+--dya-accent    #74a9ff    8.46     7.47     6.05      5.56           4.95       4.32
+--dya-accent-2  #f0a45c    9.70     8.57     6.95      6.38           5.68       4.96
+--dya-accent-3  #7fd3b8   11.37    10.04     8.14      7.47           6.66       5.81
 ```
 
-Every ink is text on every surface, the accents included; the lowest reading in the theme is
-`--dya-warning` on `--dya-sunken` at 4.53, then `--dya-text-4` there at 4.64. The status
-inks on the sunken step: `--dya-success` #0a3b1f 4.71, `--dya-warning` #542b02 4.53,
-`--dya-danger` #6a0911 4.70; `--dya-code-comment` #31353c 4.58. `--dya-on-accent`,
-`--dya-on-field` and `--dya-on-status` are `#f4f6fa`, the one near-white in the theme and
-never a ground, and measure 11.84 on the accent, 11.70 on success, 11.26 on warning and
-11.69 on danger. `--dya-on-idle` measures 5.91 on `--dya-idle`.
+**Every ink rank is text on every surface in this theme**, `--dya-text-4` included, where Gi
+has to reserve `--dya-selected`. The one reading under the floor is `--dya-accent` on
+`--dya-selected` at 4.32, and the accent is never text on that surface: it is the ink of an
+active key on the bar, where it measures 6.05 on `--dya-raised`. `--dya-code-comment`
+`#8290ad` is the most recessive ink, 5.22 and 5.51 on the two surfaces a code block sits on.
+
+`--dya-on-accent`, `--dya-on-field` and `--dya-on-status` are `#05080f`, the ground itself,
+and measure 8.46 on the accent, 11.29 on success, 10.31 on warning and 9.90 on danger.
+`--dya-on-idle` measures 6.81 on `--dya-idle`.
 
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #8f95a3         1.43           1.58
---dya-border-strong    #808797         1.71           1.89
---dya-hairline         #9da2ae         1.22           1.34
+--dya-border           #2c3859         1.60           1.53
+--dya-border-strong    #41507a         2.34           2.24
+--dya-hairline         #1f2946         1.29           1.23
 ```
 
-The elevation tokens are redefined in Slate because the ground is neither light nor dark: the
-contour ring is the ink `#171920` at 20%, the inset light is white at 35%, never opaque, and
-the drop shadows sit between Gi's and a light theme's. Same shape, same offsets, same blur.
+The elevation tokens are redefined because the contour ring is the theme's own darkest blue
+rather than black: `#02040a` for the ring, white at 9% for the inset light on relief. Same
+shape, same offsets, same blur.
 
 
 ## Colour rules
@@ -184,35 +184,35 @@ the drop shadows sit between Gi's and a light theme's. Same shape, same offsets,
   the job, legibility, is done on that theme's ground.
 
 ```text
-token           Gi        fill   Slate     fill   role
+token           Gi        fill   Rei       fill   role
 -------------   -------   ----   -------   ----   ------------------------
---dya-success   #63cf95   9.30   #0a3b1f  11.70   a positive outcome
---dya-warning   #d6a95c   8.27   #542b02  11.26   caution, not failure
---dya-danger    #f59790   8.29   #6a0911  11.69   error, destruction
---dya-idle      per theme  7.73  per theme  5.91  no outcome yet
+--dya-success   #63cf95   9.30   #6fd6a4  11.29   a positive outcome
+--dya-warning   #d6a95c   8.27   #e2b268  10.31   caution, not failure
+--dya-danger    #f59790   8.29   #ff9b95   9.90   error, destruction
+--dya-idle      per theme  7.73  per theme  6.81  no outcome yet
 ```
 
 `fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue
 has a `-soft` companion at 10% for the ground of a row or a quiet badge. As text rather than
-fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi, on `--dya-selected`, and
-4.71 / 4.53 / 4.70 at worst in Slate, on `--dya-sunken`, so `.dya-text--success` and
-`--danger` carry no reservation on any surface in either theme.
+fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi and 5.77 / 5.27 / 5.06 at worst in
+Rei, both on `--dya-selected`, so `.dya-text--success` and `--danger` carry no reservation on
+any surface in either theme.
 
 ```text
-token                 Gi        s-2    s-1    Slate     s-2    s-1
+token                 Gi        s-2    s-1    Rei       s-2    s-1
 -------------------   -------   ----   ----   -------   ----   ----
---dya-code-keyword    #cf8fb4   6.69   7.03   #5c1745   7.07   6.63
---dya-code-string     #8fb87a   7.56   7.94   #0f3b0f   7.12   6.67
---dya-code-number     #d6a95c   7.87   8.27   #542b02   6.83   6.40
---dya-code-function   #7fb0dd   7.44   7.82   #092d74   7.18   6.72
---dya-code-punct      #bdbab2   8.79   9.24   #272b34   7.94   7.44
---dya-code-comment    #85857f   4.59   4.83   #31353c   6.90   6.46
+--dya-code-keyword    #cf8fb4   6.69   7.03   #d79cc8   7.56   7.99
+--dya-code-string     #8fb87a   7.56   7.94   #93cf8e   9.22   9.74
+--dya-code-number     #d6a95c   7.87   8.27   #e2b268   8.62   9.10
+--dya-code-function   #7fb0dd   7.44   7.82   #74a9ff   7.07   7.47
+--dya-code-punct      #bdbab2   8.79   9.24   #aebcd9   8.77   9.27
+--dya-code-comment    #85857f   4.59   4.83   #8290ad   5.22   5.51
 ```
 
 `--dya-code-comment` is the lowest ink in the system that is still text, deliberately the
-most recessive of the six and, in Gi, just above the 4.50 floor on the two surfaces a code
-block sits on; in Slate the same role holds at 4.58 on the sunken step. Keyword and string converge under deuteranopia; a code block accepts that, because
-the reader still has indentation, quotes and delimiters.
+most recessive of the six: in Gi it clears the 4.50 floor by 0.09 on the two surfaces a code
+block sits on, in Rei by 0.72. Keyword and string converge under deuteranopia; a code block
+accepts that, because the reader still has indentation, quotes and delimiters.
 
 `--dya-faint`, the glass tokens and the carve tokens are alphas of the theme's own ink and
 ground. `--dya-elev-focus` follows the accent in each theme.
@@ -234,12 +234,12 @@ ground. `--dya-elev-focus` follows the accent in each theme.
 - **Only what receives input is recessed**: fields, sliders, and any control being pressed.
 - **Hover changes the background, never the shadow.** There is no raised-hover elevation;
   `--dya-raised` moves to `--dya-raised-hover`.
-- **The contour ring is the theme's ink, not its opposite.** Black in Gi, near-black at 15%
-  in Slate. A white ring over a near-black ground reads as a grey outline instead of as
+- **The contour ring is the theme's own darkest value, not its opposite.** Black in Gi,
+  `#02040a` in Rei. A white ring over a dark ground reads as a grey outline instead of as
   depth. No shadow uses positive spread.
 - **Carving is relief for a word.** `--dya-carve` is a two-edged text shadow, one edge lit
-  and one in shade, and the theme decides which side the light comes from: from below in
-  Gi, from above in Slate. `--dya-carve-filter` is the same pair as `drop-shadow`, for a
+  and one in shade, and the light comes from below in both themes, because both grounds are
+  dark. `--dya-carve-filter` is the same pair as `drop-shadow`, for a
   word whose fill is a gradient of `--dya-carve-a` to `--dya-carve-b` rather than a flat
   ink. Static, and therefore free.
 
@@ -290,7 +290,7 @@ content: sans, and it keeps its case.
 
 `.dya-math` is the exception inside the exception: notation is data, so it is mono at
 `0.94em` of its surroundings carrying `--dya-text-2` — 11.06 and 11.63 on Gi's two
-surfaces, 8.35 and 8.91 on Slate's. The em-relative size is deliberate: an expression
+surfaces, 11.14 and 11.77 on Rei's. The em-relative size is deliberate: an expression
 inside a heading has to scale with it, and no fixed step can. `.dya-math--block` is the
 display form.
 
@@ -337,16 +337,39 @@ wrong in ways the first consumer discovers rather than the author.
 
 ```text
 Structure    pane bar (--flush --inset) card card__header brand carved
-Pressable    button (--quiet --sm --danger --bare) key (--active) chip entry (--active)
+Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
+             entry (--active) tile (__icon __name __note)
 Input        field (--sm --auto) checkbox
 Content      tag badge (--success --warning --danger --soft) table row
-             text (--success --danger) label eyebrow value mono key-label
+             title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
 Layers       menu menu__item (--selected) menu__shortcut tip
 Navigation   tabs tab
-Absence      empty loading
+Absence      empty (__actions) loading
 Assistive    sr-only
 ```
+
+**Emphasis is a family, not an accident.** Every other rule here is a prohibition — do not
+glare, do not truncate, never below 4.50 — and prohibitions produce a screen where nothing
+is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile` and
+`empty__actions` are the five that say what matters:
+
+- **`title` is a size and a tracking, never a weight.** It is `--dya-size-h3` at
+  `--dya-weight`, carrying `--dya-text` where the line under it carries `--dya-text-3`.
+  Hierarchy in this system comes from the type scale and the ink rank; a heading that
+  reaches for 500 is how a screen ends up with four kinds of bold and still no order.
+  `--lg` is the same rule at `--dya-size-h2`, for a screen that is only a heading.
+- **`lede` is one sentence under a title**, sans, capped at 68ch, `--dya-text-3`. It is not
+  `text`: the cap and the rank are the difference between a lede and a paragraph.
+- **`button--primary` is the one action a screen is about.** At most one per view, because
+  a second first is none. It is the only filled control in the system that does not report
+  a status, and its hover step is `--dya-accent-hover` — a token rather than a filter,
+  because a transition may name `background-color` and nothing else.
+- **`tile` is a pressable card**: an icon, a name and one line. It is how a region with
+  nothing in it yet offers what to do next, and the shell's launcher is built from nothing
+  else.
+- **`empty__actions` is the row under an empty state.** An empty state that only reports
+  the absence has described the problem and left.
 
 `pane` is not a component either: it declares an element a query container under the name
 `pane` and carries no look at all. It exists because a panel's width is its own — in a dock
@@ -380,6 +403,10 @@ Four distinctions in that list are easy to collapse and are not the same thing:
   prose must not be dressed as a label.
 - **`bar` is window chrome, `bar--inset` is a row of controls.** The chrome is the 38px,
   the gradient and the hairline; the rhythm is what the modifier keeps.
+- **`title` is a heading, `label` is a name.** A title is sans and keeps its case because
+  it is a sentence about the screen; a label is mono, uppercase and tracked because it
+  names a control. Interface text is uppercase by default and a heading is the exception,
+  along with data.
 - **`tip` is a sentence, `menu` is a choice.** A tip is a `[popover="hint"]` the browser
   opens on interest, anchored to its `[interestfor]` control by the engine and flipped at
   an edge by `position-try-fallbacks`; mono, sentence case, never uppercase, because it
@@ -402,7 +429,7 @@ There is nothing to build, lint or test. What replaces those commands:
   With the app running in dev, `node scripts/screenshot.mjs out.png` at the workspace root
   captures the window over the Chrome DevTools Protocol, and an optional second argument is
   an expression evaluated in the page first — `document.documentElement.dataset.theme =
-  'slate'` switches the theme, a `.click()` opens a panel. One capture per theme per
+  'rei'` switches the theme, a `.click()` opens a panel. One capture per theme per
   change, and the pair is what a commit body describes.
 - **The invariant.** `components.css` must resolve to zero literal colours. Verify against
   the CSSOM, not by reading the file.
@@ -418,9 +445,10 @@ There is nothing to build, lint or test. What replaces those commands:
 - The two thresholds in use are properties of their content, not of the system: 640 for a
   corpus row and 900 for the cost panel's ten columns, both measured against the data on one
   machine. A corpus with longer names or a column added to that table moves them.
-- Slate has been seen against the kanban panel at 1400 px and nowhere else yet. Its
-  interpolated steps, `--dya-flat-hover` and `--dya-raised-hover`, and the 35% inset light
-  on relief are the values most likely to move once a long session is spent in it.
+- Rei has been seen against the launcher, Setup, docviewer, kanban, crawlee and the terminal
+  at 1400 px, and nowhere else yet. Its two hover steps, `--dya-flat-hover` and
+  `--dya-raised-hover`, are interpolated rather than observed, and they and the 9% inset
+  light on relief are the values most likely to move once a long session is spent in it.
 - The prose block went with its last consumer, and the SDK's markdown renderer still emits
   `code`, `math` and `prose__scroll`. Whatever renders markdown next needs typography for
   the elements between them. docviewer answers that today with its own prefixed rules,

@@ -212,9 +212,14 @@ export function activate(ctx: PluginContext): void {
             const root = document.createElement('div')
             root.className = 'docviewer'
 
+            /*
+             * The bar stays. It used to hide itself whenever the panel had nothing open, which is
+             * exactly when the only control that matters — open something — needs to be reachable,
+             * and it is why the empty panel had to grow a button of its own in the middle of it.
+             * The panel is simply empty now, with its bar where every other panel's bar is.
+             */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
-            header.hidden = true
             const name = document.createElement('span')
             name.className = 'dya-mono docviewer-name'
             const modes = document.createElement('div')
@@ -258,40 +263,25 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * An empty panel is the moment to say what this one is for and offer the one thing it
-             * does, not a bare icon floating in the middle of a void with no label on it. The
-             * failure case keeps the same shape: the sentence changes, the way out does not.
+             * An empty panel is empty. It said "Read a document" over a sentence over a button, in
+             * the middle of an otherwise blank panel, which is an advertisement for a panel the
+             * reader has already opened. Only a failure has anything to say here.
              */
             function showEmpty(message?: string): void {
                 current = null
-                header.hidden = true
+                name.textContent = ''
                 modes.hidden = true
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
 
-                const empty = document.createElement('div')
-                empty.className = 'dya-empty'
+                if (!message) {
+                    content.replaceChildren()
+                    return
+                }
 
-                const title = document.createElement('span')
-                title.className = 'dya-title'
-                title.textContent = 'Read a document'
-                empty.append(title)
-
-                const line = document.createElement('span')
-                line.className = message ? 'dya-text dya-text--danger' : 'dya-text'
-                line.textContent =
-                    message ?? 'Markdown with its diagrams and its highlighting, or the source behind it.'
-                empty.append(line)
-
-                const actions = document.createElement('div')
-                actions.className = 'dya-empty__actions'
-                const open = document.createElement('button')
-                open.className = 'dya-button dya-button--primary'
-                open.textContent = 'Open a document'
-                open.onclick = () => void openFile()
-                actions.append(open)
-                empty.append(actions)
-
-                content.replaceChildren(empty)
+                const line = document.createElement('div')
+                line.className = 'dya-empty dya-empty--inline dya-text--danger'
+                line.textContent = message
+                content.replaceChildren(line)
             }
 
             function openButton(): HTMLButtonElement {

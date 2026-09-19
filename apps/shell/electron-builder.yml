@@ -10,13 +10,25 @@ extraResources:
       filter:
           - dyarchia_sdk/**
     # Every plugin the shell knows about, staged by scripts/stage-plugins.mjs from each manifest.
-    # They ship enabled by nobody: the setup panel is what turns one on.
+    # The core four load on every launch; the rest are what the setup panel turns on.
     - from: build/plugins
       to: plugins
 asar: true
 win:
     target:
-        - portable
+        - nsis
     icon: null
-portable:
-    artifactName: dyarchia-${version}.exe
+# An installed application, not a portable archive. A portable build unpacks itself into
+# %TEMP%\<guid> on every launch, which made the installation directory both unfindable and
+# different each time: every plugin resolving a path against its own directory — crawlee resolves
+# its corpus, its profiles and its index that way — was writing into a folder Windows deletes.
+nsis:
+    oneClick: false
+    perMachine: false
+    allowToChangeInstallationDirectory: true
+    createDesktopShortcut: true
+    createStartMenuShortcut: true
+    shortcutName: dyarchia
+    uninstallDisplayName: dyarchia ${version}
+    deleteAppDataOnUninstall: false
+    artifactName: dyarchia-${version}-setup.exe

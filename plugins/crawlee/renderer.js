@@ -26,17 +26,23 @@ const STYLE = `
     gap: var(--dya-space-3);
     min-height: 0;
 }
+/*
+ * The head and the footer sit on the table's left edge, not on the panel's. A cell carries its own
+ * padding, so a bar flush with the panel starts a whole cell inset to the left of every value
+ * under it and nothing in the view lines up with anything.
+ */
 .crw-head {
     display: flex;
     align-items: baseline;
     gap: var(--dya-space-3);
     flex: none;
+    padding-inline: var(--dya-space-3);
 }
 .crw-headline {
     flex: 1;
 }
 .crw-corpora {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-height: 160px;
     overflow: auto;
 }
@@ -89,6 +95,14 @@ const STYLE = `
 .crw-bar {
     flex: none;
     flex-wrap: wrap;
+    gap: var(--dya-space-5);
+    padding: var(--dya-space-3);
+    border-top: var(--dya-border-width) solid var(--dya-border);
+}
+.crw-group {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
 }
 .crw-scope {
     min-width: 220px;
@@ -103,13 +117,17 @@ const STYLE = `
     flex: 1;
     min-width: 120px;
 }
+/*
+ * The output area exists while there is output. It used to hold a fifth of the panel open whether
+ * or not a round had ever run, which is the void the corpus table should have been filling.
+ */
 .crw-out {
     display: flex;
     flex: 1 1 120px;
     min-height: 120px;
 }
-.crw-out > .dya-empty {
-    flex: 1;
+.crw-out:has(> .dya-log[hidden]) {
+    display: none;
 }
 .crw-log {
     flex: 1;
@@ -365,10 +383,21 @@ function mount(ctx, container) {
         const wrap = el('div', 'crw-corpora')
         wrap.appendChild(table)
 
+        /*
+         * The footer is two groups, not six controls in a row: what the round covers, and what to
+         * do about it. They were evenly spaced with everything else, so the label, the select, the
+         * checkbox and the button read as one undifferentiated clump, and the clump started at the
+         * panel's edge while the table above started a cell's padding further in. It sits on the
+         * table's own left edge now, with a rule above it, which is what makes it a footer rather
+         * than a row of controls that happen to be last.
+         */
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
+        const scopeGroup = el('div', 'crw-group')
+        scopeGroup.append(el('span', 'dya-key-label', 'round'), scopeBox)
+
         const commitBox = el('label', 'crw-check')
         const commit = el('input', 'dya-checkbox')
         commit.type = 'checkbox'
@@ -377,22 +406,22 @@ function mount(ctx, container) {
         const run = el('button', 'dya-button dya-button--primary', 'Run')
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
-        const status = el('span', 'dya-text crw-status', '')
-        bar.append(el('span', 'dya-key-label', 'round'), scopeBox, commitBox, run, stop, status)
+        const actionGroup = el('div', 'crw-group')
+        actionGroup.append(commitBox, run, stop)
 
+        const status = el('span', 'dya-text crw-status', '')
+        bar.append(scopeGroup, actionGroup, status)
+
+        /*
+         * Nothing sits here until a round writes something. The area used to carry a title and a
+         * sentence explaining what a round is, under a bar whose RUN button is the answer to the
+         * question it was asking — a paragraph of onboarding pinned to a panel somebody opens
+         * every day.
+         */
         const out = el('div', 'crw-out')
-        const idle = el('div', 'dya-empty')
-        idle.append(
-            el('span', 'dya-title', 'Nothing has run yet'),
-            el(
-                'span',
-                'dya-text',
-                'A round visits every target in the scope above, keeps what changed, and says so line by line.'
-            )
-        )
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
-        out.append(idle, log)
+        out.append(log)
         rounds.append(head, wrap, bar, out)
 
         refresh.addEventListener('click', () => void refreshState())
@@ -416,34 +445,43 @@ function mount(ctx, container) {
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
             table.replaceChildren()
+            /*
+             * A real head and a real body: the header row is not a row somebody can hover, and the
+             * last row of the body is the one that drops its rule. Pages and size are figures, so
+             * they are read down a right edge rather than left-aligned against words.
+             */
             const labels = ['target', 'group', 'pages', 'size', 'swept', 'state']
-            const header = el('tr', 'dya-row')
+            const numeric = new Set(['pages', 'size'])
+            const thead = el('thead')
+            const header = el('tr')
             for (const label of labels) {
-                header.appendChild(el('th', undefined, label))
+                header.appendChild(el('th', numeric.has(label) ? 'dya-table__num' : undefined, label))
             }
-            table.appendChild(header)
+            thead.appendChild(header)
+            const body = el('tbody')
             for (const corpus of corpora) {
                 const row = el('tr', 'dya-row')
                 row.append(
                     el('td', 'dya-mono', corpus.name),
                     el('td', undefined, corpus.group || '-'),
-                    el('td', undefined, String(corpus.pages)),
-                    el('td', undefined, bytes(corpus.bytes)),
+                    el('td', 'dya-table__num', String(corpus.pages)),
+                    el('td', 'dya-table__num', bytes(corpus.bytes)),
                     el('td', undefined, day(corpus.swept_at)),
                     verdictCell(corpus)
                 )
                 row.querySelectorAll('td').forEach((cell, column) => {
                     cell.dataset.label = labels[column] ?? ''
                 })
-                table.appendChild(row)
+                body.appendChild(row)
             }
+            table.append(thead, body)
 
             const groups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
             scope.replaceChildren()
-            scope.appendChild(new Option('every target that asks for snapshots', 'all'))
-            for (const group of groups) scope.appendChild(new Option(`group ${group}`, `group:${group}`))
+            scope.appendChild(new Option('all targets', 'all'))
+            for (const group of groups) scope.appendChild(new Option(group, `group:${group}`))
             for (const corpus of corpora) {
-                scope.appendChild(new Option(`target ${corpus.name}`, `name:${corpus.name}`))
+                scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
             }
         }
 
@@ -467,7 +505,7 @@ function mount(ctx, container) {
             const payload = { commit: commit.checked }
             if (kind === 'group') payload.group = value
             if (kind === 'name') payload.names = [value]
-            await begin('run', payload, log, status, { run, stop, idle })
+            await begin('run', payload, log, status, { run, stop })
         }
 
         return {
@@ -781,7 +819,6 @@ function mount(ctx, container) {
         sink = into
         into.textContent = ''
         into.hidden = false
-        if (controls.idle) controls.idle.hidden = true
         controls.run.disabled = true
         if (controls.stop) controls.stop.hidden = false
         status.className = 'dya-text crw-status'

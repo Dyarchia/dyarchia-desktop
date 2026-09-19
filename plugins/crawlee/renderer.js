@@ -99,11 +99,6 @@ const STYLE = `
     padding: var(--dya-space-3);
     border-top: var(--dya-border-width) solid var(--dya-border);
 }
-.crw-group {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-}
 .crw-scope {
     min-width: 220px;
 }
@@ -395,7 +390,7 @@ function mount(ctx, container) {
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
-        const scopeGroup = el('div', 'crw-group')
+        const scopeGroup = el('div', 'dya-bar__group')
         scopeGroup.append(el('span', 'dya-key-label', 'round'), scopeBox)
 
         const commitBox = el('label', 'crw-check')
@@ -406,7 +401,7 @@ function mount(ctx, container) {
         const run = el('button', 'dya-button dya-button--primary', 'Run')
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
-        const actionGroup = el('div', 'crw-group')
+        const actionGroup = el('div', 'dya-bar__group')
         actionGroup.append(commitBox, run, stop)
 
         const status = el('span', 'dya-text crw-status', '')

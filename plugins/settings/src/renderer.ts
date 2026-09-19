@@ -136,15 +136,6 @@ const STYLES = `
     gap: var(--dya-space-2);
     margin-top: var(--dya-space-1);
 }
-.set-needs-strip {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-1);
-    flex-wrap: wrap;
-}
-.set-needs-strip > .dya-badge {
-    cursor: help;
-}
 .set-install {
     display: flex;
     align-items: center;
@@ -169,25 +160,6 @@ const STYLES = `
 .set-needs > .dya-button {
     align-self: flex-start;
     margin-top: var(--dya-space-2);
-}
-.set-included-name {
-    width: 14ch;
-    color: var(--dya-text);
-}
-.set-path-label {
-    width: 22ch;
-    text-transform: uppercase;
-    letter-spacing: var(--dya-tracking-data);
-    color: var(--dya-text-4);
-}
-.set-path-value {
-    overflow-wrap: anywhere;
-    color: var(--dya-text-2);
-}
-.set-path-action {
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
 }
 .set-foot {
     display: flex;
@@ -315,7 +287,7 @@ export function activate(ctx: PluginContext): void {
             const requires = entry.manifest.requires ?? []
             if (requires.length === 0) return
 
-            const strip = el('div', 'set-needs-strip')
+            const strip = el('div', 'dya-pills')
             for (const status of statuses) {
                 const chip = el(
                     'span',
@@ -443,7 +415,7 @@ export function activate(ctx: PluginContext): void {
 
         function renderPaths(paths: Paths): HTMLElement {
             const box = section('Where things go', '')
-            const table = el('table', 'dya-table set-paths')
+            const table = el('table', 'dya-table')
             const body = el('tbody')
 
             const rows: [string, string, boolean][] = [
@@ -453,8 +425,8 @@ export function activate(ctx: PluginContext): void {
             ]
             for (const [label, value, openable] of rows) {
                 const row = el('tr', 'dya-row')
-                row.append(el('td', 'set-path-label', label), el('td', 'set-path-value', value))
-                const last = el('td', 'set-path-action')
+                row.append(el('td', 'dya-table__key', label), el('td', undefined, value))
+                const last = el('td', 'dya-table__end')
                 if (openable) {
                     const open = el('button', 'dya-button dya-button--sm', 'Open')
                     open.addEventListener('click', () => void ctx.shell.reveal(value))
@@ -498,7 +470,7 @@ export function activate(ctx: PluginContext): void {
                 for (const entry of core) {
                     const row = el('tr', 'dya-row')
                     row.append(
-                        el('td', 'set-included-name', entry.manifest.name),
+                        el('td', 'dya-table__name', entry.manifest.name),
                         el('td', undefined, entry.manifest.description ?? '')
                     )
                     body.append(row)

@@ -13,6 +13,12 @@ import type { PluginContext } from '@dyarchia/sdk'
  * Legible means three things per plugin, in this order: what it does, what it will go and get, and
  * where what it produces ends up. The last one was missing entirely, which is how a corpus came to
  * be written into a temporary folder for a whole release without anybody being able to see it.
+ *
+ * Legible is also short. The first cut answered all three in full sentences, and a card that says
+ * everything says it in eleven lines: a lede, a description, a destination, four requirement rows
+ * each carrying an absolute path, a warning about the download and a button. What a reader needs
+ * at rest is the name, the state and the one action; the paths and the reasons are tips, one hover
+ * away, and the reader who never needs them never pays for them.
  */
 
 interface Requirement {
@@ -127,8 +133,28 @@ const STYLES = `
 .set-needs {
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-1);
+    gap: var(--dya-space-2);
     margin-top: var(--dya-space-1);
+}
+.set-needs-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-1);
+    flex-wrap: wrap;
+}
+.set-needs-strip > .dya-badge {
+    cursor: help;
+}
+.set-install {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    flex-wrap: wrap;
+}
+.set-where {
+    font-size: var(--dya-size-mono-xs);
+    cursor: help;
+    overflow-wrap: anywhere;
 }
 .set-need {
     display: flex;
@@ -299,41 +325,39 @@ export function activate(ctx: PluginContext): void {
             const requires = entry.manifest.requires ?? []
             if (requires.length === 0) return
 
+            const strip = el('div', 'set-needs-strip')
             for (const status of statuses) {
-                const row = el('div', 'set-need')
-                const badge = el(
+                const chip = el(
                     'span',
-                    `dya-badge ${status.met ? 'dya-badge--success' : 'dya-badge--warning'}`,
-                    status.met ? 'ready' : 'needed'
+                    `dya-badge ${status.met ? 'dya-badge--success' : 'dya-badge--warning'} dya-badge--soft`,
+                    status.label
                 )
-                row.append(badge, el('span', 'dya-text', status.label))
-                const oneLine = status.detail.replace(/\s+/g, ' ').trim()
-                const detail = el(
-                    'span',
-                    'dya-mono dya-text set-detail',
-                    oneLine.length > 96 ? `${oneLine.slice(0, 95)}…` : oneLine
-                )
-                if (oneLine !== status.detail.trim()) withTip(detail, status.detail.trim())
-                row.append(detail)
-                box.append(row)
+                withTip(chip, `${status.met ? 'ready' : 'needed'} — ${status.detail.replace(/\s+/g, ' ').trim()}`)
+                strip.append(chip)
             }
+            box.append(strip)
 
             const missing = statuses.filter((status) => !status.met)
             if (missing.length === 0) return
 
             if (missing.every((status) => !status.acquirable)) {
-                box.append(el('p', 'dya-text', 'This one has to be installed outside Dyarchia.'))
+                box.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'install it yourself'))
                 return
             }
 
-            const hint = requires.find((requirement) => requirement.note)?.note
-            if (hint) box.append(el('p', 'dya-text', `This downloads ${hint}`))
+            const row = el('div', 'set-install')
+            const install = el('button', 'dya-button dya-button--primary', 'Install') as HTMLButtonElement
+            row.append(install)
 
-            const install = el(
-                'button',
-                'dya-button dya-button--primary',
-                `Install what ${entry.manifest.name} needs`
-            ) as HTMLButtonElement
+            const hint = requires.find((requirement) => requirement.note)?.note
+            /* The one number in that sentence is the part somebody decides on. The sentence is
+             * the tip. */
+            if (hint) {
+                const size = /\d+(?:\.\d+)?\s*[GMK]B/i.exec(hint)?.[0]
+                const tag = el('span', 'dya-tag', size ? size.toUpperCase() : 'what it needs')
+                withTip(tag, hint)
+                row.append(tag)
+            }
             install.addEventListener('click', () => {
                 install.disabled = true
                 install.textContent = 'Installing…'
@@ -343,7 +367,7 @@ export function activate(ctx: PluginContext): void {
                     requires: entry.manifest.requires ?? []
                 })
             })
-            box.append(install)
+            box.append(row)
         }
 
         /*
@@ -380,9 +404,8 @@ export function activate(ctx: PluginContext): void {
             }
 
             if (entry.manifest.data && home) {
-                const where = el('div', 'set-need')
-                where.append(el('span', 'dya-key-label', 'Keeps its files in'))
-                where.append(el('span', 'dya-mono dya-text', under(entry.manifest.data)))
+                const where = el('span', 'dya-mono dya-text set-where', under(entry.manifest.data))
+                withTip(where, 'where what this plugin makes for you is kept')
                 body.append(where)
             }
 
@@ -423,16 +446,13 @@ export function activate(ctx: PluginContext): void {
             const box = el('section', 'set-section')
             const header = el('div', 'set-section-head')
             header.append(el('span', 'dya-eyebrow', title))
-            header.append(el('span', 'dya-text set-section-note', hint))
+            if (hint) header.append(el('span', 'dya-text set-section-note', hint))
             box.append(header)
             return box
         }
 
         function renderPaths(paths: Paths): HTMLElement {
-            const box = section(
-                'Where things go',
-                'Anything a plugin makes for you is yours and lives where you can find it.'
-            )
+            const box = section('Where things go', '')
             const list = el('div', 'set-paths')
 
             const rows: [string, string, boolean][] = [
@@ -470,21 +490,16 @@ export function activate(ctx: PluginContext): void {
             wanted.clear()
             for (const entry of optional) if (entry.enabled) wanted.add(entry.manifest.id)
 
-            lede.textContent =
-                'A terminal, a reader and a player are part of Dyarchia and always load. ' +
-                'What is below needs something this application cannot carry, so it is yours to ask for.'
+            lede.textContent = 'These two need something Dyarchia cannot carry. The rest always loads.'
 
             scroll.replaceChildren()
 
-            const choices = section(
-                'Optional',
-                'Each one installs what it needs the first time you ask for it, and says what that is before it starts.'
-            )
+            const choices = section('Optional', '')
             for (const entry of optional) choices.append(renderOptional(entry))
             scroll.append(choices)
 
             if (core.length > 0) {
-                const included = section('Included', 'Always loaded. Nothing to install.')
+                const included = section('Included', '')
                 const rows = el('div', 'set-included')
                 for (const entry of core) {
                     const row = el('div', 'dya-entry')

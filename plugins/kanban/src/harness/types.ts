@@ -41,6 +41,12 @@ export interface Progress {
     terminal: TerminalBlock | null
     error: string | null
     modifiedAt: number
+    /*
+     * The mode the session is actually in, as the session itself records it, which is not always
+     * the mode it was launched with. A driver that cannot report it leaves this null and the
+     * board asks nothing.
+     */
+    permissionMode: string | null
 }
 
 export interface HistoryRow {

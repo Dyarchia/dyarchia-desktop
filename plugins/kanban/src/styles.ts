@@ -251,7 +251,8 @@ export const STYLES = `
     min-width: 0;
 }
 
-.kanban-card > .dya-pills[hidden] { display: none; }
+.kanban-card > .dya-pills[hidden],
+.kanban-card-foot[hidden] { display: none; }
 
 .kanban-danger {
     margin-top: var(--dya-space-2);

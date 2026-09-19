@@ -655,7 +655,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (missing && !open.some((entry) => entry.slug === missing)) {
             const gone = el('div', 'dya-empty')
             gone.append(el('span', undefined, `The board '${missing}' is gone or archived.`))
-            const pick = el('button', 'dya-button', 'choose a board')
+            const pick = el('button', 'dya-button dya-button--primary', 'choose a board')
             pick.type = 'button'
             pick.addEventListener('click', () => openBoardMenu(pick))
             gone.appendChild(pick)
@@ -668,7 +668,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const buildBoardForm = (): HTMLElement => {
         const form = el('div', 'kanban-setup-form')
-        const label = el('div', 'dya-text kanban-lede', 'A board is a project. Name it and point it at a directory.')
+        const heading = el('div', 'dya-title kanban-lede', 'Make a board')
+        const label = el(
+            'div',
+            'dya-lede kanban-lede',
+            'A board is a project. Name it, point it at a directory, and its cards go to an agent working there.'
+        )
 
         const name = el('input', 'dya-field')
         name.type = 'text'
@@ -683,7 +688,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         browse.type = 'button'
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button', 'create board')
+        const create = el('button', 'dya-button dya-button--primary', 'create board')
         create.type = 'button'
 
         browse.addEventListener('click', () => {
@@ -704,7 +709,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        form.append(label, name, dirRow, create)
+        form.append(heading, label, name, dirRow, create)
         return form
     }
 
@@ -2343,7 +2348,13 @@ export function activate(ctx: PluginContext): void {
     injectStyles('kanban', `${xtermCss}
 ${STYLES}`)
     ctx.registerPanel(
-        { id: 'kanban', title: 'Kanban', icon: ICON, duplicable: true },
+        {
+            id: 'kanban',
+            title: 'Kanban',
+            icon: ICON,
+            note: 'Write a card, hand it to an agent, and watch the run as it happens.',
+            duplicable: true
+        },
         (container, handle) => mount(ctx, container, handle)
     )
 }

@@ -553,6 +553,10 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     margin-top: var(--dya-space-2);
 }
 
+.kanban-setup-form > .dya-title {
+    margin-bottom: var(--dya-space-1);
+}
+
 .kanban-stage {
     flex: none;
     height: 44%;

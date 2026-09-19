@@ -39,8 +39,9 @@ own panels — draggable, resizable, and persistent across sessions.
 - The look is not the shell's: it is kanon, the shared design system in packages/kanon,
   linked once. Plugins inherit its dya-* component classes and its tokens, and are expected
   to reference them rather than reimplement them.
-- The system carries two themes, Gi (dark) and Slate (mid-tone), switched from the title bar.
-  A theme redefines colour tokens and never rules, so no plugin reads it or branches on it.
+- The system carries two themes, Gi (warm near-black) and Rei (deep blue), switched from
+  the title bar. Both are dark. A theme redefines colour tokens and never rules, so no
+  plugin reads it or branches on it.
 
 ```mermaid
 flowchart LR
@@ -290,13 +291,15 @@ word erase.
 ## 8. Debugging
 
 With the DYARCHIA_DEBUG=1 environment variable, and always in dev, the shell exposes the
-Chrome DevTools Protocol on port 9222. The renderer publishes the dockview API on
-window.__dockApi for inspection.
+Chrome DevTools Protocol on port 9222, or on DYARCHIA_DEBUG_PORT when a second instance
+needs one of its own. The renderer publishes the dockview API on window.__dockApi for
+inspection. scripts/screenshot.mjs reads the same variable, so it reaches the instance
+that was started with it rather than whichever one took 9222 first.
 
 That port is also how a change is photographed without touching the window:
 
 ```bash
-node scripts/screenshot.mjs out.png "document.documentElement.dataset.theme = 'slate'" 800
+node scripts/screenshot.mjs out.png "document.documentElement.dataset.theme = 'rei'" 800
 ```
 
 The first argument is the PNG to write, the optional second is an expression evaluated in

@@ -24,9 +24,47 @@
 
 .dya-text--success {
     color: var(--dya-success);
-}.dya-text--danger {
+}
+
+.dya-text--danger {
     color: var(--dya-danger);
-}.dya-label,
+}
+
+/*
+ * The emphasis layer.
+ *
+ * Every other rule in this file prevents something: do not glare, do not truncate, never below
+ * 4.50. Prohibitions reliably produce a screen where nothing is wrong and nothing is first, which
+ * is what a panel of this system looked like — labels, values, rows and headings all quiet, and
+ * the eye with nowhere to land. These five say what matters instead of what is forbidden.
+ *
+ * A title is a size and a tracking, never a weight: hierarchy in this system comes from the type
+ * scale and the ink rank, and reaching for 500 is how a screen ends up with four kinds of bold and
+ * still no order.
+ */
+.dya-title {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight);
+    letter-spacing: var(--dya-tracking-h3);
+    line-height: var(--dya-leading-heading);
+    color: var(--dya-text);
+}
+
+.dya-title--lg {
+    font-size: var(--dya-size-h2);
+    letter-spacing: var(--dya-tracking-h2);
+}
+
+.dya-lede {
+    max-width: 68ch;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
+}
+
+.dya-label,
 .dya-eyebrow {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-label-sm);
@@ -73,7 +111,9 @@
     font-size: var(--dya-size-mono);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
-}.dya-math {
+}
+
+.dya-math {
     font-family: var(--dya-font-mono);
     font-size: 0.94em;
     letter-spacing: var(--dya-tracking-mono);
@@ -95,7 +135,9 @@
 .dya-prose__scroll {
     margin: 0 0 var(--dya-space-3);
     overflow-x: auto;
-}.dya-code {
+}
+
+.dya-code {
     display: block;
     margin: 0 0 var(--dya-space-3);
     padding: var(--dya-space-3);
@@ -154,7 +196,9 @@
     color: var(--dya-text-3);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-}.dya-bar {
+}
+
+.dya-bar {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
@@ -165,7 +209,9 @@
     height: 38px;
     background: var(--dya-grad-bar);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
-}.dya-bar--flush {
+}
+
+.dya-bar--flush {
     padding-right: 0;
 }
 
@@ -191,7 +237,9 @@
     padding: 0 var(--dya-space-3);
     background: var(--dya-grad-header);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
-}.dya-brand {
+}
+
+.dya-brand {
     display: inline-flex;
     align-items: center;
     gap: var(--dya-space-2);
@@ -272,6 +320,20 @@
     color: var(--dya-text-2);
 }
 
+/*
+ * The one action a screen is about. At most one per view: a second primary is two firsts, which is
+ * none. It is the only filled control in the system that is not a status, and the hover step is a
+ * token rather than a filter because a transition may name background-color and nothing else.
+ */
+.dya-button--primary {
+    background: var(--dya-accent);
+    color: var(--dya-on-accent);
+}
+
+.dya-button--primary:hover {
+    background-color: var(--dya-accent-hover);
+}
+
 .dya-button--bare {
     height: auto;
     padding: 0;
@@ -303,7 +365,64 @@
 }
 
 .dya-button--danger:hover {
-    background-color: var(--dya-danger);
+    background-color: var(--dya-danger-hover);
+}
+
+/*
+ * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
+ * nothing on it yet offers what to do next, rather than stating that there is nothing — which is
+ * the shape every empty state in this application had.
+ */
+.dya-tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    padding: var(--dya-space-4);
+    border: none;
+    border-radius: var(--dya-radius);
+    background: var(--dya-raised);
+    box-shadow: var(--dya-elev-raised);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        transform var(--dya-dur-press) var(--dya-ease-press),
+        background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-tile:hover {
+    background-color: var(--dya-raised-hover);
+}
+
+.dya-tile:active {
+    transform: translateY(var(--dya-press-y));
+}
+
+.dya-tile__icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+    color: var(--dya-accent);
+}
+
+.dya-tile__icon > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.dya-tile__name {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label);
+    letter-spacing: var(--dya-tracking-label);
+    text-transform: uppercase;
+    color: var(--dya-text);
+}
+
+.dya-tile__note {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
 }
 
 .dya-key {
@@ -373,7 +492,9 @@
 
 .dya-chip:active {
     transform: translateY(var(--dya-press-y));
-}.dya-entry {
+}
+
+.dya-entry {
     display: block;
     width: 100%;
     padding: 3px var(--dya-space-3);
@@ -400,7 +521,9 @@
 
 .dya-entry:active {
     transform: scale(var(--dya-press-scale));
-}.dya-entry--active {
+}
+
+.dya-entry--active {
     background-color: var(--dya-selected);
     box-shadow: inset 2px 0 0 var(--dya-accent);
     color: var(--dya-text);
@@ -469,7 +592,9 @@ textarea.dya-field {
     border-bottom: 1.5px solid var(--dya-text-4);
     transform: translateY(-70%) rotate(45deg);
     pointer-events: none;
-}.dya-checkbox {
+}
+
+.dya-checkbox {
     appearance: none;
     display: grid;
     place-items: center;
@@ -480,7 +605,9 @@ textarea.dya-field {
     border-radius: var(--dya-radius-sm);
     background: var(--dya-sunken);
     cursor: pointer;
-}.dya-checkbox::after {
+}
+
+.dya-checkbox::after {
     content: "";
     width: 7px;
     height: 4px;
@@ -489,11 +616,17 @@ textarea.dya-field {
     transform: rotate(-45deg) translate(0.5px, -1px);
     opacity: 0;
     transition: opacity var(--dya-dur-fast) var(--dya-ease);
-}.dya-checkbox:checked {
+}
+
+.dya-checkbox:checked {
     border-color: var(--dya-accent);
-}.dya-checkbox:checked::after {
+}
+
+.dya-checkbox:checked::after {
     opacity: 1;
-}.dya-tag {
+}
+
+.dya-tag {
     display: inline-flex;
     align-items: center;
     gap: 3px;
@@ -590,7 +723,9 @@ textarea.dya-field {
 
 .dya-row:hover {
     background-color: var(--dya-surface-2);
-}.dya-menu {
+}
+
+.dya-menu {
     padding: 5px;
     border-radius: var(--dya-radius);
     background: var(--dya-overlay);
@@ -629,7 +764,9 @@ textarea.dya-field {
 .dya-menu__item--selected {
     background-color: var(--dya-selected);
     color: var(--dya-text);
-}.dya-menu__shortcut {
+}
+
+.dya-menu__shortcut {
     margin-left: auto;
     letter-spacing: 0.08em;
     color: var(--dya-text-3);
@@ -654,7 +791,9 @@ textarea.dya-field {
     line-height: var(--dya-leading-body);
     color: var(--dya-text-2);
     overflow-wrap: anywhere;
-}.dya-tabs {
+}
+
+.dya-tabs {
     display: flex;
     align-items: stretch;
     gap: var(--dya-space-4);
@@ -681,7 +820,9 @@ textarea.dya-field {
 .dya-tab[aria-selected="true"] {
     border-bottom-color: var(--dya-accent);
     color: var(--dya-text);
-}.dya-empty,
+}
+
+.dya-empty,
 .dya-loading {
     display: flex;
     flex-direction: column;
@@ -700,7 +841,22 @@ textarea.dya-field {
 .dya-empty > span,
 .dya-loading > span {
     max-width: 44ch;
-}.dya-sr-only {
+}
+
+/*
+ * What to do about it. An empty state that only says the view is empty has described the problem
+ * and left; this is where the answer goes, and it is a row so that the obvious action and the
+ * secondary one sit side by side rather than stacked into a list of equals.
+ */
+.dya-empty__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--dya-space-2);
+    flex-wrap: wrap;
+}
+
+.dya-sr-only {
     position: absolute;
     width: 1px;
     height: 1px;

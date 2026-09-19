@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { PanelDescriptor } from '../panels/registry'
 import { THEMES } from '../theme'
 
@@ -26,7 +26,58 @@ function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
     return <span className="topbar-icon-text">{icon}</span>
 }
 
-const VISIBLE_TOGGLES = 3
+/*
+ * An icon with nothing but a `title` is a control whose name arrives a second late, in the
+ * operating system's own tooltip, in a font that belongs to nothing here. Every icon-only control
+ * in this bar is a key with an accessible name and a hint popover the browser anchors to it —
+ * native in this Chromium, no library and no positioning code.
+ */
+interface KeyProps {
+    label: string
+    hint?: string
+    active?: boolean
+    className?: string
+    onClick: () => void
+    children: React.ReactNode
+    expanded?: boolean
+}
+
+function TipKey({
+    label,
+    hint,
+    active,
+    className,
+    onClick,
+    children,
+    expanded
+}: KeyProps): React.JSX.Element {
+    const id = `tip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+    return (
+        <>
+            <button
+                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}`}
+                aria-label={label}
+                aria-pressed={expanded === undefined ? active : undefined}
+                aria-haspopup={expanded === undefined ? undefined : 'menu'}
+                aria-expanded={expanded}
+                interestfor={id}
+                onClick={onClick}
+            >
+                {children}
+            </button>
+            <div className="dya-tip" popover="hint" id={id}>
+                {hint ?? label}
+            </div>
+        </>
+    )
+}
+
+/*
+ * How many panels get their own key before the rest go behind the overflow. Six is every plugin
+ * this application ships, which is the point: on the installation it was built for, nothing is one
+ * click further away than anything else. The menu is there for the machine that adds more.
+ */
+const VISIBLE_TOGGLES = 6
 
 function windowAction(action: string): void {
     void window.dyarchia?.invoke(`shell:window:${action}`)
@@ -78,33 +129,29 @@ export function TopBar({
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {visible.map((panel) => (
-                        <button
+                        <TipKey
                             key={panel.id}
-                            className={
-                                openPanelIds.has(panel.id) ? 'dya-key dya-key--active' : 'dya-key'
-                            }
-                            title={panel.title}
+                            label={panel.title}
+                            hint={panel.note ?? panel.title}
+                            active={openPanelIds.has(panel.id)}
                             onClick={() => onToggle(panel.id)}
                         >
                             <PanelIcon icon={panel.icon} />
-                        </button>
+                        </TipKey>
                     ))}
                     {overflow.length > 0 && (
                         <div className="topbar-overflow" ref={overflowRef}>
-                            <button
-                                className={
-                                    overflowHasOpen ? 'dya-key dya-key--active' : 'dya-key'
-                                }
-                                title="More panels"
-                                aria-haspopup="menu"
-                                aria-expanded={menuOpen}
+                            <TipKey
+                                label="More panels"
+                                active={overflowHasOpen}
+                                expanded={menuOpen}
                                 onClick={() => setMenuOpen((open) => !open)}
                             >
                                 <span
                                     className="topbar-icon"
                                     dangerouslySetInnerHTML={{ __html: OVERFLOW_ICON }}
                                 />
-                            </button>
+                            </TipKey>
                             {menuOpen && (
                                 <div className="dya-menu topbar-menu" role="menu">
                                     {overflow.map((panel) => (
@@ -132,38 +179,35 @@ export function TopBar({
                 </div>
                 <div className="topbar-themes" role="group" aria-label="Theme">
                     {THEMES.map((entry) => (
-                        <button
+                        <TipKey
                             key={entry.id}
-                            className={
-                                entry.id === theme ? 'dya-key dya-key--active' : 'dya-key'
-                            }
-                            title={entry.label}
-                            aria-pressed={entry.id === theme}
+                            label={`${entry.label} theme`}
+                            active={entry.id === theme}
                             onClick={() => onThemeChange(entry.id)}
                         >
                             <span
                                 className="topbar-icon"
                                 dangerouslySetInnerHTML={{ __html: entry.icon }}
                             />
-                        </button>
+                        </TipKey>
                     ))}
                 </div>
                 <div className="topbar-window-controls">
                     <button
                         className="topbar-winbtn"
-                        title="Minimize"
+                        aria-label="Minimize"
                         onClick={() => windowAction('minimize')}
                         dangerouslySetInnerHTML={{ __html: MINIMIZE_ICON }}
                     />
                     <button
                         className="topbar-winbtn"
-                        title="Maximize"
+                        aria-label="Maximize"
                         onClick={() => windowAction('toggle-maximize')}
                         dangerouslySetInnerHTML={{ __html: MAXIMIZE_ICON }}
                     />
                     <button
                         className="topbar-winbtn topbar-winbtn-close"
-                        title="Close"
+                        aria-label="Close"
                         onClick={() => windowAction('close')}
                         dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
                     />

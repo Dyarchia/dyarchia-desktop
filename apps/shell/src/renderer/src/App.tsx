@@ -103,7 +103,7 @@ export function App(): React.JSX.Element {
             />
             <div className="shell-body">
                 {pluginsReady ? (
-                    <DockLayout onReady={handleReady} />
+                    <DockLayout onReady={handleReady} onOpen={handleOpen} />
                 ) : (
                     <div className="dya-loading shell-loading">
                         <span className="dya-carved">dyarchia</span>

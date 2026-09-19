@@ -57,10 +57,6 @@ const STYLES = `
     width: 14px;
     height: 14px;
 }
-.docviewer-open--lg svg {
-    width: 28px;
-    height: 28px;
-}
 .docviewer-content--empty {
     display: flex;
     align-items: center;
@@ -203,7 +199,13 @@ export function activate(ctx: PluginContext): void {
     })
 
     ctx.registerPanel(
-        { id: 'docviewer', title: 'Docs', icon: DOCS_ICON, duplicable: true },
+        {
+            id: 'docviewer',
+            title: 'Docs',
+            icon: DOCS_ICON,
+            note: 'Read markdown with its diagrams and its code, or the source behind it.',
+            duplicable: true
+        },
         (container) => {
             injectStyles(ctx.pluginId, STYLES)
 
@@ -255,27 +257,46 @@ export function activate(ctx: PluginContext): void {
                 void renderCurrent()
             }
 
+            /*
+             * An empty panel is the moment to say what this one is for and offer the one thing it
+             * does, not a bare icon floating in the middle of a void with no label on it. The
+             * failure case keeps the same shape: the sentence changes, the way out does not.
+             */
             function showEmpty(message?: string): void {
                 current = null
                 header.hidden = true
                 modes.hidden = true
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
+
                 const empty = document.createElement('div')
                 empty.className = 'dya-empty'
-                empty.append(openButton(true))
-                if (message) {
-                    const label = document.createElement('span')
-                    label.textContent = message
-                    empty.append(label)
-                }
+
+                const title = document.createElement('span')
+                title.className = 'dya-title'
+                title.textContent = 'Read a document'
+                empty.append(title)
+
+                const line = document.createElement('span')
+                line.className = message ? 'dya-text dya-text--danger' : 'dya-text'
+                line.textContent =
+                    message ?? 'Markdown with its diagrams and its highlighting, or the source behind it.'
+                empty.append(line)
+
+                const actions = document.createElement('div')
+                actions.className = 'dya-empty__actions'
+                const open = document.createElement('button')
+                open.className = 'dya-button dya-button--primary'
+                open.textContent = 'Open a document'
+                open.onclick = () => void openFile()
+                actions.append(open)
+                empty.append(actions)
+
                 content.replaceChildren(empty)
             }
 
-            function openButton(large = false): HTMLButtonElement {
+            function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = large
-                    ? 'dya-button dya-button--bare docviewer-open docviewer-open--lg'
-                    : 'dya-button dya-button--bare docviewer-open'
+                button.className = 'dya-button dya-button--bare docviewer-open'
                 button.title = 'Open document'
                 button.setAttribute('aria-label', 'Open document')
                 button.innerHTML = DOCS_ICON

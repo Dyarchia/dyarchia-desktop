@@ -39,10 +39,6 @@ const STYLES = `
     width: 14px;
     height: 14px;
 }
-.player-open--lg svg {
-    width: 28px;
-    height: 28px;
-}
 .player-stage {
     flex: 1;
     min-height: 0;
@@ -71,7 +67,13 @@ const STYLES = `
 
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
-        { id: 'player', title: 'Player', icon: PLAYER_ICON, duplicable: true },
+        {
+            id: 'player',
+            title: 'Player',
+            icon: PLAYER_ICON,
+            note: 'Play audio and video from this machine, without leaving the window.',
+            duplicable: true
+        },
         (container) => {
             injectStyles(ctx.pluginId, STYLES)
 
@@ -92,11 +94,9 @@ export function activate(ctx: PluginContext): void {
 
             let busy = false
 
-            function openButton(large = false): HTMLButtonElement {
+            function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = large
-                    ? 'dya-button dya-button--bare player-open player-open--lg'
-                    : 'dya-button dya-button--bare player-open'
+                button.className = 'dya-button dya-button--bare player-open'
                 button.title = 'Open media'
                 button.setAttribute('aria-label', 'Open media')
                 button.innerHTML = PLAYER_ICON
@@ -104,16 +104,35 @@ export function activate(ctx: PluginContext): void {
                 return button
             }
 
+            /*
+             * The same shape as every other empty panel in this application: what it is for, one
+             * line, and the action. It used to be an unlabelled icon in the middle of the stage.
+             */
             function showEmpty(message?: string): void {
                 header.hidden = true
+
                 const empty = document.createElement('div')
                 empty.className = 'dya-empty'
-                empty.append(openButton(true))
-                if (message) {
-                    const label = document.createElement('span')
-                    label.textContent = message
-                    empty.append(label)
-                }
+
+                const title = document.createElement('span')
+                title.className = 'dya-title'
+                title.textContent = 'Play something'
+                empty.append(title)
+
+                const line = document.createElement('span')
+                line.className = message ? 'dya-text dya-text--danger' : 'dya-text'
+                line.textContent = message ?? 'Audio or video from this machine, in this window.'
+                empty.append(line)
+
+                const actions = document.createElement('div')
+                actions.className = 'dya-empty__actions'
+                const open = document.createElement('button')
+                open.className = 'dya-button dya-button--primary'
+                open.textContent = 'Open a file'
+                open.onclick = () => void openMedia()
+                actions.append(open)
+                empty.append(actions)
+
                 stage.replaceChildren(empty)
             }
 

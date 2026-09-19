@@ -276,7 +276,14 @@ function firstUrl(yaml) {
 
 export function activate(ctx) {
     injectStyles(ctx.pluginId, STYLE)
-    ctx.registerPanel({ id: 'crawlee', title: 'Crawlee', icon: ICON }, (container) =>
+    ctx.registerPanel(
+        {
+            id: 'crawlee',
+            title: 'Crawlee',
+            icon: ICON,
+            note: 'Snapshot documentation on a schedule and search everything it has kept.'
+        },
+        (container) =>
         mount(ctx, container)
     )
 }
@@ -367,14 +374,22 @@ function mount(ctx, container) {
         commit.type = 'checkbox'
         commit.checked = true
         commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = el('button', 'dya-button', 'Run')
+        const run = el('button', 'dya-button dya-button--primary', 'Run')
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
         const status = el('span', 'dya-text crw-status', '')
         bar.append(el('span', 'dya-key-label', 'round'), scopeBox, commitBox, run, stop, status)
 
         const out = el('div', 'crw-out')
-        const idle = el('div', 'dya-empty', 'nothing has run yet')
+        const idle = el('div', 'dya-empty')
+        idle.append(
+            el('span', 'dya-title', 'Nothing has run yet'),
+            el(
+                'span',
+                'dya-text',
+                'A round visits every target in the scope above, keeps what changed, and says so line by line.'
+            )
+        )
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
         out.append(idle, log)
@@ -513,7 +528,7 @@ function mount(ctx, container) {
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
-        const go = el('button', 'dya-button', 'Search')
+        const go = el('button', 'dya-button dya-button--primary', 'Search')
         bar.append(query, scopeBox, go)
 
         const hits = el('div', 'crw-hits')

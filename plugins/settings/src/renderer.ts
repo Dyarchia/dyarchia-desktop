@@ -471,7 +471,7 @@ export function activate(ctx: PluginContext): void {
                     const row = el('tr', 'dya-row')
                     row.append(
                         el('td', 'dya-table__name', entry.manifest.name),
-                        el('td', undefined, entry.manifest.description ?? '')
+                        el('td', 'dya-table__prose', entry.manifest.description ?? '')
                     )
                     body.append(row)
                 }

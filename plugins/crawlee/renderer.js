@@ -159,6 +159,16 @@ const STYLE = `
     resize: none;
     tab-size: 2;
 }
+.crw-yaml[hidden] {
+    display: none;
+}
+/*
+ * With nothing picked there is no profile to edit and nothing for the bar to act on, so the
+ * column is empty and the list is the whole view. The bar comes back with the target.
+ */
+.crw-editor[data-empty='true'] > .crw-bar {
+    display: none;
+}
 /* Beside a profile the log is a footnote, not the subject: it takes the room its lines need and
    no more, so an empty one does not hold half the panel open for nothing. */
 .crw-editor .crw-log {
@@ -567,7 +577,7 @@ function mount(ctx, container) {
 
     function buildSearch() {
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
-        const query = el('input', 'dya-field crw-query')
+        const query = el('input', 'dya-field dya-field--prose crw-query')
         query.type = 'search'
         query.placeholder = 'ask it in words, enter to search'
         query.spellcheck = false
@@ -670,8 +680,14 @@ function mount(ctx, container) {
         const list = el('div', 'crw-list')
         const editor = el('div', 'crw-editor')
 
+        /*
+         * Nothing is picked yet, so there is nothing to inspect, nothing to save and no profile to
+         * edit. The bar used to carry two live buttons that answered with a sentence saying they
+         * had nothing to work on, above an empty box holding four fifths of the panel open — the
+         * same void the round output grew out of. The editor exists once a target does.
+         */
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
-        const title = el('span', 'dya-mono crw-status', 'pick a target, or add one')
+        const title = el('span', 'dya-mono crw-status')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')
         bar.append(title, inspect, save)
@@ -688,6 +704,15 @@ function mount(ctx, container) {
         targets.appendChild(split)
 
         let current = null
+
+        function picked(name) {
+            current = name
+            title.textContent = name ?? ''
+            yaml.hidden = name === null
+            editor.dataset.empty = String(name === null)
+        }
+
+        picked(null)
 
         inspect.addEventListener('click', () => void probe())
         save.addEventListener('click', () => void write())
@@ -717,8 +742,7 @@ function mount(ctx, container) {
             say('')
             try {
                 yaml.value = await ctx.invoke('show', name)
-                current = name
-                title.textContent = name
+                picked(name)
                 mark(name)
             } catch (error) {
                 say(String(error), false)
@@ -732,10 +756,7 @@ function mount(ctx, container) {
         }
 
         async function write() {
-            if (!current) {
-                say('nothing to save: pick a target or add one', false)
-                return
-            }
+            if (!current) return
             say('saving…')
             try {
                 say(String(await ctx.invoke('save', current, yaml.value)), true)
@@ -776,7 +797,7 @@ function mount(ctx, container) {
                 ['group', 'group', 'docs-labs'],
                 ['description', 'description', 'what this corpus is'],
             ]) {
-                const input = el('input', 'dya-field')
+                const input = el('input', `dya-field${key === 'description' ? ' dya-field--prose' : ''}`)
                 input.placeholder = placeholder
                 fields[key] = input
                 node.append(el('span', 'dya-key-label', label), input)

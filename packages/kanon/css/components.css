@@ -400,6 +400,24 @@
 }
 
 /*
+ * A destructive action is not an emphasis. A filled danger button is exactly as loud as the one
+ * primary a view is allowed, so spending it on delete makes the most destructive control the
+ * first thing the eye lands on — which is what every panel here did, with a red DELETE beside a
+ * grey MOVE. Quiet danger is the ordinary shape: a button that looks like a button, with an ink
+ * that says what it does, `--dya-danger` over `--dya-raised` at 7.09 in both themes and 6.11 and
+ * 5.80 on the hover step. The fill is for the confirmation, where destroying is the action being
+ * asked for rather than one of several offered.
+ */
+.dya-button--danger.dya-button--quiet {
+    background: var(--dya-raised);
+    color: var(--dya-danger);
+}
+
+.dya-button--danger.dya-button--quiet:hover {
+    background-color: var(--dya-raised-hover);
+}
+
+/*
  * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
  * nothing on it yet offers what to do next, rather than stating that there is nothing — which is
  * the shape every empty state in this application had.
@@ -641,6 +659,30 @@ textarea.dya-field {
 }
 
 /*
+ * A sentence, inside something this system sets in mono.
+ *
+ * Mono is for data — a path, a model name, a log line, a column of figures — and the field and
+ * the table are both mono because most of what they hold is data. A title someone typed, a brief,
+ * a description is prose, and prose set in mono at a tracking meant for identifiers reads as a
+ * ransom note: every word the same width and every letter held apart from the next. The eye stops
+ * reading words and starts reading characters.
+ *
+ * The rule the system already states is that interface text is uppercase and data keeps its case.
+ * This is the third case it never named: prose is neither, and it is sans.
+ */
+.dya-field--prose {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    line-height: var(--dya-leading-body);
+    letter-spacing: normal;
+}
+
+/* Sans is wider than the mono a small field was measured against, so it steps down a size. */
+.dya-field--sm.dya-field--prose {
+    font-size: var(--dya-size-body-sm);
+}
+
+/*
  * A form is a two-column grid: what the field is called, and the field. Nothing else.
  *
  * The system had no form, so every consumer invented one, and each of them reached for the same
@@ -660,7 +702,13 @@ textarea.dya-field {
     justify-self: start;
 }
 
-.dya-form > .dya-label[interestfor] {
+/*
+ * A label that carries a tip, wherever it is. A sentence explaining a control does not go inside
+ * the control — a field whose placeholder reads "seconds, blank for none" is an instruction
+ * standing where the value goes, and it vanishes the moment anyone types. It goes on the label,
+ * and the dotted underline is what says there is one to read.
+ */
+.dya-label[interestfor] {
     cursor: help;
     text-decoration: underline dotted var(--dya-border-strong);
     text-underline-offset: 3px;
@@ -994,6 +1042,13 @@ textarea.dya-field {
 /* A column of figures is read down, so it is aligned down its right edge. */
 .dya-table .dya-table__num {
     text-align: right;
+}
+
+/* The cell that holds a sentence rather than a value. See `field--prose`. */
+.dya-table .dya-table__prose {
+    font-family: var(--dya-font-sans);
+    letter-spacing: normal;
+    color: var(--dya-text);
 }
 
 /*

@@ -352,9 +352,9 @@ wrong in ways the first consumer discovers rather than the author.
 Structure    pane bar (--flush --inset __group) card card__header masthead brand carved
 Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (--dense __icon __head __name __note)
-Input        field (--sm --auto) checkbox form (__actions __push)
+Input        field (--sm --auto --prose) checkbox form (__actions __push)
 Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
-             pills table (__num __fit __key __name __end) row
+             pills table (__num __fit __key __name __end __prose) row
              stat (__figure __value __unit __text __note) meter (__pip)
              title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
@@ -471,6 +471,16 @@ Getting the two backwards is how a table of paths ends up shouting the word PATH
 came to read the path. `__fit` is the width both share and nothing else, `__end` is that width at
 the end of the row, where an action sits, and a `td` wraps anywhere, because a table cell that
 makes a panel scroll sideways to read a path is unusable at panel width.
+
+**Prose is sans, and it is the third case the case rule never named.** The system says interface
+text is uppercase and data keeps its case; it had nothing to say about a sentence somebody typed.
+The field and the table are both mono, because most of what they hold is data — a path, a model
+name, a log line, a column of figures — and a sentence set in mono at a tracking meant for
+identifiers reads as a ransom note: every word the same width, every letter held off the next,
+the eye reading characters instead of words. `field--prose` and `table__prose` are the two places
+a consumer needs it: a title, a brief, a note, a query, a description. `--sm --prose` steps down
+to `--dya-size-body-sm`, because sans is wider than the mono the small field was measured
+against.
 
 Four distinctions in that list are easy to collapse and are not the same thing:
 

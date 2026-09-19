@@ -188,7 +188,8 @@ async function progress(_place: string, run: Run): Promise<Progress | null> {
         lastText: (reading.texts[reading.texts.length - 1] ?? '').trim(),
         terminal: parseTerminal(text),
         error,
-        modifiedAt: held.modifiedAt
+        modifiedAt: held.modifiedAt,
+        permissionMode: null
     }
 }
 
@@ -221,6 +222,7 @@ export const driver: Driver = {
     waiting: () => false,
     orphaned: (run) => hosted.orphaned(run),
     stop: (run) => hosted.stop(run),
+    release: (run) => hosted.stop(run),
     progress,
     history,
     attach: async (run) => {

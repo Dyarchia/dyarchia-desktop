@@ -210,20 +210,52 @@ export const STYLES = `
     gap: var(--dya-space-2);
 }
 
+/*
+ * The one thing a reader scans a column for, so it is a step above everything under it: 13px
+ * against the 10px of the two lines below, which is the separation a card had none of when its
+ * title, its runner and its note were all 12px grey.
+ *
+ * And it is sans, because a card title is a sentence a person wrote. It was mono, at a tracking
+ * meant for identifiers, which turned a column of tasks into a column of ransom notes — every
+ * word the same width, every letter held off the next, the eye reading characters instead of
+ * words. Mono is for the two lines under it, which are data: a harness, a model, a count, an age.
+ */
 .kanban-card-title {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
     line-height: var(--dya-leading-body);
     color: var(--dya-text);
     overflow-wrap: anywhere;
 }
+
+.kanban-card-who {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-2);
+    min-width: 0;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
+.kanban-card-who[hidden] { display: none; }
+
+.kanban-card-harness { color: var(--dya-text-4); }
+
+.kanban-card-model { color: var(--dya-text-2); }
 
 .kanban-card-foot {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
     min-width: 0;
+}
+
+.kanban-card > .dya-pills[hidden],
+.kanban-card-foot[hidden] { display: none; }
+
+.kanban-danger {
+    margin-top: var(--dya-space-2);
 }
 
 .kanban-dot {
@@ -244,6 +276,10 @@ export const STYLES = `
 .kanban-card-note {
     flex: 1;
     min-width: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 3px var(--dya-space-2);
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-label-sm);
     letter-spacing: var(--dya-tracking-mono);
@@ -349,6 +385,20 @@ export const STYLES = `
     gap: var(--dya-space-1);
 }
 
+/*
+ * A group's name and the one control that acts on the group, on one line. Three sections spent a
+ * whole line on a label with a single button under it — three labels, three buttons, six lines
+ * for six words.
+ */
+.kanban-group-head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-3);
+    flex-wrap: wrap;
+}
+
+.kanban-group-head > .dya-label { flex: none; }
+
 .kanban-group > .dya-button { align-self: flex-start; }
 
 .kanban-row {
@@ -374,10 +424,6 @@ export const STYLES = `
 .kanban-body-field {
     min-height: 96px;
     resize: vertical;
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body);
-    line-height: var(--dya-leading-body);
-    letter-spacing: normal;
 }
 
 .kanban-settings {
@@ -406,11 +452,9 @@ export const STYLES = `
 
 .kanban-settings > .kanban-select { justify-self: stretch; }
 
+/* A cell in the settings grid. What it looks like is dya-label; this is only where it sits. */
 .kanban-setting {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-3);
+    justify-self: start;
 }
 
 .kanban-file {

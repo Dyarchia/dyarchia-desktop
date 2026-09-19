@@ -3,6 +3,7 @@ import * as claude from './claude.js'
 import * as codex from './codex.js'
 import * as grok from './grok.js'
 import * as opencode from './opencode.js'
+import { HARNESS_IDS } from './ids.js'
 import type { Driver, Fleet } from './types.js'
 
 const DRIVERS: Record<HarnessId, Driver> = {
@@ -12,13 +13,9 @@ const DRIVERS: Record<HarnessId, Driver> = {
     opencode: opencode.driver
 }
 
-export const HARNESSES = Object.keys(DRIVERS) as HarnessId[]
+export const HARNESSES: HarnessId[] = [...HARNESS_IDS]
 
-export const DEFAULT_HARNESS: HarnessId = 'claude'
-
-export function isHarness(value: unknown): value is HarnessId {
-    return typeof value === 'string' && value in DRIVERS
-}
+export { DEFAULT_HARNESS, isHarness } from './ids.js'
 
 export function driver(id: HarnessId): Driver {
     return DRIVERS[id]

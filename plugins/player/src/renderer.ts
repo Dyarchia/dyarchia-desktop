@@ -80,9 +80,14 @@ export function activate(ctx: PluginContext): void {
             const root = document.createElement('div')
             root.className = 'player'
 
+            /*
+             * The bar stays. It used to hide itself whenever the panel had nothing open, which is
+             * exactly when the only control that matters — open something — needs to be reachable,
+             * and it is why the empty panel had to grow a button of its own in the middle of it.
+             * The panel is simply empty now, with its bar where every other panel's bar is.
+             */
             const header = document.createElement('div')
             header.className = 'player-header'
-            header.hidden = true
             const name = document.createElement('span')
             name.className = 'dya-mono player-name'
             header.append(name)
@@ -104,36 +109,19 @@ export function activate(ctx: PluginContext): void {
                 return button
             }
 
-            /*
-             * The same shape as every other empty panel in this application: what it is for, one
-             * line, and the action. It used to be an unlabelled icon in the middle of the stage.
-             */
+            /* An empty stage is empty; only a failure has anything to say. */
             function showEmpty(message?: string): void {
-                header.hidden = true
+                name.textContent = ''
 
-                const empty = document.createElement('div')
-                empty.className = 'dya-empty'
+                if (!message) {
+                    stage.replaceChildren()
+                    return
+                }
 
-                const title = document.createElement('span')
-                title.className = 'dya-title'
-                title.textContent = 'Play something'
-                empty.append(title)
-
-                const line = document.createElement('span')
-                line.className = message ? 'dya-text dya-text--danger' : 'dya-text'
-                line.textContent = message ?? 'Audio or video from this machine, in this window.'
-                empty.append(line)
-
-                const actions = document.createElement('div')
-                actions.className = 'dya-empty__actions'
-                const open = document.createElement('button')
-                open.className = 'dya-button dya-button--primary'
-                open.textContent = 'Open a file'
-                open.onclick = () => void openMedia()
-                actions.append(open)
-                empty.append(actions)
-
-                stage.replaceChildren(empty)
+                const line = document.createElement('div')
+                line.className = 'dya-empty dya-empty--inline dya-text--danger'
+                line.textContent = message
+                stage.replaceChildren(line)
             }
 
             async function openMedia(): Promise<void> {

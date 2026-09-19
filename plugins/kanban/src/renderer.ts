@@ -2290,6 +2290,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const boardsGroup = el('div', 'kanban-group')
         boardsGroup.append(el('span', 'dya-label', 'boards'))
+        const boardsTable = el('table', 'dya-table')
+        const boardsBody = el('tbody')
         /*
          * A count of zero is not news. Five of them joined by middots is a line that says nothing
          * and takes the width to say it, which is what this row was: "0 ready · 0 blocked · 0 in
@@ -2297,10 +2299,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * one word.
          */
         for (const entry of shape.boards) {
-            const row = el('div', 'kanban-run')
+            const row = el('tr', 'dya-row')
+
+            const first = el('td', 'kanban-cell-name')
             const dot = el('span', 'kanban-dot')
             dot.dataset.tone = entry.running ? 'accent' : 'idle'
-            row.append(dot, el('span', 'dya-text kanban-run-name', entry.name))
+            first.append(dot, el('span', undefined, entry.name))
+            row.append(first)
 
             const tallies: [number, string][] = [
                 [entry.running, `of ${entry.cap} running`],
@@ -2310,16 +2315,24 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 [entry.counts.todo + entry.counts.triage + entry.counts.scheduled, 'waiting']
             ]
             const shown = tallies.filter(([n]) => n > 0)
+            const middle = el('td')
             if (shown.length === 0) {
-                row.append(el('span', 'kanban-card-note', 'idle'))
+                middle.append(el('span', 'kanban-tally', 'idle'))
             } else {
                 for (const [n, word] of shown) {
-                    row.append(el('span', 'kanban-tally', `${n} ${word}`))
+                    middle.append(el('span', 'kanban-tally', `${n} ${word}`))
                 }
             }
-            if (entry.cap === 0) row.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
-            boardsGroup.appendChild(row)
+            row.append(middle)
+
+            const last = el('td', 'kanban-cell-end')
+            if (entry.cap === 0) last.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
+            row.append(last)
+
+            boardsBody.appendChild(row)
         }
+        boardsTable.append(boardsBody)
+        boardsGroup.appendChild(boardsTable)
         holder.appendChild(boardsGroup)
 
         const runsGroup = el('div', 'kanban-group')
@@ -2354,8 +2367,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * useful thing on the line, while the card's actual name sat last and dimmest. When that
          * happens the detail is the name, so the two swap and the id goes to a tip.
          */
+        const logTable = el('table', 'dya-table')
+        const logBody = el('tbody')
         for (const row of shape.decisions) {
-            const line = el('div', 'kanban-run')
+            const line = el('tr', 'dya-row')
             const gone = row.title === row.cardId
             const lead = gone && row.detail ? row.detail : row.title
             const rest = gone && row.detail ? '' : row.detail
@@ -2364,11 +2379,14 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             dot.dataset.tone = DECISION_TONE[row.kind] ?? 'idle'
             withTip(dot, gone ? `${row.kind} \u00b7 ${row.cardId}` : row.kind)
 
-            line.append(dot, el('span', 'dya-text kanban-run-name', lead))
-            if (rest) line.append(el('span', 'kanban-tally', rest))
-            line.append(el('span', 'kanban-card-note kanban-when', `${row.board} \u00b7 ${when(row.at)}`))
-            log.appendChild(line)
+            const first = el('td', 'kanban-cell-name')
+            first.append(dot, el('span', undefined, lead))
+            line.append(first, el('td', 'kanban-tally', rest))
+            line.append(el('td', 'kanban-cell-end', `${row.board} \u00b7 ${when(row.at)}`))
+            logBody.appendChild(line)
         }
+        logTable.append(logBody)
+        if (shape.decisions.length) log.appendChild(logTable)
         holder.appendChild(log)
 
         watch.replaceChildren(holder)

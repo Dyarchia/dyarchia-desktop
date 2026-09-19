@@ -170,34 +170,24 @@ const STYLES = `
     align-self: flex-start;
     margin-top: var(--dya-space-2);
 }
-.set-included {
-    display: flex;
-    flex-direction: column;
-}
-.set-included > .dya-entry {
-    display: flex;
-    gap: var(--dya-space-3);
-    align-items: baseline;
-    flex-wrap: wrap;
-}
 .set-included-name {
-    min-width: 12ch;
+    width: 14ch;
+    color: var(--dya-text);
 }
-.set-paths {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-2);
-}
-.set-path {
-    display: flex;
-    gap: var(--dya-space-3);
-    align-items: center;
-    flex-wrap: wrap;
+.set-path-label {
+    width: 22ch;
+    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-data);
+    color: var(--dya-text-4);
 }
 .set-path-value {
-    flex: 1;
-    min-width: 20ch;
     overflow-wrap: anywhere;
+    color: var(--dya-text-2);
+}
+.set-path-action {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
 }
 .set-foot {
     display: flex;
@@ -453,7 +443,8 @@ export function activate(ctx: PluginContext): void {
 
         function renderPaths(paths: Paths): HTMLElement {
             const box = section('Where things go', '')
-            const list = el('div', 'set-paths')
+            const table = el('table', 'dya-table set-paths')
+            const body = el('tbody')
 
             const rows: [string, string, boolean][] = [
                 ['Your files', paths.dataHome, true],
@@ -461,17 +452,19 @@ export function activate(ctx: PluginContext): void {
                 ['Settings and state', paths.userData, false]
             ]
             for (const [label, value, openable] of rows) {
-                const row = el('div', 'set-path')
-                row.append(el('span', 'dya-key-label', label))
-                row.append(el('span', 'dya-mono dya-text set-path-value', value))
+                const row = el('tr', 'dya-row')
+                row.append(el('td', 'set-path-label', label), el('td', 'set-path-value', value))
+                const last = el('td', 'set-path-action')
                 if (openable) {
                     const open = el('button', 'dya-button dya-button--sm', 'Open')
                     open.addEventListener('click', () => void ctx.shell.reveal(value))
-                    row.append(open)
+                    last.append(open)
                 }
-                list.append(row)
+                row.append(last)
+                body.append(row)
             }
-            box.append(list)
+            table.append(body)
+            box.append(table)
             return box
         }
 
@@ -500,14 +493,18 @@ export function activate(ctx: PluginContext): void {
 
             if (core.length > 0) {
                 const included = section('Included', '')
-                const rows = el('div', 'set-included')
+                const table = el('table', 'dya-table')
+                const body = el('tbody')
                 for (const entry of core) {
-                    const row = el('div', 'dya-entry')
-                    row.append(el('strong', 'dya-text set-included-name', entry.manifest.name))
-                    row.append(el('span', 'dya-text', entry.manifest.description ?? ''))
-                    rows.append(row)
+                    const row = el('tr', 'dya-row')
+                    row.append(
+                        el('td', 'set-included-name', entry.manifest.name),
+                        el('td', undefined, entry.manifest.description ?? '')
+                    )
+                    body.append(row)
                 }
-                included.append(rows)
+                table.append(body)
+                included.append(table)
                 scroll.append(included)
             }
 

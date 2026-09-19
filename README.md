@@ -1,6 +1,6 @@
 # dyarchia-desktop
 
-**ALPHA — 0.1.0-alpha.1. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.2.0-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 This is an early build published so it can be installed and exercised on a second machine.
@@ -254,7 +254,7 @@ this application keeps: one place to look, one to back up, one to delete. `DYARC
 moves it, and an explicit Chromium `--user-data-dir` still wins, which is how a second
 instance runs against a throwaway profile.
 
-It was two roots until 0.1.0-alpha.2, and both were places nobody chose. Electron's default
+It was two roots until 0.2.0-alpha, and both were places nobody chose. Electron's default
 `userData` is `%APPDATA%/dyarchia`, where nobody navigates; and `app.getPath('documents')` is
 the one path a machine redirects — on any Windows with OneDrive signed in it answers
 `…/OneDrive/Documentos`, which points a sync client at a git checkout that every crawl

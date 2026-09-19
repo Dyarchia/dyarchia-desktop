@@ -410,12 +410,6 @@ export const STYLES = `
     gap: 2px;
 }
 
-.kanban-parents {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dya-space-1);
-}
-
 .kanban-comment {
     display: flex;
     flex-direction: column;
@@ -537,9 +531,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
 }
 
 .kanban-health-where > .dya-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .kanban-health-problem {
@@ -650,150 +642,11 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     padding: var(--dya-space-4);
 }
 
-/*
- * The masthead. A band across the top carrying the one figure the view is about, what it counts,
- * and who is doing the counting.
- */
-.kanban-masthead {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-4);
-    flex-wrap: wrap;
-    padding: var(--dya-space-4);
-    border-radius: var(--dya-radius);
-    background: var(--dya-surface-2);
-    box-shadow: var(--dya-elev-chassis);
-}
-
-.kanban-metric {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    flex: none;
-}
-
-/*
- * The serif, which this system otherwise spends on one word in the title bar. A figure that is
- * the whole point of a screen may be the one thing on it that is not mono.
- */
-.kanban-metric-value {
-    font-family: var(--dya-font-serif);
-    font-size: var(--dya-size-display);
-    font-weight: var(--dya-weight-light);
-    letter-spacing: var(--dya-tracking-display);
-    line-height: var(--dya-leading-tight);
-    color: var(--dya-text);
-}
-
-.kanban-metric-of {
-    font-family: var(--dya-font-serif);
-    font-size: var(--dya-size-h3);
-    font-weight: var(--dya-weight-light);
-    line-height: var(--dya-leading-tight);
-    color: var(--dya-text-4);
-}
-
-.kanban-metric-text {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-}
-
-.kanban-metric-note {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-4);
-}
-
+/* The boards, as many across as the panel affords. */
 .kanban-board-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
     gap: var(--dya-space-3);
-}
-
-/*
- * A board is pressable and pressing it opens that board, which is what earns the relief: this
- * system gives relief to what receives a press and to nothing else.
- */
-.kanban-board-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-2);
-    padding: var(--dya-space-3);
-    border: none;
-    border-radius: var(--dya-radius);
-    background: var(--dya-raised);
-    box-shadow: var(--dya-elev-raised);
-    text-align: left;
-    cursor: pointer;
-    transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
-        background-color var(--dya-dur-fast) var(--dya-ease);
-}
-
-.kanban-board-card:hover {
-    background-color: var(--dya-raised-hover);
-}
-
-.kanban-board-card:active {
-    transform: translateY(var(--dya-press-y));
-}
-
-.kanban-board-top {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-    min-width: 0;
-}
-
-.kanban-board-name {
-    flex: 1;
-    min-width: 0;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text);
-    overflow-wrap: anywhere;
-}
-
-.kanban-pills {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-1);
-    flex-wrap: wrap;
-}
-
-.kanban-board-quiet {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-4);
-}
-
-/* One mark per worker the board may run, filled while it is. Static, and therefore free. */
-.kanban-caps {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    cursor: help;
-}
-
-.kanban-pip {
-    width: 14px;
-    height: 3px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-selected);
-}
-
-.kanban-pip[data-on='true'] {
-    background: var(--dya-accent);
-}
-
-.kanban-cell-kind {
-    width: 1%;
-    white-space: nowrap;
 }
 
 .kanban-watch-body {

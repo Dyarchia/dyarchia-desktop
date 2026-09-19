@@ -77,17 +77,33 @@ export const STYLES = `
     min-width: 36px;
 }
 
+/*
+ * The header, not the name, carries the measure. Its height is the longest stage name on this
+ * board — one character being 1ch plus the label tracking — plus room for the two controls, and
+ * the controls are pushed to the bottom of it. So the count and the fold key of every folded
+ * stage land on one line across the board, which is the only way a row of folded stages reads as
+ * a row, and no name is stretched, padded or otherwise touched to get there.
+ */
 .kanban-column[data-collapsed='true'] .kanban-column-head {
     flex-direction: column;
-    height: auto;
+    height: calc(var(--kanban-stage-chars, 9) * (1ch + var(--dya-tracking-label)) + var(--dya-space-12));
     padding: var(--dya-space-2) 0;
     gap: var(--dya-space-2);
+}
+
+.kanban-column[data-collapsed='true'] .kanban-count {
+    margin-top: auto;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-column-title {
     flex: none;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+}
+
+/* Adding a card is not something you do to a stage you have put away. */
+.kanban-column[data-collapsed='true'] .kanban-new-key {
+    display: none;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-list,
@@ -634,53 +650,150 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     padding: var(--dya-space-4);
 }
 
-.kanban-watch-head {
+/*
+ * The masthead. A band across the top carrying the one figure the view is about, what it counts,
+ * and who is doing the counting.
+ */
+.kanban-masthead {
     display: flex;
-    align-items: baseline;
-    gap: var(--dya-space-3);
+    align-items: center;
+    gap: var(--dya-space-4);
     flex-wrap: wrap;
-    padding-bottom: var(--dya-space-2);
+    padding: var(--dya-space-4);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-2);
+    box-shadow: var(--dya-elev-chassis);
 }
 
-.kanban-watch-count {
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-metric);
+.kanban-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    flex: none;
+}
+
+/*
+ * The serif, which this system otherwise spends on one word in the title bar. A figure that is
+ * the whole point of a screen may be the one thing on it that is not mono.
+ */
+.kanban-metric-value {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-display);
     font-weight: var(--dya-weight-light);
-    letter-spacing: var(--dya-tracking-metric);
+    letter-spacing: var(--dya-tracking-display);
     line-height: var(--dya-leading-tight);
     color: var(--dya-text);
 }
 
-/* A number and the word for it, quiet and never wrapping mid-phrase. */
-.kanban-tally {
-    flex: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    white-space: nowrap;
+.kanban-metric-of {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight-light);
+    line-height: var(--dya-leading-tight);
     color: var(--dya-text-4);
 }
 
-/* A name cell carries its dot; the end cell is the one the eye reads down the right edge. */
-.kanban-cell-name {
+.kanban-metric-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.kanban-metric-note {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-4);
+}
+
+.kanban-board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+    gap: var(--dya-space-3);
+}
+
+/*
+ * A board is pressable and pressing it opens that board, which is what earns the relief: this
+ * system gives relief to what receives a press and to nothing else.
+ */
+.kanban-board-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    padding: var(--dya-space-3);
+    border: none;
+    border-radius: var(--dya-radius);
+    background: var(--dya-raised);
+    box-shadow: var(--dya-elev-raised);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        transform var(--dya-dur-press) var(--dya-ease-press),
+        background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.kanban-board-card:hover {
+    background-color: var(--dya-raised-hover);
+}
+
+.kanban-board-card:active {
+    transform: translateY(var(--dya-press-y));
+}
+
+.kanban-board-top {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
+    min-width: 0;
+}
+
+.kanban-board-name {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text);
     overflow-wrap: anywhere;
 }
 
-/* The detail hugs what it says, so the name keeps the width instead of wrapping beside a gap. */
-td.kanban-tally {
-    width: 1%;
-    white-space: nowrap;
+.kanban-pills {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-1);
+    flex-wrap: wrap;
 }
 
-.kanban-cell-end {
+.kanban-board-quiet {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-4);
+}
+
+/* One mark per worker the board may run, filled while it is. Static, and therefore free. */
+.kanban-caps {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: help;
+}
+
+.kanban-pip {
+    width: 14px;
+    height: 3px;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-selected);
+}
+
+.kanban-pip[data-on='true'] {
+    background: var(--dya-accent);
+}
+
+.kanban-cell-kind {
     width: 1%;
     white-space: nowrap;
-    text-align: right;
-    color: var(--dya-text-4);
 }
 
 .kanban-watch-body {
@@ -688,7 +801,7 @@ td.kanban-tally {
     flex-direction: column;
     gap: var(--dya-space-4);
     width: 100%;
-    max-width: 68rem;
+    max-width: 96rem;
 }
 
 .kanban-watch-run {

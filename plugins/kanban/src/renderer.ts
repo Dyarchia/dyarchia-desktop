@@ -1720,7 +1720,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const filesGroup = el('div', 'kanban-group')
         filesGroup.append(el('span', 'dya-label', 'files'))
-        const files = el('div', 'kanban-parents')
+        const files = el('div', 'dya-pills')
 
         for (const file of card.attachments ?? []) {
             const holder = el('span', 'kanban-file')
@@ -1775,7 +1775,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const depsGroup = el('div', 'kanban-group')
         depsGroup.append(el('span', 'dya-label', 'depends on'))
-        const parents = el('div', 'kanban-parents')
+        const parents = el('div', 'dya-pills')
         for (const parentId of card.parents) {
             const parent = cardById(parentId)
             const chip = el('button', 'dya-chip', parent ? parent.title : parentId)
@@ -2297,18 +2297,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * title bar. A figure that is the whole point of a screen is allowed to be the one thing
          * on it that is not mono.
          */
-        const masthead = el('div', 'kanban-masthead')
-        const metric = el('div', 'kanban-metric')
-        metric.append(
-            el('span', 'kanban-metric-value', String(shape.running)),
-            el('span', 'kanban-metric-of', `/${shape.across}`)
+        const masthead = el('div', 'dya-masthead')
+        const stat = el('div', 'dya-stat')
+        const figure = el('div', 'dya-stat__figure')
+        figure.append(
+            el('span', 'dya-stat__value', String(shape.running)),
+            el('span', 'dya-stat__unit', `/${shape.across}`)
         )
-        const metricText = el('div', 'kanban-metric-text')
-        metricText.append(
+        const statText = el('div', 'dya-stat__text')
+        statText.append(
             el('span', 'dya-label', shape.running === 1 ? 'run in flight' : 'runs in flight'),
-            el('span', 'kanban-metric-note', `${shape.boards.length} boards on this machine`)
+            el('span', 'dya-stat__note', `${shape.boards.length} boards on this machine`)
         )
-        masthead.append(metric, metricText, el('span', 'kanban-spacer'))
+        stat.append(figure, statText)
+        masthead.append(stat, el('span', 'kanban-spacer'))
 
         if (shape.across === 0) {
             masthead.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
@@ -2337,7 +2339,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
         const grid = el('div', 'kanban-board-grid')
         for (const entry of shape.boards) {
-            const card = el('button', 'kanban-board-card')
+            const card = el('button', 'dya-tile dya-tile--dense')
             card.type = 'button'
             card.addEventListener('click', () => {
                 write(pinKey, entry.slug)
@@ -2345,8 +2347,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 void refresh().catch(fail)
             })
 
-            const top = el('div', 'kanban-board-top')
-            top.append(el('span', 'kanban-board-name', entry.name))
+            const top = el('div', 'dya-tile__head')
+            top.append(el('span', 'dya-tile__name', entry.name))
             if (entry.cap === 0) {
                 top.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
             } else if (entry.running > 0) {
@@ -2354,7 +2356,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             }
             card.append(top)
 
-            const pills = el('div', 'kanban-pills')
+            const pills = el('div', 'dya-pills')
             const tallies: [number, string, string][] = [
                 [entry.counts.ready, 'ready', 'dya-badge--accent-3'],
                 [entry.counts.review, 'in review', 'dya-badge--accent-2'],
@@ -2367,7 +2369,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             ]
             const shown = tallies.filter(([n]) => n > 0)
             if (shown.length === 0) {
-                pills.append(el('span', 'kanban-board-quiet', 'nothing queued'))
+                pills.append(el('span', 'dya-empty dya-empty--inline', 'nothing queued'))
             } else {
                 for (const [n, word, tone] of shown) {
                     pills.append(el('span', `dya-badge dya-badge--soft ${tone}`, `${n} ${word}`))
@@ -2382,10 +2384,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
              * the panel is open.
              */
             if (entry.cap > 1) {
-                const caps = el('div', 'kanban-caps')
+                const caps = el('div', 'dya-meter')
                 withTip(caps, `${entry.running} of ${entry.cap} workers busy`)
                 for (let slot = 0; slot < Math.min(entry.cap, 8); slot += 1) {
-                    const pip = el('span', 'kanban-pip')
+                    const pip = el('span', 'dya-meter__pip')
                     pip.dataset.on = String(slot < entry.running)
                     caps.append(pip)
                 }
@@ -2429,7 +2431,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 const lead = gone && row.detail ? row.detail : row.title
                 const rest = gone && row.detail ? '' : row.detail
 
-                const kind = el('td', 'kanban-cell-kind')
+                const kind = el('td', 'dya-table__fit')
                 const pill = el(
                     'span',
                     `dya-badge dya-badge--soft ${DECISION_TONE[row.kind] ?? 'dya-badge--soft'}`,

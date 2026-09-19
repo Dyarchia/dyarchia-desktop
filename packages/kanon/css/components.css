@@ -36,7 +36,7 @@
  * Every other rule in this file prevents something: do not glare, do not truncate, never below
  * 4.50. Prohibitions reliably produce a screen where nothing is wrong and nothing is first, which
  * is what a panel of this system looked like — labels, values, rows and headings all quiet, and
- * the eye with nowhere to land. These five say what matters instead of what is forbidden.
+ * the eye with nowhere to land. These six say what matters instead of what is forbidden.
  *
  * A title is a size and a tracking, never a weight: hierarchy in this system comes from the type
  * scale and the ink rank, and reaching for 500 is how a screen ends up with four kinds of bold and
@@ -222,6 +222,18 @@
     border-bottom: none;
 }
 
+/*
+ * Controls that belong together inside a bar. The group is what wraps: a bar at panel width
+ * breaks between groups and never inside one, so a scope and its field are never left on
+ * separate lines with the field's label three controls away from it.
+ */
+.dya-bar__group {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    flex: none;
+}
+
 .dya-card {
     background: var(--dya-surface-1);
     border: var(--dya-border-width) solid var(--dya-border);
@@ -237,6 +249,25 @@
     padding: 0 var(--dya-space-3);
     background: var(--dya-grad-header);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
+}
+
+/*
+ * The band at the head of a view: what the view is about, said once, on a ground of its own.
+ *
+ * Three panels arrived at this shape independently and each drew it differently, which is the
+ * failure the system exists to prevent. It is flat and not relief, because a header is not
+ * pressable: `--dya-elev-chassis` is a seam under its top edge, the same seam the panel carries.
+ * It wraps, because at 400px a stat, a name and two badges are three lines and not one.
+ */
+.dya-masthead {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-4);
+    flex-wrap: wrap;
+    padding: var(--dya-space-4);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-2);
+    box-shadow: var(--dya-elev-chassis);
 }
 
 .dya-brand {
@@ -425,6 +456,35 @@
     color: var(--dya-text-3);
 }
 
+/*
+ * A tile whose content is a row instead of an icon: a name, what is happening to it, and the
+ * tallies under. The same relief and the same press, tighter, because a grid of these is a list
+ * of things to open rather than the one thing a blank region offers.
+ *
+ * Its name is data — a board, a file, a host — so it keeps its case and its mono tracking, where
+ * the icon tile names a panel and is therefore a label. That is the system's own division between
+ * interface text and data, and a tile sits on both sides of it.
+ */
+.dya-tile--dense {
+    padding: var(--dya-space-3);
+}
+
+.dya-tile__head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+}
+
+.dya-tile--dense .dya-tile__name {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    text-transform: none;
+    overflow-wrap: anywhere;
+}
+
 .dya-key {
     display: grid;
     place-items: center;
@@ -465,6 +525,17 @@
 [interestfor] {
     interest-delay-start: 350ms;
     interest-delay-end: 120ms;
+}
+
+/*
+ * A tip on something that is not a control. The cursor is the only thing saying a word is
+ * explained rather than pressable, and a reader who cannot tell does not hover. A button, a key
+ * or a chip carrying a tip keeps its own cursor: it is pressable and the tip is extra.
+ */
+.dya-badge[interestfor],
+.dya-tag[interestfor],
+.dya-meter[interestfor] {
+    cursor: help;
 }
 
 .dya-chip {
@@ -593,11 +664,6 @@ textarea.dya-field {
     cursor: help;
     text-decoration: underline dotted var(--dya-border-strong);
     text-underline-offset: 3px;
-}
-
-/* A row that is its own thing: a divider, a pair of controls, the actions at the end. */
-.dya-form__wide {
-    grid-column: 1 / -1;
 }
 
 .dya-form__actions {
@@ -777,6 +843,104 @@ textarea.dya-field {
 }
 
 /*
+ * A row of badges that wraps. A badge is a word, several are a line, and several at panel width
+ * are two lines: the wrap is the component, and every consumer that laid badges out by hand got
+ * it wrong in the same direction.
+ */
+.dya-pills {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-1);
+    flex-wrap: wrap;
+}
+
+/*
+ * One figure that is the point of a screen, its unit, and what it is called.
+ *
+ * The numeral is set in the serif — the family this system otherwise spends on a single word in
+ * the title bar — at display size and weight 300. This is the one place a panel is allowed to be
+ * loud, and it is loud by size and never by weight: `--dya-size-display` against the
+ * `--dya-size-label-sm` beside it is a ratio of four, which no weight in this system can reach.
+ *
+ * `__value` carries `--dya-text`, 13.30 in Gi and 13.24 in Rei over `--dya-surface-2`, the
+ * masthead ground it usually sits on. `__unit` and `__note` carry `--dya-text-4`, 6.37 and 7.61.
+ * What the figure is called is `.dya-label`: a stat does not redeclare a class the system has.
+ */
+.dya-stat {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-2);
+    flex: none;
+}
+
+.dya-stat__figure {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.dya-stat__value {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-display);
+    font-weight: var(--dya-weight-light);
+    letter-spacing: var(--dya-tracking-display);
+    line-height: var(--dya-leading-tight);
+    color: var(--dya-text);
+}
+
+.dya-stat__unit {
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight-light);
+    line-height: var(--dya-leading-tight);
+    color: var(--dya-text-4);
+}
+
+.dya-stat__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.dya-stat__note {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-4);
+}
+
+/*
+ * n marks, filled while what they count is busy. A capacity and not a progress bar: it does not
+ * move on its own and it never animates, because a machine being busy is a fact rather than
+ * something to pulse at a reader for as long as the panel is open.
+ *
+ * An empty mark has to be countable or the meter reports nothing, so the track is an ink rather
+ * than a surface step. Over `--dya-raised`, the tile ground it usually sits on, `--dya-text-4`
+ * measures 5.73 in Gi and 6.52 in Rei, where `--dya-selected` measures 1.29 and 1.40 and cannot
+ * be seen at all. A filled mark is `--dya-accent`, 4.91 and 6.05 on the same ground. Neither is
+ * text; both clear the 3.00 a graphical object owes.
+ */
+.dya-meter {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+
+.dya-meter__pip {
+    width: 14px;
+    height: 3px;
+    flex: none;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-text-4);
+}
+
+.dya-meter__pip[data-on="true"] {
+    background: var(--dya-accent);
+}
+
+/*
  * A table has to look like one, and this one did not: it read as a run of loose lines with words
  * drifting under headings. Two causes, both measured.
  *
@@ -814,6 +978,7 @@ textarea.dya-field {
 .dya-table td {
     padding: var(--dya-space-2) var(--dya-space-3);
     border-bottom: var(--dya-border-width) solid var(--dya-border);
+    overflow-wrap: anywhere;
 }
 
 .dya-table tr:last-child td {
@@ -822,6 +987,39 @@ textarea.dya-field {
 
 /* A column of figures is read down, so it is aligned down its right edge. */
 .dya-table .dya-table__num {
+    text-align: right;
+}
+
+/*
+ * Four column shapes every consumer re-invented, all of them a column as wide as its content and
+ * no wider: a cell that simply fits, the two ways a row names itself, and the end of the row,
+ * which is where an action sits.
+ *
+ * `__key` and `__name` are the same column and not the same thing. A key is interface text — it
+ * says what the value beside it is — so it is uppercase, tracked and `--dya-text-4`. A name is
+ * data — a plugin, a board, a file — so it keeps its case and takes `--dya-text`, the rank the
+ * subject of a row is owed. Getting that backwards is how a table of paths ends up shouting the
+ * word PATH at a reader who wanted to read the path.
+ */
+.dya-table .dya-table__fit,
+.dya-table .dya-table__key,
+.dya-table .dya-table__name,
+.dya-table .dya-table__end {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.dya-table .dya-table__key {
+    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-data);
+    color: var(--dya-text-4);
+}
+
+.dya-table .dya-table__name {
+    color: var(--dya-text);
+}
+
+.dya-table .dya-table__end {
     text-align: right;
 }
 
@@ -873,12 +1071,6 @@ textarea.dya-field {
 .dya-menu__item--selected {
     background-color: var(--dya-selected);
     color: var(--dya-text);
-}
-
-.dya-menu__shortcut {
-    margin-left: auto;
-    letter-spacing: 0.08em;
-    color: var(--dya-text-3);
 }
 
 .dya-tip {

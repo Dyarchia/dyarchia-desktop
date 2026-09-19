@@ -349,15 +349,16 @@ declare builds it ad-hoc under its own prefix and proposes it upstream — which
 wrong in ways the first consumer discovers rather than the author.
 
 ```text
-Structure    pane bar (--flush --inset) card card__header brand carved
+Structure    pane bar (--flush --inset __group) card card__header masthead brand carved
 Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
-             entry (--active) tile (__icon __name __note)
-Input        field (--sm --auto) checkbox form (__wide __actions __push)
+             entry (--active) tile (--dense __icon __head __name __note)
+Input        field (--sm --auto) checkbox form (__actions __push)
 Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
-             table (__num) row
+             pills table (__num __fit __key __name __end) row
+             stat (__figure __value __unit __text __note) meter (__pip)
              title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
-Layers       menu menu__item (--selected) menu__shortcut tip
+Layers       menu menu__item (--selected) tip
 Navigation   tabs tab
 Absence      empty (--inline __actions) loading
 Assistive    sr-only
@@ -365,8 +366,8 @@ Assistive    sr-only
 
 **Emphasis is a family, not an accident.** Every other rule here is a prohibition — do not
 glare, do not truncate, never below 4.50 — and prohibitions produce a screen where nothing
-is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile` and
-`empty__actions` are the five that say what matters:
+is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile`,
+`empty__actions` and `stat` are the six that say what matters:
 
 - **`title` is a size and a tracking, never a weight.** It is `--dya-size-h3` at
   `--dya-weight`, carrying `--dya-text` where the line under it carries `--dya-text-3`.
@@ -393,14 +394,38 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile` and
   would be, because centring "nothing is running" in a band of its own makes the emptiest
   part of the screen the loudest.
 
+`stat` is the sixth, and it arrived the way the paragraph above says one should: three panels
+had each invented a large figure with a label under it, and each drew it differently. **A stat is
+loud by size and never by weight.** Its `__value` is the serif at `--dya-size-display` and weight
+300 — the family this system otherwise spends on a single word in the title bar — against a
+`--dya-size-label-sm` name beside it, a ratio of four that no weight in this scale can reach. The
+name is `.dya-label`, because a stat does not redeclare a class the system already has; `__unit`
+is what the figure is out of or measured in, `__note` is the one line under it. Over
+`--dya-surface-2`, the masthead ground, `__value` measures 13.30 in Gi and 13.24 in Rei, and
+`__unit` and `__note` 6.37 and 7.61. **At most one stat per view**, for the same reason as
+`button--primary`.
+
+`masthead` is where a stat usually sits: the band at the head of a view, saying once what the
+view is about. It is flat and not relief — a header is not pressable — carrying
+`--dya-elev-chassis` as a seam under its top edge, the same seam a panel has. It wraps, because
+at a 400px pane a stat, a name and two badges are three lines.
+
+`meter` is a capacity, not a progress bar: n marks, filled while what they count is busy. **It
+never animates.** A machine being busy is a fact, not something to pulse at a reader for as long
+as the panel is open. Its empty mark has to be countable or the meter reports nothing, which is
+why the track is an ink and not a surface step: over `--dya-raised`, `--dya-text-4` measures 5.73
+in Gi and 6.52 in Rei, where `--dya-selected` measures 1.29 and 1.40 and cannot be seen at all. A
+filled mark is `--dya-accent`, 4.91 and 6.05 on the same ground. Neither is text and both clear
+the 3.00 a graphical object owes. Draw one only above two marks: a single pip is a stray dash.
+
 `form` belongs to the same argument from the other side. The system had no form, so every
 consumer invented one and each reached for the same wrong answer: a centred paragraph above
 the input explaining what it does. Three of those in a column is a page of prose with three
 boxes in it, and the reader parses a sentence to learn that the next box takes a number. A
 form is a two-column grid — **what the field is called, and the field** — and the sentence
-behind the name is a tip on the label. `__wide` spans both columns, `__actions` is the row at
-the end, and `__push` sends what carries it and everything after it to the far end, which is
-where a destructive action goes.
+behind the name is a tip on the label. `__actions` is the row at the end, spanning both columns,
+and `__push` sends what carries it and everything after it to the far end, which is where a
+destructive action goes.
 
 `pane` is not a component either: it declares an element a query container under the name
 `pane` and carries no look at all. It exists because a panel's width is its own — in a dock
@@ -424,6 +449,28 @@ what `[hidden]` would destroy. Measured 1x1 and still rendered.
 `brand` is the word in the title bar: serif, uppercase, carved, with the accent dot after
 it. `carved` is the same word at display size for a region that has nothing else to show:
 transparent text over the carve gradient, cut by the carve filter. Both are static.
+
+`tile--dense` is the other tile: a row instead of an icon — a name, what is happening to it, and
+the tallies under — at `--dya-space-3` rather than `--dya-space-4`, because a grid of them is a
+list of things to open rather than the one thing a blank region offers. Its `__name` is data and
+keeps its case and its mono tracking; the icon tile's `__name` labels a panel and is uppercase.
+That is the system's own division between interface text and data, and a tile sits on both sides
+of it.
+
+`pills` is a row of badges that wraps, and it is a component because the wrap is the part every
+consumer got wrong. A badge is a word, several are a line, and several at panel width are two.
+
+`bar__group` is the same argument in a bar: controls that belong together, and the group is what
+wraps, so a bar at panel width breaks between groups and never inside one.
+
+**`table__key` and `table__name` are the same column and not the same thing.** A key is interface
+text saying what the value beside it is, so it is uppercase, tracked and `--dya-text-4`, 6.70 in
+Gi and 8.04 in Rei over `--dya-surface-1`. A name is data — a plugin, a board, a file — so it
+keeps its case and takes `--dya-text`, 13.98 and 13.99, the rank the subject of a row is owed.
+Getting the two backwards is how a table of paths ends up shouting the word PATH at a reader who
+came to read the path. `__fit` is the width both share and nothing else, `__end` is that width at
+the end of the row, where an action sits, and a `td` wraps anywhere, because a table cell that
+makes a panel scroll sideways to read a path is unusable at panel width.
 
 Four distinctions in that list are easy to collapse and are not the same thing:
 

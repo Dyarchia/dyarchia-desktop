@@ -34,10 +34,15 @@ const STYLES = `
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.player-open {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
 .player-open svg {
     display: block;
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
 }
 .player-stage {
     flex: 1;
@@ -99,12 +104,14 @@ export function activate(ctx: PluginContext): void {
 
             let busy = false
 
+            /*
+             * A word, not a bare icon, for the same reason as the reader's: an empty panel says
+             * nothing, so its bar is the only thing left telling a reader what the panel is for.
+             */
             function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = 'dya-button dya-button--bare player-open'
-                button.title = 'Open media'
-                button.setAttribute('aria-label', 'Open media')
-                button.innerHTML = PLAYER_ICON
+                button.className = 'dya-button dya-button--quiet dya-button--sm player-open'
+                button.innerHTML = `${PLAYER_ICON}<span>Open</span>`
                 button.onclick = () => void openMedia()
                 return button
             }

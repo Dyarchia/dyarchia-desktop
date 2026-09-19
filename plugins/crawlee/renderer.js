@@ -199,13 +199,26 @@ const STYLE = `
     flex-direction: column;
     gap: var(--dya-space-1);
     padding: var(--dya-space-2) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
 }
 .crw-hit-head {
     display: flex;
     align-items: baseline;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
+}
+/*
+ * The title is the one thing a reader scans down, so it carries the top ink rank. Everything else
+ * in the head is where the passage came from, and sits a rank below in mono at label size.
+ */
+.crw-hit-title {
+    color: var(--dya-text);
+    overflow-wrap: anywhere;
+}
+.crw-hit-in,
+.crw-hit-where {
+    font-size: var(--dya-size-mono-xs);
+    color: var(--dya-text-4);
 }
 .crw-hit-where {
     margin-left: auto;
@@ -616,17 +629,33 @@ function mount(ctx, container) {
                 return
             }
             for (const hit of found) {
+                /*
+                 * A heading, a repository and a target are names a crawl found, not words this
+                 * panel chose, so they keep their case. The uppercase label is for what the
+                 * interface calls things, and spending it on data is how a result page ends up
+                 * shouting a URL at the reader.
+                 *
+                 * A page whose title is its own address says its address twice, once as a title
+                 * it does not have and once as the line under it. It gets the line.
+                 */
                 const row = el('div', 'crw-hit')
                 const head = el('div', 'crw-hit-head')
-                head.append(el('span', 'dya-text', hit.title))
-                if (hit.heading) head.append(el('span', 'dya-key-label', hit.heading))
-                head.append(el('span', 'dya-key-label crw-hit-where', `${hit.repository} / ${hit.target}`))
+                const titled = hit.title && hit.title !== hit.url
+                head.append(
+                    titled
+                        ? el('span', 'dya-text crw-hit-title', hit.title)
+                        : el('span', 'dya-mono crw-hit-title', hit.url)
+                )
+                if (hit.heading) head.append(el('span', 'dya-mono crw-hit-in', hit.heading))
+                head.append(el('span', 'dya-mono crw-hit-where', `${hit.repository} / ${hit.target}`))
                 const url = el('div', 'dya-mono crw-hit-url', hit.url)
                 const snippet = el('div', 'dya-text crw-hit-snippet')
                 for (const [index, part] of String(hit.snippet).split(/[\[\]]/).entries()) {
                     snippet.append(index % 2 ? el('mark', undefined, part) : part)
                 }
-                row.append(head, url, snippet)
+                row.append(head)
+                if (titled) row.append(url)
+                row.append(snippet)
                 const actions = hitActions(hit)
                 if (actions) row.append(actions)
                 hits.appendChild(row)

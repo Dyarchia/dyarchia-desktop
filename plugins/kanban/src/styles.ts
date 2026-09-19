@@ -165,11 +165,20 @@ export const STYLES = `
     transition: transform var(--dya-dur-fast) var(--dya-ease);
 }
 
-.kanban-empty {
+/*
+ * The drop target, and it exists while something is being dropped. A dashed box in every empty
+ * column is seven boxes of nothing across the widest part of the screen on a board at rest, which
+ * is the same sentence the column used to say, drawn instead of written.
+ */
+.kanban-drop {
+    display: none;
     min-height: var(--dya-space-12);
     border: var(--dya-border-width) dashed var(--dya-dashed);
     border-radius: var(--dya-radius);
-    opacity: 0.45;
+}
+
+.kanban-board[data-dragging='true'] .kanban-drop {
+    display: block;
 }
 
 /* An empty column steps back: it is a place for something, not a thing. */
@@ -623,7 +632,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     flex-wrap: wrap;
     gap: var(--dya-space-2);
     padding: var(--dya-space-1) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
 }
 
 .kanban-run > .kanban-comment-text {
@@ -662,7 +671,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     text-align: left;
     background: none;
     border: none;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
     color: inherit;
     font: inherit;
     cursor: pointer;
@@ -706,7 +715,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     flex-direction: column;
     gap: 2px;
     padding: var(--dya-space-1) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-rule);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
 }
 
 .kanban-row-entry[data-kind='text'] { padding: var(--dya-space-2) 0; }

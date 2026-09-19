@@ -951,6 +951,12 @@ textarea.dya-field {
  * the note saying border marks a panel edge and hairline separates rows; the note loses, because
  * hairline measures 1.17 and 1.23 and a row separator nobody can see separates nothing.
  *
+ * The head rule follows from the same arithmetic and was wrong in the same way. A header that
+ * separates its column names from the rows less than the rows separate from each other is a
+ * heading that reads as one more row: `--dya-hairline` under a `--dya-border` body. It is
+ * `--dya-border-strong` now, 1.93 in Gi and 2.24 in Rei, a step above the body rule rather than
+ * two below it.
+ *
  * And its digits were proportional, so 4102 sat narrower than 1111 and no column of numbers ever
  * lined up. `tabular-nums` is what a column of figures is for.
  */
@@ -966,7 +972,7 @@ textarea.dya-field {
 
 .dya-table th {
     padding: 7px var(--dya-space-3);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
     font-size: var(--dya-size-label-sm);
     font-weight: var(--dya-weight);
     letter-spacing: var(--dya-tracking-data);

@@ -52,10 +52,15 @@ const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-5) var(--dya-space-6);
 }
+.docviewer-open {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
 .docviewer-open svg {
     display: block;
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
 }
 .docviewer-content--empty {
     display: flex;
@@ -140,7 +145,7 @@ const STYLES = `
 .docviewer-content hr {
     margin: var(--dya-space-5) 0;
     border: none;
-    border-top: var(--dya-border-width) solid var(--dya-hairline);
+    border-top: var(--dya-border-width) solid var(--dya-border);
 }
 .docviewer-line {
     display: block;
@@ -284,12 +289,16 @@ export function activate(ctx: PluginContext): void {
                 content.replaceChildren(line)
             }
 
+            /*
+             * A word, not a bare icon. An empty panel says nothing, which leaves its bar as the
+             * only thing on the screen telling a reader what to do with it — and a 14px glyph in
+             * the far corner of an otherwise blank rectangle tells nobody anything. The bare
+             * variant is for a control beside something that already has a name.
+             */
             function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = 'dya-button dya-button--bare docviewer-open'
-                button.title = 'Open document'
-                button.setAttribute('aria-label', 'Open document')
-                button.innerHTML = DOCS_ICON
+                button.className = 'dya-button dya-button--quiet dya-button--sm docviewer-open'
+                button.innerHTML = `${DOCS_ICON}<span>Open</span>`
                 button.onclick = () => void openFile()
                 return button
             }

@@ -217,7 +217,8 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
         lastText: '',
         terminal: null,
         error: null,
-        modifiedAt: info.mtimeMs
+        modifiedAt: info.mtimeMs,
+        permissionMode: null
     }
 
     const texts: string[] = []
@@ -233,6 +234,16 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
 
         if (entry.type === 'system') {
             if (entry.subtype === 'turn_duration') result.ended = true
+            continue
+        }
+
+        /*
+         * The session writes the mode it is in every time it settles on one, and the last word is
+         * the one in force. This is how a launch that asked for `auto` and got Manual becomes a
+         * fact the board can read rather than a card that sits still for an hour.
+         */
+        if (entry.type === 'permission-mode') {
+            if (typeof entry.permissionMode === 'string') result.permissionMode = entry.permissionMode
             continue
         }
 
@@ -397,11 +408,39 @@ export const driver: Driver = {
     stop: async (run) => {
         if (run.shortId) await stopSession(run.shortId)
     },
+    release: async (run) => {
+        if (run.shortId) await removeSession(run.shortId)
+    },
     progress,
     history,
     attach
 }
 
+/*
+ * Stopping is not ending. Measured on 2026-09-20, counting `claude.exe` scoped to one throwaway
+ * folder across a background session's life:
+ *
+ *     while running   1
+ *     after it finished   1
+ *     after `claude stop`   1
+ *     after `claude rm`     0
+ *
+ * A stopped session stays resident so `claude attach` can reopen it, which is the CLI's design
+ * and what the drawer's terminal tab depends on. It also keeps its worktree locked, which is why
+ * a finished probe could not be deleted until five of these were killed by hand.
+ *
+ * `rm` is what frees it, and it is not free: it deletes the session's worktree AND its branch.
+ * Measured the same evening — a `--worktree` session's branch was gone from `git branch -a` the
+ * moment it ran. So the board calls this only where the work on that branch is already taken or
+ * already lost, never on a run whose commit something still has to read.
+ *
+ * Neither swallows its error any more. A stop that silently failed is how five processes outlive
+ * the thing that made them.
+ */
 async function stopSession(shortId: string): Promise<void> {
-    await run(['stop', shortId]).catch(() => undefined)
+    await run(['stop', shortId])
+}
+
+async function removeSession(shortId: string): Promise<void> {
+    await run(['rm', shortId])
 }

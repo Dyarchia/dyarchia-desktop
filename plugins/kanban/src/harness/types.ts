@@ -41,6 +41,12 @@ export interface Progress {
     terminal: TerminalBlock | null
     error: string | null
     modifiedAt: number
+    /*
+     * The mode the session is actually in, as the session itself records it, which is not always
+     * the mode it was launched with. A driver that cannot report it leaves this null and the
+     * board asks nothing.
+     */
+    permissionMode: string | null
 }
 
 export interface HistoryRow {
@@ -86,6 +92,13 @@ export interface Driver {
     waiting(snapshot: unknown, run: Run): boolean
     orphaned(run: Run): boolean
     stop(run: Run): Promise<void>
+    /*
+     * Let the run's session go, for good. `stop` ends the work and keeps the session alive on
+     * purpose, so it can be attached again; `release` is what actually frees the process, and for
+     * a harness whose sessions own a worktree it takes the worktree and the branch with it. The
+     * board calls it only where that is what it wants.
+     */
+    release(run: Run): Promise<void>
     progress(place: string, run: Run): Promise<Progress | null>
     history(place: string, run: Run): Promise<HistoryRow[]>
     attach(run: Run): Promise<Invocation>

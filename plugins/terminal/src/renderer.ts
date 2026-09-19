@@ -11,7 +11,9 @@ import type { PluginContext } from '@dyarchia/sdk'
 const STYLES =
     xtermCss +
     '\n.dyarchia-terminal {' +
+    ' position: relative;' +
     ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
+    '\n.dyarchia-terminal-connecting { position: absolute; inset: 0; }' +
     '\n.xterm .xterm-viewport { background-color: transparent !important; }' +
     '\n.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }' +
     '\n.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }' +
@@ -101,6 +103,19 @@ export function activate(ctx: PluginContext): void {
             terminal.options.theme = terminalTheme()
         })
 
+        /*
+         * The pty lives in its own process and starting it is not instant. A terminal that shows a
+         * black rectangle while that happens reads as a terminal that is broken, which is what the
+         * first open of a session looked like. It says it is attaching until the channel exists,
+         * and stops saying it on the frame the channel arrives rather than on a timer.
+         */
+        const connecting = document.createElement('div')
+        connecting.className = 'dya-loading dyarchia-terminal-connecting'
+        const connectingText = document.createElement('span')
+        connectingText.textContent = 'attaching to a shell'
+        connecting.appendChild(connectingText)
+        container.appendChild(connecting)
+
         let port: MessagePort | null = null
         let disposed = false
         const attachId = crypto.randomUUID()
@@ -135,6 +150,7 @@ export function activate(ctx: PluginContext): void {
             }
             port = received
             port.onmessage = onHostMessage
+            connecting.remove()
             port.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
         }
         window.addEventListener('message', onPortAnnouncement)

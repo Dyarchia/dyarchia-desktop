@@ -203,6 +203,13 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('deleteCard', async (slug, id) => {
         const target = await open(String(slug))
+        /*
+         * Everything this card started goes with it. `release` takes each session's worktree and
+         * branch too, which on a card being deleted is exactly what is wanted, and is the only
+         * thing that actually frees the processes: a stopped session stays resident by design.
+         */
+        const going = (await board.load(target)).cards.find((entry) => entry.id === String(id))
+        if (going) await dispatch.letGoOf(going)
         const done = await board.deleteCard(target, String(id))
         changed(target)
         return done
@@ -327,6 +334,11 @@ export function activate(ctx: PluginMainContext): void {
         if (found.dirty) throw new Refusal('that worktree holds changes nobody committed')
         if (!found.landed) throw new Refusal('that worktree holds commits nothing has landed')
         await worktrees.remove(meta.workdir, found.path, found.branch)
+        /*
+         * The worktree is gone; the session that made it was still holding a process. Releasing
+         * it here is safe for the same reason removing the worktree was: its commits landed.
+         */
+        await dispatch.letGoOfWorktree(meta, found.path)
         return true
     })
 

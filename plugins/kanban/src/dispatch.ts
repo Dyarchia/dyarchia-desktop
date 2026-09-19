@@ -62,6 +62,55 @@ export interface Sink {
 const waiting = new Set<string>()
 const downgraded = new Set<string>()
 
+/*
+ * Let a finished run's session go.
+ *
+ * `stop` ends the work and leaves the session resident, which is the CLI's design: it is what
+ * makes `claude attach` work, and it is also why a board that only ever stopped runs left a
+ * process alive for each of them, holding the worktree, until somebody killed them by hand.
+ *
+ * `release` frees it, and for the claude harness it takes the session's worktree and its branch
+ * with it. So this refuses to run on a branch: an implement's commit lives there until something
+ * lands it, and a session is cheaper than the work it made. Reviews never have one, and neither
+ * does an implement that ran outside a git repository, so those go the moment they end.
+ *
+ * A release that fails says so on the run rather than disappearing, because a stop that silently
+ * failed is exactly how this went unnoticed.
+ */
+export async function letGo(run: Run): Promise<void> {
+    if (run.branch) return
+    try {
+        await harness.of(run).release(run)
+    } catch (thrown) {
+        const said = thrown instanceof Error ? thrown.message : String(thrown)
+        run.error = run.error ?? `its session ${run.shortId ?? ''} would not close: ${said}`.trim()
+    }
+}
+
+/* Everything this card ever started, gone: worktrees and branches included, which is the point. */
+export async function letGoOf(card: Card): Promise<void> {
+    for (const run of card.runs ?? []) await forget(run)
+}
+
+/* The session behind a worktree the board has just removed. Its commits landed; nothing is lost. */
+export async function letGoOfWorktree(meta: BoardMeta, path: string): Promise<void> {
+    const file = await board.load(meta.slug)
+    for (const card of file.cards) {
+        for (const run of card.runs ?? []) {
+            if (run.worktree && worktrees.same(run.worktree, path)) await forget(run)
+        }
+    }
+}
+
+async function forget(run: Run): Promise<void> {
+    if (!run.shortId) return
+    try {
+        await harness.of(run).release(run)
+    } catch {
+        /* What it was holding is already gone; a session that will not close cannot keep it. */
+    }
+}
+
 function tell(
     sink: Sink,
     meta: BoardMeta,
@@ -553,6 +602,7 @@ async function reconcile(
         if (finished || state === 'dead') {
             if (finished && state !== 'dead') await harness.of(run).stop(run)
             await resolve(file, meta, card, run, sink, progress)
+            await letGo(run)
             changed = true
             continue
         }
@@ -571,6 +621,7 @@ async function reconcile(
 
         if (overrun || silent) {
             await harness.of(run).stop(run)
+            await letGo(run)
             close(
                 run,
                 'stopped',

@@ -19,8 +19,25 @@ body,
 }
 
 .topbar-alpha {
+    flex: none;
     margin-right: auto;
     margin-left: var(--dya-space-2);
+    white-space: nowrap;
+}
+
+/*
+ * The brand is what gives way when the window is narrow. It is the one thing in this bar that
+ * is decoration: the version tag states which build this is and every key is a control, so the
+ * word is the only piece that can go without taking information with it.
+ *
+ * A media query rather than a container query, and this is the one place that is right: the
+ * title bar is the window, so the window width is the question being asked. Everything inside
+ * a panel asks the pane instead.
+ */
+@media (max-width: 720px) {
+    .topbar > .dya-brand {
+        display: none;
+    }
 }
 
 .topbar-right {
@@ -172,9 +189,53 @@ body,
     border-radius: var(--dya-radius) var(--dya-radius) 0 0;
 }
 
-.dock-empty {
+/*
+ * The launcher fills the dock when nothing is open in it. It is centred rather than pinned to the
+ * top because it is the whole content of the window at that moment, and it stops growing at 728px
+ * so a maximised window gets three tiles in a row rather than eight in a line.
+ */
+.launcher {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--dya-space-6);
     height: 100%;
-    gap: var(--dya-space-4);
+    padding: var(--dya-space-6) var(--dya-space-5);
+    overflow-y: auto;
+}
+
+.launcher-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--dya-space-3);
+    text-align: center;
+}
+
+.launcher-brand {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-display);
+    font-weight: var(--dya-weight-light);
+    letter-spacing: var(--dya-tracking-brand);
+    line-height: var(--dya-leading-tight);
+    text-transform: uppercase;
+}
+
+.launcher-lede {
+    text-wrap: balance;
+}
+
+.launcher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
+    gap: var(--dya-space-3);
+    width: 100%;
+    max-width: 728px;
+}
+
+.launcher-tile {
+    min-height: 124px;
 }
 
 .dv-shell.dockview-theme-abyss-spaced .dv-resize-container .dv-groupview {

@@ -192,6 +192,12 @@ const STYLES = `
 .set-log[hidden] {
     display: none;
 }
+.set-detail {
+    overflow-wrap: anywhere;
+}
+.set-tips {
+    display: contents;
+}
 `
 
 /* A path under the data home, in whatever separator the shell just handed back. */
@@ -209,13 +215,37 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
 export function activate(ctx: PluginContext): void {
     injectStyles(ctx.pluginId, STYLES)
 
-    ctx.registerPanel({ id: 'settings', title: 'Setup', icon: GEAR_ICON }, (container) => {
+    ctx.registerPanel(
+        {
+            id: 'settings',
+            title: 'Setup',
+            icon: GEAR_ICON,
+            note: 'Choose what this installation loads, and see where it writes.'
+        },
+        (container) => {
         const root = el('div', 'set')
 
         const head = el('div', 'set-head')
-        head.append(el('div', 'dya-eyebrow', 'Setup'))
-        const lede = el('p', 'dya-text set-lede')
+        head.append(el('h1', 'dya-title', 'Setup'))
+        const lede = el('p', 'dya-lede set-lede')
         head.append(lede)
+
+        /*
+         * Tips live in one holder under the panel root, so they leave with it. A detail that is a
+         * whole command — crawlee declares a five-line Python program as the proof its environment
+         * works — is collapsed to one line in the row and kept whole in the tip, because a row
+         * that wraps a script across four lines is the loudest thing on a screen about something
+         * else.
+         */
+        const tips = el('div', 'set-tips')
+        let tipSeq = 0
+        const withTip = (control: HTMLElement, text: string): void => {
+            const tip = el('div', 'dya-tip', text)
+            tip.id = `set-tip-${++tipSeq}`
+            tip.setAttribute('popover', 'hint')
+            tips.append(tip)
+            control.setAttribute('interestfor', tip.id)
+        }
 
         const scroll = el('div', 'set-scroll')
         const log = el('pre', 'dya-log set-log')
@@ -227,7 +257,7 @@ export function activate(ctx: PluginContext): void {
         restart.hidden = true
         foot.append(note, restart)
 
-        root.append(head, scroll, log, foot)
+        root.append(head, scroll, log, foot, tips)
         container.append(root)
 
         const wanted = new Set<string>()
@@ -277,7 +307,14 @@ export function activate(ctx: PluginContext): void {
                     status.met ? 'ready' : 'needed'
                 )
                 row.append(badge, el('span', 'dya-text', status.label))
-                row.append(el('span', 'dya-mono dya-text', status.detail))
+                const oneLine = status.detail.replace(/\s+/g, ' ').trim()
+                const detail = el(
+                    'span',
+                    'dya-mono dya-text set-detail',
+                    oneLine.length > 96 ? `${oneLine.slice(0, 95)}…` : oneLine
+                )
+                if (oneLine !== status.detail.trim()) withTip(detail, status.detail.trim())
+                row.append(detail)
                 box.append(row)
             }
 
@@ -294,7 +331,7 @@ export function activate(ctx: PluginContext): void {
 
             const install = el(
                 'button',
-                'dya-button dya-button--sm',
+                'dya-button dya-button--primary',
                 `Install what ${entry.manifest.name} needs`
             ) as HTMLButtonElement
             install.addEventListener('click', () => {

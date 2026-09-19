@@ -2,7 +2,14 @@ import { writeFileSync } from 'node:fs'
 
 const [out, expression, delayArg] = process.argv.slice(2)
 const delay = Number(delayArg ?? 800)
-const targets = await fetch('http://127.0.0.1:9222/json').then((r) => r.json())
+/*
+ * The port the shell was told to open, not the one it opens by default. Two instances cannot
+ * share a debugging port and the second to start loses it silently, so a workspace checkout
+ * running beside a packaged build — the ordinary case — needs to be reached by the variable
+ * that put it somewhere else.
+ */
+const port = process.env.DYARCHIA_DEBUG_PORT || '9222'
+const targets = await fetch(`http://127.0.0.1:${port}/json`).then((r) => r.json())
 const page = targets.find((t) => t.type === 'page' && !t.url.startsWith('devtools'))
 if (!page) throw new Error('no page target: ' + JSON.stringify(targets.map((t) => t.url)))
 const ws = new WebSocket(page.webSocketDebuggerUrl)

@@ -55,7 +55,13 @@ type HostMessage = { t: 'data'; d: string } | { t: 'exit'; code: number }
 
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
-        { id: 'terminal', title: 'Terminal', icon: TERMINAL_ICON, duplicable: true },
+        {
+            id: 'terminal',
+            title: 'Terminal',
+            icon: TERMINAL_ICON,
+            note: 'A shell whose session survives the panel being closed and reopened.',
+            duplicable: true
+        },
         (container, handle) => {
         injectStyles(ctx.pluginId, STYLES)
         container.classList.add('dyarchia-terminal')

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DockviewReact, themeAbyssSpaced } from 'dockview-react'
 import type {
     DockviewApi,
@@ -8,8 +8,9 @@ import type {
     IDockviewPanelHeaderProps,
     SerializedDockview
 } from 'dockview-react'
+import { Launcher } from '../components/Launcher'
 import { PluginPanel } from '../panels/PluginPanel'
-import { basePanelId, getPanel } from '../panels/registry'
+import { basePanelId, getPanel, getRegisteredPanels } from '../panels/registry'
 
 const dyarchiaTheme: DockviewTheme = {
     ...themeAbyssSpaced,
@@ -77,21 +78,24 @@ function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {
     )
 }
 
-function DockWatermark(): React.JSX.Element {
-    return (
-        <div className="dya-empty dock-empty">
-            <span className="dya-carved">dyarchia</span>
-            <span>Open a panel from the title bar.</span>
-        </div>
-    )
-}
-
 interface DockLayoutProps {
     onReady: (api: DockviewApi) => void
+    onOpen: (id: string) => void
 }
 
-export function DockLayout({ onReady }: DockLayoutProps): React.JSX.Element {
+export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Element {
     const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+    /*
+     * dockview remounts the watermark whenever the component identity changes, so it is memoised
+     * against the one thing it closes over. The registry is read at render rather than held in
+     * state: every plugin has registered by the time this mounts, because the dock is not rendered
+     * until the host has finished loading them.
+     */
+    const watermark = useMemo(
+        () => () => <Launcher panels={getRegisteredPanels().map((p) => p.descriptor)} onOpen={onOpen} />,
+        [onOpen]
+    )
 
     const handleReady = useCallback(
         async (event: DockviewReadyEvent) => {
@@ -126,7 +130,7 @@ export function DockLayout({ onReady }: DockLayoutProps): React.JSX.Element {
             theme={dyarchiaTheme}
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
-            watermarkComponent={DockWatermark}
+            watermarkComponent={watermark}
             rightHeaderActionsComponent={GroupActions}
             onReady={handleReady}
         />

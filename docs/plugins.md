@@ -55,7 +55,7 @@ about it.
     data          the folder it writes into, under the data home  the Setup panel
 
 `data` is a single folder name, never a path. The shell keeps one directory for everything a
-plugin produces on the user's behalf — `Documents/Dyarchia`, handed to a Python plugin as
+plugin produces on the user's behalf — `~/.dyarchia/data`, handed to a Python plugin as
 `DYARCHIA_DATA_HOME` and to a renderer by `ctx.shell.paths()` — and `data` is this plugin's
 folder inside it. Setup prints that path on the plugin's card, before anything is installed,
 so what a plugin will do to the machine is visible while it is still a question.
@@ -64,8 +64,8 @@ so what a plugin will do to the machine is visible while it is still a question.
 read-only, and the build that shipped as 0.1.0-alpha.1 was portable, which unpacks itself
 into `%TEMP%\<guid>` on every launch: a plugin resolving its storage against its own
 location wrote into a folder Windows deletes, at a different address each time. Derived
-state that can be rebuilt — an index, a cache, a scratch directory — goes under `userData`
-instead; only what the user would miss goes in the data home.
+state that can be rebuilt — an index, a cache, a scratch directory — goes under `userData`,
+which is `~/.dyarchia` itself; only what the user would miss goes in `data/` beneath it.
 
 A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two kinds exist:
 
@@ -79,7 +79,7 @@ A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two k
 ```
 
 `command` is checked on PATH and never installed: Setup reports it and shows the hint.
-`python` is acquired with uv, into `%APPDATA%/dyarchia/environments/<id>/.venv`, and the
+`python` is acquired with uv, into `~/.dyarchia/environments/<id>/.venv`, and the
 plugin is told where through `DYARCHIA_PLUGIN_ENV`. The sync is `--frozen --no-dev
 --no-editable`: frozen because the shipped lockfile is the one to install and resolving again
 would try to rewrite a read-only directory, and **non-editable because an editable install
@@ -244,14 +244,14 @@ external, and it is the only case.
     dev          plugins/<folder>/                          the shell scans the workspace
     example      examples/<folder>/                         scanned only with DYARCHIA_EXAMPLES
     packaged     resources/plugins/<id>/                    staged into the installer
-    by hand      %APPDATA%/dyarchia/plugins/<id>/           node scripts/install-plugins.mjs
+    by hand      ~/.dyarchia/plugins/<id>/                  node scripts/install-plugins.mjs
 
-**The bundled root wins over `%APPDATA%`**, in development and once packaged. An installed
+**The bundled root wins over `~/.dyarchia/plugins`**, in development and once packaged. An installed
 copy must never shadow the one being worked on, and a copy left behind by an older version is
 stale: letting it win reads the plugin from a manifest it no longer ships, silently. A plugin
-of an id nobody ships still loads from `%APPDATA%`, which is the case that root exists for; an
+of an id nobody ships still loads from `~/.dyarchia/plugins`, which is the case that root exists for; an
 installed copy of a plugin **deleted** from the workspace is discovered again for the same
-reason, so delete it from `%APPDATA%/dyarchia/plugins/` too.
+reason, so delete it from `~/.dyarchia/plugins/` too.
 
 **In a packaged build, being discovered is not being loaded.** The shell loads what
 `<userData>/plugins.json` names, which is what the Setup panel writes, and a fresh

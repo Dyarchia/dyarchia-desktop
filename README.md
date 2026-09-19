@@ -11,14 +11,14 @@ several of its parts are documented as working but unproven. What that means in 
   no code-signing certificate. That warning is accurate; the binary is not certified by
   anyone.
 - No release carries a promise about the next one. Layout, plugin data and the on-disk
-  formats under `%APPDATA%/dyarchia` may change without a migration.
+  formats under `~/.dyarchia` may change without a migration.
 - The shell ships every plugin and loads four of them: Setup, the terminal, the reader and
   the player. The two that need a toolchain of their own are a choice made in Setup, which
   also says what each one will download and where it will write.
 - The kanban plugin drives real agent CLIs, and those spend real money on your account when
   you point them at a real model. Read `plugins/kanban/README.md` before running a card.
 - The crawlee plugin needs a corpus repository. An installed copy is given one under
-  `Documents/Dyarchia/crawlee`; a checkout uses the `.env` beside its `pyproject.toml`, and
+  `~/Dyarchia/crawlee`; a checkout uses the `.env` beside its `pyproject.toml`, and
   its own README is the authority.
 
 Desktop shell for the dyarchia ecosystem. A panel container in the style of the Claude
@@ -92,7 +92,7 @@ The pieces:
         scripts/
             ensure-runtime.mjs   first-run check of the electron and python runtimes
             stage-plugins.mjs    collects plugins from their manifests, for the installer
-            install-plugins.mjs  the same, into %APPDATA%/dyarchia/plugins
+            install-plugins.mjs  the same, into ~/.dyarchia/plugins
             build-plugin.mjs     the shared esbuild invocation every plugin builds with
         docs/
             plugins.md           the whole plugin contract: code and UI
@@ -122,7 +122,7 @@ start menu and desktop shortcut:
 pnpm --filter @dyarchia/shell package
 ```
 
-Install plugins into %APPDATA%, to test an installed copy without building an installer.
+Install plugins into ~/.dyarchia, to test an installed copy without building an installer.
 A packaged build carries them already, so this is only for the copy that overrides it:
 
 ```bash
@@ -193,13 +193,13 @@ set and a browser. Ticking one records the choice; it loads on the next launch.
     -------------------------------   -------------------------------   ------
     resources/plugins/ (packaged)     everything the installer carried  first
     plugins/ (development)            the same set, from the workspace  first
-    %APPDATA%/dyarchia/plugins/       anything dropped in by hand       second
+    ~/.dyarchia/plugins/              anything dropped in by hand       second
 
 The bundled root wins, which is the rule this project has always had for development: an
 installed copy must never shadow the one being worked on. It holds once packaged for the
 same reason — a copy left behind by an older version is stale, and letting it win reads a
 plugin from a manifest it no longer ships. A plugin nobody ships still loads from
-`%APPDATA%`, which is what that root is for.
+`~/.dyarchia`, which is what that root is for.
 
 The restart is Electron's, not a decision. A plugin serving its own scheme needs
 `registerSchemesAsPrivileged` before `app.whenReady()`, and every main module is imported
@@ -227,7 +227,7 @@ out of every build for a reason nobody had chosen.
     python             an interpreter and its packages  yes, with uv
 
 Acquiring a Python environment downloads uv from its own release when it is not already
-there, then builds the environment in `%APPDATA%/dyarchia/environments/<id>/.venv` and tells
+there, then builds the environment in `~/.dyarchia/environments/<id>/.venv` and tells
 the plugin about it through `DYARCHIA_PLUGIN_ENV`. The plugin directory is read-only in a
 packaged build, and a portable one unpacks it somewhere new on every launch, so the
 environment lives elsewhere and holds no path back to it. Nothing is downloaded until
@@ -238,23 +238,35 @@ somebody presses the button, and every step skips what the machine already has.
 
     Data                  Path
     ------------------    -------------------------------------------
-    Layout                <userData>/layout.json
-    Enabled plugins       <userData>/plugins.json
-    Acquired tools        <userData>/tools/
-    Plugin environments   <userData>/environments/<id>/.venv
-    Installed plugins     %APPDATA%/dyarchia/plugins/<id>/
+    Layout                <root>/layout.json
+    Enabled plugins       <root>/plugins.json
+    Acquired tools        <root>/tools/
+    Plugin environments   <root>/environments/<id>/.venv
+    Installed plugins     <root>/plugins/<id>/
     Theme choice          renderer localStorage, key dyarchia:theme
-    Zoom level            <userData>/zoom.json
-    Hosted kanban runs    <userData>/kanban/hosted/<runId>.jsonl, .final.md, .stderr.txt
-    Corpus repositories   <dataHome>/crawlee/<repository>/{profiles,data,output}
-    Derived crawl state   <userData>/crawlee/{index,storage}
+    Zoom level            <root>/zoom.json
+    Hosted kanban runs    <root>/kanban/hosted/<runId>.jsonl, .final.md, .stderr.txt
+    Corpus repositories   <root>/data/crawlee/<repository>/{profiles,data,output}
+    Derived crawl state   <root>/crawlee/{index,storage}
 
-`<userData>` is `%APPDATA%/dyarchia` in dev and in an installed copy alike, because the
-product name is the same in both. `<dataHome>` is `Documents/Dyarchia`, and it is the one
-of the two a user is ever expected to open: a corpus repository is their own material,
-cloned and committed on its own, and a plugin that writes it somewhere unnamed has hidden
-their work from them. A plugin declares the folder it wants there with `data` in its
-manifest, and Setup prints the path before anything is installed.
+**`<root>` is `~/.dyarchia`**, in dev and in an installed copy alike, and it is everything
+this application keeps: one place to look, one to back up, one to delete. `DYARCHIA_HOME`
+moves it, and an explicit Chromium `--user-data-dir` still wins, which is how a second
+instance runs against a throwaway profile.
+
+It was two roots until 0.1.0-alpha.2, and both were places nobody chose. Electron's default
+`userData` is `%APPDATA%/dyarchia`, where nobody navigates; and `app.getPath('documents')` is
+the one path a machine redirects — on any Windows with OneDrive signed in it answers
+`…/OneDrive/Documentos`, which points a sync client at a git checkout that every crawl
+rewrites. **The shell moves an older installation's `%APPDATA%/dyarchia` into the new root on
+first launch**, once, as a rename: the layout, the enabled list, the Python environments and
+the kanban boards travel with it, and nothing is copied or left behind to go stale.
+
+`<root>/data/` is the half a user is expected to open: a corpus repository is their own
+material, cloned and committed on its own, and a plugin that writes it somewhere unnamed has
+hidden their work from them. A plugin declares the folder it wants there with `data` in its
+manifest, and Setup prints the path before anything is installed. Everything above `data/` is
+machine state and can be deleted without losing anything that was not rebuildable.
 
 **Nothing resolves a path against the plugin's own directory any more.** It did until
 0.1.0-alpha.1, and the build was portable, which unpacks itself into `%TEMP%\<guid>` on

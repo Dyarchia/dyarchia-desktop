@@ -569,6 +569,50 @@ textarea.dya-field {
     resize: vertical;
 }
 
+/*
+ * A form is a two-column grid: what the field is called, and the field. Nothing else.
+ *
+ * The system had no form, so every consumer invented one, and each of them reached for the same
+ * wrong answer — a centred paragraph above the input explaining what it does. Three of those in a
+ * column is a page of prose with three boxes in it, and the reader has to parse a sentence to find
+ * out that the next box takes a number. A label names; the sentence behind it is a tip on the
+ * label, which is where an explanation that is not always needed belongs.
+ */
+.dya-form {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: var(--dya-space-3) var(--dya-space-4);
+}
+
+.dya-form > .dya-label {
+    justify-self: start;
+}
+
+.dya-form > .dya-label[interestfor] {
+    cursor: help;
+    text-decoration: underline dotted var(--dya-border-strong);
+    text-underline-offset: 3px;
+}
+
+/* A row that is its own thing: a divider, a pair of controls, the actions at the end. */
+.dya-form__wide {
+    grid-column: 1 / -1;
+}
+
+.dya-form__actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    margin-top: var(--dya-space-2);
+}
+
+/* Whatever carries this, and everything after it, sits at the far end: destructive actions go there. */
+.dya-form__push {
+    margin-inline-start: auto;
+}
+
 .dya-select {
     position: relative;
     display: inline-flex;
@@ -848,6 +892,21 @@ textarea.dya-field {
  * and left; this is where the answer goes, and it is a row so that the obvious action and the
  * secondary one sit side by side rather than stacked into a list of equals.
  */
+/*
+ * The same absence, inside a list rather than instead of a screen. A region that is empty gets the
+ * centred block above; a group inside a populated view gets one quiet line where its first row
+ * would be, because centring 'nothing is running' in a band of its own makes the emptiest part of
+ * the screen the loudest.
+ */
+.dya-empty--inline {
+    align-items: flex-start;
+    padding: var(--dya-space-2) 0;
+    text-align: left;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
 .dya-empty__actions {
     display: flex;
     align-items: center;

@@ -339,13 +339,13 @@ wrong in ways the first consumer discovers rather than the author.
 Structure    pane bar (--flush --inset) card card__header brand carved
 Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (__icon __name __note)
-Input        field (--sm --auto) checkbox
+Input        field (--sm --auto) checkbox form (__wide __actions __push)
 Content      tag badge (--success --warning --danger --soft) table row
              title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
 Layers       menu menu__item (--selected) menu__shortcut tip
 Navigation   tabs tab
-Absence      empty (__actions) loading
+Absence      empty (--inline __actions) loading
 Assistive    sr-only
 ```
 
@@ -369,7 +369,18 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile` and
   nothing in it yet offers what to do next, and the shell's launcher is built from nothing
   else.
 - **`empty__actions` is the row under an empty state.** An empty state that only reports
-  the absence has described the problem and left.
+  the absence has described the problem and left. `empty--inline` is the same absence inside
+  a populated view: one quiet line where the first row would be, because centring "nothing is
+  running" in a band of its own makes the emptiest part of the screen the loudest.
+
+`form` belongs to the same argument from the other side. The system had no form, so every
+consumer invented one and each reached for the same wrong answer: a centred paragraph above
+the input explaining what it does. Three of those in a column is a page of prose with three
+boxes in it, and the reader parses a sentence to learn that the next box takes a number. A
+form is a two-column grid — **what the field is called, and the field** — and the sentence
+behind the name is a tip on the label. `__wide` spans both columns, `__actions` is the row at
+the end, and `__push` sends what carries it and everything after it to the far end, which is
+where a destructive action goes.
 
 `pane` is not a component either: it declares an element a query container under the name
 `pane` and carries no look at all. It exists because a panel's width is its own — in a dock

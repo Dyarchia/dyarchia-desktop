@@ -577,7 +577,7 @@ function mount(ctx, container) {
 
     function buildSearch() {
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
-        const query = el('input', 'dya-field crw-query')
+        const query = el('input', 'dya-field dya-field--prose crw-query')
         query.type = 'search'
         query.placeholder = 'ask it in words, enter to search'
         query.spellcheck = false
@@ -797,7 +797,7 @@ function mount(ctx, container) {
                 ['group', 'group', 'docs-labs'],
                 ['description', 'description', 'what this corpus is'],
             ]) {
-                const input = el('input', 'dya-field')
+                const input = el('input', `dya-field${key === 'description' ? ' dya-field--prose' : ''}`)
                 input.placeholder = placeholder
                 fields[key] = input
                 node.append(el('span', 'dya-key-label', label), input)

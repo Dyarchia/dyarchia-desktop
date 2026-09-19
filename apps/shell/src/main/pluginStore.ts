@@ -3,11 +3,18 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
 /*
- * Which plugins this installation has been told to load.
+ * Which plugins this installation has been told to load, and which ones it never asks about.
  *
- * The shell ships every plugin it knows about and loads none of them until somebody says so. A
- * feature nobody asked for costs a toggle in the top bar, and for the ones with a toolchain behind
- * them it costs the toolchain too, so the default is off and the setup panel is where it changes.
+ * The application is not an empty shell any more. A window with one gear in it is a question asked
+ * of somebody who has not seen the product yet, and the four plugins below are the product: Setup,
+ * a terminal, a reader and a player. They cost nothing to carry, they need no toolchain, and every
+ * one of them works the moment the window opens. They are not listed as choices because there is
+ * no version of this application that is better without them.
+ *
+ * What stays a choice is the plugin that reaches outside for something. kanban needs the Claude
+ * Code CLI and spends money on a real account; crawlee needs an interpreter, a package set and a
+ * browser, upwards of a gigabyte. Those are the ones worth a tick, and asking about them is the
+ * whole reason the setup panel exists.
  *
  * The file holds what was enabled rather than what was disabled. A plugin added in a later version
  * therefore arrives off, which is the answer that never surprises anybody: an update does not grow
@@ -19,8 +26,11 @@ import { dirname, join } from 'node:path'
  * first run a user gets is reproduced on purpose, for working on the panel itself.
  */
 
-const SETTINGS_ID = 'settings'
-const ALWAYS = new Set([SETTINGS_ID])
+const ALWAYS = new Set(['settings', 'terminal', 'docviewer', 'player'])
+
+export function isCore(id: string): boolean {
+    return ALWAYS.has(id)
+}
 
 let cached: Set<string> | null = null
 

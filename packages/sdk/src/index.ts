@@ -35,9 +35,15 @@ export interface PluginCatalogueEntry {
         name: string
         version: string
         description?: string
+        data?: string
         requires?: PluginRequirement[]
     }
     directory: string
+    /*
+     * Whether this plugin is part of the application rather than a choice. A core plugin is always
+     * loaded, is never written to the enabled list, and the setup panel shows it without a tick.
+     */
+    core: boolean
     enabled: boolean
     loaded: boolean
 }
@@ -62,8 +68,21 @@ export interface OpenerDescriptor {
     extensions: string[]
 }
 
+/*
+ * Where this installation keeps things. `dataHome` is the one a user opens: a folder under
+ * Documents, named after the application, holding whatever a plugin produces on their behalf. A
+ * plugin that writes something durable puts it there rather than beside its own code, which in a
+ * packaged build is a directory it does not own and must not assume will still exist.
+ */
+export interface ShellPaths {
+    dataHome: string
+    userData: string
+    application: string
+}
+
 export interface ShellApi {
     catalogue(): Promise<PluginCatalogue>
+    paths(): Promise<ShellPaths>
     enable(ids: string[]): Promise<string[]>
     relaunch(): Promise<void>
     /*

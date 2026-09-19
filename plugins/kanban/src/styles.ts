@@ -210,14 +210,35 @@ export const STYLES = `
     gap: var(--dya-space-2);
 }
 
+/*
+ * The one thing a reader scans a column for, so it is a step above everything under it: 13px
+ * against the 10px of the two lines below, which is the separation a card had none of when its
+ * title, its runner and its note were all 12px grey.
+ */
 .kanban-card-title {
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
     line-height: var(--dya-leading-body);
     color: var(--dya-text);
     overflow-wrap: anywhere;
 }
+
+.kanban-card-who {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-2);
+    min-width: 0;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
+.kanban-card-who[hidden] { display: none; }
+
+.kanban-card-harness { color: var(--dya-text-4); }
+
+.kanban-card-model { color: var(--dya-text-2); }
 
 .kanban-card-foot {
     display: flex;
@@ -406,11 +427,9 @@ export const STYLES = `
 
 .kanban-settings > .kanban-select { justify-self: stretch; }
 
+/* A cell in the settings grid. What it looks like is dya-label; this is only where it sits. */
 .kanban-setting {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-3);
+    justify-self: start;
 }
 
 .kanban-file {

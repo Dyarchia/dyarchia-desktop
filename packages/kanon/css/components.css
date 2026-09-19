@@ -659,6 +659,30 @@ textarea.dya-field {
 }
 
 /*
+ * A sentence, inside something this system sets in mono.
+ *
+ * Mono is for data — a path, a model name, a log line, a column of figures — and the field and
+ * the table are both mono because most of what they hold is data. A title someone typed, a brief,
+ * a description is prose, and prose set in mono at a tracking meant for identifiers reads as a
+ * ransom note: every word the same width and every letter held apart from the next. The eye stops
+ * reading words and starts reading characters.
+ *
+ * The rule the system already states is that interface text is uppercase and data keeps its case.
+ * This is the third case it never named: prose is neither, and it is sans.
+ */
+.dya-field--prose {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    line-height: var(--dya-leading-body);
+    letter-spacing: normal;
+}
+
+/* Sans is wider than the mono a small field was measured against, so it steps down a size. */
+.dya-field--sm.dya-field--prose {
+    font-size: var(--dya-size-body-sm);
+}
+
+/*
  * A form is a two-column grid: what the field is called, and the field. Nothing else.
  *
  * The system had no form, so every consumer invented one, and each of them reached for the same
@@ -1018,6 +1042,13 @@ textarea.dya-field {
 /* A column of figures is read down, so it is aligned down its right edge. */
 .dya-table .dya-table__num {
     text-align: right;
+}
+
+/* The cell that holds a sentence rather than a value. See `field--prose`. */
+.dya-table .dya-table__prose {
+    font-family: var(--dya-font-sans);
+    letter-spacing: normal;
+    color: var(--dya-text);
 }
 
 /*

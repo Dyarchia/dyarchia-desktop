@@ -1,4 +1,4 @@
-import { DEFAULT_HARNESS, isHarness } from './harness/index.js'
+import { DEFAULT_HARNESS, isHarness } from './harness/ids.js'
 import { Refusal } from './refusal.js'
 import type { HarnessId, Runner, Runners, RunnersPatch, RunKind } from './types.js'
 

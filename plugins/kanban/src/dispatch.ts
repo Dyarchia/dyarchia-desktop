@@ -60,6 +60,7 @@ export interface Sink {
 }
 
 const waiting = new Set<string>()
+const downgraded = new Set<string>()
 
 function tell(
     sink: Sink,
@@ -582,6 +583,38 @@ async function reconcile(
             sink.runEnded(meta.slug, card.id, 'stopped')
             changed = true
             continue
+        }
+
+        /*
+         * What the CLI gave us, against what the card asked for.
+         *
+         * A session asked for `auto` starts in Manual when the model does not support it, when a
+         * settings file disables it, or when the server declines — measured on 2026-09-20 with
+         * the same flag a minute apart: sonnet-5 recorded `auto`, haiku-4.5 recorded `default`.
+         * Nothing said so. The card sat in RUNNING, the worker stopped at the first edit waiting
+         * for a permission nobody was there to give, and the only thing that ever noticed was the
+         * stall detector, an hour later.
+         *
+         * The board already reads the session's own record to know whether a run is blocked. It
+         * reads this from the same place. It does not stop the run — a downgraded session that
+         * only has to read files finishes fine — it says so, once, and the reason is on the card
+         * when the worker does stop.
+         *
+         * Only for implement: a review is launched in `plan` on purpose, and comparing that
+         * against what the card asked for would report a difference the board itself made.
+         */
+        const inMode = run.kind === 'implement' ? (progress?.permissionMode ?? null) : null
+        if (inMode && inMode !== card.permissionMode && !downgraded.has(run.runId)) {
+            downgraded.add(run.runId)
+            run.error = `asked for ${card.permissionMode}, the session is in ${inMode}`
+            tell(
+                sink,
+                meta,
+                card,
+                `${card.title} is not running in ${card.permissionMode}`,
+                `the session came up in ${inMode}, so it stops at the first action that needs a permission`
+            )
+            changed = true
         }
 
         const asking = fleet.waiting(run)

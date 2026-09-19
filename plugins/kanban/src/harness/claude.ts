@@ -217,7 +217,8 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
         lastText: '',
         terminal: null,
         error: null,
-        modifiedAt: info.mtimeMs
+        modifiedAt: info.mtimeMs,
+        permissionMode: null
     }
 
     const texts: string[] = []
@@ -233,6 +234,16 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
 
         if (entry.type === 'system') {
             if (entry.subtype === 'turn_duration') result.ended = true
+            continue
+        }
+
+        /*
+         * The session writes the mode it is in every time it settles on one, and the last word is
+         * the one in force. This is how a launch that asked for `auto` and got Manual becomes a
+         * fact the board can read rather than a card that sits still for an hour.
+         */
+        if (entry.type === 'permission-mode') {
+            if (typeof entry.permissionMode === 'string') result.permissionMode = entry.permissionMode
             continue
         }
 

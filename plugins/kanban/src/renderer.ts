@@ -107,6 +107,7 @@ interface CardNode {
     title: HTMLElement
     who: HTMLElement
     marks: HTMLElement
+    foot: HTMLElement
     dot: HTMLElement
     note: HTMLElement
 }
@@ -592,7 +593,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         shell.addEventListener('dblclick', () => select(card.id))
 
-        return { root: shell, title, who, marks, dot, note }
+        return { root: shell, title, who, marks, foot, dot, note }
     }
 
     const paintCard = (card: Card): CardNode => {
@@ -659,6 +660,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         node.title.textContent = card.title
         node.dot.dataset.tone = tone
+        /*
+         * The dot is the state's colour and it has nothing to colour on its own. A card with
+         * nothing to report was rendering it alone on an empty line, which reads as a card that
+         * failed to draw rather than a card with nothing to say. The line exists when there is a
+         * line.
+         */
+        node.foot.hidden = bits.length === 0
         node.marks.hidden = marks.length === 0
         node.marks.replaceChildren(
             ...marks.map((mark) => el('span', 'dya-badge dya-badge--soft', mark))

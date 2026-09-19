@@ -15,6 +15,7 @@
     ],
     "boot": true,
     "description": "A web scraping toolkit that snapshots documentation and reports what changed",
+    "data": "crawlee",
     "requires": [
         {
             "kind": "python",

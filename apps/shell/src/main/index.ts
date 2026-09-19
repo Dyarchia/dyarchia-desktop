@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'node:path'
 import { registerLayoutStore } from './layoutStore'
+import { registerPaths } from './paths'
 import { registerWindowControls } from './windowControls'
 import { registerZoom } from './zoom'
 import { registerPluginScheme, setupPlugins } from './plugins'
@@ -64,6 +65,7 @@ app.whenReady().then(async () => {
     Menu.setApplicationMenu(null)
     registerLayoutStore()
     registerWindowControls()
+    registerPaths()
     await setupPlugins()
     createWindow()
     app.on('activate', () => {

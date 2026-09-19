@@ -12,12 +12,14 @@ several of its parts are documented as working but unproven. What that means in 
   anyone.
 - No release carries a promise about the next one. Layout, plugin data and the on-disk
   formats under `%APPDATA%/dyarchia` may change without a migration.
-- The shell ships every plugin and enables none. A fresh install opens an empty window on
-  purpose; the Setup panel is what turns a plugin on and acquires what it needs.
+- The shell ships every plugin and loads four of them: Setup, the terminal, the reader and
+  the player. The two that need a toolchain of their own are a choice made in Setup, which
+  also says what each one will download and where it will write.
 - The kanban plugin drives real agent CLIs, and those spend real money on your account when
   you point them at a real model. Read `plugins/kanban/README.md` before running a card.
-- The crawlee plugin needs a corpus repository that a fresh clone does not have, plus a
-  local `.env`. Its own README is the authority.
+- The crawlee plugin needs a corpus repository. An installed copy is given one under
+  `Documents/Dyarchia/crawlee`; a checkout uses the `.env` beside its `pyproject.toml`, and
+  its own README is the authority.
 
 Desktop shell for the dyarchia ecosystem. A panel container in the style of the Claude
 Desktop Code tab: it starts empty, and every feature registers itself as a plugin with its
@@ -29,8 +31,8 @@ own panels — draggable, resizable, and persistent across sessions.
 - Shell built on Electron + Vite + React + TypeScript, with dockview as the layout manager.
 - Each plugin is an independent project discovered at runtime: the shell never needs
   recompiling to add or remove functionality.
-- The installer carries every plugin and loads none of them. Which ones this installation
-  runs is a choice made in the Setup panel, and what each one needs beyond being copied is
+- The installer carries every plugin. Four are the application and always load; the rest
+  are a choice made in the Setup panel, and what each one needs beyond being copied is
   declared in its manifest and acquired there.
 - The panel contract is framework-agnostic: a plugin mounts whatever it wants — vanilla,
   React, another framework — inside the DOM container the shell hands it.
@@ -78,12 +80,11 @@ The pieces:
             pysdk/               dyarchia_sdk - python plugin runtime
         plugins/                 optional: delete a folder here and nothing else notices
             settings/            the Setup panel: which plugins load, and installing what they need
-            terminal/            embedded terminal (xterm.js + node-pty)
-            docviewer/           native file picker + markdown, mermaid, source toggle
-            player/              audio/video player (dyarchia-media://)
+            terminal/            embedded terminal (xterm.js + node-pty)        [always loaded]
+            docviewer/           native file picker + markdown, mermaid, source [always loaded]
+            player/              audio/video player (dyarchia-media://)         [always loaded]
             kanban/              a task board that dispatches work to Claude Code
             crawlee/             a crawling toolkit and the panel that drives it (python)
-            costs/               what every prompt to Claude Code cost, live from its transcripts
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module
@@ -112,7 +113,9 @@ Build every workspace:
 pnpm build
 ```
 
-Portable Windows package, producing apps/shell/release/dyarchia-x.y.z.exe:
+Windows installer, producing apps/shell/release/dyarchia-x.y.z-setup.exe. It installs per
+user into %LOCALAPPDATA%\Programs\dyarchia, offers to change that directory, and writes a
+start menu and desktop shortcut:
 
 ```bash
 pnpm --filter @dyarchia/shell package
@@ -176,9 +179,14 @@ The rules, in order:
 
 ## 5. Plugins are shipped, not installed
 
-**The application carries every plugin and starts with none of them loaded.** A first launch
-shows one panel, Setup, and nothing else. Ticking a plugin there records the choice; the
-plugin loads on the next launch.
+**The application carries every plugin, and four of them are the application.** Setup, the
+terminal, the reader and the player load on every launch and are not offered as a choice:
+they need no toolchain, they cost nothing to carry, and there is no version of this product
+that is better without a terminal in it.
+
+**What stays a choice is the plugin that reaches outside for something.** kanban wants the
+Claude Code CLI and spends money on a real account; crawlee wants an interpreter, a package
+set and a browser. Ticking one records the choice; it loads on the next launch.
 
     root                              holds                             wins
     -------------------------------   -------------------------------   ------
@@ -237,9 +245,20 @@ somebody presses the button, and every step skips what the machine already has.
     Theme choice          renderer localStorage, key dyarchia:theme
     Zoom level            <userData>/zoom.json
     Hosted kanban runs    <userData>/kanban/hosted/<runId>.jsonl, .final.md, .stderr.txt
+    Corpus repositories   <dataHome>/crawlee/<repository>/{profiles,data,output}
+    Derived crawl state   <userData>/crawlee/{index,storage}
 
-`<userData>` is `%APPDATA%/dyarchia` in dev and in the portable build alike, because the
-product name is the same in both.
+`<userData>` is `%APPDATA%/dyarchia` in dev and in an installed copy alike, because the
+product name is the same in both. `<dataHome>` is `Documents/Dyarchia`, and it is the one
+of the two a user is ever expected to open: a corpus repository is their own material,
+cloned and committed on its own, and a plugin that writes it somewhere unnamed has hidden
+their work from them. A plugin declares the folder it wants there with `data` in its
+manifest, and Setup prints the path before anything is installed.
+
+**Nothing resolves a path against the plugin's own directory any more.** It did until
+0.1.0-alpha.1, and the build was portable, which unpacks itself into `%TEMP%\<guid>` on
+every launch: the crawlee corpus was written into a folder Windows deletes, at a different
+address each time. That is why this ships as an installer.
 
 The theme is the one preference that does not go through the layout store. It is read
 synchronously before the first paint, and an IPC round trip would put a frame of the wrong

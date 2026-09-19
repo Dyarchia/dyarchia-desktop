@@ -1,8 +1,0 @@
-{
-    "id": "costs",
-    "name": "Costs",
-    "version": "0.1.0",
-    "renderer": "dist/renderer.js",
-    "main": "dist/main.js",
-    "description": "What every prompt to Claude Code cost, prompt by prompt, live from its own transcripts"
-}

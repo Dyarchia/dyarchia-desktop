@@ -992,12 +992,12 @@ textarea.dya-field {
  * A table has to look like one, and this one did not: it read as a run of loose lines with words
  * drifting under headings. Two causes, both measured.
  *
- * Its row rule was `--dya-rule`, which measures 1.05 against `--dya-surface-1` in Gi and 1.06 in
- * Rei — and this system's own rule is that a border under 1.40 against the ground it separates is
- * not there. It was not there. The rule is `--dya-border` now, 1.42 in Gi and 1.53 in Rei, which
- * is the only step in either ramp that clears the bar the system sets for itself. That contradicts
- * the note saying border marks a panel edge and hairline separates rows; the note loses, because
- * hairline measures 1.17 and 1.23 and a row separator nobody can see separates nothing.
+ * Its row rule was `--dya-rule`, which measured 1.05 against `--dya-surface-1` — and this
+ * system's own rule is that a border under 1.40 against the ground it separates is not there. It
+ * was not there. The rule is `--dya-border`, and the whole ramp has since been raised so that no
+ * step in it sits under the bar the system sets for itself: 1.79 in Gi and 1.98 in Rei. That
+ * contradicts the note saying border marks a panel edge and hairline separates rows; the note
+ * loses, because a row is a structural divide and reads as one.
  *
  * The head rule follows from the same arithmetic and was wrong in the same way. A header that
  * separates its column names from the rows less than the rows separate from each other is a
@@ -1159,7 +1159,7 @@ textarea.dya-field {
     display: flex;
     align-items: stretch;
     gap: var(--dya-space-4);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+    border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
 }
 
 .dya-tab {

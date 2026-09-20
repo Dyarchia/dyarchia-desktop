@@ -109,6 +109,12 @@ export interface PluginContext {
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
     onThemeChange(listener: () => void): () => void
+    /*
+     * The same `highlight` this package exports, handed over rather than imported, because a
+     * plugin the shell serves as written has no build step to import anything with. A panel
+     * showing code gets kanon's measured hues either way, and neither way carries a library.
+     */
+    highlight(source: string, language?: string): string
     shell: ShellApi
 }
 

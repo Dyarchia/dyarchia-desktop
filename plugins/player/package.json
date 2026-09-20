@@ -2,6 +2,7 @@
     "name": "@dyarchia/plugin-player",
     "version": "0.1.0",
     "private": true,
+    "license": "MIT",
     "type": "module",
     "scripts": {
         "build": "pnpm build:renderer && pnpm build:main",

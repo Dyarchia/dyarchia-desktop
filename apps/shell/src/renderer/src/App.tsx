@@ -30,10 +30,19 @@ export function App(): React.JSX.Element {
         (dockApi: DockviewApi) => {
             ;(window as { __dockApi?: DockviewApi }).__dockApi = dockApi
             setApi(dockApi)
+            /*
+             * A restored layout carries the titles it was saved with, so a panel that has since
+             * been renamed keeps the old name on its tab for as long as that layout survives —
+             * a name nobody chose, on the one surface that says what a panel is. The plugin's
+             * descriptor is the authority, and a panel whose plugin is no longer installed goes.
+             */
             for (const panel of [...dockApi.panels]) {
                 const base = basePanelId(panel.id)
-                if (!getRegisteredPanels().some((p) => p.descriptor.id === base)) {
+                const descriptor = getRegisteredPanels().find((p) => p.descriptor.id === base)
+                if (!descriptor) {
                     dockApi.removePanel(panel)
+                } else if (panel.title !== descriptor.descriptor.title) {
+                    panel.api.setTitle(descriptor.descriptor.title)
                 }
             }
             refreshOpenPanels(dockApi)

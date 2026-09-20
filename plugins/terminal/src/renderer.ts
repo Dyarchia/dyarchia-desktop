@@ -59,7 +59,7 @@ export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
         {
             id: 'terminal',
-            title: 'Terminal',
+            title: 'CLI',
             icon: TERMINAL_ICON,
             note: 'A shell whose session survives the panel being closed and reopened.',
             duplicable: true

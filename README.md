@@ -1,6 +1,6 @@
 # dyarchia-desktop
 
-**ALPHA — 0.2.2-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.2.3-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 This is an early build published so it can be installed and exercised on a second machine.
@@ -323,3 +323,18 @@ the pair shows.
 Known note: dockview 8 logs a console error about the ContextMenu module of
 dockview-enterprise. It is harmless — the free edition is warning that tab context menus
 are a paid feature. Nothing in the shell is affected.
+
+## 9. Licence and attribution
+
+dyarchia is MIT licensed. See [LICENSE](LICENSE).
+
+The crawling in the crawlee plugin is not this project's work: it is
+[Crawlee for Python](https://github.com/apify/crawlee-python), by Apify, under Apache-2.0.
+What this repository adds around it is the corpus, the profiles, the search index and the
+panel. Crawlee is not redistributed here — Setup builds a Python environment on your machine
+and installs it from PyPI, so the copy you run is the one Apify publishes.
+
+[NOTICE.md](NOTICE.md) lists everything else: what ships inside the installer, what the Setup
+panel fetches on demand, and the agent CLIs the kanban drives without bundling any of them.
+An installed copy carries `LICENSE.txt`, `NOTICE.md` and `licenses/OFL.txt` beside the
+executable, next to the Electron and Chromium notices that were already there.

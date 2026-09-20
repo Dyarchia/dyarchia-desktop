@@ -38,8 +38,15 @@ export function registerPanel(descriptor: PanelDescriptor, mount: PanelMount): v
     for (const listener of listeners) listener()
 }
 
+/*
+ * By title, because the order plugins register in is the order a directory listing happened to
+ * come back in, and nothing the reader can see explains it. Both the top bar and the launcher
+ * read this, so they agree, and a key does not move because a plugin loaded a moment sooner.
+ */
 export function getRegisteredPanels(): RegisteredPanel[] {
-    return [...panels.values()]
+    return [...panels.values()].sort((a, b) =>
+        a.descriptor.title.localeCompare(b.descriptor.title)
+    )
 }
 
 export function getPanel(id: string): RegisteredPanel | undefined {

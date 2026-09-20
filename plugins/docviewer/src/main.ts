@@ -1,5 +1,5 @@
 import { BrowserWindow, dialog } from 'electron'
-import { readFile, stat } from 'node:fs/promises'
+import { readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, extname } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
@@ -36,6 +36,12 @@ async function load(filePath: string): Promise<Record<string, unknown>> {
             name: basename(filePath),
             path: filePath,
             markdown: extname(filePath).toLowerCase() === '.md',
+            /*
+             * What the file was when it was read. A panel that lets somebody edit has to be able
+             * to tell a save from an overwrite, and the only honest way to know is to compare
+             * this against the file on disk at the moment of writing.
+             */
+            mtime: info.mtimeMs,
             content: await readFile(filePath, 'utf-8')
         }
     } catch {
@@ -58,5 +64,37 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('read', async (target: unknown) => {
         if (typeof target !== 'string' || !target) return { error: 'No file to open' }
         return load(target)
+    })
+
+    /*
+     * The one thing in this plugin that changes something. It writes only where it was told, only
+     * a file it already read, and only when what is on disk is still what was read — unless the
+     * caller says to overwrite, which the panel asks for a second time before it sends.
+     */
+    ctx.handle('write', async (payload: unknown) => {
+        const { path, content, mtime, force } = (payload ?? {}) as {
+            path?: unknown
+            content?: unknown
+            mtime?: unknown
+            force?: unknown
+        }
+        if (typeof path !== 'string' || !path) return { error: 'No file to save' }
+        if (typeof content !== 'string') return { error: 'Nothing to save' }
+
+        try {
+            const info = await stat(path)
+            if (force !== true && typeof mtime === 'number' && info.mtimeMs !== mtime) {
+                return { stale: true }
+            }
+        } catch {
+            return { error: 'That file is no longer there' }
+        }
+
+        try {
+            await writeFile(path, content, 'utf-8')
+            return { mtime: (await stat(path)).mtimeMs }
+        } catch {
+            return { error: 'Cannot write to that file' }
+        }
     })
 }

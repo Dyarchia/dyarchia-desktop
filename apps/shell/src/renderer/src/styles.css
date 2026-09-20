@@ -213,10 +213,6 @@ body,
     text-align: center;
 }
 
-.launcher-lede {
-    text-wrap: balance;
-}
-
 .launcher-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));

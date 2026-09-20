@@ -96,10 +96,6 @@ const STYLES = `
     gap: var(--dya-space-3);
     flex-wrap: wrap;
 }
-.set-section-note {
-    flex: 1;
-    min-width: 24ch;
-}
 .set-item {
     display: flex;
     gap: var(--dya-space-4);
@@ -398,17 +394,16 @@ export function activate(ctx: PluginContext): void {
             return item
         }
 
-        function section(title: string, hint: string): HTMLElement {
+        function section(title: string): HTMLElement {
             const box = el('section', 'set-section')
             const header = el('div', 'set-section-head')
             header.append(el('span', 'dya-eyebrow', title))
-            if (hint) header.append(el('span', 'dya-text set-section-note', hint))
             box.append(header)
             return box
         }
 
         function renderPaths(paths: Paths): HTMLElement {
-            const box = section('Paths', '')
+            const box = section('Paths')
             const table = el('table', 'dya-table')
             const body = el('tbody')
 
@@ -454,14 +449,14 @@ export function activate(ctx: PluginContext): void {
             /*
              * Where it writes, what it already loads, and only then what is a decision. The order
              * used to open on the decision, which is the one thing here most people never make,
-             * and left the paths at the bottom of a scroll. The sentence about the two optional
-             * plugins moved with them: it was a lede at the top of a panel whose subject was two
-             * sections further down.
+             * and left the paths at the bottom of a scroll. The sentence that used to head the
+             * panel is gone: a section called Optional, holding two plugins that each say what
+             * they need, had already said it.
              */
             scroll.append(renderPaths(paths))
 
             if (core.length > 0) {
-                const included = section('Included', '')
+                const included = section('Included')
                 const table = el('table', 'dya-table')
                 const body = el('tbody')
                 for (const entry of core) {
@@ -477,7 +472,7 @@ export function activate(ctx: PluginContext): void {
                 scroll.append(included)
             }
 
-            const choices = section('Optional', 'These need something the download cannot carry.')
+            const choices = section('Optional')
             for (const entry of optional) choices.append(renderOptional(entry))
             scroll.append(choices)
 

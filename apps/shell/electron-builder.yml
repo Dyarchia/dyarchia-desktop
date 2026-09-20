@@ -20,6 +20,16 @@ extraResources:
     - from: build/plugins/node_modules
       to: plugins/node_modules
 asar: true
+# Beside the executable, where Electron and Chromium already put theirs. The Open Font License
+# asks that every copy of the fonts carry the licence and both copyright notices, and the fonts
+# are inside the renderer bundle, so the notice travels next to it.
+extraFiles:
+    - from: ../../LICENSE
+      to: LICENSE.txt
+    - from: ../../NOTICE.md
+      to: NOTICE.md
+    - from: ../../packages/kanon/fonts/OFL.txt
+      to: licenses/OFL.txt
 # Chromium ships 55 locale files, 48 MB, and they are its own strings — the menu it draws on a
 # right click. Nothing in this application is translated, so the rest cannot be reached.
 electronLanguages:

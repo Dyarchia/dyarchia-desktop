@@ -1,6 +1,6 @@
 {
     "name": "dyarchia-desktop",
-    "version": "0.2.1-alpha",
+    "version": "0.2.2-alpha",
     "private": true,
     "packageManager": "pnpm@10.23.0",
     "scripts": {

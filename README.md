@@ -1,6 +1,6 @@
 # dyarchia-desktop
 
-**ALPHA — 0.2.1-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.2.2-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 This is an early build published so it can be installed and exercised on a second machine.

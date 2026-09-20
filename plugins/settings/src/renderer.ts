@@ -76,10 +76,6 @@ const STYLES = `
     padding: var(--dya-space-5) var(--dya-space-5) var(--dya-space-4);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
 }
-.set-lede {
-    margin-top: var(--dya-space-2);
-    max-width: 68ch;
-}
 .set-scroll {
     flex: 1;
     min-height: 0;
@@ -99,10 +95,6 @@ const STYLES = `
     align-items: baseline;
     gap: var(--dya-space-3);
     flex-wrap: wrap;
-}
-.set-section-note {
-    flex: 1;
-    min-width: 24ch;
 }
 .set-item {
     display: flex;
@@ -215,8 +207,6 @@ export function activate(ctx: PluginContext): void {
 
         const head = el('div', 'set-head')
         head.append(el('h1', 'dya-title', 'Setup'))
-        const lede = el('p', 'dya-lede set-lede')
-        head.append(lede)
 
         /*
          * Tips live in one holder under the panel root, so they leave with it. A detail that is a
@@ -350,7 +340,6 @@ export function activate(ctx: PluginContext): void {
             const body = el('div', 'set-body')
             const title = el('div', 'set-title')
             title.append(el('strong', 'dya-text', entry.manifest.name))
-            title.append(el('span', 'dya-mono dya-text', `v${entry.manifest.version}`))
 
             const state = loadedIds.has(entry.manifest.id)
                 ? { text: 'loaded', kind: 'dya-badge--success' }
@@ -404,17 +393,16 @@ export function activate(ctx: PluginContext): void {
             return item
         }
 
-        function section(title: string, hint: string): HTMLElement {
+        function section(title: string): HTMLElement {
             const box = el('section', 'set-section')
             const header = el('div', 'set-section-head')
             header.append(el('span', 'dya-eyebrow', title))
-            if (hint) header.append(el('span', 'dya-text set-section-note', hint))
             box.append(header)
             return box
         }
 
         function renderPaths(paths: Paths): HTMLElement {
-            const box = section('Where things go', '')
+            const box = section('Paths')
             const table = el('table', 'dya-table')
             const body = el('tbody')
 
@@ -455,16 +443,19 @@ export function activate(ctx: PluginContext): void {
             wanted.clear()
             for (const entry of optional) if (entry.enabled) wanted.add(entry.manifest.id)
 
-            lede.textContent = 'These two need something Dyarchia cannot carry. The rest always loads.'
-
             scroll.replaceChildren()
 
-            const choices = section('Optional', '')
-            for (const entry of optional) choices.append(renderOptional(entry))
-            scroll.append(choices)
+            /*
+             * Where it writes, what it already loads, and only then what is a decision. The order
+             * used to open on the decision, which is the one thing here most people never make,
+             * and left the paths at the bottom of a scroll. The sentence that used to head the
+             * panel is gone: a section called Optional, holding two plugins that each say what
+             * they need, had already said it.
+             */
+            scroll.append(renderPaths(paths))
 
             if (core.length > 0) {
-                const included = section('Included', '')
+                const included = section('Included')
                 const table = el('table', 'dya-table')
                 const body = el('tbody')
                 for (const entry of core) {
@@ -480,7 +471,9 @@ export function activate(ctx: PluginContext): void {
                 scroll.append(included)
             }
 
-            scroll.append(renderPaths(paths))
+            const choices = section('Optional')
+            for (const entry of optional) choices.append(renderOptional(entry))
+            scroll.append(choices)
 
             refreshFoot()
         }

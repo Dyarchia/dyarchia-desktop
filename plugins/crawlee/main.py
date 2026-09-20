@@ -107,20 +107,46 @@ def _installed_paths(root: Path) -> dict[str, str]:
     if not home or (root / '.env').is_file():
         return {}
 
-    corpora = Path(home) / 'crawlee'
-    default = corpora / 'local'
-    derived = Path(os.environ.get('DYARCHIA_USER_DATA', home)) / 'crawlee'
-    for directory in (default / 'profiles', default / 'data', default / 'output'):
-        directory.mkdir(parents=True, exist_ok=True)
+    """A value the environment already carries is a choice somebody made, and it is kept.
 
-    return {
-        'DYARCHIA_CRAWLEE_REPOSITORIES_DIR': str(corpora),
-        'DYARCHIA_CRAWLEE_DATA_DIR': str(default / 'data'),
-        'DYARCHIA_CRAWLEE_PROFILES_DIR': str(default / 'profiles'),
-        'DYARCHIA_CRAWLEE_OUTPUT_DIR': str(default / 'output'),
-        'DYARCHIA_CRAWLEE_INDEX_DIR': str(derived / 'index'),
-        'DYARCHIA_CRAWLEE_STORAGE_DIR': str(derived / 'storage'),
+    Everything below is a default, which is what an installation owes a machine that has said
+    nothing. It is not an instruction. Somebody who keeps their corpora somewhere else says so
+    once, in their own environment, and every installation after this one finds them there:
+
+        setx DYARCHIA_CRAWLEE_REPOSITORIES_DIR "D:/wherever/crawlee-data"
+
+    The repositories directory is the root the rest hang off, so setting only that one moves the
+    corpora, the profiles and the output together and leaves the derived data where it belongs.
+    """
+    derived = Path(os.environ.get('DYARCHIA_USER_DATA', home)) / 'crawlee'
+    settings = {
+        name: value
+        for name, value in (
+            ('DYARCHIA_CRAWLEE_INDEX_DIR', str(derived / 'index')),
+            ('DYARCHIA_CRAWLEE_STORAGE_DIR', str(derived / 'storage')),
+        )
+        if not os.environ.get(name)
     }
+
+    """The corpora this installation made, and the three directories inside the one it made them
+    in. Somebody who brought their own corpora brought their own layout with them, and `local` is
+    not a repository they have: the toolkit's own settings resolve those, which is the answer a
+    checkout already gets.
+    """
+    if not os.environ.get('DYARCHIA_CRAWLEE_REPOSITORIES_DIR'):
+        corpora = Path(home) / 'crawlee'
+        default = corpora / 'local'
+        settings['DYARCHIA_CRAWLEE_REPOSITORIES_DIR'] = str(corpora)
+        for name, directory in (
+            ('DYARCHIA_CRAWLEE_DATA_DIR', default / 'data'),
+            ('DYARCHIA_CRAWLEE_PROFILES_DIR', default / 'profiles'),
+            ('DYARCHIA_CRAWLEE_OUTPUT_DIR', default / 'output'),
+        ):
+            if not os.environ.get(name):
+                directory.mkdir(parents=True, exist_ok=True)
+                settings[name] = str(directory)
+
+    return settings
 
 
 def _spawn(args: list[str], **extra: Any) -> subprocess.Popen[str]:

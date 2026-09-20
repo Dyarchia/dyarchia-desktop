@@ -12,6 +12,10 @@ import type { PanelDescriptor } from '../panels/registry'
  * it is for. Nothing here knows any plugin: the registry is whatever loaded, so a panel added
  * tomorrow appears without this file changing, and an installation that turned everything off
  * still gets Setup.
+ *
+ * The word is the only thing above the tiles. There was a sentence under it explaining that the
+ * window is made of panels, which is a thing the screen is already showing: six of them, named,
+ * waiting to be clicked.
  */
 
 interface LauncherProps {
@@ -24,10 +28,6 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
         <div className="launcher">
             <div className="launcher-head">
                 <span className="dya-carved">dyarchia</span>
-                <p className="dya-lede launcher-lede">
-                    A window made of panels. Open what you need, drag it where you want it, and
-                    the layout is there again next time.
-                </p>
             </div>
             <div className="launcher-grid">
                 {panels.map((panel) => (

@@ -105,25 +105,23 @@ the weakest ink in the system: text on the canvas, the sunken step, the chassis,
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #45423b         1.87           1.79
---dya-border-strong    #5c584f         2.64           2.53
---dya-hairline         #3a3833         1.60           1.53
+--dya-border           #35332e         1.48           1.42
+--dya-border-strong    #4a473f         2.02           1.93
+--dya-hairline         #262521         1.22           1.17
 ```
 
 A border is a graphical object and the 3.00 bar does not apply to it, but a border that
-measures under 1.40 against the ground it separates is not there. **All three clear it on
-every surface a divider is drawn on**, which is the point of there being three: they differ
-in weight, not in whether they exist. `--dya-border-strong` is a structural divide — a tab
-strip over the content it switches, a table head over its body. `--dya-border` marks a panel
-edge and the row rule inside a table. `--dya-hairline` is the quietest divide inside one
-surface, and is never the outline of a container.
+measures under 1.40 against the ground it separates is not there. `--dya-border` marks a
+panel edge on the chassis and **the row rule inside a table**; `--dya-hairline` separates
+rows inside one surface and is never the outline of a container.
 
-**The ramp was raised, and that is a correction.** The three sat at 1.42, 1.93 and 1.17 in
-Gi: one at the floor, one above it, and one a third of the way under. A tab strip drawn with
-the hairline measured 1.17 against the surface it separated and could not be seen at all —
-which is how it was found. `--dya-rule` is gone with the same pass: at 1.05 it was the one
-step in either ramp that no amount of placement could rescue, and its last consumer, a
-vertical divider between two controls in the kanban, takes the hairline.
+**A table's rule is `--dya-border`, and that is a correction.** It was `--dya-rule`, which
+measures 1.05 against `--dya-surface-1` in Gi and 1.06 in Rei: a separator this system's own
+sentence says is not there, and a table whose rows it separated read as a run of loose lines
+with words drifting under headings. `--dya-hairline` does not save it either, at 1.17 and
+1.23. `--dya-border` is the only step in either ramp that clears 1.40 — 1.42 in Gi, 1.53 in
+Rei — so the rule that says where a border goes loses to the rule that says what a border
+has to measure.
 
 
 ## Rei
@@ -173,9 +171,9 @@ and measure 8.46 on the accent, 11.29 on success, 10.31 on warning and 9.90 on d
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #3a4873         2.08           1.98
---dya-border-strong    #4a5b8a         2.78           2.66
---dya-hairline         #2c3859         1.60           1.53
+--dya-border           #2c3859         1.60           1.53
+--dya-border-strong    #41507a         2.34           2.24
+--dya-hairline         #1f2946         1.29           1.23
 ```
 
 The elevation tokens are redefined because the contour ring is the theme's own darkest blue

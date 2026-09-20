@@ -155,14 +155,56 @@ const STYLE = `
     gap: var(--dya-space-2);
     min-width: 0;
 }
+/*
+ * A profile is the one thing in this panel somebody writes by hand, and it was a wall of one
+ * ink. The same arrangement the reader uses: the text highlighted in a pre, and a textarea with
+ * no colour of its own lying exactly on top of it. Every metric that decides where a glyph lands
+ * is set on both, and neither may drift from the other.
+ */
 .crw-yaml {
+    position: relative;
     flex: 1;
     min-height: 140px;
-    resize: none;
-    tab-size: 2;
+    overflow: auto;
 }
 .crw-yaml[hidden] {
     display: none;
+}
+.crw-yaml > pre,
+.crw-yaml > textarea {
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    line-height: var(--dya-leading-body);
+    letter-spacing: var(--dya-tracking-mono);
+    tab-size: 2;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+.crw-yaml > pre {
+    min-height: 100%;
+    background: transparent;
+    border-radius: 0;
+    overflow-x: visible;
+    pointer-events: none;
+}
+.crw-yaml > textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    resize: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--dya-accent);
+    outline: none;
+    overflow: hidden;
+}
+.crw-yaml > textarea::selection {
+    background: var(--dya-selected);
+    color: transparent;
 }
 /*
  * With nothing picked there is no profile to edit and nothing for the bar to act on, so the
@@ -610,13 +652,12 @@ function mount(ctx, container) {
         const go = el('button', 'dya-button dya-button--primary', 'Search')
         bar.append(query, scopeBox, go)
 
+        /*
+         * The field already says to ask it in words, and it says so inside the box somebody is
+         * about to type in. Saying it again in the middle of the empty half of the panel is the
+         * same sentence twice, once where it is needed and once where nothing is happening.
+         */
         const hits = el('div', 'crw-hits')
-        const idle = el(
-            'div',
-            'dya-empty',
-            'Ask a question in words. The exact phrase is tried first, then the words near each other, then all of them.'
-        )
-        hits.appendChild(idle)
         searching.append(bar, hits)
 
         go.addEventListener('click', () => void run())
@@ -715,14 +756,13 @@ function mount(ctx, container) {
         const save = el('button', 'dya-button dya-button--sm', 'Save')
         bar.append(title, inspect, save)
 
-        const yaml = el('textarea', 'dya-field dya-mono crw-yaml')
-        yaml.spellcheck = false
+        const yaml = buildYaml()
         const note = el('div', 'dya-text crw-note')
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
 
         const form = buildForm()
-        editor.append(bar, form.node, yaml, note, log)
+        editor.append(bar, form.node, yaml.node, note, log)
         split.append(list, editor)
         targets.appendChild(split)
 
@@ -731,7 +771,7 @@ function mount(ctx, container) {
         function picked(name) {
             current = name
             title.textContent = name ?? ''
-            yaml.hidden = name === null
+            yaml.node.hidden = name === null
             editor.dataset.empty = String(name === null)
         }
 
@@ -820,7 +860,39 @@ function mount(ctx, container) {
             note.textContent = text
         }
 
-        function buildForm() {
+        /*
+     * A field that is two elements, offered as one. The textarea is as tall as its own text so it
+     * never scrolls on its own and there are not two scroll positions to hold in step; the frame
+     * scrolls, and the caret stays in view because it is inside the frame.
+     */
+    function buildYaml() {
+        const node = el('div', 'dya-field crw-yaml')
+        const behind = el('pre', 'dya-code')
+        const field = el('textarea')
+        field.spellcheck = false
+
+        const repaint = () => {
+            behind.innerHTML = ctx.highlight(`${field.value}\n`, 'yaml')
+            field.style.height = `${Math.max(behind.scrollHeight, node.clientHeight)}px`
+        }
+
+        field.addEventListener('input', repaint)
+        new ResizeObserver(repaint).observe(node)
+        node.append(behind, field)
+
+        return {
+            node,
+            get value() {
+                return field.value
+            },
+            set value(next) {
+                field.value = next
+                repaint()
+            }
+        }
+    }
+
+    function buildForm() {
             const node = el('div', 'crw-form')
             node.hidden = true
             const fields = {}

@@ -13,6 +13,9 @@ importers:
       '@dyarchia/kanon':
         specifier: workspace:*
         version: link:../../packages/kanon
+      '@dyarchia/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       dockview:
         specifier: ^8.0.0
         version: 8.0.0

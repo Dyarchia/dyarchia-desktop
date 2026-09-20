@@ -340,7 +340,6 @@ export function activate(ctx: PluginContext): void {
             const body = el('div', 'set-body')
             const title = el('div', 'set-title')
             title.append(el('strong', 'dya-text', entry.manifest.name))
-            title.append(el('span', 'dya-mono dya-text', `v${entry.manifest.version}`))
 
             const state = loadedIds.has(entry.manifest.id)
                 ? { text: 'loaded', kind: 'dya-badge--success' }

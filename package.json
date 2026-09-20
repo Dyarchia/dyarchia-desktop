@@ -1,6 +1,6 @@
 {
     "name": "dyarchia-desktop",
-    "version": "0.2.2-alpha",
+    "version": "0.2.3-alpha",
     "private": true,
     "license": "MIT",
     "packageManager": "pnpm@10.23.0",

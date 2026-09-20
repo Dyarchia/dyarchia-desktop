@@ -328,7 +328,7 @@ export function activate(ctx) {
             id: 'crawlee',
             title: 'Crawlee',
             icon: ICON,
-            note: 'Snapshot documentation on a schedule and search everything it has kept.'
+            note: 'Snapshot a site and search everything it has kept.'
         },
         (container) =>
         mount(ctx, container)

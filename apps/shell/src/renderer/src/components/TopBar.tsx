@@ -34,7 +34,6 @@ function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
  */
 interface KeyProps {
     label: string
-    hint?: string
     active?: boolean
     className?: string
     onClick: () => void
@@ -44,7 +43,6 @@ interface KeyProps {
 
 function TipKey({
     label,
-    hint,
     active,
     className,
     onClick,
@@ -66,7 +64,7 @@ function TipKey({
                 {children}
             </button>
             <div className="dya-tip" popover="hint" id={id}>
-                {hint ?? label}
+                {label}
             </div>
         </>
     )
@@ -132,7 +130,6 @@ export function TopBar({
                         <TipKey
                             key={panel.id}
                             label={panel.title}
-                            hint={panel.note ?? panel.title}
                             active={openPanelIds.has(panel.id)}
                             onClick={() => onToggle(panel.id)}
                         >

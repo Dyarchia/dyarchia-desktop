@@ -22,10 +22,11 @@ win:
 # %TEMP%\<guid> on every launch, which made the installation directory both unfindable and
 # different each time: every plugin resolving a path against its own directory — crawlee resolves
 # its corpus, its profiles and its index that way — was writing into a folder Windows deletes.
-# `perMachine: false` does not mean per user. It means the installer asks, and the answer that
-# installs for everyone lands the application in Program Files, where it cannot write, under a
-# key it needed elevation to make. `installer.nsh` gives the answer, so the question is never
-# put and elevation is never requested.
+# `installer.nsh` holds two things NSIS has no option for: the install directory, which is
+# ~/.dyarchia/app and not %LOCALAPPDATA%\Programs, and the answer to the question an assisted
+# installer asks about who the application is for. `perMachine: false` does not mean per user,
+# it means the installer asks, and the answer that installs for everyone elevates into Program
+# Files, where the application cannot write.
 nsis:
     oneClick: false
     perMachine: false

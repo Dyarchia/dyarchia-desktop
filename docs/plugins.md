@@ -129,6 +129,14 @@ anything else is answering a question that is not its own.
 plugin's style tag once. Call it at the top of the mount, not at module scope, so a plugin
 never opened never touches the document.
 
+`highlight(source, language)` and `highlightLines(source, language)` are exported the same
+way. Both colour code by emitting `dya-code__*` spans, which kanon declares and measures, so
+a plugin showing code never picks a colour of its own and never carries a highlighting
+library. `highlightLines` returns one string of HTML per line, for a panel that has to be
+able to point at line 412; a multi-line token is wrapped again on each line it crosses, so
+the count always matches the file. The language is a file extension or the word a fenced
+block declares, and one it does not know is shown uncoloured rather than guessed at.
+
 ```typescript
 import type { PluginContext } from '@dyarchia/sdk'
 

@@ -1,13 +1,21 @@
 import { marked } from 'marked'
-import { injectStyles } from '@dyarchia/sdk'
+import { highlight, highlightLines, injectStyles } from '@dyarchia/sdk'
 import type { OpenRequest, PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
     canceled?: boolean
     error?: string
     name?: string
+    path?: string
     markdown?: boolean
+    mtime?: number
     content?: string
+}
+
+interface WriteResult {
+    error?: string
+    stale?: boolean
+    mtime?: number
 }
 
 const STYLES = `
@@ -155,6 +163,59 @@ const STYLES = `
     background: var(--dya-selected);
     box-shadow: -3px 0 0 var(--dya-accent);
 }
+/*
+ * The editor is a textarea with no colour of its own lying exactly on top of the same text,
+ * highlighted, in a pre behind it. Both have to agree on every metric that decides where a
+ * glyph lands, so the two rules below are one rule written twice and neither may drift.
+ */
+.docviewer-editor {
+    position: relative;
+    height: 100%;
+    overflow: auto;
+}
+.docviewer-editor > pre,
+.docviewer-editor > textarea {
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    line-height: var(--dya-leading-body);
+    letter-spacing: var(--dya-tracking-mono);
+    tab-size: 4;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+.docviewer-editor > pre {
+    min-height: 100%;
+    pointer-events: none;
+}
+/*
+ * The textarea is as tall as the text it holds, never a window onto it, so it never scrolls on
+ * its own and there are not two scroll positions to keep in step. The frame scrolls, and the
+ * browser keeps the caret in view because the caret is inside it.
+ */
+.docviewer-editor > textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    resize: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--dya-accent);
+    outline: none;
+    overflow: hidden;
+}
+.docviewer-editor > textarea::selection {
+    background: var(--dya-selected);
+    color: transparent;
+}
+.docviewer-save[hidden],
+.docviewer-dirty[hidden] {
+    display: none;
+}
 `
 
 const DOCS_ICON =
@@ -165,12 +226,31 @@ const EYE_ICON =
 const PENCIL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 
+const CODE_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
+
+/*
+ * The pencil used to mean "show me the markdown", which is not what a pencil means anywhere
+ * else, and the first thing anybody did with it was try to type. It edits now, and reading the
+ * source got the glyph that means source. `rendered` belongs to markdown alone; everything else
+ * this panel opens is already its own source.
+ */
 const MODES = [
-    { id: 'rendered', label: 'Rendered', icon: EYE_ICON },
-    { id: 'source', label: 'Markdown source', icon: PENCIL_ICON }
+    { id: 'rendered', label: 'Rendered', icon: EYE_ICON, markdownOnly: true },
+    { id: 'source', label: 'Source', icon: CODE_ICON, markdownOnly: false },
+    { id: 'edit', label: 'Edit', icon: PENCIL_ICON, markdownOnly: false }
 ] as const
 
 type Mode = (typeof MODES)[number]['id']
+
+/*
+ * The grammar to colour a file with is its extension, which is the only thing the reader knows
+ * about a file it was handed. A fenced block in markdown says its own language instead.
+ */
+function languageOf(name: string): string {
+    const dot = name.lastIndexOf('.')
+    return dot === -1 ? '' : name.slice(dot + 1).toLowerCase()
+}
 
 /*
  * The kinds of file this panel answers for. It renders markdown and shows everything else as
@@ -208,7 +288,7 @@ export function activate(ctx: PluginContext): void {
             id: 'docviewer',
             title: 'Docs',
             icon: DOCS_ICON,
-            note: 'Read markdown with its diagrams and its code, or the source behind it.',
+            note: 'Read markdown with its diagrams, or edit any text file, in colour.',
             duplicable: true
         },
         (container) => {
@@ -230,7 +310,27 @@ export function activate(ctx: PluginContext): void {
             const modes = document.createElement('div')
             modes.className = 'docviewer-modes'
             modes.hidden = true
-            header.append(name, modes)
+
+            const unsaved = document.createElement('span')
+            unsaved.className = 'dya-badge dya-badge--soft docviewer-dirty'
+            unsaved.textContent = 'unsaved'
+            unsaved.hidden = true
+
+            /*
+             * A save that fails says so beside the control that failed, and leaves the document
+             * where it is. Putting it in the body would replace what somebody has been typing
+             * with the reason they cannot keep it, which is the worst moment to lose it.
+             */
+            const problem = document.createElement('span')
+            problem.className = 'dya-text--danger docviewer-dirty'
+            problem.hidden = true
+
+            const save = document.createElement('button')
+            save.className = 'dya-button dya-button--quiet dya-button--sm docviewer-save'
+            save.textContent = 'Save'
+            save.hidden = true
+
+            header.append(name, unsaved, problem, modes, save)
 
             const content = document.createElement('div')
             root.append(header, content)
@@ -241,6 +341,52 @@ export function activate(ctx: PluginContext): void {
             let current: OpenResult | null = null
             let mode: Mode = 'rendered'
             let target: number | null = null
+            let dirty = false
+            let overwrite = false
+            let saved = ''
+
+            function say(message?: string): void {
+                problem.textContent = message ?? ''
+                problem.hidden = !message
+            }
+
+            /*
+             * A file that changed underneath is not saved over. The refusal turns the control
+             * into `Overwrite`, so losing somebody else's work takes a second deliberate click
+             * and never happens because a button was where a button used to be.
+             */
+            async function saveNow(): Promise<void> {
+                if (!current?.path || !dirty || busy) return
+                busy = true
+                say()
+                try {
+                    const result = (await ctx.invoke('write', {
+                        path: current.path,
+                        content: current.content ?? '',
+                        mtime: current.mtime,
+                        force: overwrite
+                    })) as WriteResult
+                    if (result.stale) {
+                        overwrite = true
+                        say('changed on disk since it was opened')
+                        syncModes()
+                        return
+                    }
+                    if (result.error) {
+                        say(result.error)
+                        return
+                    }
+                    current.mtime = result.mtime
+                    saved = current.content ?? ''
+                    markDirty(false)
+                } catch {
+                    say('Cannot save that file')
+                } finally {
+                    busy = false
+                }
+            }
+
+            save.onclick = () => void saveNow()
 
             const modeButtons = MODES.map((entry) => {
                 const button = document.createElement('button')
@@ -254,10 +400,16 @@ export function activate(ctx: PluginContext): void {
 
             function syncModes(): void {
                 modeButtons.forEach((button, index) => {
-                    const active = MODES[index].id === mode
+                    const entry = MODES[index]
+                    const active = entry.id === mode
+                    button.hidden = entry.markdownOnly && !current?.markdown
                     button.className = active ? 'dya-key dya-key--active' : 'dya-key'
                     button.setAttribute('aria-pressed', String(active))
                 })
+                save.hidden = mode !== 'edit'
+                save.disabled = !dirty
+                save.textContent = overwrite ? 'Overwrite' : 'Save'
+                unsaved.hidden = !dirty
             }
 
             function setMode(next: Mode): void {
@@ -265,6 +417,13 @@ export function activate(ctx: PluginContext): void {
                 mode = next
                 syncModes()
                 void renderCurrent()
+            }
+
+            function markDirty(next: boolean): void {
+                if (dirty === next) return
+                dirty = next
+                if (!next) overwrite = false
+                syncModes()
             }
 
             /*
@@ -276,6 +435,11 @@ export function activate(ctx: PluginContext): void {
                 current = null
                 name.textContent = ''
                 modes.hidden = true
+                saved = ''
+                overwrite = false
+                dirty = false
+                say()
+                syncModes()
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
 
                 if (!message) {
@@ -303,9 +467,94 @@ export function activate(ctx: PluginContext): void {
                 return button
             }
 
+            /*
+             * Every fenced block in a rendered document, coloured by the language it declares.
+             * The classes come from kanon, which has carried six measured syntax hues and the
+             * six classes that use them all along; nothing here invents a colour.
+             */
+            function colourBlocks(host: HTMLElement): void {
+                for (const code of host.querySelectorAll('pre > code')) {
+                    const declared = [...code.classList]
+                        .find((name) => name.startsWith('language-'))
+                        ?.slice('language-'.length)
+                    if (declared === 'mermaid') continue
+                    code.parentElement?.classList.add('dya-code')
+                    code.innerHTML = highlight(code.textContent ?? '', declared ?? '')
+                }
+            }
+
+            function sourceLines(): HTMLPreElement {
+                const pre = document.createElement('pre')
+                pre.className = 'dya-code'
+                /*
+                 * One element per line, so a line can be pointed at. A plugin that found a
+                 * passage knows which line it was on, and scrolling the reader to the top of
+                 * a nine-hundred-line page is not showing it to anybody.
+                 */
+                const language = languageOf(current?.name ?? '')
+                const lines = highlightLines(current?.content ?? '', language)
+                for (const [index, line] of lines.entries()) {
+                    const row = document.createElement('span')
+                    row.className = 'docviewer-line'
+                    row.dataset.line = String(index + 1)
+                    if (index + 1 === target) row.classList.add('docviewer-line--at')
+                    row.innerHTML = line
+                    pre.append(row)
+                }
+                return pre
+            }
+
+            function editor(): HTMLElement {
+                const language = languageOf(current?.name ?? '')
+                const frame = document.createElement('div')
+                frame.className = 'docviewer-editor'
+                const behind = document.createElement('pre')
+                behind.className = 'dya-code'
+                const field = document.createElement('textarea')
+                field.spellcheck = false
+                field.value = current?.content ?? ''
+                field.setAttribute('aria-label', `Editing ${current?.name ?? 'document'}`)
+
+                const repaint = (): void => {
+                    /*
+                     * A trailing newline collapses in a pre and the backdrop comes up one line
+                     * short, which slides every glyph out of register from that point on.
+                     */
+                    behind.innerHTML = highlight(`${field.value}\n`, language)
+                    field.style.height = `${Math.max(behind.scrollHeight, frame.clientHeight)}px`
+                }
+
+                field.oninput = () => {
+                    current = { ...current, content: field.value }
+                    repaint()
+                    markDirty(field.value !== saved)
+                }
+                field.onkeydown = (event) => {
+                    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return
+                    event.preventDefault()
+                    void saveNow()
+                }
+
+                frame.append(behind, field)
+                /*
+                 * The height of the backdrop is not known until the frame is in the document, so
+                 * the first paint happens once it is, and again whenever the panel is resized.
+                 */
+                queueMicrotask(() => {
+                    repaint()
+                    field.focus()
+                })
+                new ResizeObserver(repaint).observe(frame)
+                return frame
+            }
+
             async function renderCurrent(): Promise<void> {
                 if (!current) return
                 content.className = 'dya-text docviewer-content'
+                if (mode === 'edit') {
+                    content.replaceChildren(editor())
+                    return
+                }
                 if (current.markdown && mode === 'rendered') {
                     const holder = document.createElement('div')
                     holder.innerHTML = await marked.parse(current.content ?? '')
@@ -315,25 +564,11 @@ export function activate(ctx: PluginContext): void {
                     for (const row of holder.querySelectorAll('tbody tr')) {
                         row.className = 'dya-row'
                     }
+                    colourBlocks(holder)
                     content.replaceChildren(...holder.childNodes)
                     await renderDiagrams(content)
                 } else {
-                    const pre = document.createElement('pre')
-                    /*
-                     * One element per line, so a line can be pointed at. A plugin that found a
-                     * passage knows which line it was on, and scrolling the reader to the top of
-                     * a nine-hundred-line page is not showing it to anybody.
-                     */
-                    const lines = (current.content ?? '').split('\n')
-                    for (const [index, line] of lines.entries()) {
-                        const row = document.createElement('span')
-                        row.className = 'docviewer-line'
-                        row.dataset.line = String(index + 1)
-                        if (index + 1 === target) row.classList.add('docviewer-line--at')
-                        row.textContent = line
-                        pre.append(row)
-                    }
-                    content.replaceChildren(pre)
+                    content.replaceChildren(sourceLines())
                 }
                 content.scrollTop = 0
                 if (target !== null) {
@@ -350,10 +585,19 @@ export function activate(ctx: PluginContext): void {
                  * view where a line number means anything: the rendered view is HTML and has no
                  * lines to point at. The mode buttons are right there when the reader wants prose.
                  */
-                mode = line ? 'source' : 'rendered'
+                mode = line || !result.markdown ? 'source' : 'rendered'
                 name.textContent = result.name ?? ''
                 header.hidden = false
-                modes.hidden = !result.markdown
+                /*
+                 * The bar used to appear for markdown alone, because reading the source of a
+                 * file that is already source says nothing. Editing does, and it is offered for
+                 * everything this panel opens.
+                 */
+                modes.hidden = false
+                saved = result.content ?? ''
+                dirty = false
+                overwrite = false
+                say()
                 syncModes()
                 await renderCurrent()
             }

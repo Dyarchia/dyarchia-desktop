@@ -76,10 +76,6 @@ const STYLES = `
     padding: var(--dya-space-5) var(--dya-space-5) var(--dya-space-4);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
 }
-.set-lede {
-    margin-top: var(--dya-space-2);
-    max-width: 68ch;
-}
 .set-scroll {
     flex: 1;
     min-height: 0;
@@ -215,8 +211,6 @@ export function activate(ctx: PluginContext): void {
 
         const head = el('div', 'set-head')
         head.append(el('h1', 'dya-title', 'Setup'))
-        const lede = el('p', 'dya-lede set-lede')
-        head.append(lede)
 
         /*
          * Tips live in one holder under the panel root, so they leave with it. A detail that is a
@@ -414,7 +408,7 @@ export function activate(ctx: PluginContext): void {
         }
 
         function renderPaths(paths: Paths): HTMLElement {
-            const box = section('Where things go', '')
+            const box = section('Paths', '')
             const table = el('table', 'dya-table')
             const body = el('tbody')
 
@@ -455,13 +449,16 @@ export function activate(ctx: PluginContext): void {
             wanted.clear()
             for (const entry of optional) if (entry.enabled) wanted.add(entry.manifest.id)
 
-            lede.textContent = 'These two need something Dyarchia cannot carry. The rest always loads.'
-
             scroll.replaceChildren()
 
-            const choices = section('Optional', '')
-            for (const entry of optional) choices.append(renderOptional(entry))
-            scroll.append(choices)
+            /*
+             * Where it writes, what it already loads, and only then what is a decision. The order
+             * used to open on the decision, which is the one thing here most people never make,
+             * and left the paths at the bottom of a scroll. The sentence about the two optional
+             * plugins moved with them: it was a lede at the top of a panel whose subject was two
+             * sections further down.
+             */
+            scroll.append(renderPaths(paths))
 
             if (core.length > 0) {
                 const included = section('Included', '')
@@ -480,7 +477,9 @@ export function activate(ctx: PluginContext): void {
                 scroll.append(included)
             }
 
-            scroll.append(renderPaths(paths))
+            const choices = section('Optional', 'These need something the download cannot carry.')
+            for (const entry of optional) choices.append(renderOptional(entry))
+            scroll.append(choices)
 
             refreshFoot()
         }

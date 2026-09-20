@@ -124,8 +124,8 @@
     --dya-carve-filter:
         drop-shadow(0 -1px 0 #00000099)
         drop-shadow(0 1px 1px #e6e3db29);
-    --dya-carve-a: #201e1a;
-    --dya-carve-b: #3d3a33;
+    --dya-carve-a: #706a5e;
+    --dya-carve-b: #a19a8c;
 
     --dya-glass: none;
     --dya-glass-bg: transparent;
@@ -246,8 +246,8 @@
     --dya-carve-filter:
         drop-shadow(0 -1px 0 #000000a6)
         drop-shadow(0 1px 1px #dde5f529);
-    --dya-carve-a: #182138;
-    --dya-carve-b: #3b4a72;
+    --dya-carve-a: #5b6fa9;
+    --dya-carve-b: #8ba0dd;
 
     --dya-elev-chassis: inset 0 1px 0 #ffffff0d;
 

@@ -1184,6 +1184,12 @@ textarea.dya-field {
     color: var(--dya-text);
 }
 
+/*
+ * `min-width` and `overflow-wrap` are what keep this centred instead of clipped. A centred flex
+ * item that cannot shrink grows past its container on both sides, so a path with no spaces in it
+ * pushed the left half of the message out of the panel, along with everything beside it. A word
+ * that will not fit is broken; nothing is ever read from off the left edge.
+ */
 .dya-empty,
 .dya-loading {
     display: flex;
@@ -1192,11 +1198,14 @@ textarea.dya-field {
     justify-content: center;
     gap: var(--dya-space-3);
     padding: var(--dya-space-6) var(--dya-space-4);
+    min-width: 0;
+    max-width: 100%;
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body);
     line-height: var(--dya-leading-body);
     text-align: center;
     text-wrap: balance;
+    overflow-wrap: anywhere;
     color: var(--dya-text-4);
 }
 

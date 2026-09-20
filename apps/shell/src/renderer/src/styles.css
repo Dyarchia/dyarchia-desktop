@@ -183,9 +183,16 @@ body,
     box-shadow: var(--dya-elev-flat);
 }
 
+/*
+ * No rule under this one. It is the shell's tab strip, and the first thing almost every plugin
+ * draws inside its panel is a bar or a tab strip of its own, with a rule of its own, forty
+ * pixels below. Two rules that close to each other with one row of words between them read as a
+ * mistake rather than as two boundaries. This strip already separates itself twice over: the
+ * gradient it sits on, and the accent under the tab that is open. The rule inside the panel is
+ * the one that marks something — controls above, content below — so it is the one that stays.
+ */
 .dv-shell.dockview-theme-abyss-spaced .dv-tabs-and-actions-container {
     background: var(--dya-grad-header);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius) var(--dya-radius) 0 0;
 }
 
@@ -211,10 +218,6 @@ body,
     align-items: center;
     gap: var(--dya-space-3);
     text-align: center;
-}
-
-.launcher-lede {
-    text-wrap: balance;
 }
 
 .launcher-grid {

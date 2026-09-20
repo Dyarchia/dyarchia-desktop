@@ -19,7 +19,7 @@ export const STYLES = `
     width: var(--dya-border-width);
     height: 16px;
     margin: 0 var(--dya-space-1);
-    background: var(--dya-hairline);
+    background: var(--dya-rule);
 }
 
 .kanban-health-button {

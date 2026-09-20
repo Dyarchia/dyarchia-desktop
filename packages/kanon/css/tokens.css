@@ -77,9 +77,10 @@
     --dya-text-3: #bdbab2;
     --dya-text-4: #a19e96;
 
-    --dya-border: #45423b;
-    --dya-border-strong: #5c584f;
-    --dya-hairline: #3a3833;
+    --dya-border: #35332e;
+    --dya-border-strong: #4a473f;
+    --dya-hairline: #262521;
+    --dya-rule: #1d1c18;
     --dya-dashed: #35332e;
     --dya-faint: #ffffff3b;
 
@@ -198,9 +199,10 @@
     --dya-text-3: #aebcd9;
     --dya-text-4: #a1afce;
 
-    --dya-border: #3a4873;
-    --dya-border-strong: #4a5b8a;
-    --dya-hairline: #2c3859;
+    --dya-border: #2c3859;
+    --dya-border-strong: #41507a;
+    --dya-hairline: #1f2946;
+    --dya-rule: #151d32;
     --dya-dashed: #2c3859;
     --dya-faint: #dde5f53b;
 

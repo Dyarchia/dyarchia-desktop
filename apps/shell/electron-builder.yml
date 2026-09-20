@@ -22,9 +22,15 @@ win:
 # %TEMP%\<guid> on every launch, which made the installation directory both unfindable and
 # different each time: every plugin resolving a path against its own directory — crawlee resolves
 # its corpus, its profiles and its index that way — was writing into a folder Windows deletes.
+# `perMachine: false` does not mean per user. It means the installer asks, and the answer that
+# installs for everyone lands the application in Program Files, where it cannot write, under a
+# key it needed elevation to make. `installer.nsh` gives the answer, so the question is never
+# put and elevation is never requested.
 nsis:
     oneClick: false
     perMachine: false
+    allowElevation: false
+    include: installer.nsh
     allowToChangeInstallationDirectory: true
     createDesktopShortcut: true
     createStartMenuShortcut: true

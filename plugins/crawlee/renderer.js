@@ -101,6 +101,14 @@ const STYLE = `
     padding: var(--dya-space-3);
     border-top: var(--dya-border-width) solid var(--dya-border);
 }
+/*
+ * The rule on this bar divides it from whatever is above it, and in the search view there is
+ * nothing above it but the tab strip, which draws its own. Two rules twelve pixels apart with a
+ * gap of background between them is not two boundaries; it is one boundary drawn twice.
+ */
+.crw-view > .crw-bar:first-child {
+    border-top: none;
+}
 .crw-scope {
     min-width: 220px;
 }

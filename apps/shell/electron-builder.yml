@@ -13,7 +13,18 @@ extraResources:
     # The core four load on every launch; the rest are what the setup panel turns on.
     - from: build/plugins
       to: plugins
+    # The native dependencies the staging script hoists beside the plugins, so that two plugins
+    # wanting node-pty carry one copy of it. electron-builder drops a directory called
+    # node_modules when it sits at the root of what is being copied, with no option to keep it,
+    # so it is copied again by naming it directly — where it is not at the root of anything.
+    - from: build/plugins/node_modules
+      to: plugins/node_modules
 asar: true
+# Chromium ships 55 locale files, 48 MB, and they are its own strings — the menu it draws on a
+# right click. Nothing in this application is translated, so the rest cannot be reached.
+electronLanguages:
+    - en-US
+    - es
 win:
     target:
         - nsis
@@ -22,9 +33,16 @@ win:
 # %TEMP%\<guid> on every launch, which made the installation directory both unfindable and
 # different each time: every plugin resolving a path against its own directory — crawlee resolves
 # its corpus, its profiles and its index that way — was writing into a folder Windows deletes.
+# `installer.nsh` holds two things NSIS has no option for: the install directory, which is
+# ~/.dyarchia/app and not %LOCALAPPDATA%\Programs, and the answer to the question an assisted
+# installer asks about who the application is for. `perMachine: false` does not mean per user,
+# it means the installer asks, and the answer that installs for everyone elevates into Program
+# Files, where the application cannot write.
 nsis:
     oneClick: false
     perMachine: false
+    allowElevation: false
+    include: installer.nsh
     allowToChangeInstallationDirectory: true
     createDesktopShortcut: true
     createStartMenuShortcut: true

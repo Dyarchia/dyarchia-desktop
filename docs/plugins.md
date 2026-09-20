@@ -229,10 +229,13 @@ loads `.css` imports as text. **A plugin needing anything else writes its own es
 rather than growing a third flag** — the terminal does, for a CJS pty host with a native
 external, and it is the only case.
 
-- Native dependencies stay `--external` and are copied into the installed plugin's
-  `node_modules/`; they must be listed in `nativeDeps` in the manifest, or the packaged app
-  cannot load that main module. Prefer a package shipping N-API prebuilds — node-pty does —
-  so no compiler is needed on the machine that installs it.
+- Native dependencies stay `--external` and must be listed in `nativeDeps` in the manifest, or
+  the packaged app cannot load that main module. They are staged into a `node_modules/` beside
+  the plugins rather than inside one, so a package two plugins need is carried once and neither
+  plugin knows the other exists; node resolution walks up from the file that asks for it and
+  finds it there. Only the prebuilt binaries for the platform and architecture being built are
+  copied. Prefer a package shipping N-API prebuilds — node-pty does — so no compiler is needed
+  on the machine that installs it.
 - Library CSS is imported as text and handed to `injectStyles`.
 - `main.py` is copied as-is, never bundled.
 - A heavy dependency only some documents need goes behind a dynamic `import()` with

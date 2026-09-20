@@ -1,6 +1,6 @@
 # dyarchia-desktop
 
-**ALPHA — 0.2.1-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.2.2-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 This is an early build published so it can be installed and exercised on a second machine.
@@ -114,9 +114,10 @@ Build every workspace:
 pnpm build
 ```
 
-Windows installer, producing apps/shell/release/dyarchia-x.y.z-setup.exe. It installs per
-user into %LOCALAPPDATA%\Programs\dyarchia, offers to change that directory, and writes a
-start menu and desktop shortcut:
+Windows installer, producing apps/shell/release/dyarchia-x.y.z-setup.exe. It installs for one
+user into ~/.dyarchia/app, beside the data home and inside the same root, never asks who it is
+for and never asks for elevation, offers to change that directory, and writes a start menu and
+desktop shortcut:
 
 ```bash
 pnpm --filter @dyarchia/shell package

@@ -39,9 +39,10 @@ win:
     target:
         - nsis
     # One file, both taskbars. Windows embeds a single icon in the executable and never swaps it
-    # for the theme, so the tile is `--dya-chassis`: 1.05 against a dark taskbar, where it
-    # disappears and leaves the mark floating, and 15.35 against a light one, where it reads as a
-    # solid block. electron-builder converts the png and requires at least 256; this is 1024.
+    # for the theme, so the tile is the black the mark was drawn on, which is also `--dya-bg`:
+    # 1.29 against a dark taskbar, where it all but disappears and leaves the mark floating, and
+    # 18.93 against a light one, where it reads as a solid block. electron-builder converts the
+    # png and requires at least 256; this is 1024.
     icon: icon.png
 # An installed application, not a portable archive. A portable build unpacks itself into
 # %TEMP%\<guid> on every launch, which made the installation directory both unfindable and

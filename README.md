@@ -114,9 +114,9 @@ Build every workspace:
 pnpm build
 ```
 
-Windows installer, producing apps/shell/release/dyarchia-x.y.z-setup.exe. It installs per
-user into %LOCALAPPDATA%\Programs\dyarchia, offers to change that directory, and writes a
-start menu and desktop shortcut:
+Windows installer, producing apps/shell/release/dyarchia-x.y.z-setup.exe. It installs for one
+user into %LOCALAPPDATA%\Programs\dyarchia, never asks who it is for and never asks for
+elevation, offers to change that directory, and writes a start menu and desktop shortcut:
 
 ```bash
 pnpm --filter @dyarchia/shell package

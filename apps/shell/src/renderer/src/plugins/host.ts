@@ -1,4 +1,5 @@
 import { token } from '@dyarchia/kanon'
+import { highlight } from '@dyarchia/sdk'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import { canOpen, openFile, registerOpener } from '../panels/openers'
@@ -71,6 +72,7 @@ interface PluginModule {
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         onThemeChange(listener: () => void): () => void
+        highlight(source: string, language?: string): string
         shell: ShellApi
     }): void | Promise<void>
 }
@@ -139,6 +141,7 @@ export async function loadPlugins(): Promise<void> {
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 onThemeChange,
+                highlight,
                 shell: {
                     catalogue: () =>
                         bridge.invoke('shell:plugins:catalogue') as Promise<PluginCatalogue>,

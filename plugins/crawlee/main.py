@@ -20,6 +20,14 @@ from typing import Any
 
 CONSOLE_WIDTH = '110'
 
+"""The opening of the sentence `_interpreter` raises with when there is no environment yet.
+
+It is a name rather than a literal in two places because `state` answers with a state instead of
+raising when it sees it, and a condition recognised by matching prose is a condition that breaks
+the day somebody rewords the prose.
+"""
+NO_ENVIRONMENT = 'no virtual environment'
+
 VERDICTS = {
     0: 'nothing changed',
     1: 'a target failed, so the round cannot vouch for itself',
@@ -72,7 +80,7 @@ def _interpreter(root: Path) -> Path:
                 return candidate
 
     looked = ' or '.join(str(candidate) for candidate in roots)
-    raise RuntimeError(f'no virtual environment in {looked}: install this plugin from Setup')
+    raise RuntimeError(f'{NO_ENVIRONMENT} in {looked}: install this plugin from Setup')
 
 
 def _installed_paths(root: Path) -> dict[str, str]:
@@ -207,10 +215,29 @@ def _publish() -> None:
 
 def activate(ctx: Any) -> None:
     def state() -> Any:
-        return json.loads(_read(['state', '--json']))
+        """The corpus, or the reason there is nothing to read yet.
+
+        A missing environment is not a failure of this call: it is what every installation looks
+        like before Setup has built one, and `state` is the first thing the panel asks for when it
+        opens. Raising here put an interpreter path and an exception class on screen to say a
+        sentence the panel can say itself, so it answers with a state instead. Every other channel
+        still raises, because asking to crawl without a crawler is a real error.
+        """
+        try:
+            return json.loads(_read(['state', '--json']))
+        except RuntimeError as thrown:
+            if NO_ENVIRONMENT not in str(thrown):
+                raise
+            return {'needsEnvironment': True}
 
     def profiles() -> Any:
-        return json.loads(_read(['profiles', '--json']))
+        """The targets, or the same state `state` answers with. Both are read when a tab opens."""
+        try:
+            return json.loads(_read(['profiles', '--json']))
+        except RuntimeError as thrown:
+            if NO_ENVIRONMENT not in str(thrown):
+                raise
+            return {'needsEnvironment': True}
 
     def show(name: str) -> str:
         return _read(['profile', 'show', name])

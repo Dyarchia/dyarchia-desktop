@@ -92,6 +92,36 @@ function onThemeChange(listener: () => void): () => void {
     return () => themeListeners.delete(listener)
 }
 
+/*
+ * What the handler threw, and nothing in front of it. `ipcRenderer.invoke` rejects with the
+ * handler's message wrapped in one of its own, and a Python plugin adds a third layer, so a
+ * panel showing what it caught was showing
+ *
+ *     Error: Error invoking remote method 'plugin:crawlee:state': Error: RuntimeError: ...
+ *
+ * before the sentence anybody needed to read. Stripping it here rather than in each panel is
+ * the only way it happens once: every plugin's `invoke` is this one function. The original is
+ * kept as the cause, so nothing is lost to a console that wants it.
+ */
+const REMOTE_CALL = /^Error invoking remote method '[^']*':\s*/
+const THROWN_CLASS = /^[\w$]*(?:Error|Exception):\s*/
+
+function unwrap(thrown: unknown): unknown {
+    if (!(thrown instanceof Error)) return thrown
+    let said = thrown.message.replace(REMOTE_CALL, '')
+    while (THROWN_CLASS.test(said)) said = said.replace(THROWN_CLASS, '')
+    if (said === thrown.message) return thrown
+    return new Error(said || thrown.message, { cause: thrown })
+}
+
+async function invokeFor(id: string, channel: string, args: unknown[]): Promise<unknown> {
+    try {
+        return await window.dyarchia!.invoke(`plugin:${id}:${channel}`, ...args)
+    } catch (thrown) {
+        throw unwrap(thrown)
+    }
+}
+
 export async function loadPlugins(): Promise<void> {
     const bridge = window.dyarchia
     if (!bridge) return
@@ -106,7 +136,7 @@ export async function loadPlugins(): Promise<void> {
                 registerPanel,
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),
-                invoke: (channel, ...args) => bridge.invoke(`plugin:${id}:${channel}`, ...args),
+                invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 onThemeChange,
                 shell: {

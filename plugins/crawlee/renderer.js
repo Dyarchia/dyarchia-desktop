@@ -40,6 +40,8 @@ const STYLE = `
 }
 .crw-headline {
     flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 .crw-corpora {
     flex: 1 1 auto;
@@ -265,6 +267,15 @@ function injectStyles(pluginId, css) {
     document.head.appendChild(style)
 }
 
+/*
+ * What went wrong, without the word `Error` in front of it. Passing an exception through `String`
+ * prints its class name, which is plumbing: nobody reading a panel needs to be told that a failure
+ * was a failure.
+ */
+function reason(error) {
+    return error instanceof Error ? error.message : String(error)
+}
+
 function el(tag, className, text) {
     const node = document.createElement(tag)
     if (className) node.className = className
@@ -453,12 +464,24 @@ function mount(ctx, container) {
                 render(state)
             } catch (error) {
                 headline.className = 'dya-value crw-headline dya-text--danger'
-                headline.textContent = String(error)
+                headline.textContent = reason(error)
             }
         }
 
         function render(state) {
             headline.className = 'dya-value crw-headline'
+
+            /*
+             * Every installation looks like this until Setup has built the environment, and it is
+             * the first thing this panel sees when it opens. It is a state, so it is said once, in
+             * the panel's own voice, without the interpreter paths that used to come with it.
+             */
+            if (state.needsEnvironment) {
+                headline.textContent = 'needs its Python environment — turn this plugin on in Setup'
+                table.replaceChildren()
+                return
+            }
+
             headline.textContent = state.headline || 'no corpora'
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
@@ -616,7 +639,7 @@ function mount(ctx, container) {
                     scope.appendChild(option)
                 }
             } catch (error) {
-                hits.replaceChildren(el('div', 'dya-empty dya-text--danger', String(error)))
+                hits.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
             }
         }
 
@@ -628,7 +651,7 @@ function mount(ctx, container) {
                 const found = await ctx.invoke('search', { query: text, repository: scope.value || null, limit: 20 })
                 render(found)
             } catch (error) {
-                hits.replaceChildren(el('div', 'dya-empty dya-text--danger', String(error)))
+                hits.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
             }
         }
 
@@ -724,6 +747,16 @@ function mount(ctx, container) {
             list.appendChild(add)
             try {
                 const profiles = await ctx.invoke('profiles')
+                if (profiles && profiles.needsEnvironment) {
+                    list.appendChild(
+                        el(
+                            'div',
+                            'dya-empty dya-empty--inline',
+                            'needs its Python environment — turn this plugin on in Setup'
+                        )
+                    )
+                    return
+                }
                 for (const profile of profiles) {
                     const entry = el('button', 'dya-entry', profile.name)
                     entry.dataset.name = profile.name
@@ -733,7 +766,7 @@ function mount(ctx, container) {
                 }
                 mark(current)
             } catch (error) {
-                list.appendChild(el('div', 'dya-empty dya-text--danger', String(error)))
+                list.appendChild(el('div', 'dya-empty dya-text--danger', reason(error)))
             }
         }
 
@@ -745,7 +778,7 @@ function mount(ctx, container) {
                 picked(name)
                 mark(name)
             } catch (error) {
-                say(String(error), false)
+                say(reason(error), false)
             }
         }
 
@@ -762,7 +795,7 @@ function mount(ctx, container) {
                 say(String(await ctx.invoke('save', current, yaml.value)), true)
                 await refreshList()
             } catch (error) {
-                say(String(error), false)
+                say(reason(error), false)
             }
         }
 
@@ -874,7 +907,7 @@ function mount(ctx, container) {
             controls.run.disabled = false
             if (controls.stop) controls.stop.hidden = true
             status.className = 'dya-text crw-status dya-text--danger'
-            status.textContent = String(error)
+            status.textContent = reason(error)
         }
     }
 }

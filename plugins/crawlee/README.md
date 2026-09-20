@@ -1,5 +1,11 @@
 # crawlee
 
+**The crawling here is [Crawlee for Python](https://github.com/apify/crawlee-python), by Apify,
+under Apache-2.0.** The request queue, the session pool, the retry and concurrency policy and
+the crawlers are theirs; this package is the corpus, the profiles, the search index and the
+panel built around them. It is installed from PyPI into an environment on your own machine and
+is never redistributed or modified. See [NOTICE.md](../../NOTICE.md).
+
 A crawling toolkit that snapshots a corpus, reports what moved between rounds, and a Dyarchia
 Desktop panel that drives it. Two layers: the engine knows nothing about any specific site, and a
 profile describes what to look for without touching the Crawlee API. That boundary is what makes a

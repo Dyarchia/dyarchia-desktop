@@ -1,8 +1,9 @@
 {
     "name": "@dyarchia/shell",
     "productName": "dyarchia",
-    "version": "0.2.2-alpha",
+    "version": "0.2.3-alpha",
     "private": true,
+    "license": "MIT",
     "type": "module",
     "main": "./out/main/index.js",
     "scripts": {

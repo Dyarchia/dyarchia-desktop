@@ -112,16 +112,15 @@ token                  value     on chassis   on surface-1
 
 A border is a graphical object and the 3.00 bar does not apply to it, but a border that
 measures under 1.40 against the ground it separates is not there. `--dya-border` marks a
-panel edge on the chassis and **the row rule inside a table**; `--dya-hairline` separates
-rows inside one surface and is never the outline of a container.
+panel edge on the chassis and **the outline of a row**; `--dya-hairline` separates regions
+inside one surface and is never the outline of a container.
 
-**A table's rule is `--dya-border`, and that is a correction.** It was `--dya-rule`, which
-measures 1.05 against `--dya-surface-1` in Gi and 1.06 in Rei: a separator this system's own
-sentence says is not there, and a table whose rows it separated read as a run of loose lines
-with words drifting under headings. `--dya-hairline` does not save it either, at 1.17 and
-1.23. `--dya-border` is the only step in either ramp that clears 1.40 — 1.42 in Gi, 1.53 in
-Rei — so the rule that says where a border goes loses to the rule that says what a border
-has to measure.
+**A row is a card, and no table draws a rule between rows.** The horizontal line under every
+row is the shape of a ledger, and a panel of them reads as ruled paper however well the line
+measures — the object the reader is after, one target or one plugin or one event, never
+becomes an object at all. A row carries `--dya-surface-1`, `--dya-border` on four sides at
+1.42 in Gi and 1.53 in Rei, the 6px radius, and a gap of ground to the row below. The column
+heads above it lose their rule with it.
 
 
 ## Rei
@@ -165,8 +164,9 @@ active key on the bar, where it measures 6.05 on `--dya-raised`. `--dya-code-com
 `#8290ad` is the most recessive ink, 5.22 and 5.51 on the two surfaces a code block sits on.
 
 `--dya-on-accent`, `--dya-on-field` and `--dya-on-status` are `#05080f`, the ground itself,
-and measure 8.46 on the accent, 11.29 on success, 10.31 on warning and 9.90 on danger.
-`--dya-on-idle` measures 6.81 on `--dya-idle`.
+and measure 8.46 on the accent, 11.50 on success, 10.31 on warning and 6.70 on danger.
+`--dya-on-idle` measures 6.81 on `--dya-idle`. Success and danger are the two hues Rei does
+not redefine: they are read as a convention rather than against this ground.
 
 ```text
 token                  value     on chassis   on surface-1
@@ -189,27 +189,47 @@ shape, same offsets, same blur.
 - **An ink under 4.50 against what it sits on is not text.** Above 3.00 it may still be a
   graphical object: a dot, a rule, a selection bar, a focus ring, a fill.
 - **The status and syntax hues are functional.** Each theme declares its own values so that
-  the job, legibility, is done on that theme's ground.
+  the job, legibility, is done on that theme's ground — except green and red, which mean what
+  they mean outside this system and are one value in both.
 - **A badge may wear an accent as well as a status.** A status says how something turned out;
   an accent says what kind of thing it is, and a system with six hues that let a label reach
   three has three it declared and never spends. `--dya-on-accent` over each fill measures
   5.74 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
   5.74 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
 
+- **Green means go and red means stop, in the colours everybody already reads.** A control
+  that starts something is `--dya-success`, one that stops or destroys is `--dya-danger`, and
+  an application that spends one accent on both makes two opposite controls identical. A
+  panel here had a RUN and a STOP forty pixels apart in the same salmon, and neither said
+  which was which.
+
 ```text
-token           Gi        fill   Rei       fill   role
--------------   -------   ----   -------   ----   ------------------------
---dya-success   #63cf95   9.30   #6fd6a4  11.29   a positive outcome
---dya-warning   #d6a95c   8.27   #e2b268  10.31   caution, not failure
---dya-danger    #f59790   8.29   #ff9b95   9.90   error, destruction
---dya-idle      per theme  7.73  per theme  6.81  no outcome yet
+token             Gi        fill    Rei       fill    role
+---------------   -------   -----   -------   -----   ------------------------
+--dya-success     #4ade80   10.29   both      11.50   go, and a positive outcome
+--dya-warning     #d6a95c    8.27   #e2b268   10.31   caution, not failure
+--dya-danger      #ff5f56    6.00   both       6.70   stop, destroy, fail
+--dya-danger-ink  #f59790    8.29   #ff9b95    9.90   the same meaning, as text
+--dya-idle        per theme  7.73   per theme  6.81   no outcome yet
 ```
 
-`fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue
-has a `-soft` companion at 10% for the ground of a row or a quiet badge. As text rather than
-fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi and 5.77 / 5.27 / 5.06 at worst in
-Rei, both on `--dya-selected`, so `.dya-text--success` and `--danger` carry no reservation on
-any surface in either theme.
+`fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue has
+a `-soft` companion at 10% for the ground of a row or a quiet badge, and success and danger
+carry a `-hover` step for the two filled buttons: `#6ae997` at 11.71 and 13.09, `#ff7d75` at
+7.21 and 8.05.
+
+**Red is the one hue whose fill cannot also be its ink.** A red saturated enough to read as
+red beside a warm orange accent is too dark to be read as text on a dark surface: `#ff5f56`
+as an ink measures 4.42 on `--dya-raised-hover` in Gi and 3.93 in Rei, under the floor on the
+one step a quiet danger button spends its life on. So `--dya-danger-ink` is a token of its
+own — 7.09 on `--dya-raised` in both themes, 6.11 and 5.80 on the hover step, 6.96 and 7.37
+on its own soft ground — and `.dya-text--danger`, `.dya-badge--danger.dya-badge--soft` and
+`.dya-button--danger.dya-button--quiet` all take it. Green needs no such split: `--dya-success`
+measures 10.29 in Gi and 10.16 in Rei on `--dya-surface-1` and 8.50 and 8.35 on its own soft.
+
+**Green and red are the two colour tokens Rei does not redefine.** Every other hue in this
+system is tuned to its theme's ground; these two are quotations of a convention the reader
+brings with them, and a stop button that is a different red in each theme is two conventions.
 
 ```text
 token                 Gi        s-2    s-1    Rei       s-2    s-1
@@ -350,11 +370,12 @@ wrong in ways the first consumer discovers rather than the author.
 
 ```text
 Structure    pane bar (--flush --inset __group) card card__header masthead brand carved
-Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
+             splitter (--vertical)
+Pressable    button (--primary --success --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) checkbox form (__actions __push)
 Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
-             pills table (__num __fit __key __name __end __prose) row
+             pills table (__num __fit __key __name __end __prose) row (--selected)
              stat (__figure __value __unit __text __note) meter (__pip)
              title (--lg) lede text (--success --danger) label eyebrow value mono key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
@@ -363,6 +384,22 @@ Navigation   tabs tab
 Absence      empty (--inline __actions) loading
 Assistive    sr-only
 ```
+
+**A row is a card, and the three classes that draw rows draw the same card.** `table`'s
+cells, `row` and `entry` all carry `--dya-surface-1`, `--dya-border` and the 6px radius, with
+a gap of ground between one row and the next; hover moves the ground to `--dya-flat-hover` and
+selection to `--dya-selected` with `--dya-border-strong` around it. A table does this with
+`border-collapse: separate` and `border-spacing` on the block axis, and puts the radius on the
+first and last cell so the row carries it end to end — which is why a row's state is set on its
+cells and never on the `tr`, where it would sit behind them and never be seen.
+
+**`splitter` is the handle between two regions of a panel.** Everything else in this
+application resizes and the regions inside a panel did not, so a console filling with output a
+line at a time was whatever height its plugin wrote down. The strip is 11px for a pointer to
+catch and pulls its own height back out of the layout with a negative margin, so adding one
+moves nothing above it; the grip is `--dya-text-4`, a graphical object at 6.70 in Gi and 8.04
+in Rei on `--dya-surface-1`, and takes `--dya-accent` under the pointer and while dragging.
+The consumer owns the drag, the clamp and where the size is remembered.
 
 **Emphasis is a family, not an accident.** Every other rule here is a prohibition — do not
 glare, do not truncate, never below 4.50 — and prohibitions produce a screen where nothing
@@ -376,6 +413,9 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile`,
   `--lg` is the same rule at `--dya-size-h2`, for a screen that is only a heading.
 - **`lede` is one sentence under a title**, sans, capped at 68ch, `--dya-text-3`. It is not
   `text`: the cap and the rank are the difference between a lede and a paragraph.
+- **`button--success` is go, and it is not a second primary.** A primary is the one action a
+  view is about; a success button is a meaning, and a view may hold one beside the `--danger`
+  fill that is its opposite. Run, approve, confirm.
 - **`button--primary` is the one action a screen is about.** At most one per view, because
   a second first is none. It is the only filled control in the system that does not report
   a status, and its hover step is `--dya-accent-hover` — a token rather than a filter,

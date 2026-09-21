@@ -70,6 +70,18 @@ const STYLES = `
     width: 13px;
     height: 13px;
 }
+.docviewer-invite {
+    max-width: 420px;
+    margin: auto;
+    padding: 0;
+}
+.docviewer-tile {
+    width: 100%;
+}
+.docviewer-tile .dya-tile__icon {
+    width: 22px;
+    height: 22px;
+}
 .docviewer-content--empty {
     display: flex;
     align-items: center;
@@ -298,10 +310,9 @@ export function activate(ctx: PluginContext): void {
             root.className = 'docviewer'
 
             /*
-             * The bar stays. It used to hide itself whenever the panel had nothing open, which is
-             * exactly when the only control that matters — open something — needs to be reachable,
-             * and it is why the empty panel had to grow a button of its own in the middle of it.
-             * The panel is simply empty now, with its bar where every other panel's bar is.
+             * The bar names what is open, so it is there once something is. With nothing open the
+             * offer is the panel itself and a bar holding one control and a rule is a fragment of
+             * an interface above a void.
              */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
@@ -427,14 +438,20 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * An empty panel is empty. It said "Read a document" over a sentence over a button, in
-             * the middle of an otherwise blank panel, which is an advertisement for a panel the
-             * reader has already opened. Only a failure has anything to say here.
+             * A panel with nothing in it offers what to put in it.
+             *
+             * It used to be blank, on the reasoning that an offer in the middle of a panel is an
+             * advertisement for a panel the reader has already opened. That reasoning holds for a
+             * sentence and loses to what it produces: at a window's width it is a black rectangle
+             * nine hundred pixels tall with one word in a corner, which reads as a thing that does
+             * not work. The offer is a tile — the same pressable card the launcher is built from —
+             * so the panel says what it is for by giving the reader the way in.
              */
             function showEmpty(message?: string): void {
                 current = null
                 name.textContent = ''
                 modes.hidden = true
+                header.hidden = true
                 saved = ''
                 overwrite = false
                 dirty = false
@@ -442,15 +459,28 @@ export function activate(ctx: PluginContext): void {
                 syncModes()
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
 
-                if (!message) {
-                    content.replaceChildren()
-                    return
+                const invite = document.createElement('div')
+                invite.className = 'dya-empty docviewer-invite'
+
+                const tile = document.createElement('button')
+                tile.className = 'dya-tile docviewer-tile'
+                tile.type = 'button'
+                tile.innerHTML =
+                    `<span class="dya-tile__icon">${DOCS_ICON}</span>` +
+                    '<span class="dya-tile__name">Open a document</span>' +
+                    '<span class="dya-tile__note">Markdown renders, everything else is coloured ' +
+                    'as code, and both can be edited and saved here.</span>'
+                tile.onclick = () => void openFile()
+
+                if (message) {
+                    const line = document.createElement('span')
+                    line.className = 'dya-text--danger'
+                    line.textContent = message
+                    invite.append(line)
                 }
 
-                const line = document.createElement('div')
-                line.className = 'dya-empty dya-empty--inline dya-text--danger'
-                line.textContent = message
-                content.replaceChildren(line)
+                invite.append(tile)
+                content.replaceChildren(invite)
             }
 
             /*

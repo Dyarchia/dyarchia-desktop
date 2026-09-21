@@ -337,7 +337,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     board.setAttribute('role', 'application')
     board.setAttribute('aria-label', 'task board')
 
-    const drawer = el('aside', 'dya-card kanban-drawer')
+    const drawer = el('aside', 'dya-sheet dya-sheet--side kanban-drawer')
     drawer.hidden = true
 
     const stage = el('div', 'kanban-stage')

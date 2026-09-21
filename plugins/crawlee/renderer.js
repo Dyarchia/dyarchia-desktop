@@ -7,6 +7,9 @@
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/></svg>'
 
+const PLUS =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+
 const STYLE = `
 .crw-root {
     display: flex;
@@ -20,6 +23,7 @@ const STYLE = `
     flex: none;
 }
 .crw-view {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -92,10 +96,9 @@ const STYLE = `
 
     .crw-corpora td::before {
         content: attr(data-label);
-        font-family: var(--dya-font-mono);
-        font-size: var(--dya-size-label-sm);
-        letter-spacing: var(--dya-tracking-label);
-        text-transform: uppercase;
+        font-family: var(--dya-font-sans);
+        font-size: var(--dya-size-body-xs);
+        letter-spacing: var(--dya-tracking-ui);
         color: var(--dya-text-4);
     }
 }
@@ -148,30 +151,38 @@ const STYLE = `
     flex: 1;
     min-height: 0;
 }
-.crw-split {
-    display: flex;
+/*
+ * The targets, as a grid that reflows from one column to as many as the window affords. A rail of
+ * names 210px wide made a 1400px window 85% black, and told the reader nothing about a target
+ * except that it exists.
+ */
+.crw-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    align-content: start;
+    gap: var(--dya-space-3);
     flex: 1;
-    gap: var(--dya-space-4);
     min-height: 0;
-}
-.crw-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-1);
-    flex: none;
-    width: 210px;
     overflow: auto;
+    padding: 2px;
 }
-.crw-list > .dya-button {
-    align-self: flex-start;
-    margin-bottom: var(--dya-space-1);
-}
-.crw-editor {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    gap: var(--dya-space-2);
+.crw-target,
+.crw-new {
     min-width: 0;
+}
+.crw-new {
+    border: var(--dya-border-width) dashed var(--dya-dashed);
+    background: transparent;
+    box-shadow: none;
+}
+.crw-new:hover {
+    background-color: var(--dya-flat-hover);
+}
+.crw-sheet[hidden] {
+    display: none;
+}
+.crw-sheet-bar {
+    padding-inline: 0;
 }
 /*
  * A profile is the one thing in this panel somebody writes by hand, and it was a wall of one
@@ -224,16 +235,9 @@ const STYLE = `
     background: var(--dya-selected);
     color: transparent;
 }
-/*
- * With nothing picked there is no profile to edit and nothing for the bar to act on, so the
- * column is empty and the list is the whole view. The bar comes back with the target.
- */
-.crw-editor[data-empty='true'] > .crw-bar {
-    display: none;
-}
-/* Beside a profile the console starts shorter: the subject of that view is the target being
-   written, and the output of a probe is a footnote to it. It resizes like the other one. */
-.crw-editor .crw-out {
+/* Inside the sheet the console starts shorter: the subject there is the target being written, and
+   the output of a probe is a footnote to it. It resizes like the other one. */
+.crw-sheet .crw-out {
     height: 120px;
 }
 .crw-form {
@@ -288,11 +292,6 @@ const STYLE = `
     color: var(--dya-text);
     overflow-wrap: anywhere;
 }
-.crw-hit-in,
-.crw-hit-where {
-    font-size: var(--dya-size-mono-xs);
-    color: var(--dya-text-4);
-}
 .crw-hit-where {
     margin-left: auto;
 }
@@ -313,9 +312,6 @@ const STYLE = `
     align-items: center;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
-}
-.crw-hit-at {
-    color: var(--dya-text-4);
 }
 `
 
@@ -354,6 +350,36 @@ function bytes(value) {
     }
     return `${unit === 0 ? size : size.toFixed(1)} ${units[unit]}`
 }
+
+function stateBadge(corpus) {
+    if (corpus.error) {
+        const badge = el('span', 'dya-badge dya-badge--soft dya-badge--danger', 'unreadable')
+        badge.title = corpus.error
+        return badge
+    }
+
+    if (!corpus.changed) {
+        const [text, tone] = corpus.stale ? ['stale', ''] : ['quiet', ' dya-badge--success']
+        const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
+        if (corpus.stale) badge.title = 'not swept since it last moved'
+        return badge
+    }
+
+    const pills = el('span', 'dya-pills')
+    const counts = [
+        [corpus.added, '+', ' dya-badge--success', 'added'],
+        [corpus.modified, '~', ' dya-badge--warning', 'changed'],
+        [corpus.removed, '−', ' dya-badge--danger', 'removed']
+    ]
+    for (const [count, sign, tone, what] of counts) {
+        if (!count) continue
+        const badge = el('span', `dya-badge dya-badge--soft${tone}`, `${sign}${count}`)
+        badge.title = `${count} ${what}`
+        pills.appendChild(badge)
+    }
+    return pills
+}
+
 
 function day(iso) {
     return iso ? String(iso).slice(0, 10) : '-'
@@ -670,35 +696,7 @@ function mount(ctx, container) {
          */
         function verdictCell(corpus) {
             const cell = el('td')
-
-            if (corpus.error) {
-                const badge = el('span', 'dya-badge dya-badge--soft dya-badge--danger', 'unreadable')
-                badge.title = corpus.error
-                cell.appendChild(badge)
-                return cell
-            }
-
-            if (!corpus.changed) {
-                const [text, tone] = corpus.stale ? ['stale', ''] : ['quiet', ' dya-badge--success']
-                const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
-                if (corpus.stale) badge.title = 'not swept since it last moved'
-                cell.appendChild(badge)
-                return cell
-            }
-
-            const pills = el('span', 'dya-pills')
-            const counts = [
-                [corpus.added, '+', ' dya-badge--success', 'added'],
-                [corpus.modified, '~', ' dya-badge--warning', 'changed'],
-                [corpus.removed, '−', ' dya-badge--danger', 'removed']
-            ]
-            for (const [count, sign, tone, what] of counts) {
-                if (!count) continue
-                const badge = el('span', `dya-badge dya-badge--soft${tone}`, `${sign}${count}`)
-                badge.title = `${count} ${what}`
-                pills.appendChild(badge)
-            }
-            cell.appendChild(pills)
+            cell.appendChild(stateBadge(corpus))
             return cell
         }
 
@@ -744,7 +742,7 @@ function mount(ctx, container) {
         if (!hit.file) return null
         const actions = el('div', 'crw-hit-actions')
         if (hit.line > 1) {
-            actions.append(el('span', 'dya-key-label crw-hit-at', `line ${hit.line}`))
+            actions.append(el('span', 'dya-meta crw-hit-at', `line ${hit.line}`))
         }
         if (ctx.shell.canOpen(hit.file)) {
             const open = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Open')
@@ -839,8 +837,8 @@ function mount(ctx, container) {
                         ? el('span', 'dya-text crw-hit-title', hit.title)
                         : el('span', 'dya-mono crw-hit-title', hit.url)
                 )
-                if (hit.heading) head.append(el('span', 'dya-mono crw-hit-in', hit.heading))
-                head.append(el('span', 'dya-mono crw-hit-where', `${hit.repository} / ${hit.target}`))
+                if (hit.heading) head.append(el('span', 'dya-meta crw-hit-in', hit.heading))
+                head.append(el('span', 'dya-meta crw-hit-where', `${hit.repository} / ${hit.target}`))
                 const url = el('div', 'dya-mono crw-hit-url', hit.url)
                 const snippet = el('div', 'dya-text crw-hit-snippet')
                 for (const [index, part] of String(hit.snippet).split(/[\[\]]/).entries()) {
@@ -859,21 +857,26 @@ function mount(ctx, container) {
     }
 
     function buildTargets() {
-        const split = el('div', 'crw-split')
-        const list = el('div', 'crw-list')
-        const editor = el('div', 'crw-editor')
-
         /*
-         * Nothing is picked yet, so there is nothing to inspect, nothing to save and no profile to
-         * edit. The bar used to carry two live buttons that answered with a sentence saying they
-         * had nothing to work on, above an empty box holding four fifths of the panel open — the
-         * same void the round output grew out of. The editor exists once a target does.
+         * The targets are what this view is about, so they take the room the window has: a grid of
+         * cards that reflows from one column to five, not a 210px rail of names beside four fifths
+         * of a window of black. Each card says what the target is, where its pages live and what
+         * the last round did to it, which is everything somebody chooses between them on.
+         *
+         * Opening one raises a sheet over the grid. A column that pushed the grid aside would
+         * leave a list too narrow to read and an editor too narrow to write in, at every width
+         * this panel is ever given.
          */
-        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
+        const grid = el('div', 'crw-grid')
+        const sheet = el('div', 'dya-sheet crw-sheet')
+        sheet.hidden = true
+
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')
-        bar.append(title, inspect, save)
+        const close = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
+        bar.append(title, inspect, save, close)
 
         const yaml = buildYaml()
         const note = el('div', 'dya-text crw-note')
@@ -881,69 +884,107 @@ function mount(ctx, container) {
         const log = output.log
 
         const form = buildForm()
-        editor.append(bar, form.node, yaml.node, note, output.node)
-        split.append(list, editor)
-        targets.appendChild(split)
+        sheet.append(bar, form.node, yaml.node, note, output.node)
+        targets.append(grid, sheet)
 
         let current = null
 
-        function picked(name) {
+        function raise(name) {
             current = name
-            title.textContent = name ?? ''
+            title.textContent = name ?? 'new target'
             yaml.node.hidden = name === null
-            editor.dataset.empty = String(name === null)
+            inspect.disabled = name === null
+            save.disabled = name === null
+            sheet.hidden = false
         }
 
-        picked(null)
+        function drop() {
+            current = null
+            form.close()
+            sheet.hidden = true
+            say('')
+        }
+
+        close.addEventListener('click', drop)
+        targets.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !sheet.hidden) drop()
+        })
 
         inspect.addEventListener('click', () => void probe())
         save.addEventListener('click', () => void write())
 
         async function refreshList() {
-            list.replaceChildren()
-            const add = el('button', 'dya-button dya-button--quiet dya-button--sm', '+ New target')
-            add.addEventListener('click', () => form.open())
-            list.appendChild(add)
+            grid.replaceChildren(newTargetCard())
             try {
-                const profiles = await ctx.invoke('profiles')
+                const [profiles, state] = await Promise.all([ctx.invoke('profiles'), ctx.invoke('state')])
                 if (profiles && profiles.needsEnvironment) {
-                    list.appendChild(
+                    grid.replaceChildren(
                         el(
                             'div',
-                            'dya-empty dya-empty--inline',
+                            'dya-empty',
                             'needs its Python environment — turn this plugin on in Setup'
                         )
                     )
                     return
                 }
-                for (const profile of profiles) {
-                    const entry = el('button', 'dya-entry', profile.name)
-                    entry.dataset.name = profile.name
-                    entry.title = profile.description || profile.name
-                    entry.addEventListener('click', () => void open(profile.name))
-                    list.appendChild(entry)
+
+                const swept = new Map()
+                for (const repo of (state && state.repositories) || []) {
+                    for (const corpus of repo.corpora || []) swept.set(corpus.name, corpus)
                 }
-                mark(current)
+
+                for (const profile of profiles) grid.appendChild(targetCard(profile, swept.get(profile.name)))
             } catch (error) {
-                list.appendChild(el('div', 'dya-empty dya-text--danger', reason(error)))
+                grid.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
             }
+        }
+
+        function newTargetCard() {
+            const card = el('button', 'dya-tile crw-new')
+            const icon = el('span', 'dya-tile__icon')
+            icon.innerHTML = PLUS
+            card.append(icon, el('span', 'dya-tile__name', 'New target'), el(
+                'span',
+                'dya-tile__note',
+                'Point the crawler at a site or a sitemap and keep what it finds.'
+            ))
+            card.addEventListener('click', () => {
+                raise(null)
+                form.open()
+            })
+            return card
+        }
+
+        /*
+         * A target, as the thing it is rather than as its name. The state badge is the same one the
+         * rounds table carries, so a corpus that changed says so in both places in one colour.
+         */
+        function targetCard(profile, corpus) {
+            const card = el('button', 'dya-tile dya-tile--dense crw-target')
+            const head = el('div', 'dya-tile__head')
+            head.append(el('span', 'dya-tile__name', profile.name))
+            if (corpus) head.append(stateBadge(corpus))
+            card.append(head)
+
+            if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
+
+            const facts = [profile.group]
+            if (corpus) facts.push(`${corpus.pages} pages`, day(corpus.swept_at))
+            else facts.push(`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`)
+            card.append(el('span', 'dya-meta', facts.filter(Boolean).join('  ·  ')))
+
+            card.addEventListener('click', () => void open(profile.name))
+            return card
         }
 
         async function open(name) {
             form.close()
             say('')
+            raise(name)
             try {
                 yaml.value = await ctx.invoke('show', name)
-                picked(name)
-                mark(name)
             } catch (error) {
                 say(reason(error), false)
-            }
-        }
-
-        function mark(name) {
-            for (const entry of list.querySelectorAll('[data-name]')) {
-                entry.className = entry.dataset.name === name ? 'dya-entry dya-entry--active' : 'dya-entry'
             }
         }
 
@@ -1048,9 +1089,7 @@ function mount(ctx, container) {
                     description: fields.description.value.trim(),
                     snapshot: snapshot.checked,
                 })
-                current = name
-                title.textContent = name
-                mark(name)
+                raise(name)
                 node.hidden = true
                 say('drafted, not saved. Read it, probe it, then save it.')
             })

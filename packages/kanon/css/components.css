@@ -75,21 +75,36 @@
     color: var(--dya-text-3);
 }
 
-.dya-label,
-.dya-eyebrow {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+/*
+ * A label names a control. It is sentence case in the sans, because an interface that shouts every
+ * word of itself in 10px mono capitals reads as a terminal wearing a costume — which is what this
+ * one did, from its tabs to its table heads to the word COMMIT beside a checkbox.
+ */
+.dya-label {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-label);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-tight);
-    text-transform: uppercase;
     color: var(--dya-text-4);
 }
 
+/*
+ * The eyebrow is the one thing left in capitals, and it earns them by being rare: one per view,
+ * naming the region under it, with the accent dot before it. Capitals are a signal when almost
+ * nothing else wears them.
+ */
 .dya-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: var(--dya-space-2);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-label-sm);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-label);
+    line-height: var(--dya-leading-tight);
+    text-transform: uppercase;
+    color: var(--dya-text-4);
 }
 
 .dya-eyebrow::before {
@@ -102,18 +117,16 @@
 }
 
 .dya-key-label {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
 }
 
 .dya-value {
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
 }
 
@@ -197,7 +210,7 @@
 .dya-log {
     overflow: auto;
     padding: var(--dya-space-3);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
@@ -265,6 +278,7 @@
 }
 
 .dya-bar {
+    height: 44px;
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
@@ -303,7 +317,7 @@
 .dya-card {
     background: var(--dya-surface-1);
     border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     box-shadow: var(--dya-elev-flat);
 }
 
@@ -311,7 +325,7 @@
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
-    height: 38px;
+    height: 44px;
     padding: 0 var(--dya-space-3);
     background: var(--dya-grad-header);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
@@ -377,17 +391,16 @@
 .dya-button {
     display: inline-grid;
     place-items: center;
-    height: 26px;
-    padding: 0 var(--dya-space-3);
+    height: 30px;
+    padding: 0 14px;
     border: none;
     border-radius: var(--dya-radius);
     background: var(--dya-raised);
     box-shadow: var(--dya-elev-raised);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
     cursor: pointer;
     transition:
@@ -469,10 +482,10 @@
 }
 
 .dya-button--sm {
-    height: 22px;
-    padding: 0 var(--dya-space-2);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
+    height: 26px;
+    padding: 0 10px;
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
 }
 
 .dya-button--danger {
@@ -511,9 +524,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-2);
-    padding: var(--dya-space-4);
+    padding: var(--dya-space-5);
     border: none;
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     background: var(--dya-raised);
     box-shadow: var(--dya-elev-raised);
     text-align: left;
@@ -545,10 +558,9 @@
 }
 
 .dya-tile__name {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-h4);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
 }
 
@@ -569,7 +581,7 @@
  * interface text and data, and a tile sits on both sides of it.
  */
 .dya-tile--dense {
-    padding: var(--dya-space-3);
+    padding: var(--dya-space-4);
 }
 
 .dya-tile__head {
@@ -588,17 +600,24 @@
     overflow-wrap: anywhere;
 }
 
+/*
+ * The icon control: a panel to open, a theme to choose, a window to close. It carries no outline at
+ * rest, because a row of them that each wear one is a row of identical stamps and says nothing
+ * about which is which — the top bar of this application was seven of those. The ground answers the
+ * pointer and the ink answers the state: quiet when there is nothing to say, the accent when what
+ * it controls is on.
+ */
 .dya-key {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    border: var(--dya-border-width) solid var(--dya-border);
+    border: none;
     border-radius: var(--dya-radius);
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
     color: var(--dya-text-4);
     cursor: pointer;
     transition:
@@ -608,6 +627,7 @@
 
 .dya-key:hover {
     background-color: var(--dya-flat-hover);
+    color: var(--dya-text-2);
 }
 
 .dya-key:active {
@@ -615,14 +635,13 @@
 }
 
 .dya-key--active {
-    border-color: var(--dya-accent);
     background: var(--dya-accent-soft);
     color: var(--dya-accent);
 }
 
 .dya-key > svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
 }
 
 [interestfor] {
@@ -647,12 +666,11 @@
     height: 22px;
     padding: 0 var(--dya-space-3);
     border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-full);
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-3);
     cursor: pointer;
     transition:
@@ -677,12 +695,12 @@
 .dya-entry {
     display: block;
     width: 100%;
-    padding: 5px var(--dya-space-3);
+    padding: 8px var(--dya-space-3);
     border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     background: var(--dya-surface-1);
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
     text-align: left;
@@ -720,7 +738,7 @@
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text);
     outline: none;
@@ -881,29 +899,27 @@ textarea.dya-field {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    height: 20px;
+    height: 22px;
     padding: 0 11px;
     border: var(--dya-border-width) solid var(--dya-tag-border);
-    border-radius: var(--dya-radius-tag);
+    border-radius: var(--dya-radius-full);
     background: var(--dya-tag-bg);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-2);
 }
 
 .dya-badge {
     display: inline-grid;
     place-items: center;
-    padding: 2px 6px;
-    border-radius: var(--dya-radius);
+    padding: 3px 10px;
+    border-radius: var(--dya-radius-full);
     background: var(--dya-idle);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-label);
     font-weight: var(--dya-weight-medium);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-on-idle);
 }
 
@@ -1101,26 +1117,27 @@ textarea.dya-field {
 .dya-table {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0 var(--dya-space-1);
+    border-spacing: 0 6px;
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
 }
 
 .dya-table th {
+    font-family: var(--dya-font-sans);
     padding: 0 var(--dya-space-3) var(--dya-space-1);
-    font-size: var(--dya-size-label-sm);
+    font-size: var(--dya-size-body-xs);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-ui);
     text-align: left;
     color: var(--dya-text-4);
 }
 
 .dya-table td {
-    padding: var(--dya-space-2) var(--dya-space-3);
+    font-size: var(--dya-size-mono-sm);
+    padding: 10px var(--dya-space-4);
     background: var(--dya-surface-1);
     border-block: var(--dya-border-width) solid var(--dya-border);
     overflow-wrap: anywhere;
@@ -1129,14 +1146,14 @@ textarea.dya-field {
 
 .dya-table td:first-child {
     border-inline-start: var(--dya-border-width) solid var(--dya-border);
-    border-start-start-radius: var(--dya-radius);
-    border-end-start-radius: var(--dya-radius);
+    border-start-start-radius: var(--dya-radius-card);
+    border-end-start-radius: var(--dya-radius-card);
 }
 
 .dya-table td:last-child {
     border-inline-end: var(--dya-border-width) solid var(--dya-border);
-    border-start-end-radius: var(--dya-radius);
-    border-end-end-radius: var(--dya-radius);
+    border-start-end-radius: var(--dya-radius-card);
+    border-end-end-radius: var(--dya-radius-card);
 }
 
 /* A column of figures is read down, so it is aligned down its right edge. */
@@ -1171,8 +1188,9 @@ textarea.dya-field {
 }
 
 .dya-table .dya-table__key {
-    text-transform: uppercase;
-    letter-spacing: var(--dya-tracking-data);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
 }
 
@@ -1197,6 +1215,58 @@ textarea.dya-field {
     border-color: var(--dya-border-strong);
 }
 
+/*
+ * A region that opens over the panel rather than beside it.
+ *
+ * A panel is one window's worth of room at most and often half of one, so an editor, a drawer or
+ * a detail view that takes a column leaves two halves, each too narrow to be worth anything. A
+ * sheet takes the room it needs, over what it came from, and gives it back when it closes.
+ *
+ * It is the one place a panel-level overlay is declared: `--dya-elev-overlay`, the chassis radius
+ * and `--dya-surface-1` over whatever it covers. It is a container, so what is inside it asks the
+ * sheet how wide it is rather than the panel. The parent must be positioned; the consumer owns
+ * that, and owns what closes it.
+ */
+.dya-sheet {
+    position: absolute;
+    inset: var(--dya-space-3);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-3);
+    min-width: 0;
+    padding: var(--dya-space-3);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius-chassis);
+    background: var(--dya-surface-1);
+    box-shadow: var(--dya-elev-overlay);
+    container-type: inline-size;
+    animation: dya-slide-up-fade var(--dya-dur-fast) var(--dya-ease-out);
+}
+
+/* Anchored to one edge instead of covering: the detail beside the list it came from. */
+.dya-sheet--side {
+    inset-inline-start: auto;
+    width: 50%;
+}
+
+/*
+ * The rank under a name: where a thing came from, when it was last touched, how many of it there
+ * are. It is data, so it keeps its case, and it is mono at the smallest step in the scale with the
+ * quietest ink that is still text — `--dya-text-4`, 6.70 on `--dya-surface-1` in Gi and 8.04 in
+ * Rei. Three panels had each built this line out of a `dya-mono` and two overrides.
+ */
+.dya-meta {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .dya-menu {
     padding: 5px;
     border-radius: var(--dya-radius);
@@ -1214,10 +1284,9 @@ textarea.dya-field {
     border: none;
     border-radius: var(--dya-radius);
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-2);
     cursor: pointer;
     transition:
@@ -1271,10 +1340,9 @@ textarea.dya-field {
     border: none;
     border-bottom: 2px solid transparent;
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
     cursor: pointer;
 }

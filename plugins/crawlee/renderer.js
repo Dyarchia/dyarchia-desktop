@@ -71,8 +71,11 @@ const STYLE = `
     }
 
     .crw-corpora tr {
+        margin-bottom: var(--dya-space-1);
         padding: var(--dya-space-2) 0;
-        border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+        border: var(--dya-border-width) solid var(--dya-border);
+        border-radius: var(--dya-radius);
+        background: var(--dya-surface-1);
     }
 
     .crw-corpora td {
@@ -81,7 +84,9 @@ const STYLE = `
         align-items: baseline;
         gap: var(--dya-space-3);
         border: 0;
+        border-radius: 0;
         padding: 1px var(--dya-space-3);
+        background: none;
         text-align: left;
     }
 
@@ -123,20 +128,25 @@ const STYLE = `
     min-width: 120px;
 }
 /*
- * The output area exists while there is output. It used to hold a fifth of the panel open whether
- * or not a round had ever run, which is the void the corpus table should have been filling.
+ * The console and the handle that sizes it. Everything else in this application can be resized —
+ * the window, the dock, every panel in it — and the one region that fills with text a line at a
+ * time was 120 pixels tall for ever, so a round's output was read four lines at a time through a
+ * slot. The handle sits inside the region so that one :has() rule hides both when there is no output.
  */
 .crw-out {
     display: flex;
-    flex: 1 1 120px;
-    min-height: 120px;
+    flex-direction: column;
+    flex: none;
+    gap: var(--dya-space-2);
+    height: 180px;
+    min-height: 72px;
 }
 .crw-out:has(> .dya-log[hidden]) {
     display: none;
 }
 .crw-log {
     flex: 1;
-    min-height: 60px;
+    min-height: 0;
 }
 .crw-split {
     display: flex;
@@ -147,7 +157,7 @@ const STYLE = `
 .crw-list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--dya-space-1);
     flex: none;
     width: 210px;
     overflow: auto;
@@ -221,12 +231,10 @@ const STYLE = `
 .crw-editor[data-empty='true'] > .crw-bar {
     display: none;
 }
-/* Beside a profile the log is a footnote, not the subject: it takes the room its lines need and
-   no more, so an empty one does not hold half the panel open for nothing. */
-.crw-editor .crw-log {
-    flex: none;
-    min-height: 0;
-    max-height: 32%;
+/* Beside a profile the console starts shorter: the subject of that view is the target being
+   written, and the output of a probe is a footnote to it. It resizes like the other one. */
+.crw-editor .crw-out {
+    height: 120px;
 }
 .crw-form {
     display: grid;
@@ -252,6 +260,7 @@ const STYLE = `
     overflow: auto;
     display: flex;
     flex-direction: column;
+    gap: var(--dya-space-2);
 }
 .crw-hits > .dya-empty {
     flex: 1;
@@ -260,8 +269,10 @@ const STYLE = `
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-1);
-    padding: var(--dya-space-2) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    padding: var(--dya-space-3);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-1);
 }
 .crw-hit-head {
     display: flex;
@@ -452,6 +463,82 @@ function mount(ctx, container) {
     }
 
 
+    /*
+     * A console somebody can make bigger. The handle drags, the arrow keys move it for anybody not
+     * using a pointer, and a double-click swaps between the height it was given and most of the
+     * view — which is what a reader wants the moment a round starts failing and the interesting
+     * line is forty lines up. The height is remembered per view, so the panel opens the way it was
+     * left rather than the way it was written.
+     */
+    function buildConsole(key) {
+        const MIN = 72
+        const pane = el('div', 'crw-out')
+        const grip = el('div', 'dya-splitter')
+        grip.setAttribute('role', 'separator')
+        grip.setAttribute('aria-orientation', 'horizontal')
+        grip.tabIndex = 0
+        grip.title = 'drag to resize · double-click for the whole view'
+        const log = el('pre', 'dya-log crw-log')
+        log.hidden = true
+        pane.append(grip, log)
+
+        let stored = Number(localStorage.getItem(key)) || 0
+        let folded = 0
+        if (stored) pane.style.height = `${stored}px`
+
+        function room() {
+            const parent = pane.parentElement
+            return parent ? Math.max(MIN, parent.getBoundingClientRect().height - 120) : 480
+        }
+
+        function size(next, remember) {
+            const height = Math.max(MIN, Math.min(Math.round(next), room()))
+            pane.style.height = `${height}px`
+            if (remember) {
+                stored = height
+                localStorage.setItem(key, String(height))
+            }
+            return height
+        }
+
+        grip.addEventListener('pointerdown', (event) => {
+            const from = event.clientY
+            const start = pane.getBoundingClientRect().height
+            grip.setPointerCapture(event.pointerId)
+            grip.dataset.dragging = 'true'
+            const move = (moved) => size(start + (from - moved.clientY), true)
+            const drop = () => {
+                delete grip.dataset.dragging
+                grip.removeEventListener('pointermove', move)
+                grip.removeEventListener('pointerup', drop)
+                grip.removeEventListener('pointercancel', drop)
+            }
+            grip.addEventListener('pointermove', move)
+            grip.addEventListener('pointerup', drop)
+            grip.addEventListener('pointercancel', drop)
+            event.preventDefault()
+        })
+
+        grip.addEventListener('keydown', (event) => {
+            const step = event.key === 'ArrowUp' ? 24 : event.key === 'ArrowDown' ? -24 : 0
+            if (!step) return
+            size(pane.getBoundingClientRect().height + step, true)
+            event.preventDefault()
+        })
+
+        grip.addEventListener('dblclick', () => {
+            if (folded) {
+                size(folded, false)
+                folded = 0
+                return
+            }
+            folded = pane.getBoundingClientRect().height
+            size(room(), false)
+        })
+
+        return { node: pane, log }
+    }
+
     function buildRounds() {
         const head = el('div', 'crw-head')
         const headline = el('span', 'dya-value crw-headline', 'reading the corpus…')
@@ -482,7 +569,7 @@ function mount(ctx, container) {
         commit.type = 'checkbox'
         commit.checked = true
         commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = el('button', 'dya-button dya-button--primary', 'Run')
+        const run = el('button', 'dya-button dya-button--success', 'Run')
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
         const actionGroup = el('div', 'dya-bar__group')
@@ -497,11 +584,9 @@ function mount(ctx, container) {
          * question it was asking — a paragraph of onboarding pinned to a panel somebody opens
          * every day.
          */
-        const out = el('div', 'crw-out')
-        const log = el('pre', 'dya-log crw-log')
-        log.hidden = true
-        out.append(log)
-        rounds.append(head, wrap, bar, out)
+        const output = buildConsole('crawlee.console.rounds')
+        const log = output.log
+        rounds.append(head, wrap, bar, output.node)
 
         refresh.addEventListener('click', () => void refreshState())
         run.addEventListener('click', () => void startRound())
@@ -576,18 +661,44 @@ function mount(ctx, container) {
             }
         }
 
+        /*
+         * What the round did to a corpus, in the two colours every reader already knows: what was
+         * added is green, what was removed is red, and what changed in place is neither. One badge
+         * reading `+4 ~66 -2` in a single warning hue asked somebody to parse three figures to
+         * learn what two colours say without being read, and a corpus that had only gained pages
+         * looked exactly like one that had only lost them. A figure of zero is not shown at all.
+         */
         function verdictCell(corpus) {
-            const [text, tone] = corpus.error
-                ? ['unreadable', ' dya-badge--danger']
-                : corpus.changed
-                  ? [`+${corpus.added} ~${corpus.modified} -${corpus.removed}`, ' dya-badge--warning']
-                  : corpus.stale
-                    ? ['stale', '']
-                    : ['quiet', ' dya-badge--success']
             const cell = el('td')
-            const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
-            badge.title = corpus.error || (corpus.stale ? 'not swept since it last moved' : '')
-            cell.appendChild(badge)
+
+            if (corpus.error) {
+                const badge = el('span', 'dya-badge dya-badge--soft dya-badge--danger', 'unreadable')
+                badge.title = corpus.error
+                cell.appendChild(badge)
+                return cell
+            }
+
+            if (!corpus.changed) {
+                const [text, tone] = corpus.stale ? ['stale', ''] : ['quiet', ' dya-badge--success']
+                const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
+                if (corpus.stale) badge.title = 'not swept since it last moved'
+                cell.appendChild(badge)
+                return cell
+            }
+
+            const pills = el('span', 'dya-pills')
+            const counts = [
+                [corpus.added, '+', ' dya-badge--success', 'added'],
+                [corpus.modified, '~', ' dya-badge--warning', 'changed'],
+                [corpus.removed, '−', ' dya-badge--danger', 'removed']
+            ]
+            for (const [count, sign, tone, what] of counts) {
+                if (!count) continue
+                const badge = el('span', `dya-badge dya-badge--soft${tone}`, `${sign}${count}`)
+                badge.title = `${count} ${what}`
+                pills.appendChild(badge)
+            }
+            cell.appendChild(pills)
             return cell
         }
 
@@ -766,11 +877,11 @@ function mount(ctx, container) {
 
         const yaml = buildYaml()
         const note = el('div', 'dya-text crw-note')
-        const log = el('pre', 'dya-log crw-log')
-        log.hidden = true
+        const output = buildConsole('crawlee.console.targets')
+        const log = output.log
 
         const form = buildForm()
-        editor.append(bar, form.node, yaml.node, note, log)
+        editor.append(bar, form.node, yaml.node, note, output.node)
         split.append(list, editor)
         targets.appendChild(split)
 

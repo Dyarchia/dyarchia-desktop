@@ -120,3 +120,21 @@ def test_the_default_is_the_repository_the_settings_name(tmp_path: Path) -> None
     snapshot = build(settings=settings)
 
     assert [c.name for c in snapshot.corpora] == ['alpha']
+
+
+def test_the_state_says_which_folder_it_read(settings: Settings, tmp_path: Path) -> None:
+    """The one fact the panel cannot deduce from the rest of the payload.
+
+    A repositories directory that holds nothing hides every corpus but the fallback, and a state
+    that does not name it reports the smaller number as confidently as the true one.
+    """
+    corpora = tmp_path / 'corpora'
+    named = settings.model_copy(update={'repositories_dir': corpora})
+
+    payload = build(settings=named).to_dict()
+
+    assert payload['folder'] == str(corpora)
+
+
+def test_a_machine_that_names_no_folder_says_so(settings: Settings) -> None:
+    assert build(settings=settings).to_dict()['folder'] is None

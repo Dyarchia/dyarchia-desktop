@@ -113,10 +113,17 @@ class RepositoryState:
 
 @dataclass(slots=True)
 class State:
-    """Every repository asked about, at one moment."""
+    """Every repository asked about, at one moment.
+
+    `folder` is the repositories directory in force, which is the one fact a reader cannot deduce
+    from anything else on the screen. A stale `DYARCHIA_CRAWLEE_REPOSITORIES_DIR` in one shell is
+    enough to hide every corpus but the fallback, and the panel that resulted said `9 corpora` as
+    confidently as it would have said fourteen.
+    """
 
     generated_at: datetime = field(default_factory=utcnow)
     repositories: list[RepositoryState] = field(default_factory=list)
+    folder: Path | None = None
 
     @property
     def corpora(self) -> list[CorpusState]:
@@ -140,6 +147,7 @@ class State:
         return {
             'generated_at': self.generated_at.isoformat(),
             'headline': self.headline,
+            'folder': str(self.folder) if self.folder else None,
             'repositories': [repository.to_dict() for repository in self.repositories],
         }
 
@@ -204,7 +212,8 @@ def build(roots: list[Path] | None = None, settings: Settings | None = None) -> 
         repositories=[
             _repository(root, default=root.resolve() == fallback)
             for root in roots or repositories.roots(settings)
-        ]
+        ],
+        folder=repositories.parent_directory(settings),
     )
 
 

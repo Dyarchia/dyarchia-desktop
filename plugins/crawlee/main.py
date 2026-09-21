@@ -94,9 +94,9 @@ def _installed_paths(root: Path) -> dict[str, str]:
 
     So an installed copy is told where to write instead. The shell names one directory,
     DYARCHIA_DATA_HOME, inside `~/.dyarchia`; the corpus repositories go there, one per
-    subdirectory, with `local` as the default one a command falls back to. Derived data does not:
-    the index is rebuilt from the snapshots and the crawler's working directory is purged on every
-    run, so both live beside the application's own state rather than in the user's folders.
+    subdirectory, and a command that names none falls back to the first of them. Derived data does
+    not: the index is rebuilt from the snapshots and the crawler's working directory is purged on
+    every run, so both live beside the application's own state rather than in the user's folders.
 
     A checkout is left alone, and is recognised by the `.env` beside its `pyproject.toml` — the
     file whose whole purpose is to say where that machine keeps its corpora. Overriding it from
@@ -128,25 +128,55 @@ def _installed_paths(root: Path) -> dict[str, str]:
         if not os.environ.get(name)
     }
 
-    """The corpora this installation made, and the three directories inside the one it made them
-    in. Somebody who brought their own corpora brought their own layout with them, and `local` is
-    not a repository they have: the toolkit's own settings resolve those, which is the answer a
-    checkout already gets.
+    """The corpora this installation reads, and the three directories inside the one a command
+    falls back to when it names no repository.
+
+    Naming the repositories directory answers where the corpora are. It does not answer which of
+    them an ad-hoc crawl writes to, and that question has a default the installation must not
+    accept: a relative path resolved against the toolkit's own directory, which in an installation
+    is inside the application. A machine that had set only that one variable therefore reported no
+    corpora at all, from a panel whose repositories directory was right — the fallback pointed at
+    `resources/plugins/crawlee`, and every corpus on the disk was invisible beside it.
+
+    So the fallback is named here whatever the repositories directory is, and only the variables
+    the environment does not already carry are set.
     """
-    if not os.environ.get('DYARCHIA_CRAWLEE_REPOSITORIES_DIR'):
-        corpora = Path(home) / 'crawlee'
-        default = corpora / 'local'
+    named = os.environ.get('DYARCHIA_CRAWLEE_REPOSITORIES_DIR')
+    corpora = Path(named) if named else Path(home) / 'crawlee'
+    if not named:
         settings['DYARCHIA_CRAWLEE_REPOSITORIES_DIR'] = str(corpora)
-        for name, directory in (
-            ('DYARCHIA_CRAWLEE_DATA_DIR', default / 'data'),
-            ('DYARCHIA_CRAWLEE_PROFILES_DIR', default / 'profiles'),
-            ('DYARCHIA_CRAWLEE_OUTPUT_DIR', default / 'output'),
-        ):
-            if not os.environ.get(name):
-                directory.mkdir(parents=True, exist_ok=True)
-                settings[name] = str(directory)
+
+    default = _fallback_repository(corpora)
+    for name, directory in (
+        ('DYARCHIA_CRAWLEE_DATA_DIR', default / 'data'),
+        ('DYARCHIA_CRAWLEE_PROFILES_DIR', default / 'profiles'),
+        ('DYARCHIA_CRAWLEE_OUTPUT_DIR', default / 'output'),
+    ):
+        if not os.environ.get(name):
+            directory.mkdir(parents=True, exist_ok=True)
+            settings[name] = str(directory)
 
     return settings
+
+
+def _fallback_repository(corpora: Path) -> Path:
+    """The repository a command falls back to: the first one already there, or a new `local`.
+
+    `local` is what a machine holding no corpus gets, and it stops being the right answer the
+    moment one is cloned. An empty repository that keeps the default takes the digest of every
+    round with it — the document describing thirteen targets in two corpora lands in the one
+    directory that holds none of them — so an existing repository wins over a new one.
+
+    The marker is the toolkit's own: a directory holding `profiles/` is a corpus repository. The
+    first in sorted order is chosen, which is a stable answer rather than one that moves the day
+    another corpus is cloned beside it.
+    """
+    try:
+        existing = sorted(child for child in corpora.iterdir() if (child / 'profiles').is_dir())
+    except OSError:
+        existing = []
+
+    return existing[0] if existing else corpora / 'local'
 
 
 def _spawn(args: list[str], **extra: Any) -> subprocess.Popen[str]:

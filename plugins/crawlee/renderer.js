@@ -43,9 +43,13 @@ const STYLE = `
     padding-inline: var(--dya-space-3);
 }
 .crw-headline {
-    flex: 1;
+    flex: none;
     min-width: 0;
     overflow-wrap: anywhere;
+}
+.crw-where {
+    flex: 1;
+    min-width: 60px;
 }
 .crw-corpora {
     flex: 1 1 auto;
@@ -568,8 +572,15 @@ function mount(ctx, container) {
     function buildRounds() {
         const head = el('div', 'crw-head')
         const headline = el('span', 'dya-value crw-headline', 'reading the corpus…')
+        /*
+         * Where the corpora are read from, said on the screen that reports them. It is the one
+         * fact a reader cannot deduce from anything else here, and a stale repositories directory
+         * in one shell is enough to hide every corpus but the fallback — this panel once said
+         * `9 corpora` with four more on the disk, as confidently as it would have said fourteen.
+         */
+        const where = el('span', 'dya-meta crw-where')
         const refresh = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Refresh')
-        head.append(el('span', 'dya-eyebrow', 'corpus'), headline, refresh)
+        head.append(el('span', 'dya-eyebrow', 'corpus'), headline, where, refresh)
 
         const table = el('table', 'dya-table')
         const wrap = el('div', 'crw-corpora')
@@ -639,11 +650,14 @@ function mount(ctx, container) {
              */
             if (state.needsEnvironment) {
                 headline.textContent = 'needs its Python environment — turn this plugin on in Setup'
+                where.textContent = ''
                 table.replaceChildren()
                 return
             }
 
             headline.textContent = state.headline || 'no corpora'
+            where.textContent = state.folder ?? ''
+            where.title = state.folder ? `every corpus repository under ${state.folder}` : ''
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
             table.replaceChildren()

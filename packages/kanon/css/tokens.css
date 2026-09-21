@@ -100,12 +100,14 @@
     --dya-tag-bg: #e6e3db12;
     --dya-tag-border: #e6e3db2b;
 
-    --dya-success: #63cf95;
-    --dya-success-soft: #63cf951a;
+    --dya-success: #4ade80;
+    --dya-success-hover: #6ae997;
+    --dya-success-soft: #4ade801a;
     --dya-warning: #d6a95c;
     --dya-warning-soft: #d6a95c1a;
-    --dya-danger: #f59790;
-    --dya-danger-hover: #f8a8a2;
+    --dya-danger: #ff5f56;
+    --dya-danger-hover: #ff7d75;
+    --dya-danger-ink: #f59790;
     --dya-danger-soft: #f597901a;
     --dya-on-status: #181714;
     --dya-idle: #383733;
@@ -222,12 +224,9 @@
     --dya-tag-bg: #dde5f512;
     --dya-tag-border: #dde5f52b;
 
-    --dya-success: #6fd6a4;
-    --dya-success-soft: #6fd6a41a;
     --dya-warning: #e2b268;
     --dya-warning-soft: #e2b2681a;
-    --dya-danger: #ff9b95;
-    --dya-danger-hover: #ffb0ab;
+    --dya-danger-ink: #ff9b95;
     --dya-danger-soft: #ff9b951a;
     --dya-on-status: #05080f;
     --dya-idle: #324063;

@@ -2019,7 +2019,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
 
         if (shown(card) === 'review') {
-            const approve = el('button', 'dya-button dya-button--sm', 'approve')
+            const approve = el('button', 'dya-button dya-button--sm dya-button--success', 'approve')
             approve.type = 'button'
             approve.addEventListener('click', () => move(card.id, 'done'))
             const changes = el('button', 'dya-button dya-button--quiet dya-button--sm', 'request changes')

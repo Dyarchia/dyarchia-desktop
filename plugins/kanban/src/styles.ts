@@ -19,7 +19,7 @@ export const STYLES = `
     width: var(--dya-border-width);
     height: 16px;
     margin: 0 var(--dya-space-1);
-    background: var(--dya-rule);
+    background: var(--dya-hairline);
 }
 
 .kanban-health-button {
@@ -299,23 +299,16 @@ export const STYLES = `
     box-shadow: var(--dya-elev-overlay);
 }
 
+/* The shape is kanon's sheet; what belongs here is how wide this one opens. */
 .kanban-drawer {
-    position: absolute;
-    top: var(--dya-space-3);
-    right: var(--dya-space-3);
-    bottom: var(--dya-space-3);
-    z-index: 20;
-    width: 50%;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
+    gap: 0;
+    padding: 0;
     overflow: hidden;
-    container-type: inline-size;
-    box-shadow: var(--dya-elev-overlay);
 }
 
 .kanban-drawer[data-size='full'] {
-    width: calc(100% - var(--dya-space-3) * 2);
+    inset-inline-start: var(--dya-space-3);
+    width: auto;
 }
 
 .kanban-drawer-head {

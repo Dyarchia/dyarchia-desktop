@@ -80,6 +80,38 @@ picked, it would be writing somebody's corpus into somebody else's, and it would
 edit saved through `profile save` lands where the profile already is, for the same reason; only a
 name that exists nowhere yet is new, and new goes to the default repository.
 
+### In the desktop application
+
+An installed copy cannot use the defaults above. They are relative paths resolved against the
+directory this toolkit sits in, and in an installation that directory is inside the application:
+read-only, invisible to the user, and not where anybody's corpus belongs. So the plugin names them,
+and it names every one of them, whether or not the machine has already named the folder they sit
+in.
+
+    Variable                            What an installation sets it to
+    ---------------------------------   --------------------------------------------------------
+    DYARCHIA_CRAWLEE_REPOSITORIES_DIR   ~/.dyarchia/data/crawlee
+    DYARCHIA_CRAWLEE_DATA_DIR           the fallback repository's data/
+    DYARCHIA_CRAWLEE_PROFILES_DIR       the fallback repository's profiles/
+    DYARCHIA_CRAWLEE_OUTPUT_DIR         the fallback repository's output/
+    DYARCHIA_CRAWLEE_INDEX_DIR          ~/.dyarchia/crawlee/index
+    DYARCHIA_CRAWLEE_STORAGE_DIR        ~/.dyarchia/crawlee/storage
+
+**The fallback repository is the first one already in that folder, and `local` only when it holds
+none.** An empty repository that keeps the default takes with it everything belonging to no
+particular corpus, the digest of a round included, and a digest describing every corpus on the
+machine is of no use in the one directory that holds none of them.
+
+A value the environment already carries is kept, so a machine that says where it keeps its corpora
+is answered in its own terms:
+
+```bash
+setx DYARCHIA_CRAWLEE_REPOSITORIES_DIR "D:/wherever/crawlee-data"
+```
+
+That variable names a folder of repositories, not a repository. Pointing it at an empty folder is
+how a machine ends up reporting no corpora while holding several somewhere else.
+
 ### Your first corpus repository
 
 A fresh clone of this toolkit holds no corpus, and the folder `DYARCHIA_CRAWLEE_REPOSITORIES_DIR`

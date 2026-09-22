@@ -19,6 +19,7 @@
         "@dyarchia/sdk": "workspace:*",
         "dockview": "^8.0.0",
         "dockview-react": "^8.0.0",
+        "electron-updater": "^6.8.9",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
     },

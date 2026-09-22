@@ -18,11 +18,30 @@ body,
     user-select: none;
 }
 
-.topbar-alpha {
+/*
+ * The build and what can be done about it. The auto margin is on the group rather than on the
+ * version, because the version stopped being the last thing on this side of the bar the moment an
+ * update could offer itself beside it.
+ */
+.topbar-build {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
     flex: none;
+    min-width: 0;
     margin-right: auto;
     margin-left: var(--dya-space-2);
+}
+
+.topbar-alpha {
+    flex: none;
     white-space: nowrap;
+}
+
+.topbar-update {
+    flex: none;
+    white-space: nowrap;
+    -webkit-app-region: no-drag;
 }
 
 /*

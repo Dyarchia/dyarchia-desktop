@@ -19,6 +19,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const OWNER = 'Dyarchia/dyarchia-desktop'
 const releaseDir = join(root, 'apps', 'shell', 'release')
 
 const wanted = new Set(process.argv.slice(2))
@@ -86,6 +87,64 @@ function refuseUnlessReleasable(tag) {
 }
 
 /*
+ * The release is made here, empty, before anything is built.
+ *
+ * Left to electron-builder it is made at upload time, and the 0.2.6 cut caught why that is not
+ * safe: two publisher contexts both asked whether the release existed, both were told no, and
+ * both created one. The artifacts landed split across the two -- the installer and `latest.yml`
+ * in one, the blockmap in the other -- and neither was a complete release. A release that already
+ * exists is found by tag and uploaded into, by however many contexts there turn out to be.
+ *
+ * It is a prerelease from the start, because every release here is, and because the default is a
+ * draft: invisible to `gh release list`, invisible to anybody reading the repository, and
+ * invisible to the updater, which is the one reader that matters.
+ */
+function openRelease(tag) {
+    run('gh', [
+        'release',
+        'create',
+        tag,
+        '--prerelease',
+        '--title',
+        tag.replace(/^v/, ''),
+        '--notes',
+        `Alpha build ${tag.replace(/^v/, '')}.`
+    ])
+}
+
+/*
+ * What a complete release looks like, asked of GitHub rather than assumed from an exit code.
+ *
+ * `latest.yml` is the whole of what an installed copy reads, and the installer is the whole of
+ * what it then runs; a release missing either is a release that silently does nothing. Nothing is
+ * pruned until this passes, because the 0.2.6 cut deleted the previous release while the new one
+ * was two broken drafts -- an upgrade path removed in favour of one that did not work yet.
+ */
+function verifyRelease(tag) {
+    const found = JSON.parse(
+        read('gh', ['release', 'view', tag, '--json', 'isDraft,isPrerelease,assets'])
+    )
+
+    const complain = []
+    if (found.isDraft) complain.push('it is still a draft, which no installed copy can see')
+    if (!found.isPrerelease) complain.push('it is not marked as a prerelease')
+
+    const names = found.assets.map((asset) => asset.name)
+    if (!names.includes('latest.yml')) complain.push('it carries no latest.yml')
+    if (!names.some((name) => name.endsWith('.exe'))) complain.push('it carries no installer')
+
+    const duplicates = JSON.parse(read('gh', ['api', `repos/${OWNER}/releases`])).filter(
+        (release) => release.tag_name === tag
+    )
+    if (duplicates.length > 1) complain.push(`${duplicates.length} releases share this tag`)
+
+    if (complain.length) {
+        throw new Error(`${tag} is published but not usable:\n  - ${complain.join('\n  - ')}`)
+    }
+    console.log(`  ${tag} carries ${names.join(', ')}`)
+}
+
+/*
  * Only the newest release stays. This is what the repository has always done -- an alpha that
  * publishes five installers offers five wrong answers to somebody arriving at the releases page --
  * and it is what the updater needs, since it reads the newest release and nothing else. The tags
@@ -119,7 +178,8 @@ if (!publishing) {
     console.log(`would cut ${tag}`)
     console.log('  pnpm -r build, stage the plugins, electron-vite build')
     console.log('  electron-builder --win --publish always')
-    console.log(`  git tag ${tag} && git push origin ${tag}`)
+    console.log(`  git tag ${tag}, push it, open the prerelease`)
+    console.log('  then check it carries an installer and a latest.yml')
     if (pruning) console.log('  then delete every older release and older local installer')
     console.log('\nnothing was done. Pass --publish to do it.')
     process.exit(0)
@@ -130,6 +190,7 @@ refuseUnlessReleasable(tag)
 console.log(`cutting ${tag}`)
 run('git', ['tag', tag])
 run('git', ['push', 'origin', tag])
+openRelease(tag)
 
 /*
  * The steps `pnpm package` wraps, spelled out, because the publish flag has to reach
@@ -152,6 +213,9 @@ run('pnpm', [
     '--publish',
     'always'
 ])
+
+console.log('checking that what was published is a release an installed copy can use')
+verifyRelease(tag)
 
 if (pruning) {
     console.log('pruning what this one replaces')

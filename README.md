@@ -190,10 +190,25 @@ node scripts/release.mjs --publish
 Without `--publish` it prints what it would do and stops, which is also how to check the
 branch, the tree and the version before spending a build on them. It refuses to run
 anywhere but `master`, refuses a dirty tree, and refuses a version some tag already claims.
-Then it tags, pushes the tag, builds the workspace, packages with `--publish always`, and
-deletes every older release and older local installer -- **the tags stay**, because they
-are the history and deleting one rewrites what a commit meant. `--keep-old` leaves the
-older releases alone.
+Then it tags, pushes the tag, **opens the prerelease before building anything**, builds the
+workspace, packages with `--publish always` so the artifacts upload into the release that is
+already there, and only then prunes.
+
+Two of those are the scars of the 0.2.6 cut.
+
+The release is opened first because, left to electron-builder, it is created at upload time:
+two publisher contexts both asked whether it existed, both were told no, and both made one.
+The installer and `latest.yml` landed in one, the blockmap in the other, and neither was a
+complete release. A release that already exists is found by tag and uploaded into, by
+however many contexts there turn out to be.
+
+And nothing is pruned until GitHub has been asked what the release actually contains --
+published rather than draft, marked prerelease, carrying an installer and a `latest.yml`,
+and alone on its tag. The 0.2.6 cut deleted the previous release while the new one was two
+broken drafts, which is an upgrade path removed in favour of one that did not work yet.
+
+Pruning keeps only the newest release; **the tags stay**, because they are the history and
+deleting one rewrites what a commit meant. `--keep-old` leaves the older releases alone.
 
 Only the newest release exists at any time. An alpha that publishes five installers offers
 five wrong answers to somebody arriving at the releases page, and the updater reads the

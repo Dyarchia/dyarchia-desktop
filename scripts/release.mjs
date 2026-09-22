@@ -30,8 +30,25 @@ function run(command, args, options = {}) {
         cwd: root,
         encoding: 'utf8',
         stdio: options.quiet ? 'pipe' : 'inherit',
+        shell: process.platform === 'win32',
         ...options
     })
+}
+
+/*
+ * electron-builder uploads with a token out of the environment and stops with a message about
+ * GH_TOKEN when there is none. `gh` is already authenticated on any machine that can cut a
+ * release, so its token is borrowed rather than asked for -- one fewer secret to keep somewhere
+ * and one fewer way for a fifteen-minute build to end in an upload that cannot happen.
+ */
+function token() {
+    const held = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
+    if (held) return held
+    try {
+        return read('gh', ['auth', 'token'])
+    } catch {
+        throw new Error('no GH_TOKEN and `gh auth token` gave nothing. Run `gh auth login`')
+    }
 }
 
 function read(command, args) {
@@ -100,8 +117,8 @@ const tag = `v${version()}`
 
 if (!publishing) {
     console.log(`would cut ${tag}`)
-    console.log('  pnpm -r build')
-    console.log('  pnpm --filter @dyarchia/shell package -- --publish always')
+    console.log('  pnpm -r build, stage the plugins, electron-vite build')
+    console.log('  electron-builder --win --publish always')
     console.log(`  git tag ${tag} && git push origin ${tag}`)
     if (pruning) console.log('  then delete every older release and older local installer')
     console.log('\nnothing was done. Pass --publish to do it.')
@@ -114,8 +131,27 @@ console.log(`cutting ${tag}`)
 run('git', ['tag', tag])
 run('git', ['push', 'origin', tag])
 
+/*
+ * The steps `pnpm package` wraps, spelled out, because the publish flag has to reach
+ * electron-builder itself and a script that forwards it through two layers of package manager is
+ * a thing to debug rather than a thing to trust. `prepackage` is what stages the plugins and the
+ * native dependencies beside them, so it runs here by name.
+ */
+process.env.GH_TOKEN = token()
+
 run('pnpm', ['-r', 'build'])
-run('pnpm', ['--filter', '@dyarchia/shell', 'package', '--', '--publish', 'always'])
+run('node', ['scripts/ensure-runtime.mjs'])
+run('node', ['scripts/stage-plugins.mjs'])
+run('pnpm', ['--filter', '@dyarchia/shell', 'exec', 'electron-vite', 'build'])
+run('pnpm', [
+    '--filter',
+    '@dyarchia/shell',
+    'exec',
+    'electron-builder',
+    '--win',
+    '--publish',
+    'always'
+])
 
 if (pruning) {
     console.log('pruning what this one replaces')

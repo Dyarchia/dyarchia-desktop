@@ -16,12 +16,24 @@
  * The default install directory is read out of the registry before the installer decides
  * anything, so writing it there is how it is set. HKCU only: HKLM needs elevation, and a key
  * under it is what makes the installer offer to install for everyone.
+ *
+ * Only where there is nothing there yet. This runs in every installer, and an update is an
+ * installer: writing the default unconditionally told an update that a copy installed somewhere
+ * else belonged in ~/.dyarchia/app, which installs the new version beside the old one rather than
+ * over it and leaves the reader with two. The directory page is the user's answer to this
+ * question and it is asked once.
  */
 !macro preInit
     SetRegView 64
-    WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${DYARCHIA_HOME}"
+    ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
+    ${If} $0 == ""
+        WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${DYARCHIA_HOME}"
+    ${EndIf}
     SetRegView 32
-    WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${DYARCHIA_HOME}"
+    ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
+    ${If} $0 == ""
+        WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${DYARCHIA_HOME}"
+    ${EndIf}
 !macroend
 
 /*

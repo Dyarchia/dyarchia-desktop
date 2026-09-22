@@ -178,6 +178,45 @@ The rules, in order:
   `packages/kanon/README.md`.
 - **Everything written to a file is in English**, commit messages included.
 
+### Cutting one
+
+An installed copy looks for a newer one and reads `latest.yml` out of the newest release's
+assets. That file is produced by `electron-builder --publish` and by nothing else, so a
+release uploaded by hand is a release no installed copy can see. One command does every
+part of it:
+
+```bash
+node scripts/release.mjs --publish
+```
+
+Without `--publish` it prints what it would do and stops, which is also how to check the
+branch, the tree and the version before spending a build on them. It refuses to run
+anywhere but `master`, refuses a dirty tree, and refuses a version some tag already claims.
+Then it tags, pushes the tag, builds the workspace, packages with `--publish always`, and
+deletes every older release and older local installer -- **the tags stay**, because they
+are the history and deleting one rewrites what a commit meant. `--keep-old` leaves the
+older releases alone.
+
+Only the newest release exists at any time. An alpha that publishes five installers offers
+five wrong answers to somebody arriving at the releases page, and the updater reads the
+newest release and nothing else.
+
+### What an installed copy does with it
+
+The version in the top bar states which build is running. Eight seconds after start, and
+only in a packaged build, the shell asks GitHub whether there is a newer one; every release
+is a prerelease, so `allowPrerelease` is what makes one findable at all.
+
+Nothing is downloaded without being asked. An update offers itself as one control beside
+the version -- `Update to 0.2.6-alpha`, then the percentage, then `Restart to finish` --
+and there is no idle button when there is nothing to offer. A check that failed says so in
+the tip on the version rather than taking the bar: it is a background request to a service
+that may simply be unreachable.
+
+The installer writes its location into `HKCU` only when there is nothing there already, so
+an update installs over the copy it is replacing rather than beside it. The directory page
+asks once, at the first install, and the answer is kept.
+
 
 ## 5. Plugins are shipped, not installed
 

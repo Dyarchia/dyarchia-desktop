@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { PanelDescriptor } from '../panels/registry'
 import { THEMES } from '../theme'
 
@@ -70,6 +70,88 @@ function TipKey({
     )
 }
 
+type UpdatePhase =
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'downloading'
+    | 'ready'
+    | 'current'
+    | 'failed'
+    | 'unsupported'
+
+interface UpdateState {
+    phase: UpdatePhase
+    running: string
+    version: string | null
+    percent: number
+    note: string | null
+}
+
+/*
+ * The build, and what can be done about it, in one place: the version was already stated here and
+ * an update is a fact about that version. The control exists only in the three states that have
+ * something to press -- there is no idle Check for updates button, because a bar that offers an
+ * action with no answer to give is how six of them end up along one edge saying nothing.
+ *
+ * A check that failed does not take the bar. It is a background request to a service that may
+ * simply be unreachable, so it goes into the tip on the version, where somebody wondering why
+ * nothing has offered itself can read what happened.
+ */
+function Build(): React.JSX.Element {
+    const [update, setUpdate] = useState<UpdateState | null>(null)
+    const id = `tip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+
+    useEffect(() => {
+        const bridge = window.dyarchia
+        if (!bridge) return
+        void bridge.invoke('shell:update:state').then((state) => setUpdate(state as UpdateState))
+        return bridge.on('shell:update', (raw: unknown) => setUpdate(raw as UpdateState))
+    }, [])
+
+    const act = useCallback((channel: string) => {
+        void window.dyarchia?.invoke(channel)
+    }, [])
+
+    const phase = update?.phase ?? 'idle'
+    const failure = phase === 'failed' ? update?.note : null
+    const tip = failure
+        ? `Alpha build. Last check for a newer one: ${failure}.`
+        : 'Alpha build. Expect breakage, and do not keep anything here you cannot lose.'
+
+    return (
+        <div className="topbar-build">
+            <span className="dya-tag topbar-alpha" interestfor={id}>
+                {__DYARCHIA_VERSION__}
+            </span>
+            <div className="dya-tip" popover="hint" id={id}>
+                {tip}
+            </div>
+            {phase === 'available' && (
+                <button
+                    className="dya-button dya-button--sm topbar-update"
+                    onClick={() => act('shell:update:download')}
+                >
+                    Update to {update?.version}
+                </button>
+            )}
+            {phase === 'downloading' && (
+                <button className="dya-button dya-button--sm topbar-update" disabled>
+                    Downloading {update?.percent ?? 0}%
+                </button>
+            )}
+            {phase === 'ready' && (
+                <button
+                    className="dya-button dya-button--success dya-button--sm topbar-update"
+                    onClick={() => act('shell:update:install')}
+                >
+                    Restart to finish
+                </button>
+            )}
+        </div>
+    )
+}
+
 /*
  * How many panels get their own key before the rest go behind the overflow. Six is every plugin
  * this application ships, which is the point: on the installation it was built for, nothing is one
@@ -118,12 +200,7 @@ export function TopBar({
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <span className="dya-brand">dyarchia</span>
-            <span
-                className="dya-tag topbar-alpha"
-                title="Alpha build. Expect breakage, and do not keep anything here you cannot lose."
-            >
-                {__DYARCHIA_VERSION__}
-            </span>
+            <Build />
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {visible.map((panel) => (

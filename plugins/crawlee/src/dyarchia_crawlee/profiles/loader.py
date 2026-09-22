@@ -11,7 +11,9 @@ before anything is written rather than a surprise afterwards.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import shutil
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +22,7 @@ from pydantic import ValidationError
 
 from dyarchia_crawlee.errors import DyarchiaCrawleeError, ProfileError
 from dyarchia_crawlee.profiles.schema import ProfileSpec
-from dyarchia_crawlee.versioning.vcs import commit_path, is_ignored, repository_root
+from dyarchia_crawlee.versioning.vcs import commit_path, commit_paths, is_ignored, repository_root
 
 PROFILE_SUFFIXES = ('.yaml', '.yml')
 
@@ -76,6 +78,94 @@ class SavedProfile:
         if self.revision is None:
             return f'saved {self.path}, unchanged so nothing to commit'
         return f'saved {self.path}, committed {self.revision[:12]}'
+
+
+@dataclass(slots=True)
+class DeletedProfile:
+    """What went, and whether the history knows that it went."""
+
+    path: Path
+    removed: list[Path] = field(default_factory=list)
+    revision: str | None = None
+    unversioned_because: str | None = None
+
+    @property
+    def versioned(self) -> bool:
+        return self.unversioned_because is None
+
+    def __str__(self) -> str:
+        what = f'removed {self.path.name}'
+        rest = len(self.removed) - 1
+        if rest > 0:
+            what += f' and {rest} path{"" if rest == 1 else "s"} beside it'
+        if not self.versioned:
+            return f'{what}, not versioned: {self.unversioned_because}'
+        if self.revision is None:
+            return f'{what}, nothing the history was tracking'
+        return f'{what}, committed {self.revision[:12]}'
+
+
+def profile_file(name: str, directory: Path) -> Path | None:
+    """The document one profile is written in, in this directory, whichever suffix it uses."""
+    for suffix in PROFILE_SUFFIXES:
+        candidate = directory / f'{name}{suffix}'
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def delete_profile(
+    name: str,
+    directory: Path,
+    *,
+    also: Sequence[Path] = (),
+    require_commit: bool = False,
+) -> DeletedProfile:
+    """Remove a profile and whatever else is named with it, and commit the removal.
+
+    `also` is what the profile described rather than what it is -- the snapshot directory, the
+    files a run exported -- and every one of them has to be inside the repository that holds the
+    profile. A target is named by a panel and a path is derived from that name, so the check is
+    against the one mistake that matters here: a name that resolves outside the corpus and takes
+    something else with it.
+
+    The profile goes last of all, because it is the only record of where the rest was. A run
+    interrupted between the two leaves a profile describing a corpus that is gone, which the
+    next round rebuilds; the reverse leaves a corpus nothing on this machine can name.
+    """
+    target = profile_file(name, directory)
+    if target is None:
+        raise ProfileError(f'no profile named {name!r} in {directory}')
+
+    obstacle = _why_unversioned(directory, target)
+    if obstacle is not None and require_commit:
+        raise ProfileError(f'refusing to delete {target.name}: {obstacle}')
+
+    root = repository_root(directory)
+    for path in also:
+        if root is not None and root not in path.resolve().parents:
+            raise ProfileError(f'refusing to delete {path}: it is outside {root}')
+
+    removed: list[Path] = []
+    for path in also:
+        if path.is_dir():
+            shutil.rmtree(path)
+            removed.append(path)
+        elif path.is_file():
+            path.unlink()
+            removed.append(path)
+
+    target.unlink()
+    removed.append(target)
+
+    if obstacle is not None:
+        return DeletedProfile(path=target, removed=removed, unversioned_because=obstacle)
+
+    return DeletedProfile(
+        path=target,
+        removed=removed,
+        revision=commit_paths(removed, f'profile({name}): removed'),
+    )
 
 
 def _why_unversioned(directory: Path, target: Path) -> str | None:

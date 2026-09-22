@@ -431,10 +431,13 @@ function arming(button, prompt) {
         button.className = tone
     }
 
+    const loud = [...new Set(tone.split(/\s+/).filter((name) => name && name !== 'dya-button--quiet'))]
+    if (!loud.includes('dya-button--danger')) loud.push('dya-button--danger')
+
     const arm = () => {
         armed = true
         button.textContent = prompt
-        button.className = `${tone.replace(' dya-button--quiet', '')} dya-button--danger`
+        button.className = loud.join(' ')
         window.clearTimeout(timer)
         timer = window.setTimeout(reset, 5000)
     }
@@ -925,10 +928,11 @@ function mount(ctx, container) {
 
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
+        const remove = el('button', 'dya-button dya-button--quiet dya-button--sm dya-button--danger', 'Delete')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')
         const close = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
-        bar.append(title, inspect, save, close)
+        bar.append(title, remove, inspect, save, close)
 
         const yaml = buildYaml()
         const note = el('div', 'dya-text crw-note')
@@ -937,11 +941,27 @@ function mount(ctx, container) {
 
         const form = buildForm()
         sheet.append(bar, form.node, yaml.node, note, output.node)
-        targets.append(grid, scrim, sheet)
+
+        /*
+         * What the last thing to happen to this view was, and nothing when nothing has. A target
+         * removed takes its own sheet with it, so the line that says what came off the disk has
+         * nowhere to be said except out here; it is cleared the moment the reader does anything
+         * else, because a stale confirmation is worse than none.
+         */
+        const status = el('div', 'dya-text crw-note')
+        status.hidden = true
+        targets.append(grid, status, scrim, sheet)
 
         let current = null
         let raisedBy = null
         let landed = ''
+        let corpora = new Map()
+
+        const report = (text, good) => {
+            status.className = `dya-text crw-note${good === false ? ' dya-text--danger' : ' dya-text--success'}`
+            status.textContent = text
+            status.hidden = !text
+        }
 
         /*
          * Opening the sheet takes the view it opened over. The grid keeps showing through the
@@ -958,7 +978,10 @@ function mount(ctx, container) {
             inspect.disabled = name === null
             save.disabled = name === null
             landed = ''
+            report('')
             confirmClose.reset()
+            confirmDelete.reset()
+            remove.disabled = name === null
             grid.inert = true
             scrim.hidden = false
             sheet.hidden = false
@@ -969,6 +992,7 @@ function mount(ctx, container) {
             landed = ''
             form.close()
             confirmClose.reset()
+            confirmDelete.reset()
             sheet.hidden = true
             scrim.hidden = true
             grid.inert = false
@@ -981,6 +1005,7 @@ function mount(ctx, container) {
         /* An unsaved profile is work, and closing over it silently is how it is lost. */
         const dirty = () => Boolean(current) && yaml.value !== landed
         const confirmClose = arming(close, 'Discard')
+        const confirmDelete = arming(remove, 'Delete for good')
 
         const leave = () => {
             if (confirmClose.armed) {
@@ -998,6 +1023,43 @@ function mount(ctx, container) {
 
         close.addEventListener('click', leave)
         scrim.addEventListener('click', leave)
+
+        /*
+         * Deleting a target is the profile, the snapshot and the exports, because that is what a
+         * target is; leaving two of the three behind is how a corpus nothing can name is made.
+         * The first press says exactly what comes off the disk, the second does it.
+         */
+        remove.addEventListener('click', () => {
+            if (confirmDelete.armed) {
+                confirmDelete.reset()
+                void erase()
+                return
+            }
+            if (!current) return
+            const corpus = corpora.get(current)
+            confirmDelete.arm()
+            say(
+                corpus
+                    ? `${current}, its ${corpus.pages} pages and its exports come off the disk`
+                    : `${current} comes off the disk`,
+                false
+            )
+        })
+
+        async function erase() {
+            const name = current
+            if (!name) return
+            say('deleting…')
+            try {
+                const said = String(await ctx.invoke('delete', name, true))
+                landed = yaml.value
+                drop()
+                await refreshList()
+                report(said, true)
+            } catch (error) {
+                say(reason(error), false)
+            }
+        }
 
         /*
          * Pressing the scrim must not take the focus with it. A press that lands on it and does
@@ -1041,6 +1103,7 @@ function mount(ctx, container) {
                 for (const repo of (state && state.repositories) || []) {
                     for (const corpus of repo.corpora || []) swept.set(corpus.name, corpus)
                 }
+                corpora = swept
 
                 for (const profile of profiles) grid.appendChild(targetCard(profile, swept.get(profile.name)))
             } catch (error) {

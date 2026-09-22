@@ -392,7 +392,7 @@ Content      tag badge (--accent --accent-2 --accent-3 --success --warning --dan
              title (--lg) lede text (--success --danger) label eyebrow value meta mono
              key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
-Layers       menu menu__item (--selected) tip
+Layers       menu menu__item (--selected) tip scrim
 Navigation   tabs tab
 Absence      empty (--inline __actions) loading
 Assistive    sr-only
@@ -413,6 +413,28 @@ catch and pulls its own height back out of the layout with a negative margin, so
 moves nothing above it; the grip is `--dya-text-4`, a graphical object at 6.70 in Gi and 8.04
 in Rei on `--dya-surface-1`, and takes `--dya-accent` under the pointer and while dragging.
 The consumer owns the drag, the clamp and where the size is remembered.
+
+**A sheet that covers is modal, and modality is two things or it is neither.** A sheet is
+inset from its panel, so what it opened over keeps showing through around it, and that
+margin is where the defect lives: the rows and cards still visible there hover, take a
+click and answer it — in the crawlee editor, by loading another target over the one being
+written — the whole region behind stays in the tab order, and the wheel over the margin
+moves what is behind rather than what is on top. A covering sheet therefore raises a
+`scrim` over what it covers and sets `inert` on it in the same breath. The scrim says the
+region is out of play, `inert` makes it true, and either one alone ships half a modal.
+`--dya-scrim` is the theme's own ground at 72%: a `tile` behind it dims 1.37 in Gi and 1.49
+in Rei, while the sheet stands 1.16 and 1.15 clear of the ground it covers, which is the
+separation `--dya-surface-1` already has over `--dya-bg`. Two more belong to the consumer:
+focus into the sheet when it opens and back to whatever raised it when it closes, and
+Escape bound to the panel rather than to the sheet, so it closes from wherever the reader's
+hands are.
+
+**`sheet--side` is the one that is not, until it covers.** A side sheet is the detail beside
+the list it came from, and the list stays live because picking the next item out of it is
+what the arrangement is for — the kanban inspector would be broken by a scrim, not fixed by
+one. That holds only while it stays to one side. A side sheet widened to cover the panel is
+a covering sheet whatever class it carries, and owes the scrim, the `inert`, the focus and
+the Escape from the moment it is widened to the moment it is narrowed back.
 
 **Emphasis is a family, not an accident.** Every other rule here is a prohibition — do not
 glare, do not truncate, never below 4.50 — and prohibitions produce a screen where nothing

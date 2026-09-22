@@ -745,6 +745,81 @@ def profile_save(
     console.print(str(saved))
 
 
+def _target_footprint(name: str, settings: Settings) -> list[Path]:
+    """Everything on disk that exists because this target does, the profile aside.
+
+    The snapshot directory as the disk has it rather than as the profile says it should be, since
+    a target whose group changed does not take its files with it, and the exports, which are named
+    after the target in the output root of its group -- one file per format, plus a directory when
+    it was written as markdown.
+    """
+    found: list[Path] = []
+
+    snapshot = inventory.directory_for(name, settings)
+    if snapshot.is_dir():
+        found.append(snapshot)
+
+    group = None
+    try:
+        profile, _ = registry.locate(name, settings)
+        group = profile.group
+    except DyarchiaCrawleeError:
+        pass
+
+    output = settings.output_root(group)
+    for candidate in [output / name, *(output.glob(f'{name}.*') if output.is_dir() else [])]:
+        if candidate.exists():
+            found.append(candidate)
+
+    return found
+
+
+@profile_app.command(name='delete')
+def profile_delete(
+    name: Annotated[str, typer.Argument(help='The profile to remove.')],
+    data: Annotated[
+        bool,
+        typer.Option('--data', help='Also remove the snapshot and the exports this target produced.'),
+    ] = False,
+    allow_untracked: Annotated[
+        bool,
+        typer.Option('--allow-untracked', help='Delete even where the removal cannot be committed.'),
+    ] = False,
+) -> None:
+    """Remove one profile, and with `--data` everything that target put on disk.
+
+    Deleting the profile alone leaves the snapshot where it is: it stops being a target, and what
+    was already crawled stays readable and searchable. `--data` is the whole of it -- the profile,
+    the snapshot and the exports -- and the two go in one commit, because a target that half
+    exists is a state nothing in this toolkit knows how to report.
+
+    The removal is committed for the same reason a save is. A corpus repository is the record of
+    what was tracked and when, and a target that leaves it without a trace is a gap somebody will
+    later mistake for a target that was never there.
+    """
+    settings = get_settings()
+    existing = _profile_file(name, settings)
+    if existing is None:
+        error_console.print(f'[bold red]no profile named {name!r} on this machine[/bold red]')
+        raise typer.Exit(code=1)
+
+    owner = Settings.for_repository(existing.parent.parent)
+    beside = _target_footprint(name, owner) if data else []
+
+    try:
+        deleted = profile_loader.delete_profile(
+            name,
+            existing.parent,
+            also=beside,
+            require_commit=not allow_untracked,
+        )
+    except DyarchiaCrawleeError as error:
+        error_console.print(f'[bold red]{error}[/bold red]')
+        raise typer.Exit(code=1) from error
+
+    console.print(str(deleted))
+
+
 @app.command(name='urls')
 def urls_command(
     names: Annotated[

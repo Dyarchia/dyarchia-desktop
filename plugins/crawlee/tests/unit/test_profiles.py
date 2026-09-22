@@ -14,6 +14,7 @@ from dyarchia_crawlee.crawlers.factory import build_crawler
 from dyarchia_crawlee.errors import ConfigurationError, ProfileError
 from dyarchia_crawlee.models import CrawlerKind, ExtractionMode, RunSpec
 from dyarchia_crawlee.profiles.loader import (
+    delete_profile,
     load_profile_file,
     render_profile,
     save_profile,
@@ -309,3 +310,100 @@ def test_saving_a_profile_back_unchanged_changes_nothing(tmp_path: Path) -> None
 
     assert (directory / 'demo.yaml').read_bytes() == before
     assert again.revision is None
+
+
+def test_deleting_a_target_takes_its_corpus_with_it(tmp_path: Path) -> None:
+    """A target is the profile and everything it put on disk, removed in one commit."""
+    root = tmp_path / 'corpus-repo'
+    directory = versioned_profiles(root)
+    save_profile(demo(), directory)
+
+    snapshot = root / 'data' / 'demo'
+    snapshot.mkdir(parents=True)
+    (snapshot / 'manifest.json').write_text('{}', encoding='utf-8')
+    export = root / 'data' / 'demo.jsonl'
+    export.write_text('{}\n', encoding='utf-8')
+
+    deleted = delete_profile('demo', directory, also=[snapshot, export])
+
+    assert deleted.versioned
+    assert deleted.revision is not None
+    assert not snapshot.exists()
+    assert not export.exists()
+    assert not (directory / 'demo.yaml').exists()
+    logged = subprocess.run(
+        ['git', 'log', '--oneline'], cwd=root, capture_output=True, text=True, check=True
+    )
+    assert 'profile(demo): removed' in logged.stdout
+
+
+def test_deleting_the_profile_alone_leaves_the_corpus(tmp_path: Path) -> None:
+    root = tmp_path / 'corpus-repo'
+    directory = versioned_profiles(root)
+    save_profile(demo(), directory)
+    snapshot = root / 'data' / 'demo'
+    snapshot.mkdir(parents=True)
+
+    delete_profile('demo', directory)
+
+    assert snapshot.is_dir()
+    assert not (directory / 'demo.yaml').exists()
+
+
+def test_deleting_refuses_a_path_outside_the_repository(tmp_path: Path) -> None:
+    """The name comes from a panel and the paths are derived from it. That is the whole risk."""
+    root = tmp_path / 'corpus-repo'
+    directory = versioned_profiles(root)
+    save_profile(demo(), directory)
+    elsewhere = tmp_path / 'not-the-corpus'
+    elsewhere.mkdir()
+
+    with pytest.raises(ProfileError, match='outside'):
+        delete_profile('demo', directory, also=[elsewhere])
+
+    assert elsewhere.is_dir()
+    assert (directory / 'demo.yaml').is_file()
+
+
+def test_deleting_an_unknown_profile_says_so(tmp_path: Path) -> None:
+    directory = versioned_profiles(tmp_path / 'corpus-repo')
+
+    with pytest.raises(ProfileError, match='no profile named'):
+        delete_profile('nobody', directory)
+
+
+def test_an_ignored_corpus_is_still_removed_from_disk(tmp_path: Path) -> None:
+    """`output/` is gitignored in these repositories, and it is still what a target left behind."""
+    root = tmp_path / 'corpus-repo'
+    directory = versioned_profiles(root)
+    save_profile(demo(), directory)
+    export = root / 'output' / 'demo.jsonl'
+    export.parent.mkdir(parents=True)
+    export.write_text('{}\n', encoding='utf-8')
+
+    deleted = delete_profile('demo', directory, also=[export])
+
+    assert deleted.versioned
+    assert not export.exists()
+    assert not (directory / 'demo.yaml').exists()
+
+
+def test_deleting_an_unversioned_profile_says_so_rather_than_refusing(tmp_path: Path) -> None:
+    directory = tmp_path / 'loose' / 'profiles'
+    save_profile(demo(), directory)
+
+    deleted = delete_profile('demo', directory)
+
+    assert not deleted.versioned
+    assert 'not inside a git repository' in str(deleted)
+    assert not (directory / 'demo.yaml').exists()
+
+
+def test_a_caller_that_requires_a_commit_will_not_delete_what_it_cannot_record(tmp_path: Path) -> None:
+    directory = tmp_path / 'loose' / 'profiles'
+    save_profile(demo(), directory)
+
+    with pytest.raises(ProfileError, match='refusing to delete'):
+        delete_profile('demo', directory, require_commit=True)
+
+    assert (directory / 'demo.yaml').is_file()

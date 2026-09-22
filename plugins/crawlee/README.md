@@ -80,6 +80,23 @@ picked, it would be writing somebody's corpus into somebody else's, and it would
 edit saved through `profile save` lands where the profile already is, for the same reason; only a
 name that exists nowhere yet is new, and new goes to the default repository.
 
+**A target is the profile, the snapshot and the exports, so deleting one deletes all three.**
+
+```bash
+dyarchia-crawlee profile delete xai-docs --data
+```
+
+Without `--data` only the profile goes: the target stops being a target and what was already
+crawled stays on disk, readable and searchable. With it the snapshot directory and every export
+named after the target go too, in the same commit as the profile, because a target that half
+exists is a state nothing here knows how to report. The removal is committed for the same reason
+a save is, and refused before anything is deleted where it could not be — `--allow-untracked` is
+for a corpus deliberately kept out of a repository. A path derived from the name that would land
+outside the repository holding the profile is refused outright.
+
+The panel offers the whole of it and nothing less: the `Delete` control in a target's sheet names
+the pages that are about to go, and the second press is the one that acts.
+
 ### In the desktop application
 
 An installed copy cannot use the defaults above. They are relative paths resolved against the

@@ -7,6 +7,7 @@ writes to your history without being asked is not.
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 from dyarchia_crawlee.errors import DyarchiaCrawleeError
@@ -69,6 +70,60 @@ def is_dirty(root: Path) -> bool:
 def is_ignored(directory: Path, root: Path) -> bool:
     """Whether git has been told to ignore this snapshot directory."""
     return _git(['check-ignore', '-q', '--', str(directory)], root).returncode == 0
+
+
+def commit_paths(targets: Sequence[Path], message: str) -> str | None:
+    """Stage and commit several paths of one repository at once, returning the new hash.
+
+    One commit, because the paths that go together came from one decision: a profile, the corpus
+    it describes and the output that corpus produced are one target, and removing them in three
+    commits leaves two states of the repository in which a target half exists.
+
+    A path git has been told to ignore is skipped rather than refused, which is the difference
+    between this and `commit_path`. A corpus deliberately kept out of the history is still a
+    corpus, and a deletion that takes it off the disk has nothing to record about it either way;
+    refusing the whole commit because one of several paths is ignored would leave the profile
+    behind to describe a corpus that is gone.
+    """
+    if not targets:
+        return None
+
+    root = repository_root(targets[0])
+    if root is None:
+        raise DyarchiaCrawleeError(
+            f'{targets[0]} is not inside a git repository, so there is nothing to write to'
+        )
+
+    staged: list[Path] = []
+    for path in targets:
+        if is_ignored(path, root):
+            continue
+        added = _git(['add', '--', str(path)], root)
+        if added.returncode == 0:
+            staged.append(path)
+            continue
+        # A path that is gone from the disk and was never in the index matches nothing, which is
+        # what git says about a corpus nobody committed. There is nothing to record about it and
+        # nothing wrong with it either, so it leaves the commit rather than failing it.
+        if 'did not match any files' in added.stderr:
+            continue
+        raise DyarchiaCrawleeError(f'git add failed: {added.stderr.strip()}')
+
+    if not staged:
+        return None
+
+    arguments = [str(path) for path in staged]
+    pending = _git(['diff', '--cached', '--quiet', '--', *arguments], root)
+    if pending.returncode == 0:
+        return None
+
+    committed = _git(['commit', '-m', message, '--', *arguments], root)
+    if committed.returncode != 0:
+        detail = committed.stderr.strip() or committed.stdout.strip()
+        raise DyarchiaCrawleeError(f'git commit failed: {detail}')
+
+    revision = _git(['rev-parse', 'HEAD'], root)
+    return revision.stdout.strip() or None
 
 
 def commit_path(target: Path, message: str) -> str | None:

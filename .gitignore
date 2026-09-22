@@ -13,5 +13,6 @@ scratch/
 .probe/
 apps/shell/build/
 
-# Local notes, not part of the repository
+# Local notes and local harness config, not part of the repository
 .docs_ignore/
+.claude/

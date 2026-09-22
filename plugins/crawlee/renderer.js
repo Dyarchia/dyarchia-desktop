@@ -7,6 +7,9 @@
 const ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/></svg>'
 
+const PLUS =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+
 const STYLE = `
 .crw-root {
     display: flex;
@@ -20,6 +23,7 @@ const STYLE = `
     flex: none;
 }
 .crw-view {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -39,9 +43,13 @@ const STYLE = `
     padding-inline: var(--dya-space-3);
 }
 .crw-headline {
-    flex: 1;
+    flex: none;
     min-width: 0;
     overflow-wrap: anywhere;
+}
+.crw-where {
+    flex: 1;
+    min-width: 60px;
 }
 .crw-corpora {
     flex: 1 1 auto;
@@ -71,8 +79,11 @@ const STYLE = `
     }
 
     .crw-corpora tr {
+        margin-bottom: var(--dya-space-1);
         padding: var(--dya-space-2) 0;
-        border-bottom: var(--dya-border-width) solid var(--dya-hairline);
+        border: var(--dya-border-width) solid var(--dya-border);
+        border-radius: var(--dya-radius);
+        background: var(--dya-surface-1);
     }
 
     .crw-corpora td {
@@ -81,16 +92,17 @@ const STYLE = `
         align-items: baseline;
         gap: var(--dya-space-3);
         border: 0;
+        border-radius: 0;
         padding: 1px var(--dya-space-3);
+        background: none;
         text-align: left;
     }
 
     .crw-corpora td::before {
         content: attr(data-label);
-        font-family: var(--dya-font-mono);
-        font-size: var(--dya-size-label-sm);
-        letter-spacing: var(--dya-tracking-label);
-        text-transform: uppercase;
+        font-family: var(--dya-font-sans);
+        font-size: var(--dya-size-body-xs);
+        letter-spacing: var(--dya-tracking-ui);
         color: var(--dya-text-4);
     }
 }
@@ -102,11 +114,15 @@ const STYLE = `
     border-top: var(--dya-border-width) solid var(--dya-border);
 }
 /*
- * The rule on this bar divides it from whatever is above it, and in the search view there is
- * nothing above it but the tab strip, which draws its own. Two rules twelve pixels apart with a
+ * The rule on this bar divides it from whatever is above it, and where it is the first thing in
+ * whatever holds it there is nothing above it but that container's own edge -- the tab strip in
+ * the search view, the sheet's border in the target editor. Two rules twelve pixels apart with a
  * gap of background between them is not two boundaries; it is one boundary drawn twice.
+ *
+ * The selector used to say `.crw-view >`, which is narrower than the sentence above it and is why
+ * the sheet drew the second line: its bar is the first child of the sheet, not of the view.
  */
-.crw-view > .crw-bar:first-child {
+.crw-bar:first-child {
     border-top: none;
 }
 .crw-scope {
@@ -123,45 +139,55 @@ const STYLE = `
     min-width: 120px;
 }
 /*
- * The output area exists while there is output. It used to hold a fifth of the panel open whether
- * or not a round had ever run, which is the void the corpus table should have been filling.
+ * The console and the handle that sizes it. Everything else in this application can be resized —
+ * the window, the dock, every panel in it — and the one region that fills with text a line at a
+ * time was 120 pixels tall for ever, so a round's output was read four lines at a time through a
+ * slot. The handle sits inside the region so that one :has() rule hides both when there is no output.
  */
 .crw-out {
     display: flex;
-    flex: 1 1 120px;
-    min-height: 120px;
+    flex-direction: column;
+    flex: none;
+    gap: var(--dya-space-2);
+    height: 180px;
+    min-height: 72px;
 }
 .crw-out:has(> .dya-log[hidden]) {
     display: none;
 }
 .crw-log {
     flex: 1;
-    min-height: 60px;
-}
-.crw-split {
-    display: flex;
-    flex: 1;
-    gap: var(--dya-space-4);
     min-height: 0;
 }
-.crw-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: none;
-    width: 210px;
-    overflow: auto;
-}
-.crw-list > .dya-button {
-    align-self: flex-start;
-    margin-bottom: var(--dya-space-1);
-}
-.crw-editor {
-    display: flex;
-    flex-direction: column;
+/*
+ * The targets, as a grid that reflows from one column to as many as the window affords. A rail of
+ * names 210px wide made a 1400px window 85% black, and told the reader nothing about a target
+ * except that it exists.
+ */
+.crw-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    align-content: start;
+    gap: var(--dya-space-3);
     flex: 1;
-    gap: var(--dya-space-2);
+    min-height: 0;
+    overflow: auto;
+    padding: 2px;
+}
+.crw-target,
+.crw-new {
     min-width: 0;
+}
+.crw-new {
+    border: var(--dya-border-width) dashed var(--dya-dashed);
+    background: transparent;
+    box-shadow: none;
+}
+.crw-new:hover {
+    background-color: var(--dya-flat-hover);
+}
+.crw-sheet-bar {
+    padding-inline: 0;
 }
 /*
  * A profile is the one thing in this panel somebody writes by hand, and it was a wall of one
@@ -214,19 +240,10 @@ const STYLE = `
     background: var(--dya-selected);
     color: transparent;
 }
-/*
- * With nothing picked there is no profile to edit and nothing for the bar to act on, so the
- * column is empty and the list is the whole view. The bar comes back with the target.
- */
-.crw-editor[data-empty='true'] > .crw-bar {
-    display: none;
-}
-/* Beside a profile the log is a footnote, not the subject: it takes the room its lines need and
-   no more, so an empty one does not hold half the panel open for nothing. */
-.crw-editor .crw-log {
-    flex: none;
-    min-height: 0;
-    max-height: 32%;
+/* Inside the sheet the console starts shorter: the subject there is the target being written, and
+   the output of a probe is a footnote to it. It resizes like the other one. */
+.crw-sheet .crw-out {
+    height: 120px;
 }
 .crw-form {
     display: grid;
@@ -252,6 +269,7 @@ const STYLE = `
     overflow: auto;
     display: flex;
     flex-direction: column;
+    gap: var(--dya-space-2);
 }
 .crw-hits > .dya-empty {
     flex: 1;
@@ -260,8 +278,10 @@ const STYLE = `
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-1);
-    padding: var(--dya-space-2) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    padding: var(--dya-space-3);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-1);
 }
 .crw-hit-head {
     display: flex;
@@ -276,11 +296,6 @@ const STYLE = `
 .crw-hit-title {
     color: var(--dya-text);
     overflow-wrap: anywhere;
-}
-.crw-hit-in,
-.crw-hit-where {
-    font-size: var(--dya-size-mono-xs);
-    color: var(--dya-text-4);
 }
 .crw-hit-where {
     margin-left: auto;
@@ -302,9 +317,6 @@ const STYLE = `
     align-items: center;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
-}
-.crw-hit-at {
-    color: var(--dya-text-4);
 }
 `
 
@@ -344,6 +356,36 @@ function bytes(value) {
     return `${unit === 0 ? size : size.toFixed(1)} ${units[unit]}`
 }
 
+function stateBadge(corpus) {
+    if (corpus.error) {
+        const badge = el('span', 'dya-badge dya-badge--soft dya-badge--danger', 'unreadable')
+        badge.title = corpus.error
+        return badge
+    }
+
+    if (!corpus.changed) {
+        const [text, tone] = corpus.stale ? ['stale', ''] : ['quiet', ' dya-badge--success']
+        const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
+        if (corpus.stale) badge.title = 'not swept since it last moved'
+        return badge
+    }
+
+    const pills = el('span', 'dya-pills')
+    const counts = [
+        [corpus.added, '+', ' dya-badge--success', 'added'],
+        [corpus.modified, '~', ' dya-badge--warning', 'changed'],
+        [corpus.removed, '−', ' dya-badge--danger', 'removed']
+    ]
+    for (const [count, sign, tone, what] of counts) {
+        if (!count) continue
+        const badge = el('span', `dya-badge dya-badge--soft${tone}`, `${sign}${count}`)
+        badge.title = `${count} ${what}`
+        pills.appendChild(badge)
+    }
+    return pills
+}
+
+
 function day(iso) {
     return iso ? String(iso).slice(0, 10) : '-'
 }
@@ -369,6 +411,48 @@ function draft({ name, url, group, description, snapshot }) {
 function firstUrl(yaml) {
     const found = yaml.match(/^\s*-\s*(https?:\/\/\S+)/m)
     return found ? found[1] : ''
+}
+
+/*
+ * A control that asks before it does the thing it says. The first press turns it red and relabels
+ * it with what is about to happen; the second press is the one that acts, and the caller owns
+ * both. A few seconds of nothing puts it back, because an armed button left armed is a trap the
+ * next click springs.
+ *
+ * Not `window.confirm`: that is an operating-system window over a panel, it stops the renderer
+ * dead while it is up, and it is the one thing on screen this design system does not draw.
+ */
+function arming(button, prompt) {
+    const label = button.textContent
+    const tone = button.className
+    let armed = false
+    let timer = 0
+
+    const reset = () => {
+        armed = false
+        window.clearTimeout(timer)
+        button.textContent = label
+        button.className = tone
+    }
+
+    const loud = [...new Set(tone.split(/\s+/).filter((name) => name && name !== 'dya-button--quiet'))]
+    if (!loud.includes('dya-button--danger')) loud.push('dya-button--danger')
+
+    const arm = () => {
+        armed = true
+        button.textContent = prompt
+        button.className = loud.join(' ')
+        window.clearTimeout(timer)
+        timer = window.setTimeout(reset, 5000)
+    }
+
+    return {
+        arm,
+        reset,
+        get armed() {
+            return armed
+        }
+    }
 }
 
 export function activate(ctx) {
@@ -452,11 +536,94 @@ function mount(ctx, container) {
     }
 
 
+    /*
+     * A console somebody can make bigger. The handle drags, the arrow keys move it for anybody not
+     * using a pointer, and a double-click swaps between the height it was given and most of the
+     * view — which is what a reader wants the moment a round starts failing and the interesting
+     * line is forty lines up. The height is remembered per view, so the panel opens the way it was
+     * left rather than the way it was written.
+     */
+    function buildConsole(key) {
+        const MIN = 72
+        const pane = el('div', 'crw-out')
+        const grip = el('div', 'dya-splitter')
+        grip.setAttribute('role', 'separator')
+        grip.setAttribute('aria-orientation', 'horizontal')
+        grip.tabIndex = 0
+        grip.title = 'drag to resize · double-click for the whole view'
+        const log = el('pre', 'dya-log crw-log')
+        log.hidden = true
+        pane.append(grip, log)
+
+        let stored = Number(localStorage.getItem(key)) || 0
+        let folded = 0
+        if (stored) pane.style.height = `${stored}px`
+
+        function room() {
+            const parent = pane.parentElement
+            return parent ? Math.max(MIN, parent.getBoundingClientRect().height - 120) : 480
+        }
+
+        function size(next, remember) {
+            const height = Math.max(MIN, Math.min(Math.round(next), room()))
+            pane.style.height = `${height}px`
+            if (remember) {
+                stored = height
+                localStorage.setItem(key, String(height))
+            }
+            return height
+        }
+
+        grip.addEventListener('pointerdown', (event) => {
+            const from = event.clientY
+            const start = pane.getBoundingClientRect().height
+            grip.setPointerCapture(event.pointerId)
+            grip.dataset.dragging = 'true'
+            const move = (moved) => size(start + (from - moved.clientY), true)
+            const drop = () => {
+                delete grip.dataset.dragging
+                grip.removeEventListener('pointermove', move)
+                grip.removeEventListener('pointerup', drop)
+                grip.removeEventListener('pointercancel', drop)
+            }
+            grip.addEventListener('pointermove', move)
+            grip.addEventListener('pointerup', drop)
+            grip.addEventListener('pointercancel', drop)
+            event.preventDefault()
+        })
+
+        grip.addEventListener('keydown', (event) => {
+            const step = event.key === 'ArrowUp' ? 24 : event.key === 'ArrowDown' ? -24 : 0
+            if (!step) return
+            size(pane.getBoundingClientRect().height + step, true)
+            event.preventDefault()
+        })
+
+        grip.addEventListener('dblclick', () => {
+            if (folded) {
+                size(folded, false)
+                folded = 0
+                return
+            }
+            folded = pane.getBoundingClientRect().height
+            size(room(), false)
+        })
+
+        return { node: pane, log }
+    }
+
     function buildRounds() {
         const head = el('div', 'crw-head')
         const headline = el('span', 'dya-value crw-headline', 'reading the corpus…')
+        /*
+         * Where the corpora are read from, said on the screen that reports them. It is the one
+         * fact a reader cannot deduce from anything else here, and a stale repositories directory
+         * in one shell is enough to hide every corpus but the fallback — this panel once said
+         * `9 corpora` with four more on the disk, as confidently as it would have said fourteen.
+         */
+        const where = el('span', 'dya-meta crw-where')
         const refresh = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Refresh')
-        head.append(el('span', 'dya-eyebrow', 'corpus'), headline, refresh)
+        head.append(el('span', 'dya-eyebrow', 'corpus'), headline, where, refresh)
 
         const table = el('table', 'dya-table')
         const wrap = el('div', 'crw-corpora')
@@ -482,7 +649,7 @@ function mount(ctx, container) {
         commit.type = 'checkbox'
         commit.checked = true
         commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = el('button', 'dya-button dya-button--primary', 'Run')
+        const run = el('button', 'dya-button dya-button--success', 'Run')
         const stop = el('button', 'dya-button dya-button--danger', 'Stop')
         stop.hidden = true
         const actionGroup = el('div', 'dya-bar__group')
@@ -497,11 +664,9 @@ function mount(ctx, container) {
          * question it was asking — a paragraph of onboarding pinned to a panel somebody opens
          * every day.
          */
-        const out = el('div', 'crw-out')
-        const log = el('pre', 'dya-log crw-log')
-        log.hidden = true
-        out.append(log)
-        rounds.append(head, wrap, bar, out)
+        const output = buildConsole('crawlee.console.rounds')
+        const log = output.log
+        rounds.append(head, wrap, bar, output.node)
 
         refresh.addEventListener('click', () => void refreshState())
         run.addEventListener('click', () => void startRound())
@@ -528,11 +693,14 @@ function mount(ctx, container) {
              */
             if (state.needsEnvironment) {
                 headline.textContent = 'needs its Python environment — turn this plugin on in Setup'
+                where.textContent = ''
                 table.replaceChildren()
                 return
             }
 
             headline.textContent = state.headline || 'no corpora'
+            where.textContent = state.folder ?? ''
+            where.title = state.folder ? `every corpus repository under ${state.folder}` : ''
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
             table.replaceChildren()
@@ -576,18 +744,16 @@ function mount(ctx, container) {
             }
         }
 
+        /*
+         * What the round did to a corpus, in the two colours every reader already knows: what was
+         * added is green, what was removed is red, and what changed in place is neither. One badge
+         * reading `+4 ~66 -2` in a single warning hue asked somebody to parse three figures to
+         * learn what two colours say without being read, and a corpus that had only gained pages
+         * looked exactly like one that had only lost them. A figure of zero is not shown at all.
+         */
         function verdictCell(corpus) {
-            const [text, tone] = corpus.error
-                ? ['unreadable', ' dya-badge--danger']
-                : corpus.changed
-                  ? [`+${corpus.added} ~${corpus.modified} -${corpus.removed}`, ' dya-badge--warning']
-                  : corpus.stale
-                    ? ['stale', '']
-                    : ['quiet', ' dya-badge--success']
             const cell = el('td')
-            const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
-            badge.title = corpus.error || (corpus.stale ? 'not swept since it last moved' : '')
-            cell.appendChild(badge)
+            cell.appendChild(stateBadge(corpus))
             return cell
         }
 
@@ -633,7 +799,7 @@ function mount(ctx, container) {
         if (!hit.file) return null
         const actions = el('div', 'crw-hit-actions')
         if (hit.line > 1) {
-            actions.append(el('span', 'dya-key-label crw-hit-at', `line ${hit.line}`))
+            actions.append(el('span', 'dya-meta crw-hit-at', `line ${hit.line}`))
         }
         if (ctx.shell.canOpen(hit.file)) {
             const open = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Open')
@@ -728,8 +894,8 @@ function mount(ctx, container) {
                         ? el('span', 'dya-text crw-hit-title', hit.title)
                         : el('span', 'dya-mono crw-hit-title', hit.url)
                 )
-                if (hit.heading) head.append(el('span', 'dya-mono crw-hit-in', hit.heading))
-                head.append(el('span', 'dya-mono crw-hit-where', `${hit.repository} / ${hit.target}`))
+                if (hit.heading) head.append(el('span', 'dya-meta crw-hit-in', hit.heading))
+                head.append(el('span', 'dya-meta crw-hit-where', `${hit.repository} / ${hit.target}`))
                 const url = el('div', 'dya-mono crw-hit-url', hit.url)
                 const snippet = el('div', 'dya-text crw-hit-snippet')
                 for (const [index, part] of String(hit.snippet).split(/[\[\]]/).entries()) {
@@ -748,91 +914,255 @@ function mount(ctx, container) {
     }
 
     function buildTargets() {
-        const split = el('div', 'crw-split')
-        const list = el('div', 'crw-list')
-        const editor = el('div', 'crw-editor')
-
         /*
-         * Nothing is picked yet, so there is nothing to inspect, nothing to save and no profile to
-         * edit. The bar used to carry two live buttons that answered with a sentence saying they
-         * had nothing to work on, above an empty box holding four fifths of the panel open — the
-         * same void the round output grew out of. The editor exists once a target does.
+         * The targets are what this view is about, so they take the room the window has: a grid of
+         * cards that reflows from one column to five, not a 210px rail of names beside four fifths
+         * of a window of black. Each card says what the target is, where its pages live and what
+         * the last round did to it, which is everything somebody chooses between them on.
+         *
+         * Opening one raises a sheet over the grid. A column that pushed the grid aside would
+         * leave a list too narrow to read and an editor too narrow to write in, at every width
+         * this panel is ever given.
          */
-        const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
+        const grid = el('div', 'crw-grid')
+        const scrim = el('div', 'dya-scrim')
+        scrim.hidden = true
+        const sheet = el('div', 'dya-sheet crw-sheet')
+        sheet.hidden = true
+
+        const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
+        const remove = el('button', 'dya-button dya-button--quiet dya-button--sm dya-button--danger', 'Delete')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')
-        bar.append(title, inspect, save)
+        const close = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
+        bar.append(title, remove, inspect, save, close)
 
         const yaml = buildYaml()
         const note = el('div', 'dya-text crw-note')
-        const log = el('pre', 'dya-log crw-log')
-        log.hidden = true
+        const output = buildConsole('crawlee.console.targets')
+        const log = output.log
 
         const form = buildForm()
-        editor.append(bar, form.node, yaml.node, note, log)
-        split.append(list, editor)
-        targets.appendChild(split)
+        sheet.append(bar, form.node, yaml.node, note, output.node)
+
+        /*
+         * What the last thing to happen to this view was, and nothing when nothing has. A target
+         * removed takes its own sheet with it, so the line that says what came off the disk has
+         * nowhere to be said except out here; it is cleared the moment the reader does anything
+         * else, because a stale confirmation is worse than none.
+         */
+        const status = el('div', 'dya-text crw-note')
+        status.hidden = true
+        targets.append(grid, status, scrim, sheet)
 
         let current = null
+        let raisedBy = null
+        let landed = ''
+        let corpora = new Map()
 
-        function picked(name) {
+        const report = (text, good) => {
+            status.className = `dya-text crw-note${good === false ? ' dya-text--danger' : ' dya-text--success'}`
+            status.textContent = text
+            status.hidden = !text
+        }
+
+        /*
+         * Opening the sheet takes the view it opened over. The grid keeps showing through the
+         * inset, and every card still in it used to hover, take a click and answer it by loading
+         * that target over the one being written, with nothing said and the edit gone. It is
+         * `inert` while the sheet is up, so there is nothing behind to press, nothing to tab into
+         * and nothing for the wheel to move; the scrim is what says so before the reader tries.
+         */
+        function raise(name, source) {
             current = name
-            title.textContent = name ?? ''
+            raisedBy = source ?? null
+            title.textContent = name ?? 'new target'
             yaml.node.hidden = name === null
-            editor.dataset.empty = String(name === null)
+            inspect.disabled = name === null
+            save.disabled = name === null
+            landed = ''
+            report('')
+            confirmClose.reset()
+            confirmDelete.reset()
+            remove.disabled = name === null
+            grid.inert = true
+            scrim.hidden = false
+            sheet.hidden = false
         }
 
-        picked(null)
-
-        inspect.addEventListener('click', () => void probe())
-        save.addEventListener('click', () => void write())
-
-        async function refreshList() {
-            list.replaceChildren()
-            const add = el('button', 'dya-button dya-button--quiet dya-button--sm', '+ New target')
-            add.addEventListener('click', () => form.open())
-            list.appendChild(add)
-            try {
-                const profiles = await ctx.invoke('profiles')
-                if (profiles && profiles.needsEnvironment) {
-                    list.appendChild(
-                        el(
-                            'div',
-                            'dya-empty dya-empty--inline',
-                            'needs its Python environment — turn this plugin on in Setup'
-                        )
-                    )
-                    return
-                }
-                for (const profile of profiles) {
-                    const entry = el('button', 'dya-entry', profile.name)
-                    entry.dataset.name = profile.name
-                    entry.title = profile.description || profile.name
-                    entry.addEventListener('click', () => void open(profile.name))
-                    list.appendChild(entry)
-                }
-                mark(current)
-            } catch (error) {
-                list.appendChild(el('div', 'dya-empty dya-text--danger', reason(error)))
-            }
-        }
-
-        async function open(name) {
+        function drop() {
+            current = null
+            landed = ''
             form.close()
+            confirmClose.reset()
+            confirmDelete.reset()
+            sheet.hidden = true
+            scrim.hidden = true
+            grid.inert = false
             say('')
+            /* Back where it came from, so the keyboard is not returned to the top of the grid. */
+            if (raisedBy && raisedBy.isConnected) raisedBy.focus()
+            raisedBy = null
+        }
+
+        /* An unsaved profile is work, and closing over it silently is how it is lost. */
+        const dirty = () => Boolean(current) && yaml.value !== landed
+        const confirmClose = arming(close, 'Discard')
+        const confirmDelete = arming(remove, 'Delete for good')
+
+        const leave = () => {
+            if (confirmClose.armed) {
+                confirmClose.reset()
+                drop()
+                return
+            }
+            if (!dirty()) {
+                drop()
+                return
+            }
+            confirmClose.arm()
+            say('unsaved changes to this profile', false)
+        }
+
+        close.addEventListener('click', leave)
+        scrim.addEventListener('click', leave)
+
+        /*
+         * Deleting a target is the profile, the snapshot and the exports, because that is what a
+         * target is; leaving two of the three behind is how a corpus nothing can name is made.
+         * The first press says exactly what comes off the disk, the second does it.
+         */
+        remove.addEventListener('click', () => {
+            if (confirmDelete.armed) {
+                confirmDelete.reset()
+                void erase()
+                return
+            }
+            if (!current) return
+            const corpus = corpora.get(current)
+            confirmDelete.arm()
+            say(
+                corpus
+                    ? `${current}, its ${corpus.pages} pages and its exports come off the disk`
+                    : `${current} comes off the disk`,
+                false
+            )
+        })
+
+        async function erase() {
+            const name = current
+            if (!name) return
+            say('deleting…')
             try {
-                yaml.value = await ctx.invoke('show', name)
-                picked(name)
-                mark(name)
+                const said = String(await ctx.invoke('delete', name, true))
+                landed = yaml.value
+                drop()
+                await refreshList()
+                report(said, true)
             } catch (error) {
                 say(reason(error), false)
             }
         }
 
-        function mark(name) {
-            for (const entry of list.querySelectorAll('[data-name]')) {
-                entry.className = entry.dataset.name === name ? 'dya-entry dya-entry--active' : 'dya-entry'
+        /*
+         * Pressing the scrim must not take the focus with it. A press that lands on it and does
+         * not close -- an edit it is asking about -- otherwise leaves the focus on the document,
+         * outside the panel, where Escape reaches nothing and the reader has to find the button
+         * with the pointer they already have on the wrong half of the screen.
+         */
+        scrim.addEventListener('mousedown', (event) => event.preventDefault())
+
+        /*
+         * Escape belongs to the panel, not to the sheet. Bound to the view it only fired while the
+         * focus was already inside, which is never the case for a reader who reached for the key
+         * because the pointer was somewhere else.
+         */
+        root.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || event.defaultPrevented) return
+            if (targets.hidden || sheet.hidden) return
+            event.preventDefault()
+            leave()
+        })
+
+        inspect.addEventListener('click', () => void probe())
+        save.addEventListener('click', () => void write())
+
+        async function refreshList() {
+            grid.replaceChildren(newTargetCard())
+            try {
+                const [profiles, state] = await Promise.all([ctx.invoke('profiles'), ctx.invoke('state')])
+                if (profiles && profiles.needsEnvironment) {
+                    grid.replaceChildren(
+                        el(
+                            'div',
+                            'dya-empty',
+                            'needs its Python environment — turn this plugin on in Setup'
+                        )
+                    )
+                    return
+                }
+
+                const swept = new Map()
+                for (const repo of (state && state.repositories) || []) {
+                    for (const corpus of repo.corpora || []) swept.set(corpus.name, corpus)
+                }
+                corpora = swept
+
+                for (const profile of profiles) grid.appendChild(targetCard(profile, swept.get(profile.name)))
+            } catch (error) {
+                grid.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
+            }
+        }
+
+        function newTargetCard() {
+            const card = el('button', 'dya-tile crw-new')
+            const icon = el('span', 'dya-tile__icon')
+            icon.innerHTML = PLUS
+            card.append(icon, el('span', 'dya-tile__name', 'New target'), el(
+                'span',
+                'dya-tile__note',
+                'Point the crawler at a site or a sitemap and keep what it finds.'
+            ))
+            card.addEventListener('click', () => {
+                raise(null, card)
+                form.open()
+            })
+            return card
+        }
+
+        /*
+         * A target, as the thing it is rather than as its name. The state badge is the same one the
+         * rounds table carries, so a corpus that changed says so in both places in one colour.
+         */
+        function targetCard(profile, corpus) {
+            const card = el('button', 'dya-tile dya-tile--dense crw-target')
+            const head = el('div', 'dya-tile__head')
+            head.append(el('span', 'dya-tile__name', profile.name))
+            if (corpus) head.append(stateBadge(corpus))
+            card.append(head)
+
+            if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
+
+            const facts = [profile.group]
+            if (corpus) facts.push(`${corpus.pages} pages`, day(corpus.swept_at))
+            else facts.push(`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`)
+            card.append(el('span', 'dya-meta', facts.filter(Boolean).join('  ·  ')))
+
+            card.addEventListener('click', () => void open(profile.name, card))
+            return card
+        }
+
+        async function open(name, source) {
+            form.close()
+            say('')
+            raise(name, source)
+            try {
+                yaml.value = await ctx.invoke('show', name)
+                landed = yaml.value
+                yaml.focus()
+            } catch (error) {
+                say(reason(error), false)
             }
         }
 
@@ -841,6 +1171,7 @@ function mount(ctx, container) {
             say('saving…')
             try {
                 say(String(await ctx.invoke('save', current, yaml.value)), true)
+                landed = yaml.value
                 await refreshList()
             } catch (error) {
                 say(reason(error), false)
@@ -890,6 +1221,10 @@ function mount(ctx, container) {
 
         return {
             node,
+            focus() {
+                field.focus()
+                field.setSelectionRange(0, 0)
+            },
             get value() {
                 return field.value
             },
@@ -937,9 +1272,7 @@ function mount(ctx, container) {
                     description: fields.description.value.trim(),
                     snapshot: snapshot.checked,
                 })
-                current = name
-                title.textContent = name
-                mark(name)
+                raise(name)
                 node.hidden = true
                 say('drafted, not saved. Read it, probe it, then save it.')
             })

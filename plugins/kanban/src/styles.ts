@@ -19,7 +19,7 @@ export const STYLES = `
     width: var(--dya-border-width);
     height: 16px;
     margin: 0 var(--dya-space-1);
-    background: var(--dya-rule);
+    background: var(--dya-hairline);
 }
 
 .kanban-health-button {
@@ -299,23 +299,16 @@ export const STYLES = `
     box-shadow: var(--dya-elev-overlay);
 }
 
+/* The shape is kanon's sheet; what belongs here is how wide this one opens. */
 .kanban-drawer {
-    position: absolute;
-    top: var(--dya-space-3);
-    right: var(--dya-space-3);
-    bottom: var(--dya-space-3);
-    z-index: 20;
-    width: 50%;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
+    gap: 0;
+    padding: 0;
     overflow: hidden;
-    container-type: inline-size;
-    box-shadow: var(--dya-elev-overlay);
 }
 
 .kanban-drawer[data-size='full'] {
-    width: calc(100% - var(--dya-space-3) * 2);
+    inset-inline-start: var(--dya-space-3);
+    width: auto;
 }
 
 .kanban-drawer-head {
@@ -488,7 +481,7 @@ export const STYLES = `
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-danger);
+    color: var(--dya-danger-ink);
 }
 
 .kanban-problem {
@@ -496,7 +489,7 @@ export const STYLES = `
     font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-mono);
     line-height: var(--dya-leading-body);
-    color: var(--dya-danger);
+    color: var(--dya-danger-ink);
     padding: var(--dya-space-2);
     border-radius: var(--dya-radius);
     background: var(--dya-sunken);
@@ -675,8 +668,10 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     align-items: center;
     flex-wrap: wrap;
     gap: var(--dya-space-2);
-    padding: var(--dya-space-1) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    padding: var(--dya-space-2);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-1);
 }
 
 .kanban-run > .kanban-comment-text {
@@ -713,9 +708,8 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
 .kanban-watch-run {
     width: 100%;
     text-align: left;
-    background: none;
-    border: none;
-    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    background: var(--dya-surface-1);
+    border: var(--dya-border-width) solid var(--dya-border);
     color: inherit;
     font: inherit;
     cursor: pointer;
@@ -727,7 +721,7 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     border-radius: var(--dya-radius);
 }
 
-.kanban-watch-run:hover { background: var(--dya-surface-2); }
+.kanban-watch-run:hover { background: var(--dya-flat-hover); }
 .kanban-watch-run:focus-visible { box-shadow: var(--dya-elev-focus); }
 
 .kanban-card[data-waiting='true'] { border-color: var(--dya-warning); }
@@ -758,12 +752,14 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: var(--dya-space-1) 0;
-    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    padding: var(--dya-space-2);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-1);
 }
 
-.kanban-row-entry[data-kind='text'] { padding: var(--dya-space-2) 0; }
-.kanban-row-entry[data-error='true'] .dya-badge { background: var(--dya-danger-soft); color: var(--dya-danger); }
+.kanban-row-entry[data-kind='text'] { padding: var(--dya-space-2); }
+.kanban-row-entry[data-error='true'] .dya-badge { background: var(--dya-danger-soft); color: var(--dya-danger-ink); }
 
 .kanban-row-head {
     display: flex;

@@ -44,6 +44,17 @@ const STYLES = `
     width: 13px;
     height: 13px;
 }
+.player-invite {
+    max-width: 420px;
+    padding: 0;
+}
+.player-tile {
+    width: 100%;
+}
+.player-tile .dya-tile__icon {
+    width: 22px;
+    height: 22px;
+}
 .player-stage {
     flex: 1;
     min-height: 0;
@@ -60,7 +71,7 @@ const STYLES = `
 .player-stage video {
     max-width: 100%;
     max-height: 100%;
-    border-radius: var(--dya-radius-media);
+    border-radius: var(--dya-radius-card);
     background: var(--dya-sunken);
     outline: none;
 }
@@ -86,10 +97,9 @@ export function activate(ctx: PluginContext): void {
             root.className = 'player'
 
             /*
-             * The bar stays. It used to hide itself whenever the panel had nothing open, which is
-             * exactly when the only control that matters — open something — needs to be reachable,
-             * and it is why the empty panel had to grow a button of its own in the middle of it.
-             * The panel is simply empty now, with its bar where every other panel's bar is.
+             * The bar names what is open, so it is there once something is. With nothing open the
+             * offer is the panel itself and a bar holding one control and a rule is a fragment of
+             * an interface above a void.
              */
             const header = document.createElement('div')
             header.className = 'player-header'
@@ -116,19 +126,40 @@ export function activate(ctx: PluginContext): void {
                 return button
             }
 
-            /* An empty stage is empty; only a failure has anything to say. */
+            /*
+             * A panel with nothing in it offers what to put in it. It used to be empty on the
+             * reasoning that its bar already carries the one control that matters, and at a
+             * window's width that reasoning produces a black rectangle nine hundred pixels tall
+             * with a word in the corner — which is what a reader opens once and never again.
+             * A failure is said here too, under the same offer, because the offer is still what
+             * to do next.
+             */
             function showEmpty(message?: string): void {
                 name.textContent = ''
+                header.hidden = true
 
-                if (!message) {
-                    stage.replaceChildren()
-                    return
+                const invite = document.createElement('div')
+                invite.className = 'dya-empty player-invite'
+
+                const tile = document.createElement('button')
+                tile.className = 'dya-tile player-tile'
+                tile.type = 'button'
+                tile.innerHTML =
+                    `<span class="dya-tile__icon">${PLAYER_ICON}</span>` +
+                    '<span class="dya-tile__name">Play something</span>' +
+                    '<span class="dya-tile__note">Video or audio this machine already holds. ' +
+                    'It plays here, in the panel, and the dock keeps it where you put it.</span>'
+                tile.onclick = () => void openMedia()
+
+                if (message) {
+                    const line = document.createElement('span')
+                    line.className = 'dya-text--danger'
+                    line.textContent = message
+                    invite.append(line)
                 }
 
-                const line = document.createElement('div')
-                line.className = 'dya-empty dya-empty--inline dya-text--danger'
-                line.textContent = message
-                stage.replaceChildren(line)
+                invite.append(tile)
+                stage.replaceChildren(invite)
             }
 
             async function openMedia(): Promise<void> {

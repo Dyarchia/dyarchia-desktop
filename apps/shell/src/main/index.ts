@@ -5,6 +5,7 @@ import { adoptUserData, registerPaths } from './paths'
 import { registerWindowControls } from './windowControls'
 import { registerZoom } from './zoom'
 import { registerPluginScheme, setupPlugins } from './plugins'
+import { registerUpdates } from './updates'
 import { stopPythonPlugins } from './pythonHost'
 
 /*
@@ -99,6 +100,7 @@ app.whenReady().then(async () => {
     registerLayoutStore()
     registerWindowControls()
     registerPaths()
+    registerUpdates()
     await setupPlugins()
     createWindow()
     app.on('activate', () => {

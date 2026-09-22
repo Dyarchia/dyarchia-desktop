@@ -80,6 +80,55 @@ picked, it would be writing somebody's corpus into somebody else's, and it would
 edit saved through `profile save` lands where the profile already is, for the same reason; only a
 name that exists nowhere yet is new, and new goes to the default repository.
 
+**A target is the profile, the snapshot and the exports, so deleting one deletes all three.**
+
+```bash
+dyarchia-crawlee profile delete xai-docs --data
+```
+
+Without `--data` only the profile goes: the target stops being a target and what was already
+crawled stays on disk, readable and searchable. With it the snapshot directory and every export
+named after the target go too, in the same commit as the profile, because a target that half
+exists is a state nothing here knows how to report. The removal is committed for the same reason
+a save is, and refused before anything is deleted where it could not be — `--allow-untracked` is
+for a corpus deliberately kept out of a repository. A path derived from the name that would land
+outside the repository holding the profile is refused outright.
+
+The panel offers the whole of it and nothing less: the `Delete` control in a target's sheet names
+the pages that are about to go, and the second press is the one that acts.
+
+### In the desktop application
+
+An installed copy cannot use the defaults above. They are relative paths resolved against the
+directory this toolkit sits in, and in an installation that directory is inside the application:
+read-only, invisible to the user, and not where anybody's corpus belongs. So the plugin names them,
+and it names every one of them, whether or not the machine has already named the folder they sit
+in.
+
+    Variable                            What an installation sets it to
+    ---------------------------------   --------------------------------------------------------
+    DYARCHIA_CRAWLEE_REPOSITORIES_DIR   ~/.dyarchia/data/crawlee
+    DYARCHIA_CRAWLEE_DATA_DIR           the fallback repository's data/
+    DYARCHIA_CRAWLEE_PROFILES_DIR       the fallback repository's profiles/
+    DYARCHIA_CRAWLEE_OUTPUT_DIR         the fallback repository's output/
+    DYARCHIA_CRAWLEE_INDEX_DIR          ~/.dyarchia/crawlee/index
+    DYARCHIA_CRAWLEE_STORAGE_DIR        ~/.dyarchia/crawlee/storage
+
+**The fallback repository is the first one already in that folder, and `local` only when it holds
+none.** An empty repository that keeps the default takes with it everything belonging to no
+particular corpus, the digest of a round included, and a digest describing every corpus on the
+machine is of no use in the one directory that holds none of them.
+
+A value the environment already carries is kept, so a machine that says where it keeps its corpora
+is answered in its own terms:
+
+```bash
+setx DYARCHIA_CRAWLEE_REPOSITORIES_DIR "D:/wherever/crawlee-data"
+```
+
+That variable names a folder of repositories, not a repository. Pointing it at an empty folder is
+how a machine ends up reporting no corpora while holding several somewhere else.
+
 ### Your first corpus repository
 
 A fresh clone of this toolkit holds no corpus, and the folder `DYARCHIA_CRAWLEE_REPOSITORIES_DIR`

@@ -66,15 +66,15 @@ Warm near-black ground. Ten surfaces on a monotonic ramp.
 token                  value     relative luminance
 --------------------   -------   ------------------
 --dya-bg               #000000              0.00000
---dya-sunken           #0e0d0b              0.00405
---dya-chassis          #131210              0.00608
---dya-surface-1        #181714              0.00857
---dya-surface-2        #1d1c18              0.01158
---dya-flat-hover       #22211d              0.01517
---dya-raised           #262521              0.01845
---dya-overlay          #2a2925              0.02212
---dya-raised-hover     #31302b              0.02941
---dya-selected         #383733              0.03812
+--dya-sunken           #0c0b0a              0.00339
+--dya-chassis          #121110              0.00567
+--dya-surface-1        #1c1a17              0.01048
+--dya-surface-2        #232019              0.01461
+--dya-flat-hover       #282420              0.01817
+--dya-raised           #2e2a24              0.02364
+--dya-overlay          #343029              0.03004
+--dya-raised-hover     #383430              0.03510
+--dya-selected         #3f3931              0.04205
 ```
 
 The canvas is the only pure black and it carries nothing. Everything above it leans red
@@ -83,45 +83,45 @@ over green over blue by one unit at each step, which is the whole of the warmth.
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
 -------------   -------   ----   ------   ------   -------   ------------   --------
---dya-text      #e6e3db  16.38    13.98    11.96     11.35          10.31       9.29
---dya-text-2    #d3d0c8  13.63    11.63     9.95      9.45           8.58       7.73
---dya-text-3    #bdbab2  10.83     9.24     7.91      7.51           6.82       6.15
---dya-text-4    #a19e96   7.85     6.70     5.73      5.44           4.94       4.45
---dya-accent    #d97757   6.73     5.74     4.91      4.66           4.24       3.82
---dya-accent-2  #6a9bcc   7.17     6.12     5.24      4.97           4.52       4.07
---dya-accent-3  #788c5d   5.71     4.87     4.17      3.96           3.59       3.24
+--dya-text      #e6e3db  16.38    13.54    11.12     10.23           9.62       8.89
+--dya-text-2    #d3d0c8  13.63    11.27     9.25      8.51           8.01       7.40
+--dya-text-3    #bdbab2  10.83     8.95     7.35      6.77           6.36       5.88
+--dya-text-4    #a19e96   7.85     6.49     5.33      4.90           4.61       4.26
+--dya-accent    #d97757   6.73     5.56     4.57      4.20           3.95       3.65
+--dya-accent-2  #6a9bcc   7.17     5.93     4.87      4.48           4.21       3.90
+--dya-accent-3  #788c5d   5.71     4.72     3.88      3.57           3.35       3.10
 ```
 
-Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.45;
+Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.26;
 on that surface the label level is `--dya-text-3`.
 
-`--dya-accent` is the primary: text up to and including `--dya-overlay`, a graphical
-object above it. It is also `--dya-field`, where `--dya-on-field` `#181714` measures 5.74
+`--dya-accent` is the primary: text up to and including `--dya-surface-2` at 5.21, a graphical
+object above it — which is where an icon, a dot or a focus ring may still wear it. It is also `--dya-field`, where `--dya-on-field` `#181714` measures 5.74
 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
 right choice for a link, a selected state or an informational mark. `--dya-accent-3` is
 the weakest ink in the system: text on the canvas, the sunken step, the chassis,
-`--dya-surface-1` and `--dya-surface-2` at 4.63, and nowhere else.
+`--dya-surface-1` at 4.72, and nowhere else: on `--dya-surface-2` it measures 4.42 and stops
+being text.
 
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #35332e         1.48           1.42
---dya-border-strong    #4a473f         2.02           1.93
---dya-hairline         #262521         1.22           1.17
+--dya-border           #46413a         1.87           1.72
+--dya-border-strong    #5c564c         2.60           2.39
+--dya-hairline         #2a2620         1.25           1.15
 ```
 
 A border is a graphical object and the 3.00 bar does not apply to it, but a border that
 measures under 1.40 against the ground it separates is not there. `--dya-border` marks a
-panel edge on the chassis and **the row rule inside a table**; `--dya-hairline` separates
-rows inside one surface and is never the outline of a container.
+panel edge on the chassis and **the outline of a row**; `--dya-hairline` separates regions
+inside one surface and is never the outline of a container.
 
-**A table's rule is `--dya-border`, and that is a correction.** It was `--dya-rule`, which
-measures 1.05 against `--dya-surface-1` in Gi and 1.06 in Rei: a separator this system's own
-sentence says is not there, and a table whose rows it separated read as a run of loose lines
-with words drifting under headings. `--dya-hairline` does not save it either, at 1.17 and
-1.23. `--dya-border` is the only step in either ramp that clears 1.40 — 1.42 in Gi, 1.53 in
-Rei — so the rule that says where a border goes loses to the rule that says what a border
-has to measure.
+**A row is a card, and no table draws a rule between rows.** The horizontal line under every
+row is the shape of a ledger, and a panel of them reads as ruled paper however well the line
+measures — the object the reader is after, one target or one plugin or one event, never
+becomes an object at all. A row carries `--dya-surface-1`, `--dya-border` on four sides at
+1.42 in Gi and 1.53 in Rei, the 6px radius, and a gap of ground to the row below. The column
+heads above it lose their rule with it.
 
 
 ## Rei
@@ -135,45 +135,47 @@ same relative depth in both themes, and the ink ranks stay four deep and evenly 
 token                  value     relative luminance
 --------------------   -------   ------------------
 --dya-bg               #05080f              0.00240
---dya-sunken           #090e19              0.00442
---dya-chassis          #0d1322              0.00667
---dya-surface-1        #111829              0.00933
---dya-surface-2        #151d32              0.01268
---dya-flat-hover       #1a233c              0.01748
---dya-raised           #1f2946              0.02319
---dya-overlay          #242f4f              0.02973
---dya-raised-hover     #2a3759              0.03946
---dya-selected         #324063              0.05246
+--dya-sunken           #080d18              0.00405
+--dya-chassis          #0c1220              0.00615
+--dya-surface-1        #151d33              0.01277
+--dya-surface-2        #1c2745              0.02128
+--dya-flat-hover       #1f2a4c              0.02469
+--dya-raised           #26335c              0.03552
+--dya-overlay          #2b3966              0.04399
+--dya-raised-hover     #2f3d69              0.04962
+--dya-selected         #354473              0.06129
 ```
 
 ```text
 token           value       bg   surf-1   raised   overlay   raised-hover   selected
 -------------   -------   -----   ------   ------   -------   ------------   --------
---dya-text      #dde5f5   15.84    13.99    11.34     10.41           9.28       8.10
---dya-text-2    #c8d3ea   13.32    11.77     9.54      8.76           7.80       6.81
---dya-text-3    #aebcd9   10.49     9.27     7.51      6.90           6.15       5.37
---dya-text-4    #a1afce    9.10     8.04     6.52      5.98           5.33       4.65
---dya-accent    #74a9ff    8.46     7.47     6.05      5.56           4.95       4.32
---dya-accent-2  #f0a45c    9.70     8.57     6.95      6.38           5.68       4.96
---dya-accent-3  #7fd3b8   11.37    10.04     8.14      7.47           6.66       5.81
+--dya-text      #dde5f5   15.84    13.22     9.71      8.83           8.33       7.46
+--dya-text-2    #c8d3ea   13.32    11.12     8.16      7.43           7.01       6.27
+--dya-text-3    #aebcd9   10.49     8.76     6.43      5.85           5.52       4.94
+--dya-text-4    #a1afce    9.10     7.60     5.58      5.07           4.79       4.29
+--dya-accent    #74a9ff    8.46     7.06     5.18      4.71           4.45       3.98
+--dya-accent-2  #f0a45c    9.70     8.10     5.95      5.41           5.10       4.57
+--dya-accent-3  #7fd3b8   11.37     9.49     6.96      6.34           5.98       5.35
 ```
 
-**Every ink rank is text on every surface in this theme**, `--dya-text-4` included, where Gi
-has to reserve `--dya-selected`. The one reading under the floor is `--dya-accent` on
-`--dya-selected` at 4.32, and the accent is never text on that surface: it is the ink of an
-active key on the bar, where it measures 6.05 on `--dya-raised`. `--dya-code-comment`
+**Every ink rank is text on every surface in this theme**, `--dya-text-4` included at 4.29 on
+`--dya-selected`, where Gi reads 4.26 and reserves that surface for `--dya-text-3`. The two
+readings under the floor are `--dya-accent` on `--dya-raised-hover` at 4.45 and on
+`--dya-selected` at 3.98, and the accent is never text on either: it is the ink of an active
+key, where it measures 5.18 on `--dya-raised`. `--dya-code-comment`
 `#8290ad` is the most recessive ink, 5.22 and 5.51 on the two surfaces a code block sits on.
 
 `--dya-on-accent`, `--dya-on-field` and `--dya-on-status` are `#05080f`, the ground itself,
-and measure 8.46 on the accent, 11.29 on success, 10.31 on warning and 9.90 on danger.
-`--dya-on-idle` measures 6.81 on `--dya-idle`.
+and measure 8.46 on the accent, 11.50 on success, 10.31 on warning and 6.70 on danger.
+`--dya-on-idle` measures 6.81 on `--dya-idle`. Success and danger are the two hues Rei does
+not redefine: they are read as a convention rather than against this ground.
 
 ```text
 token                  value     on chassis   on surface-1
 --------------------   -------   ----------   ------------
---dya-border           #2c3859         1.60           1.53
---dya-border-strong    #41507a         2.34           2.24
---dya-hairline         #1f2946         1.29           1.23
+--dya-border           #38466d         2.02           1.80
+--dya-border-strong    #52659b         3.29           2.94
+--dya-hairline         #1f2a4c         1.33           1.19
 ```
 
 The elevation tokens are redefined because the contour ring is the theme's own darkest blue
@@ -189,27 +191,47 @@ shape, same offsets, same blur.
 - **An ink under 4.50 against what it sits on is not text.** Above 3.00 it may still be a
   graphical object: a dot, a rule, a selection bar, a focus ring, a fill.
 - **The status and syntax hues are functional.** Each theme declares its own values so that
-  the job, legibility, is done on that theme's ground.
+  the job, legibility, is done on that theme's ground — except green and red, which mean what
+  they mean outside this system and are one value in both.
 - **A badge may wear an accent as well as a status.** A status says how something turned out;
   an accent says what kind of thing it is, and a system with six hues that let a label reach
   three has three it declared and never spends. `--dya-on-accent` over each fill measures
   5.74 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
   5.74 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
 
+- **Green means go and red means stop, in the colours everybody already reads.** A control
+  that starts something is `--dya-success`, one that stops or destroys is `--dya-danger`, and
+  an application that spends one accent on both makes two opposite controls identical. A
+  panel here had a RUN and a STOP forty pixels apart in the same salmon, and neither said
+  which was which.
+
 ```text
-token           Gi        fill   Rei       fill   role
--------------   -------   ----   -------   ----   ------------------------
---dya-success   #63cf95   9.30   #6fd6a4  11.29   a positive outcome
---dya-warning   #d6a95c   8.27   #e2b268  10.31   caution, not failure
---dya-danger    #f59790   8.29   #ff9b95   9.90   error, destruction
---dya-idle      per theme  7.73  per theme  6.81  no outcome yet
+token             Gi        fill    Rei       fill    role
+---------------   -------   -----   -------   -----   ------------------------
+--dya-success     #4ade80   10.29   both      11.50   go, and a positive outcome
+--dya-warning     #d6a95c    8.27   #e2b268   10.31   caution, not failure
+--dya-danger      #ff5f56    6.00   both       6.70   stop, destroy, fail
+--dya-danger-ink  #f59790    8.29   #ff9b95    9.90   the same meaning, as text
+--dya-idle        per theme  7.73   per theme  6.81   no outcome yet
 ```
 
-`fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue
-has a `-soft` companion at 10% for the ground of a row or a quiet badge. As text rather than
-fill, the three measure 6.18 / 5.50 / 5.51 at worst in Gi and 5.77 / 5.27 / 5.06 at worst in
-Rei, both on `--dya-selected`, so `.dya-text--success` and `--danger` carry no reservation on
-any surface in either theme.
+`fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue has
+a `-soft` companion at 10% for the ground of a row or a quiet badge, and success and danger
+carry a `-hover` step for the two filled buttons: `#6ae997` at 11.71 and 13.09, `#ff7d75` at
+7.21 and 8.05.
+
+**Red is the one hue whose fill cannot also be its ink.** A red saturated enough to read as
+red beside a warm orange accent is too dark to be read as text on a dark surface: `#ff5f56`
+as an ink measures 4.42 on `--dya-raised-hover` in Gi and 3.93 in Rei, under the floor on the
+one step a quiet danger button spends its life on. So `--dya-danger-ink` is a token of its
+own — 7.09 on `--dya-raised` in both themes, 6.11 and 5.80 on the hover step, 6.96 and 7.37
+on its own soft ground — and `.dya-text--danger`, `.dya-badge--danger.dya-badge--soft` and
+`.dya-button--danger.dya-button--quiet` all take it. Green needs no such split: `--dya-success`
+measures 10.29 in Gi and 10.16 in Rei on `--dya-surface-1` and 8.50 and 8.35 on its own soft.
+
+**Green and red are the two colour tokens Rei does not redefine.** Every other hue in this
+system is tuned to its theme's ground; these two are quotations of a convention the reader
+brings with them, and a stop button that is a different red in each theme is two conventions.
 
 ```text
 token                 Gi        s-2    s-1    Rei       s-2    s-1
@@ -259,36 +281,45 @@ ground. `--dya-elev-focus` follows the accent in each theme.
 
 ## Type
 
-IBM Plex Sans for content, IBM Plex Mono for interface, Spectral for the brand. None ships
-a variable font, so the system carries eight static faces: sans and mono at 300, 400 and
-500, serif at 300 and 500.
+**IBM Plex Sans is the interface. IBM Plex Mono is the data. Spectral is the brand.** Seven
+static faces: sans at 300, 400 and 500, mono at 400 and 500, serif at 300 and 500. Mono Light
+was carried for two years and nothing ever set it; it is deleted.
 
-- **Hierarchy comes from size and tracking, never from weight.**
-- **Interface text is mono and uppercase; data is not.** A file name, a path, a model name
-  or a log line keeps its case, in mono at `--dya-tracking-mono`. `.dya-entry` is the one
-  list row that does not uppercase.
-- **The serif is the brand and nothing else.** `.dya-brand` and `.dya-carved` are its two
-  consumers; a heading, a label or a sentence in Spectral is a fork.
-- **Data is never smaller than 12px.** A figure, a date, a size, a count in a table cell or
-  a record is `--dya-size-mono-xs` at the least. The two label sizes exist for words that
-  name things: an eyebrow, a table header, a badge, a key.
+- **The interface speaks in sentence case, in the sans.** A tab, a button, a table head, a
+  label, a badge, a menu item: sentence case, `--dya-tracking-ui`, sans. An application whose
+  every word is 10px mono capitals with 0.2em of tracking reads as a terminal in costume, and
+  this one was exactly that — `CRAWLEE`, `+ NEW TARGET`, `REFRESH`, `TARGET GROUP PAGES SIZE`,
+  down to the word `COMMIT` beside a checkbox.
+- **Capitals are one component's privilege.** `.dya-eyebrow` names a region, once per view,
+  with the accent dot before it. Capitals signal only while almost nothing else wears them.
+  The brand and the carved word keep theirs because a wordmark is not interface text.
+- **Data keeps its face and its case.** A file name, a path, a target, a model name, a figure,
+  a log line: mono at `--dya-tracking-mono`, in whatever case it came in.
+- **Hierarchy comes from size and tracking, never from weight.** The three weights in use are
+  300 for the serif and for a rendered `h1`, 400 for everything, 500 for the eyebrow and the
+  brand.
+- **The serif is the brand and the one big figure.** `.dya-brand`, `.dya-carved` and
+  `.dya-stat__value`; a heading, a label or a sentence in Spectral is a fork.
+- **Nothing in the interface is smaller than 11px, and almost nothing is that small.** The
+  floor is the eyebrow and the label; a control is 12.5 or 13.5, a tab is 14.5.
 
 ```text
---dya-size-body       14px    prose, sentences, the empty state
---dya-size-body-sm    13px
---dya-size-body-xs    12px
---dya-size-mono       14px    the mono block
---dya-size-mono-sm    13px    code
---dya-size-mono-xs    12px    fields, entries, log lines, table cells
---dya-size-label      11px    buttons, chips, menu items, tabs
---dya-size-label-sm   10px    eyebrows, labels, table headers, badges, keys
---dya-size-brand      15px    the brand badge
+--dya-size-body       14.5px   prose, sentences, tabs, the empty state
+--dya-size-body-sm    13.5px   buttons, key labels, menu items
+--dya-size-body-xs    12.5px   small buttons, chips, table heads
+--dya-size-mono       13.5px   the mono block
+--dya-size-mono-sm    12.5px   code, fields, entries, table cells
+--dya-size-mono-xs    12px     log lines, the meta rank
+--dya-size-label      12px     badges
+--dya-size-label-sm   11px     the eyebrow
+--dya-size-brand      16px     the brand badge
 ```
 
 ```text
+--dya-tracking-ui       0         every word of the interface, in the sans
 --dya-tracking-mono     0.02em    values, paths, figures, identifiers
---dya-tracking-data     0.14em    data labels in a table or a record
---dya-tracking-label    0.2em     section labels, buttons, chips, tabs
+--dya-tracking-data     0.14em    a data label that still wants the wider set
+--dya-tracking-label    0.2em     the eyebrow
 --dya-tracking-brand    0.16em    the brand and the carved word, and nothing else
 ```
 
@@ -311,15 +342,16 @@ display form.
 ## Shape, spacing and motion
 
 ```text
---dya-radius-sm         3px    control under 16px: checkbox, radio, toggle knob, thumb
---dya-radius            6px    buttons, chips, fields, cards, surfaces
---dya-radius-media      6px    image, video, media blocks
---dya-radius-chassis    9px    the panel, and nothing else
---dya-radius-tag       14px    the tag, and nothing else
---dya-radius-full     999px    accent dot, radio, avatar
+--dya-radius-sm         4px    control under 16px: checkbox, radio, toggle knob, thumb
+--dya-radius            8px    buttons, fields, keys, small surfaces
+--dya-radius-card      12px    a card, a row, a tile, a log, a media block
+--dya-radius-chassis   16px    the panel and the sheet, and nothing else
+--dya-radius-full     999px    badge, tag, chip, accent dot, radio, avatar
 ```
 
-Five radii and a pill. Something asking for 8px gets 6px. Spacing is the `--dya-space-1`
+Four radii and a pill, and the ladder doubled: a 3px corner on a 22px control and a 6px one on a
+card read as a rectangle that missed, which is most of what made this system look unfinished.
+Something asking for 10px gets 8px or 12px, and a badge or a tag is a pill. Spacing is the `--dya-space-1`
 to `--dya-space-24` ladder and nothing outside it.
 
 - **`transform`, `opacity` and `background-color` are the only properties a transition may
@@ -350,19 +382,59 @@ wrong in ways the first consumer discovers rather than the author.
 
 ```text
 Structure    pane bar (--flush --inset __group) card card__header masthead brand carved
-Pressable    button (--primary --quiet --sm --danger --bare) key (--active) chip
+             splitter (--vertical) sheet (--side)
+Pressable    button (--primary --success --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) checkbox form (__actions __push)
 Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
-             pills table (__num __fit __key __name __end __prose) row
+             pills table (__num __fit __key __name __end __prose) row (--selected)
              stat (__figure __value __unit __text __note) meter (__pip)
-             title (--lg) lede text (--success --danger) label eyebrow value mono key-label
+             title (--lg) lede text (--success --danger) label eyebrow value meta mono
+             key-label
 Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
-Layers       menu menu__item (--selected) tip
+Layers       menu menu__item (--selected) tip scrim
 Navigation   tabs tab
 Absence      empty (--inline __actions) loading
 Assistive    sr-only
 ```
+
+**A row is a card, and the three classes that draw rows draw the same card.** `table`'s
+cells, `row` and `entry` all carry `--dya-surface-1`, `--dya-border` and the 6px radius, with
+a gap of ground between one row and the next; hover moves the ground to `--dya-flat-hover` and
+selection to `--dya-selected` with `--dya-border-strong` around it. A table does this with
+`border-collapse: separate` and `border-spacing` on the block axis, and puts the radius on the
+first and last cell so the row carries it end to end — which is why a row's state is set on its
+cells and never on the `tr`, where it would sit behind them and never be seen.
+
+**`splitter` is the handle between two regions of a panel.** Everything else in this
+application resizes and the regions inside a panel did not, so a console filling with output a
+line at a time was whatever height its plugin wrote down. The strip is 11px for a pointer to
+catch and pulls its own height back out of the layout with a negative margin, so adding one
+moves nothing above it; the grip is `--dya-text-4`, a graphical object at 6.70 in Gi and 8.04
+in Rei on `--dya-surface-1`, and takes `--dya-accent` under the pointer and while dragging.
+The consumer owns the drag, the clamp and where the size is remembered.
+
+**A sheet that covers is modal, and modality is two things or it is neither.** A sheet is
+inset from its panel, so what it opened over keeps showing through around it, and that
+margin is where the defect lives: the rows and cards still visible there hover, take a
+click and answer it — in the crawlee editor, by loading another target over the one being
+written — the whole region behind stays in the tab order, and the wheel over the margin
+moves what is behind rather than what is on top. A covering sheet therefore raises a
+`scrim` over what it covers and sets `inert` on it in the same breath. The scrim says the
+region is out of play, `inert` makes it true, and either one alone ships half a modal.
+`--dya-scrim` is the theme's own ground at 72%: a `tile` behind it dims 1.37 in Gi and 1.49
+in Rei, while the sheet stands 1.16 and 1.15 clear of the ground it covers, which is the
+separation `--dya-surface-1` already has over `--dya-bg`. Two more belong to the consumer:
+focus into the sheet when it opens and back to whatever raised it when it closes, and
+Escape bound to the panel rather than to the sheet, so it closes from wherever the reader's
+hands are.
+
+**`sheet--side` is the one that is not, until it covers.** A side sheet is the detail beside
+the list it came from, and the list stays live because picking the next item out of it is
+what the arrangement is for — the kanban inspector would be broken by a scrim, not fixed by
+one. That holds only while it stays to one side. A side sheet widened to cover the panel is
+a covering sheet whatever class it carries, and owes the scrim, the `inert`, the focus and
+the Escape from the moment it is widened to the moment it is narrowed back.
 
 **Emphasis is a family, not an accident.** Every other rule here is a prohibition — do not
 glare, do not truncate, never below 4.50 — and prohibitions produce a screen where nothing
@@ -376,6 +448,9 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile`,
   `--lg` is the same rule at `--dya-size-h2`, for a screen that is only a heading.
 - **`lede` is one sentence under a title**, sans, capped at 68ch, `--dya-text-3`. It is not
   `text`: the cap and the rank are the difference between a lede and a paragraph.
+- **`button--success` is go, and it is not a second primary.** A primary is the one action a
+  view is about; a success button is a meaning, and a view may hold one beside the `--danger`
+  fill that is its opposite. Run, approve, confirm.
 - **`button--primary` is the one action a screen is about.** At most one per view, because
   a second first is none. It is the only filled control in the system that does not report
   a status, and its hover step is `--dya-accent-hover` — a token rather than a filter,
@@ -383,13 +458,13 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile`,
 - **`tile` is a pressable card**: an icon, a name and one line. It is how a region with
   nothing in it yet offers what to do next, and the shell's launcher is built from nothing
   else.
-- **`empty__actions` is the row under an empty state, and it is for a decision, not for a
-  panel with nothing in it yet.** A panel that is simply empty says nothing at all: its
-  controls live in its bar, which is where a reader who wants to open something is already
-  looking. A title, a sentence and a button centred in a blank panel is an advertisement for
-  a panel that has already been opened, and it was removed from the reader and the player for
-  exactly that. What is left for this class is the case where the reader has to choose —
-  a board that is gone, and the choice of which board to open instead.
+- **A panel with nothing in it offers what to put in it, and the offer is a `tile`.** The rule
+  used to be the opposite — an empty panel is empty, its controls live in its bar — and what
+  that produces at a window's width is a black rectangle nine hundred pixels tall with one word
+  in a corner, which reads as a thing that does not work. The reader and the player each carry
+  one tile now: an icon, what the panel is for, and the way in. `empty__actions` stays for the
+  case where the reader has to choose rather than to start — a board that is gone, and which
+  board to open instead.
 - **`empty--inline` is absence inside a populated view**: one quiet line where the first row
   would be, because centring "nothing is running" in a band of its own makes the emptiest
   part of the screen the loudest.

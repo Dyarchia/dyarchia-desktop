@@ -157,19 +157,17 @@ The rules, in order:
   on `develop` has lost the review surface the branch exists to give it.
 - **Merge with `--no-ff`, always.** A fast-forward erases the fact that a set of commits
   belonged together, which is the only thing that makes the history readable later.
-- **Landing on `develop` does not wait to be asked for; landing on `master` does.** The two
-  hops were one rule until 2026-09-11 and are now two, because they carry different risk.
-  A branch that is finished, committed and verified merges into `develop` on its own
-  judgement. `master` is the released state and someone has to say so. Nothing is committed
-  directly to either: both hops are `--no-ff` merges.
+- **A branch that is finished, committed and verified lands on its own judgement**, and it
+  lands on both: `develop` and then `master`, both `--no-ff`, both pushed. The two hops were
+  one rule until 2026-09-11, then two until 2026-09-22, and are one again — nobody follows
+  this repository, and a `master` held back from a `develop` that works was a ceremony
+  protecting an audience that does not exist. Nothing is committed directly to either.
 - **A feature branch holds a piece of work, not necessarily a single change.** It can live
   until that work is done. Two branches cut the same day that both append to the end of one
   document will conflict on the second merge, which is cheap to fix and is a reason not to
   split work that belongs together.
-- **Pushing is asked for every time, and `develop` and `master` go together** once a release
-  merge is made, so the remote is never a partial view of what happened. This repository is
-  the shared home of several dyarchia products, so the remote is not one piece of work's to
-  publish.
+- **The remote is never a partial view of what happened.** `develop` and `master` are pushed
+  together, so what the repository says publicly is what the working tree says here.
 - **Delete the feature branch after it merges.** The merge commit holds the name.
 - **Commit bodies are long and evidentiary.** State the measurement or the failure that
   forced the change, what the alternative was, and what was deliberately left alone. A
@@ -177,6 +175,45 @@ The rules, in order:
   `packages/kanon/css/` additionally carries its contrast ratios, in both themes — see
   `packages/kanon/README.md`.
 - **Everything written to a file is in English**, commit messages included.
+
+### Cutting one
+
+An installed copy looks for a newer one and reads `latest.yml` out of the newest release's
+assets. That file is produced by `electron-builder --publish` and by nothing else, so a
+release uploaded by hand is a release no installed copy can see. One command does every
+part of it:
+
+```bash
+node scripts/release.mjs --publish
+```
+
+Without `--publish` it prints what it would do and stops, which is also how to check the
+branch, the tree and the version before spending a build on them. It refuses to run
+anywhere but `master`, refuses a dirty tree, and refuses a version some tag already claims.
+Then it tags, pushes the tag, builds the workspace, packages with `--publish always`, and
+deletes every older release and older local installer -- **the tags stay**, because they
+are the history and deleting one rewrites what a commit meant. `--keep-old` leaves the
+older releases alone.
+
+Only the newest release exists at any time. An alpha that publishes five installers offers
+five wrong answers to somebody arriving at the releases page, and the updater reads the
+newest release and nothing else.
+
+### What an installed copy does with it
+
+The version in the top bar states which build is running. Eight seconds after start, and
+only in a packaged build, the shell asks GitHub whether there is a newer one; every release
+is a prerelease, so `allowPrerelease` is what makes one findable at all.
+
+Nothing is downloaded without being asked. An update offers itself as one control beside
+the version -- `Update to 0.2.6-alpha`, then the percentage, then `Restart to finish` --
+and there is no idle button when there is nothing to offer. A check that failed says so in
+the tip on the version rather than taking the bar: it is a background request to a service
+that may simply be unreachable.
+
+The installer writes its location into `HKCU` only when there is nothing there already, so
+an update installs over the copy it is replacing rather than beside it. The directory page
+asks once, at the first install, and the answer is kept.
 
 
 ## 5. Plugins are shipped, not installed

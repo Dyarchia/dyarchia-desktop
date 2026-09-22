@@ -44,6 +44,10 @@ publish:
     provider: github
     owner: Dyarchia
     repo: dyarchia-desktop
+    # A draft is the default, and a draft is invisible: to the releases page, to gh, and to
+    # every installed copy asking whether there is a newer one. Every release here is a
+    # prerelease, so that is what an upload makes.
+    releaseType: prerelease
 win:
     target:
         - nsis

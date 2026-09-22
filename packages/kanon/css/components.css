@@ -26,8 +26,19 @@
     color: var(--dya-success);
 }
 
+/*
+ * A status hue is a fill, and red is the one whose fill cannot also be its ink.
+ *
+ * `--dya-danger` is the colour of a control that stops or destroys, and it has to read as red
+ * beside a warm orange accent — which the salmon it used to be did not: a RUN and a STOP forty
+ * pixels apart were the same colour and neither said which was which. Red enough to be read as red
+ * under `--dya-on-status` is too dark to be read as text on a dark surface: #ff5f56 as an ink
+ * measures 4.42 on `--dya-raised-hover` in Gi and 3.93 in Rei, under the floor on the one step a
+ * quiet danger button spends its life on. So the ink is a token of its own, `--dya-danger-ink`,
+ * 7.09 on `--dya-raised` in both themes and 6.11 and 5.80 on the hover step.
+ */
 .dya-text--danger {
-    color: var(--dya-danger);
+    color: var(--dya-danger-ink);
 }
 
 /*
@@ -64,21 +75,36 @@
     color: var(--dya-text-3);
 }
 
-.dya-label,
-.dya-eyebrow {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+/*
+ * A label names a control. It is sentence case in the sans, because an interface that shouts every
+ * word of itself in 10px mono capitals reads as a terminal wearing a costume — which is what this
+ * one did, from its tabs to its table heads to the word COMMIT beside a checkbox.
+ */
+.dya-label {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-label);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-tight);
-    text-transform: uppercase;
     color: var(--dya-text-4);
 }
 
+/*
+ * The eyebrow is the one thing left in capitals, and it earns them by being rare: one per view,
+ * naming the region under it, with the accent dot before it. Capitals are a signal when almost
+ * nothing else wears them.
+ */
 .dya-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: var(--dya-space-2);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-label-sm);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-label);
+    line-height: var(--dya-leading-tight);
+    text-transform: uppercase;
+    color: var(--dya-text-4);
 }
 
 .dya-eyebrow::before {
@@ -91,18 +117,16 @@
 }
 
 .dya-key-label {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
 }
 
 .dya-value {
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
 }
 
@@ -186,7 +210,7 @@
 .dya-log {
     overflow: auto;
     padding: var(--dya-space-3);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
@@ -198,7 +222,63 @@
     overflow-wrap: anywhere;
 }
 
+/*
+ * The handle that decides how a panel divides its room between two regions.
+ *
+ * Everything in this application resizes — the window, the dock, every panel in it — and the
+ * regions inside a panel did not: a console filling with output a line at a time was whatever
+ * height its plugin had written down, for ever. A region that grows is a region that needs a
+ * handle, and a handle drawn by each plugin is a handle each plugin gets wrong.
+ *
+ * The strip is eleven pixels so it can be caught with a pointer and pulls its own height back out
+ * of the layout with a negative margin, so adding one does not move what is above it. The grip is
+ * a graphical object rather than text: `--dya-text-4` measures 6.70 on `--dya-surface-1` in Gi and
+ * 8.04 in Rei, well clear of the 3.00 a mark has to make, and it takes `--dya-accent` under the
+ * pointer and while dragging, 5.74 and 7.47 on the same ground. Arrow keys move it for anybody who
+ * is not holding one.
+ */
+.dya-splitter {
+    display: grid;
+    place-items: center;
+    flex: none;
+    height: 11px;
+    margin-block: -4px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: ns-resize;
+    touch-action: none;
+}
+
+.dya-splitter::after {
+    content: "";
+    width: 46px;
+    height: 3px;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-text-4);
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-splitter:hover::after,
+.dya-splitter[data-dragging="true"]::after {
+    background: var(--dya-accent);
+}
+
+.dya-splitter--vertical {
+    height: auto;
+    width: 11px;
+    margin-block: 0;
+    margin-inline: -4px;
+    cursor: ew-resize;
+}
+
+.dya-splitter--vertical::after {
+    width: 3px;
+    height: 46px;
+}
+
 .dya-bar {
+    height: 44px;
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
@@ -237,7 +317,7 @@
 .dya-card {
     background: var(--dya-surface-1);
     border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     box-shadow: var(--dya-elev-flat);
 }
 
@@ -245,7 +325,7 @@
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
-    height: 38px;
+    height: 44px;
     padding: 0 var(--dya-space-3);
     background: var(--dya-grad-header);
     border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
@@ -311,17 +391,16 @@
 .dya-button {
     display: inline-grid;
     place-items: center;
-    height: 26px;
-    padding: 0 var(--dya-space-3);
+    height: 30px;
+    padding: 0 14px;
     border: none;
     border-radius: var(--dya-radius);
     background: var(--dya-raised);
     box-shadow: var(--dya-elev-raised);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
     cursor: pointer;
     transition:
@@ -365,6 +444,25 @@
     background-color: var(--dya-accent-hover);
 }
 
+/*
+ * Go. The affirmative half of a pair whose other half stops or destroys: run a round, approve a
+ * change, confirm the thing that was asked. It is green because every application the reader has
+ * ever used makes it green, and a system that spends its one accent on both sides of that pair
+ * makes two controls that mean opposite things look identical.
+ *
+ * It is not a second primary. A primary is the one action a view is about and there is at most one
+ * of them; a success button is a meaning, and a view may hold one beside its opposite.
+ * `--dya-on-status` over it measures 10.29 in Gi and 11.50 in Rei, 11.71 and 13.09 on the hover.
+ */
+.dya-button--success {
+    background: var(--dya-success);
+    color: var(--dya-on-status);
+}
+
+.dya-button--success:hover {
+    background-color: var(--dya-success-hover);
+}
+
 .dya-button--bare {
     height: auto;
     padding: 0;
@@ -384,10 +482,10 @@
 }
 
 .dya-button--sm {
-    height: 22px;
-    padding: 0 var(--dya-space-2);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
+    height: 26px;
+    padding: 0 10px;
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
 }
 
 .dya-button--danger {
@@ -404,13 +502,13 @@
  * primary a view is allowed, so spending it on delete makes the most destructive control the
  * first thing the eye lands on — which is what every panel here did, with a red DELETE beside a
  * grey MOVE. Quiet danger is the ordinary shape: a button that looks like a button, with an ink
- * that says what it does, `--dya-danger` over `--dya-raised` at 7.09 in both themes and 6.11 and
- * 5.80 on the hover step. The fill is for the confirmation, where destroying is the action being
+ * that says what it does, `--dya-danger-ink` over `--dya-raised` at 7.09 in both themes and 6.11
+ * and 5.80 on the hover step. The fill is for the confirmation, where destroying is the action being
  * asked for rather than one of several offered.
  */
 .dya-button--danger.dya-button--quiet {
     background: var(--dya-raised);
-    color: var(--dya-danger);
+    color: var(--dya-danger-ink);
 }
 
 .dya-button--danger.dya-button--quiet:hover {
@@ -426,9 +524,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-2);
-    padding: var(--dya-space-4);
+    padding: var(--dya-space-5);
     border: none;
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-card);
     background: var(--dya-raised);
     box-shadow: var(--dya-elev-raised);
     text-align: left;
@@ -460,10 +558,9 @@
 }
 
 .dya-tile__name {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-h4);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
 }
 
@@ -484,7 +581,7 @@
  * interface text and data, and a tile sits on both sides of it.
  */
 .dya-tile--dense {
-    padding: var(--dya-space-3);
+    padding: var(--dya-space-4);
 }
 
 .dya-tile__head {
@@ -503,17 +600,24 @@
     overflow-wrap: anywhere;
 }
 
+/*
+ * The icon control: a panel to open, a theme to choose, a window to close. It carries no outline at
+ * rest, because a row of them that each wear one is a row of identical stamps and says nothing
+ * about which is which — the top bar of this application was seven of those. The ground answers the
+ * pointer and the ink answers the state: quiet when there is nothing to say, the accent when what
+ * it controls is on.
+ */
 .dya-key {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    border: var(--dya-border-width) solid var(--dya-border);
+    border: none;
     border-radius: var(--dya-radius);
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
     color: var(--dya-text-4);
     cursor: pointer;
     transition:
@@ -523,6 +627,7 @@
 
 .dya-key:hover {
     background-color: var(--dya-flat-hover);
+    color: var(--dya-text-2);
 }
 
 .dya-key:active {
@@ -530,14 +635,13 @@
 }
 
 .dya-key--active {
-    border-color: var(--dya-accent);
     background: var(--dya-accent-soft);
     color: var(--dya-accent);
 }
 
 .dya-key > svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
 }
 
 [interestfor] {
@@ -562,12 +666,11 @@
     height: 22px;
     padding: 0 var(--dya-space-3);
     border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-full);
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-3);
     cursor: pointer;
     transition:
@@ -583,14 +686,21 @@
     transform: translateY(var(--dya-press-y));
 }
 
+/*
+ * The list row, and a card for the same reason a table row is one: a column of names with nothing
+ * around them is a column of text, and what the reader is choosing between is objects. It is the
+ * one row in the system that does not uppercase, because what it holds is a name and a name is
+ * data.
+ */
 .dya-entry {
     display: block;
     width: 100%;
-    padding: 3px var(--dya-space-3);
-    border: none;
-    background: transparent;
+    padding: 8px var(--dya-space-3);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius-card);
+    background: var(--dya-surface-1);
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
     text-align: left;
@@ -614,6 +724,7 @@
 
 .dya-entry--active {
     background-color: var(--dya-selected);
+    border-color: var(--dya-border-strong);
     box-shadow: inset 2px 0 0 var(--dya-accent);
     color: var(--dya-text);
 }
@@ -627,7 +738,7 @@
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text);
     outline: none;
@@ -788,29 +899,27 @@ textarea.dya-field {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    height: 20px;
+    height: 22px;
     padding: 0 11px;
     border: var(--dya-border-width) solid var(--dya-tag-border);
-    border-radius: var(--dya-radius-tag);
+    border-radius: var(--dya-radius-full);
     background: var(--dya-tag-bg);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-2);
 }
 
 .dya-badge {
     display: inline-grid;
     place-items: center;
-    padding: 2px 6px;
-    border-radius: var(--dya-radius);
+    padding: 3px 10px;
+    border-radius: var(--dya-radius-full);
     background: var(--dya-idle);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-label);
     font-weight: var(--dya-weight-medium);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-on-idle);
 }
 
@@ -887,7 +996,7 @@ textarea.dya-field {
 
 .dya-badge--danger.dya-badge--soft {
     background: var(--dya-danger-soft);
-    color: var(--dya-danger);
+    color: var(--dya-danger-ink);
 }
 
 /*
@@ -989,54 +1098,62 @@ textarea.dya-field {
 }
 
 /*
- * A table has to look like one, and this one did not: it read as a run of loose lines with words
- * drifting under headings. Two causes, both measured.
+ * **A row is a card.** Not a line of text with a rule under it: a surface of its own, bordered on
+ * four sides and rounded at both ends, with a gap of ground between it and the row below.
  *
- * Its row rule was `--dya-rule`, which measures 1.05 against `--dya-surface-1` in Gi and 1.06 in
- * Rei — and this system's own rule is that a border under 1.40 against the ground it separates is
- * not there. It was not there. The rule is `--dya-border` now, 1.42 in Gi and 1.53 in Rei, which
- * is the only step in either ramp that clears the bar the system sets for itself. That contradicts
- * the note saying border marks a panel edge and hairline separates rows; the note loses, because
- * hairline measures 1.17 and 1.23 and a row separator nobody can see separates nothing.
+ * Every table in this application used to draw one horizontal rule per row, which is the shape of
+ * a ledger and not of an interface — a page of them reads as ruled paper whatever the rule
+ * measures, and the object the reader is actually after, one target or one plugin or one event, is
+ * never an object at all. The rule is gone in favour of the object: `border-collapse: separate`
+ * with `border-spacing` down the block axis, a `--dya-surface-1` ground on every cell,
+ * `--dya-border` around it, and the radius applied to the first and last cell so the row carries
+ * it end to end. The head loses its rule with them — column names sit above cards and need no
+ * line to be a heading — and hover moves the card's ground rather than tinting a transparent row
+ * nobody could see change.
  *
- * The head rule follows from the same arithmetic and was wrong in the same way. A header that
- * separates its column names from the rows less than the rows separate from each other is a
- * heading that reads as one more row: `--dya-hairline` under a `--dya-border` body. It is
- * `--dya-border-strong` now, 1.93 in Gi and 2.24 in Rei, a step above the body rule rather than
- * two below it.
- *
- * And its digits were proportional, so 4102 sat narrower than 1111 and no column of numbers ever
- * lined up. `tabular-nums` is what a column of figures is for.
+ * Digits stay `tabular-nums`, because 4102 sitting narrower than 1111 is what stops a column of
+ * figures lining up.
  */
 .dya-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 6px;
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
+    font-size: var(--dya-size-mono-sm);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--dya-tracking-mono);
     color: var(--dya-text-3);
 }
 
 .dya-table th {
-    padding: 7px var(--dya-space-3);
-    border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
-    font-size: var(--dya-size-label-sm);
+    font-family: var(--dya-font-sans);
+    padding: 0 var(--dya-space-3) var(--dya-space-1);
+    font-size: var(--dya-size-body-xs);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    letter-spacing: var(--dya-tracking-ui);
     text-align: left;
     color: var(--dya-text-4);
 }
 
 .dya-table td {
-    padding: var(--dya-space-2) var(--dya-space-3);
-    border-bottom: var(--dya-border-width) solid var(--dya-border);
+    font-size: var(--dya-size-mono-sm);
+    padding: 10px var(--dya-space-4);
+    background: var(--dya-surface-1);
+    border-block: var(--dya-border-width) solid var(--dya-border);
     overflow-wrap: anywhere;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
-.dya-table tr:last-child td {
-    border-bottom: none;
+.dya-table td:first-child {
+    border-inline-start: var(--dya-border-width) solid var(--dya-border);
+    border-start-start-radius: var(--dya-radius-card);
+    border-end-start-radius: var(--dya-radius-card);
+}
+
+.dya-table td:last-child {
+    border-inline-end: var(--dya-border-width) solid var(--dya-border);
+    border-start-end-radius: var(--dya-radius-card);
+    border-end-end-radius: var(--dya-radius-card);
 }
 
 /* A column of figures is read down, so it is aligned down its right edge. */
@@ -1071,8 +1188,9 @@ textarea.dya-field {
 }
 
 .dya-table .dya-table__key {
-    text-transform: uppercase;
-    letter-spacing: var(--dya-tracking-data);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
 }
 
@@ -1084,13 +1202,98 @@ textarea.dya-field {
     text-align: right;
 }
 
-.dya-row {
-    background: transparent;
-    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+/*
+ * A row that answers the pointer. The state lives on the cells, because the cells are what carry
+ * the card's ground: a background on the `tr` sits behind them and is never seen.
+ */
+.dya-row:hover > td {
+    background-color: var(--dya-flat-hover);
 }
 
-.dya-row:hover {
-    background-color: var(--dya-surface-2);
+.dya-row--selected > td {
+    background-color: var(--dya-selected);
+    border-color: var(--dya-border-strong);
+}
+
+/*
+ * A region that opens over the panel rather than beside it.
+ *
+ * A panel is one window's worth of room at most and often half of one, so an editor, a drawer or
+ * a detail view that takes a column leaves two halves, each too narrow to be worth anything. A
+ * sheet takes the room it needs, over what it came from, and gives it back when it closes.
+ *
+ * It is the one place a panel-level overlay is declared: `--dya-elev-overlay`, the chassis radius
+ * and `--dya-surface-1` over whatever it covers. It is a container, so what is inside it asks the
+ * sheet how wide it is rather than the panel. The parent must be positioned; the consumer owns
+ * that, and owns what closes it.
+ *
+ * A sheet that covers is modal: it opens with a `.dya-scrim` and `inert` over what is under it,
+ * takes the focus, gives it back to whatever raised it, and closes on Escape from anywhere in the
+ * panel rather than only from inside itself. `--side` is the exception while it stays to one
+ * side, because selecting the next item in the list beside it is the point of it; the moment a
+ * side sheet is widened to cover, it is a covering sheet and owes all four.
+ */
+.dya-sheet {
+    position: absolute;
+    inset: var(--dya-space-3);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-3);
+    min-width: 0;
+    padding: var(--dya-space-3);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius-chassis);
+    background: var(--dya-surface-1);
+    box-shadow: var(--dya-elev-overlay);
+    container-type: inline-size;
+    animation: dya-slide-up-fade var(--dya-dur-fast) var(--dya-ease-out);
+}
+
+/* Anchored to one edge instead of covering: the detail beside the list it came from. */
+.dya-sheet--side {
+    inset-inline-start: auto;
+    width: 50%;
+}
+
+/*
+ * What a sheet leaves behind it, and the half of modality that can be seen.
+ *
+ * A sheet is inset from the panel and a side sheet covers half of it, so what it came from keeps
+ * showing through. Without this the reader is looking at a live surface around a modal one: a row
+ * that still hovers, still takes a click and answers it by replacing what is being edited, and a
+ * whole region still in the tab order behind a thing that has the reader's attention. The scrim
+ * says that region is out of play; `inert` on the same region makes it true. Neither is optional
+ * and neither is sufficient, so a sheet raises both or it is not a sheet.
+ *
+ * It is the theme's own ground at 72%, which is the alpha where a raised tile behind dims 1.37 in
+ * Gi and 1.49 in Rei while the sheet stands 1.16 and 1.15 clear of the ground it covers -- the
+ * same separation `--dya-surface-1` has over `--dya-bg`. Below that the region still reads as
+ * live; above it the panel goes to one flat black and the reader loses where they were.
+ */
+.dya-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 19;
+    background: var(--dya-scrim);
+    animation: dya-fade-in var(--dya-dur-fast) var(--dya-ease-out);
+}
+
+/*
+ * The rank under a name: where a thing came from, when it was last touched, how many of it there
+ * are. It is data, so it keeps its case, and it is mono at the smallest step in the scale with the
+ * quietest ink that is still text — `--dya-text-4`, 6.70 on `--dya-surface-1` in Gi and 8.04 in
+ * Rei. Three panels had each built this line out of a `dya-mono` and two overrides.
+ */
+.dya-meta {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dya-menu {
@@ -1110,10 +1313,9 @@ textarea.dya-field {
     border: none;
     border-radius: var(--dya-radius);
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-data);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-2);
     cursor: pointer;
     transition:
@@ -1167,10 +1369,9 @@ textarea.dya-field {
     border: none;
     border-bottom: 2px solid transparent;
     background: transparent;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label);
-    letter-spacing: var(--dya-tracking-label);
-    text-transform: uppercase;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
     cursor: pointer;
 }

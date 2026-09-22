@@ -35,6 +35,15 @@ extraFiles:
 electronLanguages:
     - en-US
     - es
+# Where a build is published and, the same thing read the other way, where an installed copy looks
+# for a newer one. `electron-updater` resolves this into the releases API of this repository and
+# reads `latest.yml` out of the newest release's assets, which `electron-builder --publish` uploads
+# beside the installer. A release cut without it is a release no installed copy can see, which is
+# the whole reason `scripts/release.mjs` exists rather than a note in a README.
+publish:
+    provider: github
+    owner: Dyarchia
+    repo: dyarchia-desktop
 win:
     target:
         - nsis

@@ -1,11 +1,10 @@
 :root {
     --dya-scheme: dark;
 
-    --dya-radius: 6px;
-    --dya-radius-sm: 3px;
-    --dya-radius-media: 6px;
-    --dya-radius-chassis: 9px;
-    --dya-radius-tag: 14px;
+    --dya-radius-sm: 4px;
+    --dya-radius: 8px;
+    --dya-radius-card: 12px;
+    --dya-radius-chassis: 16px;
     --dya-radius-full: 999px;
     --dya-border-width: 1px;
 
@@ -28,21 +27,22 @@
     --dya-weight: 400;
     --dya-weight-medium: 500;
 
-    --dya-size-display: 44px;
-    --dya-size-metric: 34px;
-    --dya-size-h2: 26px;
+    --dya-size-display: 42px;
+    --dya-size-metric: 32px;
+    --dya-size-h2: 25px;
     --dya-size-h3: 19px;
-    --dya-size-h4: 15.5px;
-    --dya-size-body: 14px;
-    --dya-size-body-sm: 13px;
-    --dya-size-body-xs: 12px;
-    --dya-size-mono: 14px;
-    --dya-size-mono-sm: 13px;
+    --dya-size-h4: 16px;
+    --dya-size-body: 14.5px;
+    --dya-size-body-sm: 13.5px;
+    --dya-size-body-xs: 12.5px;
+    --dya-size-mono: 13.5px;
+    --dya-size-mono-sm: 12.5px;
     --dya-size-mono-xs: 12px;
-    --dya-size-label: 11px;
-    --dya-size-label-sm: 10px;
-    --dya-size-brand: 15px;
+    --dya-size-label: 12px;
+    --dya-size-label-sm: 11px;
+    --dya-size-brand: 16px;
 
+    --dya-tracking-ui: 0;
     --dya-tracking-display: -0.035em;
     --dya-tracking-metric: -0.03em;
     --dya-tracking-h2: -0.02em;
@@ -58,30 +58,30 @@
     --dya-leading-loose: 165%;
 
     --dya-bg: #000000;
-    --dya-sunken: #0e0d0b;
-    --dya-chassis: #131210;
-    --dya-surface-1: #181714;
-    --dya-surface-2: #1d1c18;
-    --dya-flat-hover: #22211d;
-    --dya-raised: #262521;
-    --dya-overlay: #2a2925;
-    --dya-raised-hover: #31302b;
-    --dya-selected: #383733;
+    --dya-sunken: #0c0b0a;
+    --dya-chassis: #121110;
+    --dya-surface-1: #1c1a17;
+    --dya-surface-2: #232019;
+    --dya-flat-hover: #282420;
+    --dya-raised: #2e2a24;
+    --dya-overlay: #343029;
+    --dya-raised-hover: #383430;
+    --dya-selected: #3f3931;
+    --dya-scrim: #000000b8;
 
-    --dya-grad-bar: linear-gradient(#262521, #1d1c18);
-    --dya-grad-dock: linear-gradient(#1d1c18, #262521);
-    --dya-grad-header: linear-gradient(#262521, #181714);
+    --dya-grad-bar: linear-gradient(#2e2a24, #232019);
+    --dya-grad-dock: linear-gradient(#232019, #2e2a24);
+    --dya-grad-header: linear-gradient(#2e2a24, #1c1a17);
 
     --dya-text: #e6e3db;
     --dya-text-2: #d3d0c8;
     --dya-text-3: #bdbab2;
     --dya-text-4: #a19e96;
 
-    --dya-border: #35332e;
-    --dya-border-strong: #4a473f;
-    --dya-hairline: #262521;
-    --dya-rule: #1d1c18;
-    --dya-dashed: #35332e;
+    --dya-border: #46413a;
+    --dya-border-strong: #5c564c;
+    --dya-hairline: #2a2620;
+    --dya-dashed: #46413a;
     --dya-faint: #ffffff3b;
 
     --dya-accent: #d97757;
@@ -100,12 +100,14 @@
     --dya-tag-bg: #e6e3db12;
     --dya-tag-border: #e6e3db2b;
 
-    --dya-success: #63cf95;
-    --dya-success-soft: #63cf951a;
+    --dya-success: #4ade80;
+    --dya-success-hover: #6ae997;
+    --dya-success-soft: #4ade801a;
     --dya-warning: #d6a95c;
     --dya-warning-soft: #d6a95c1a;
-    --dya-danger: #f59790;
-    --dya-danger-hover: #f8a8a2;
+    --dya-danger: #ff5f56;
+    --dya-danger-hover: #ff7d75;
+    --dya-danger-ink: #f59790;
     --dya-danger-soft: #f597901a;
     --dya-on-status: #181714;
     --dya-idle: #383733;
@@ -180,30 +182,30 @@
 
 [data-theme="rei"] {
     --dya-bg: #05080f;
-    --dya-sunken: #090e19;
-    --dya-chassis: #0d1322;
-    --dya-surface-1: #111829;
-    --dya-surface-2: #151d32;
-    --dya-flat-hover: #1a233c;
-    --dya-raised: #1f2946;
-    --dya-overlay: #242f4f;
-    --dya-raised-hover: #2a3759;
-    --dya-selected: #324063;
+    --dya-sunken: #080d18;
+    --dya-chassis: #0c1220;
+    --dya-surface-1: #151d33;
+    --dya-surface-2: #1c2745;
+    --dya-flat-hover: #1f2a4c;
+    --dya-raised: #26335c;
+    --dya-overlay: #2b3966;
+    --dya-raised-hover: #2f3d69;
+    --dya-selected: #354473;
+    --dya-scrim: #05080fb8;
 
-    --dya-grad-bar: linear-gradient(#1f2946, #151d32);
-    --dya-grad-dock: linear-gradient(#151d32, #1f2946);
-    --dya-grad-header: linear-gradient(#1f2946, #111829);
+    --dya-grad-bar: linear-gradient(#26335c, #1c2745);
+    --dya-grad-dock: linear-gradient(#1c2745, #26335c);
+    --dya-grad-header: linear-gradient(#26335c, #151d33);
 
     --dya-text: #dde5f5;
     --dya-text-2: #c8d3ea;
     --dya-text-3: #aebcd9;
     --dya-text-4: #a1afce;
 
-    --dya-border: #2c3859;
-    --dya-border-strong: #41507a;
-    --dya-hairline: #1f2946;
-    --dya-rule: #151d32;
-    --dya-dashed: #2c3859;
+    --dya-border: #38466d;
+    --dya-border-strong: #52659b;
+    --dya-hairline: #1f2a4c;
+    --dya-dashed: #38466d;
     --dya-faint: #dde5f53b;
 
     --dya-accent: #74a9ff;
@@ -222,12 +224,9 @@
     --dya-tag-bg: #dde5f512;
     --dya-tag-border: #dde5f52b;
 
-    --dya-success: #6fd6a4;
-    --dya-success-soft: #6fd6a41a;
     --dya-warning: #e2b268;
     --dya-warning-soft: #e2b2681a;
-    --dya-danger: #ff9b95;
-    --dya-danger-hover: #ffb0ab;
+    --dya-danger-ink: #ff9b95;
     --dya-danger-soft: #ff9b951a;
     --dya-on-status: #05080f;
     --dya-idle: #324063;

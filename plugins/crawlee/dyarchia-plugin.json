@@ -9,6 +9,7 @@
         "profiles",
         "show",
         "save",
+        "delete",
         "search",
         "start",
         "stop"

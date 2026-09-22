@@ -301,6 +301,10 @@ def activate(ctx: Any) -> None:
     def save(name: str, text: str) -> str:
         return _read(['profile', 'save', name], stdin=text).strip()
 
+    def delete(name: str, data: bool) -> str:
+        """Remove a target. With `data`, everything it put on disk goes with it."""
+        return _read(['profile', 'delete', name, *(['--data'] if data else [])]).strip()
+
     def search(payload: dict[str, Any]) -> Any:
         """Ask the index. The CLI refreshes it first when a manifest moved since it was built."""
         args = ['search', str(payload['query']), '--json', '--limit', str(int(payload.get('limit') or 20))]
@@ -348,6 +352,7 @@ def activate(ctx: Any) -> None:
     ctx.handle('profiles', profiles)
     ctx.handle('show', show)
     ctx.handle('save', save)
+    ctx.handle('delete', delete)
     ctx.handle('search', search)
     ctx.handle('start', start)
     ctx.handle('stop', stop)

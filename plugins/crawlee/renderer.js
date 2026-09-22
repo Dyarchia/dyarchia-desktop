@@ -114,11 +114,15 @@ const STYLE = `
     border-top: var(--dya-border-width) solid var(--dya-border);
 }
 /*
- * The rule on this bar divides it from whatever is above it, and in the search view there is
- * nothing above it but the tab strip, which draws its own. Two rules twelve pixels apart with a
+ * The rule on this bar divides it from whatever is above it, and where it is the first thing in
+ * whatever holds it there is nothing above it but that container's own edge -- the tab strip in
+ * the search view, the sheet's border in the target editor. Two rules twelve pixels apart with a
  * gap of background between them is not two boundaries; it is one boundary drawn twice.
+ *
+ * The selector used to say `.crw-view >`, which is narrower than the sentence above it and is why
+ * the sheet drew the second line: its bar is the first child of the sheet, not of the view.
  */
-.crw-view > .crw-bar:first-child {
+.crw-bar:first-child {
     border-top: none;
 }
 .crw-scope {

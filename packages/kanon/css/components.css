@@ -1226,6 +1226,12 @@ textarea.dya-field {
  * and `--dya-surface-1` over whatever it covers. It is a container, so what is inside it asks the
  * sheet how wide it is rather than the panel. The parent must be positioned; the consumer owns
  * that, and owns what closes it.
+ *
+ * A sheet that covers is modal: it opens with a `.dya-scrim` and `inert` over what is under it,
+ * takes the focus, gives it back to whatever raised it, and closes on Escape from anywhere in the
+ * panel rather than only from inside itself. `--side` is the exception while it stays to one
+ * side, because selecting the next item in the list beside it is the point of it; the moment a
+ * side sheet is widened to cover, it is a covering sheet and owes all four.
  */
 .dya-sheet {
     position: absolute;
@@ -1248,6 +1254,29 @@ textarea.dya-field {
 .dya-sheet--side {
     inset-inline-start: auto;
     width: 50%;
+}
+
+/*
+ * What a sheet leaves behind it, and the half of modality that can be seen.
+ *
+ * A sheet is inset from the panel and a side sheet covers half of it, so what it came from keeps
+ * showing through. Without this the reader is looking at a live surface around a modal one: a row
+ * that still hovers, still takes a click and answers it by replacing what is being edited, and a
+ * whole region still in the tab order behind a thing that has the reader's attention. The scrim
+ * says that region is out of play; `inert` on the same region makes it true. Neither is optional
+ * and neither is sufficient, so a sheet raises both or it is not a sheet.
+ *
+ * It is the theme's own ground at 72%, which is the alpha where a raised tile behind dims 1.37 in
+ * Gi and 1.49 in Rei while the sheet stands 1.16 and 1.15 clear of the ground it covers -- the
+ * same separation `--dya-surface-1` has over `--dya-bg`. Below that the region still reads as
+ * live; above it the panel goes to one flat black and the reader loses where they were.
+ */
+.dya-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 19;
+    background: var(--dya-scrim);
+    animation: dya-fade-in var(--dya-dur-fast) var(--dya-ease-out);
 }
 
 /*

@@ -340,6 +340,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const drawer = el('aside', 'dya-sheet dya-sheet--side kanban-drawer')
     drawer.hidden = true
 
+    const scrim = el('div', 'dya-scrim')
+    scrim.hidden = true
+
     const stage = el('div', 'kanban-stage')
     stage.hidden = true
     const stageView = el('div', 'kanban-stage-body')
@@ -353,6 +356,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     let inspector: 'half' | 'full' = read(sizeStore) === 'full' ? 'full' : 'half'
     const applySize = (): void => {
         drawer.dataset.size = inspector
+        /*
+         * Half is a detail beside the board, and the board stays live because picking the next
+         * card out of it is the whole point of the arrangement. Full covers it, and a board that
+         * is covered but still takes a click and still holds its place in the tab order is a
+         * region the reader cannot see and can still reach. Covered means out of play.
+         */
+        const covering = !drawer.hidden && inspector === 'full'
+        scrim.hidden = !covering
+        board.inert = covering
     }
 
     const marks = el('div', 'dya-bar kanban-marks')
@@ -370,7 +382,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const error = el('div', 'kanban-error')
     error.hidden = true
 
-    main.append(board, drawer)
+    main.append(board, scrim, drawer)
     root.append(bar, marks, main, setup, watch, error, live, tips)
     container.appendChild(root)
 
@@ -2347,11 +2359,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (target.closest('.kanban-card, .dya-key, .kanban-new')) return
         select(null)
     })
-    drawer.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape' || event.defaultPrevented) return
+    /* Clicking the board is how a selection is dropped; under the scrim it is the same gesture. */
+    scrim.addEventListener('click', () => select(null))
+
+    /*
+     * Escape belongs to the panel. On the drawer it only fired while the focus was already inside
+     * it, which is never true of a reader who reached for the key because the pointer was
+     * somewhere else -- and never true at all in full, where the board behind is inert.
+     */
+    root.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || drawer.hidden) return
         event.preventDefault()
+        const returning = drawnId
         select(null)
-        if (drawnId) focusCard(drawnId)
+        if (returning) focusCard(returning)
     })
 
     const watchRow = (run: WatchRun): HTMLElement => {

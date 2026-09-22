@@ -67,6 +67,7 @@
     --dya-overlay: #343029;
     --dya-raised-hover: #383430;
     --dya-selected: #3f3931;
+    --dya-scrim: #000000b8;
 
     --dya-grad-bar: linear-gradient(#2e2a24, #232019);
     --dya-grad-dock: linear-gradient(#232019, #2e2a24);
@@ -190,6 +191,7 @@
     --dya-overlay: #2b3966;
     --dya-raised-hover: #2f3d69;
     --dya-selected: #354473;
+    --dya-scrim: #05080fb8;
 
     --dya-grad-bar: linear-gradient(#26335c, #1c2745);
     --dya-grad-dock: linear-gradient(#1c2745, #26335c);

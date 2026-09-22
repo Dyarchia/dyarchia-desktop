@@ -182,9 +182,6 @@ const STYLE = `
 .crw-new:hover {
     background-color: var(--dya-flat-hover);
 }
-.crw-sheet[hidden] {
-    display: none;
-}
 .crw-sheet-bar {
     padding-inline: 0;
 }
@@ -410,6 +407,45 @@ function draft({ name, url, group, description, snapshot }) {
 function firstUrl(yaml) {
     const found = yaml.match(/^\s*-\s*(https?:\/\/\S+)/m)
     return found ? found[1] : ''
+}
+
+/*
+ * A control that asks before it does the thing it says. The first press turns it red and relabels
+ * it with what is about to happen; the second press is the one that acts, and the caller owns
+ * both. A few seconds of nothing puts it back, because an armed button left armed is a trap the
+ * next click springs.
+ *
+ * Not `window.confirm`: that is an operating-system window over a panel, it stops the renderer
+ * dead while it is up, and it is the one thing on screen this design system does not draw.
+ */
+function arming(button, prompt) {
+    const label = button.textContent
+    const tone = button.className
+    let armed = false
+    let timer = 0
+
+    const reset = () => {
+        armed = false
+        window.clearTimeout(timer)
+        button.textContent = label
+        button.className = tone
+    }
+
+    const arm = () => {
+        armed = true
+        button.textContent = prompt
+        button.className = `${tone.replace(' dya-button--quiet', '')} dya-button--danger`
+        window.clearTimeout(timer)
+        timer = window.setTimeout(reset, 5000)
+    }
+
+    return {
+        arm,
+        reset,
+        get armed() {
+            return armed
+        }
+    }
 }
 
 export function activate(ctx) {
@@ -882,6 +918,8 @@ function mount(ctx, container) {
          * this panel is ever given.
          */
         const grid = el('div', 'crw-grid')
+        const scrim = el('div', 'dya-scrim')
+        scrim.hidden = true
         const sheet = el('div', 'dya-sheet crw-sheet')
         sheet.hidden = true
 
@@ -899,29 +937,86 @@ function mount(ctx, container) {
 
         const form = buildForm()
         sheet.append(bar, form.node, yaml.node, note, output.node)
-        targets.append(grid, sheet)
+        targets.append(grid, scrim, sheet)
 
         let current = null
+        let raisedBy = null
+        let landed = ''
 
-        function raise(name) {
+        /*
+         * Opening the sheet takes the view it opened over. The grid keeps showing through the
+         * inset, and every card still in it used to hover, take a click and answer it by loading
+         * that target over the one being written, with nothing said and the edit gone. It is
+         * `inert` while the sheet is up, so there is nothing behind to press, nothing to tab into
+         * and nothing for the wheel to move; the scrim is what says so before the reader tries.
+         */
+        function raise(name, source) {
             current = name
+            raisedBy = source ?? null
             title.textContent = name ?? 'new target'
             yaml.node.hidden = name === null
             inspect.disabled = name === null
             save.disabled = name === null
+            landed = ''
+            confirmClose.reset()
+            grid.inert = true
+            scrim.hidden = false
             sheet.hidden = false
         }
 
         function drop() {
             current = null
+            landed = ''
             form.close()
+            confirmClose.reset()
             sheet.hidden = true
+            scrim.hidden = true
+            grid.inert = false
             say('')
+            /* Back where it came from, so the keyboard is not returned to the top of the grid. */
+            if (raisedBy && raisedBy.isConnected) raisedBy.focus()
+            raisedBy = null
         }
 
-        close.addEventListener('click', drop)
-        targets.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && !sheet.hidden) drop()
+        /* An unsaved profile is work, and closing over it silently is how it is lost. */
+        const dirty = () => Boolean(current) && yaml.value !== landed
+        const confirmClose = arming(close, 'Discard')
+
+        const leave = () => {
+            if (confirmClose.armed) {
+                confirmClose.reset()
+                drop()
+                return
+            }
+            if (!dirty()) {
+                drop()
+                return
+            }
+            confirmClose.arm()
+            say('unsaved changes to this profile', false)
+        }
+
+        close.addEventListener('click', leave)
+        scrim.addEventListener('click', leave)
+
+        /*
+         * Pressing the scrim must not take the focus with it. A press that lands on it and does
+         * not close -- an edit it is asking about -- otherwise leaves the focus on the document,
+         * outside the panel, where Escape reaches nothing and the reader has to find the button
+         * with the pointer they already have on the wrong half of the screen.
+         */
+        scrim.addEventListener('mousedown', (event) => event.preventDefault())
+
+        /*
+         * Escape belongs to the panel, not to the sheet. Bound to the view it only fired while the
+         * focus was already inside, which is never the case for a reader who reached for the key
+         * because the pointer was somewhere else.
+         */
+        root.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || event.defaultPrevented) return
+            if (targets.hidden || sheet.hidden) return
+            event.preventDefault()
+            leave()
         })
 
         inspect.addEventListener('click', () => void probe())
@@ -963,7 +1058,7 @@ function mount(ctx, container) {
                 'Point the crawler at a site or a sitemap and keep what it finds.'
             ))
             card.addEventListener('click', () => {
-                raise(null)
+                raise(null, card)
                 form.open()
             })
             return card
@@ -987,16 +1082,18 @@ function mount(ctx, container) {
             else facts.push(`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`)
             card.append(el('span', 'dya-meta', facts.filter(Boolean).join('  ·  ')))
 
-            card.addEventListener('click', () => void open(profile.name))
+            card.addEventListener('click', () => void open(profile.name, card))
             return card
         }
 
-        async function open(name) {
+        async function open(name, source) {
             form.close()
             say('')
-            raise(name)
+            raise(name, source)
             try {
                 yaml.value = await ctx.invoke('show', name)
+                landed = yaml.value
+                yaml.focus()
             } catch (error) {
                 say(reason(error), false)
             }
@@ -1007,6 +1104,7 @@ function mount(ctx, container) {
             say('saving…')
             try {
                 say(String(await ctx.invoke('save', current, yaml.value)), true)
+                landed = yaml.value
                 await refreshList()
             } catch (error) {
                 say(reason(error), false)
@@ -1056,6 +1154,10 @@ function mount(ctx, container) {
 
         return {
             node,
+            focus() {
+                field.focus()
+                field.setSelectionRange(0, 0)
+            },
             get value() {
                 return field.value
             },

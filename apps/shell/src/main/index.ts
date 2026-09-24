@@ -44,6 +44,7 @@ function createWindow(): void {
         autoHideMenuBar: true,
         titleBarStyle: 'hidden',
         backgroundColor: '#000000',
+        icon: DEV_ICON,
         webPreferences: {
             preload: join(import.meta.dirname, '../preload/index.mjs'),
             contextIsolation: true,
@@ -94,8 +95,19 @@ function createWindow(): void {
     }
 }
 
+/*
+ * Windows groups taskbar buttons, and remembers the icon it draws for them, by this identifier. A
+ * workspace checkout runs the stock electron.exe, whose only icon is Electron's atom, and it used
+ * the installed application's identifier: the two became one taskbar entry, and the atom was what
+ * Windows kept for it. The installed window carried the right icon the whole time and the taskbar
+ * drew the atom anyway. A checkout is a different application and says so, and it borrows the
+ * installed icon for its window so that neither of them is ever drawn as Electron.
+ */
+const APP_ID = app.isPackaged ? 'dev.dyarchia.desktop' : 'dev.dyarchia.desktop.workspace'
+const DEV_ICON = app.isPackaged ? undefined : join(app.getAppPath(), 'icon.png')
+
 app.whenReady().then(async () => {
-    app.setAppUserModelId('dev.dyarchia.desktop')
+    app.setAppUserModelId(APP_ID)
     Menu.setApplicationMenu(null)
     registerLayoutStore()
     registerWindowControls()

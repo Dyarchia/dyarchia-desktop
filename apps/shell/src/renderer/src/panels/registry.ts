@@ -23,7 +23,7 @@ export type PanelDispose = () => void
 export interface PanelHandle {
     readonly instanceId: string
     close(): void
-    setTitle(title: string | null): void
+    setTitle(title: string | null, icon?: string | null): void
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
@@ -59,4 +59,27 @@ export function getPanel(id: string): RegisteredPanel | undefined {
 export function onRegistryChange(listener: () => void): () => void {
     listeners.add(listener)
     return () => listeners.delete(listener)
+}
+
+/*
+ * The mark a panel instance wears on its tab while it wears one of its own. Kept here rather than
+ * in dockview's parameters because those are saved with the layout, and a mark that names what a
+ * terminal was running must not come back with a terminal that is running nothing.
+ */
+const tabIcons = new Map<string, string>()
+const tabIconListeners = new Set<(instanceId: string) => void>()
+
+export function setTabIcon(instanceId: string, icon: string | null): void {
+    if (icon) tabIcons.set(instanceId, icon)
+    else tabIcons.delete(instanceId)
+    for (const listener of tabIconListeners) listener(instanceId)
+}
+
+export function getTabIcon(instanceId: string): string | undefined {
+    return tabIcons.get(instanceId)
+}
+
+export function onTabIconChange(listener: (instanceId: string) => void): () => void {
+    tabIconListeners.add(listener)
+    return () => tabIconListeners.delete(listener)
 }

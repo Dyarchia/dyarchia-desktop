@@ -2,6 +2,7 @@ export { highlight, highlightLines } from './highlight.js'
 export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
 export { HUES, hues, isHue } from './hues.js'
+export { brandIcon } from './brands.js'
 export type { Hue } from './hues.js'
 
 import type { Hue } from './hues.js'
@@ -27,11 +28,12 @@ export interface PanelHandle {
     close(): void
     /*
      * What this panel's tab says while it says something more specific than the descriptor's
-     * title, such as the program a terminal is running. `null` puts the descriptor's title back.
-     * The layout keeps whatever was last set, and the shell restores the descriptor's title when
-     * it loads a saved layout, so a name that stopped being true does not outlive the session.
+     * title, such as the program a terminal is running, and the mark it wears beside it: an inline
+     * SVG in currentColor, or none to keep the descriptor's icon. `null` puts both back. The shell
+     * restores the descriptor's title when it loads a saved layout, and never saves an icon, so a
+     * name that stopped being true does not outlive the session.
      */
-    setTitle(title: string | null): void
+    setTitle(title: string | null, icon?: string | null): void
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
@@ -58,6 +60,11 @@ export interface PluginCatalogueEntry {
         requires?: PluginRequirement[]
     }
     directory: string
+    /*
+     * The icon of the plugin's first panel, when the plugin is loaded and has one. It is what the
+     * plugin looks like everywhere else, so a list of plugins can show it rather than a dot.
+     */
+    icon?: string
     /*
      * Whether this plugin is part of the application rather than a choice. A core plugin is always
      * loaded, is never written to the enabled list, and the setup panel shows it without a tick.

@@ -35,11 +35,18 @@ KaTeX                              MIT            formulas in those diagrams
 marked                             MIT            markdown in the reader
 IBM Plex Sans, IBM Plex Mono       OFL 1.1        the interface and data faces
 Spectral                           OFL 1.1        the brand face
+Lobe Icons, by LobeHub             MIT            the marks of the agent CLIs
 ```
 
 `LICENSE.electron.txt` and `LICENSES.chromium.html` are installed beside the executable, as
 Electron and Chromium require. `licenses/OFL.txt` carries the font licence, with both copyright
-notices, as the Open Font License requires of anything that bundles them.
+notices, as the Open Font License requires of anything that bundles them. `licenses/lobe-icons.txt`
+carries the MIT notice of Lobe Icons (https://github.com/lobehub/lobe-icons), from which the
+monochrome marks in `packages/sdk/src/brands.ts` are taken unmodified.
+
+Those marks are trademarks of the companies that own them. They are shown only to identify the
+program a terminal tab is running or the agent a card goes to, and Dyarchia desktop is not
+affiliated with or endorsed by any of their owners.
 
 ## What is installed on demand
 

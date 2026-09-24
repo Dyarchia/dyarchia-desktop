@@ -5,7 +5,7 @@ import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { ClipboardAddon } from '@xterm/addon-clipboard'
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import { injectStyles } from '@dyarchia/sdk'
+import { brandIcon, injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 
 const STYLES =
@@ -66,7 +66,8 @@ type HostMessage = { t: 'data'; d: string } | { t: 'exit'; code: number }
 /*
  * A tab named after what runs in it. Six tabs reading CLI said nothing about which one held the
  * agent and which one the build, so the tab takes the name of the program started at the prompt:
- * `claude` makes it CLAUDE, `kimi` KIMI, `npx vitest` VITEST. The prompt is recognised rather than
+ * `claude` makes it CLAUDE, `kimi` KIMI, `npx vitest` VITEST, and a program with a known mark
+ * wears it in place of the terminal's own icon. The prompt is recognised rather than
  * configured -- PowerShell, cmd and a POSIX shell each draw one these match -- and a line that is
  * not a prompt, such as an agent's own input box, is never read as a command. The shell is known
  * to be back only when a prompt of the same shape as the one the command was typed at is under
@@ -284,7 +285,9 @@ export function activate(ctx: PluginContext): void {
                     running = command.shape
                     window.clearTimeout(naming)
                     naming = window.setTimeout(() => {
-                        if (running !== null && !disposed) handle.setTitle(command.name)
+                        if (running !== null && !disposed) {
+                            handle.setTitle(command.name, brandIcon(command.name))
+                        }
                     }, 400)
                 }
             }

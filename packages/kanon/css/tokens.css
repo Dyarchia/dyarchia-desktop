@@ -159,14 +159,25 @@
 
     --dya-elev-chassis: inset 0 1px 0 #ffffff0a;
 
+    --dya-face: linear-gradient(#ffffff12, #ffffff00 70%);
+
     --dya-elev-raised:
-        inset 0 1px 0 #ffffff14,
+        inset 0 1px 0 #ffffff21,
+        inset 0 -1px 0 #00000073,
         0 0 0 1px #000000,
-        0 1px 2px #00000099;
+        0 1px 1px #000000b3,
+        0 3px 6px -2px #0000008c;
+
+    --dya-elev-lift:
+        inset 0 1px 0 #ffffff1a,
+        0 1px 1px #000000b3,
+        0 3px 6px -2px #0000008c;
 
     --dya-elev-pressed:
         inset 0 2px 4px #000000cc,
-        0 0 0 1px #000000;
+        inset 0 1px 1px #00000099,
+        0 0 0 1px #000000,
+        0 1px 0 #ffffff0f;
 
     --dya-elev-sunken:
         inset 0 2px 4px #000000cc,
@@ -293,14 +304,25 @@
 
     --dya-elev-chassis: inset 0 1px 0 #ffffff0d;
 
+    --dya-face: linear-gradient(#ffffff14, #ffffff00 70%);
+
     --dya-elev-raised:
-        inset 0 1px 0 #ffffff17,
+        inset 0 1px 0 #ffffff24,
+        inset 0 -1px 0 #02040a80,
         0 0 0 1px #02040a,
-        0 1px 2px #02040a99;
+        0 1px 1px #02040ab3,
+        0 3px 6px -2px #02040a8c;
+
+    --dya-elev-lift:
+        inset 0 1px 0 #ffffff1c,
+        0 1px 1px #02040ab3,
+        0 3px 6px -2px #02040a8c;
 
     --dya-elev-pressed:
         inset 0 2px 4px #02040acc,
-        0 0 0 1px #02040a;
+        inset 0 1px 1px #02040a99,
+        0 0 0 1px #02040a,
+        0 1px 0 #ffffff12;
 
     --dya-elev-sunken:
         inset 0 2px 4px #02040acc,

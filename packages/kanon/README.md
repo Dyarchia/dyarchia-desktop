@@ -241,8 +241,13 @@ shape, same offsets, same blur.
   colours and their bright twins, solved the same way against `--dya-surface-1`, which is the
   terminal's ground: normal at OKLCH 0.72 in Gi and 0.74 in Rei, bright at 0.84 and 0.86, each at
   three quarters of its ceiling chroma like the hues. The normal set measures between 6.30 and
-  7.94 on it. Black and white are the system's own ink
-  ranks, not colours of their own.
+  7.94 on it. Black and white are the system's own ink ranks, not colours of their own.
+
+  A `log` renders the same colours when a program writes them: `ansi--<name>` for the twelve,
+  `--black`, `--bright-black` and `--dim` in `--dya-text-4`, `--white` and `--bright-white` in
+  `--dya-text-2` and `--dya-text`, `--bold` at 500. On `--dya-sunken` the least of them measures
+  7.14 in Gi and 7.70 in Rei. A log that prints the escapes instead shows a box and `[90m` on
+  every line a colouring tool writes.
 
 - **Green means go and red means stop, in the colours everybody already reads.** A control
   that starts something is `--dya-success`, one that stops or destroys is `--dya-danger`, and

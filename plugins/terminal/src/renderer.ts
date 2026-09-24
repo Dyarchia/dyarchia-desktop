@@ -63,6 +63,60 @@ interface PortAnnouncement {
 
 type HostMessage = { t: 'data'; d: string } | { t: 'exit'; code: number }
 
+/*
+ * A tab named after what runs in it. Six tabs reading CLI said nothing about which one held the
+ * agent and which one the build, so the tab takes the name of the program started at the prompt:
+ * `claude` makes it CLAUDE, `kimi` KIMI, `npx vitest` VITEST. The prompt is recognised rather than
+ * configured -- PowerShell, cmd and a POSIX shell each draw one these match -- and a line that is
+ * not a prompt, such as an agent's own input box, is never read as a command. The shell is known
+ * to be back only when a prompt of the same shape as the one the command was typed at is under
+ * the cursor: an agent that draws inline can end a line of its own in `%` or `$`, and the loosest
+ * shape would otherwise take that for the shell returning.
+ */
+const PROMPTS = [/^PS [^>]*>/, /^[A-Za-z]:\\[^>]*>/, /^[^$#%\s][^$#%]*[$#%](?= |$)/]
+
+function promptOf(line: string): { shape: number; rest: string } | null {
+    for (const [shape, pattern] of PROMPTS.entries()) {
+        const match = pattern.exec(line)
+        if (match) return { shape, rest: line.slice(match[0].length).trim() }
+    }
+    return null
+}
+
+const RUNNERS = new Set(['&', 'npx', 'pnpx', 'bunx', 'uvx', 'pipx', 'sudo', 'time'])
+const RUNNER_VERBS: Record<string, Set<string>> = {
+    pnpm: new Set(['dlx', 'exec']),
+    npm: new Set(['exec']),
+    yarn: new Set(['dlx']),
+    bun: new Set(['x']),
+    uv: new Set(['run'])
+}
+
+function isPrompt(line: string, shape: number): boolean {
+    const prompt = promptOf(line)
+    return prompt !== null && prompt.shape === shape && prompt.rest === ''
+}
+
+function commandOf(line: string): { name: string; shape: number } | null {
+    const prompt = promptOf(line)
+    if (!prompt) return null
+    const words = prompt.rest.split(/\s+/).filter(Boolean)
+    let index = 0
+    while (index < words.length - 1) {
+        const word = words[index].toLowerCase()
+        if (RUNNERS.has(word)) index += 1
+        else if (RUNNER_VERBS[word]?.has(words[index + 1].toLowerCase())) index += 2
+        else if (word === 'uv' && words[index + 1] === 'tool' && words[index + 2] === 'run') index += 3
+        else break
+    }
+    const program = (words[index] ?? '')
+        .replace(/^[&."']+|["']+$/g, '')
+        .split(/[\\/]/)
+        .pop()
+        ?.replace(/\.(exe|cmd|bat|ps1|com)$/i, '')
+    return program ? { name: program.toUpperCase(), shape: prompt.shape } : null
+}
+
 export function activate(ctx: PluginContext): void {
     ctx.registerPanel(
         {
@@ -209,8 +263,40 @@ export function activate(ctx: PluginContext): void {
         container.addEventListener('mouseup', onMouseUp)
         container.addEventListener('contextmenu', onContextMenu)
 
+        /*
+         * The line under the cursor when Enter is pressed at a prompt is the command. The name is
+         * shown only once the command has outlived 400 ms, so `cd` and `ls` do not flash their
+         * names across the tab, and it goes back to the panel's own title when a prompt is under the
+         * cursor again. Only the normal buffer is read for that: a full-screen program draws in the
+         * alternate one, and whatever it draws there is not the shell coming back.
+         */
+        let running: number | null = null
+        let naming = 0
+        const cursorLine = (): string => {
+            const buffer = terminal.buffer.active
+            return buffer.getLine(buffer.baseY + buffer.cursorY)?.translateToString(true) ?? ''
+        }
+
         const onInput = terminal.onData((data) => {
+            if (running === null && data.includes('\r')) {
+                const command = commandOf(cursorLine())
+                if (command) {
+                    running = command.shape
+                    window.clearTimeout(naming)
+                    naming = window.setTimeout(() => {
+                        if (running !== null && !disposed) handle.setTitle(command.name)
+                    }, 400)
+                }
+            }
             port?.postMessage({ t: 'in', d: data })
+        })
+
+        const onParsed = terminal.onWriteParsed(() => {
+            if (running === null || terminal.buffer.active.type !== 'normal') return
+            if (!isPrompt(cursorLine(), running)) return
+            running = null
+            window.clearTimeout(naming)
+            handle.setTitle(null)
         })
 
         const observer = new ResizeObserver(() => {
@@ -227,6 +313,8 @@ export function activate(ctx: PluginContext): void {
             container.removeEventListener('mouseup', onMouseUp)
             container.removeEventListener('contextmenu', onContextMenu)
             onInput.dispose()
+            onParsed.dispose()
+            window.clearTimeout(naming)
             if (port) {
                 port.postMessage({ t: 'detach' })
                 port.close()

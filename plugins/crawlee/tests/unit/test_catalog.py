@@ -77,3 +77,10 @@ def test_the_cli_runs_from_the_source_that_shipped(
     monkeypatch.setenv('PYTHONPATH', 'elsewhere')
     entries = panel._source_path(tmp_path).split(panel.os.pathsep)
     assert entries == [str(tmp_path / 'src'), 'elsewhere']
+
+
+def test_a_round_that_reported_nothing_is_described_by_its_verdict(panel: ModuleType) -> None:
+    silent = {'total': 0, 'done': 0, 'changed': 0, 'failed': 0}
+    assert panel._finished_body(10, silent, 12) == 'something changed, 12 min'
+    heard = {'total': 14, 'done': 14, 'changed': 3, 'failed': 0}
+    assert panel._finished_body(10, heard, 12) == '14 of 14 targets, 3 changed, 12 min'

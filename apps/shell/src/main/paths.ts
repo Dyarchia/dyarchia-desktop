@@ -1,5 +1,5 @@
 import { app, ipcMain } from 'electron'
-import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -109,10 +109,37 @@ export function adoptUserData(): void {
                 error
             )
             app.setPath('userData', legacy)
+            separateWorkspace()
             return
         }
     }
     app.setPath('userData', target)
+    separateWorkspace()
+}
+
+/*
+ * A workspace build and an installed one are two applications over the same data, and they run
+ * at the same time as a matter of course. What they must not share is what each one holds open or
+ * rewrites on every change: Chromium's profile, which the first instance locks, so the second logs
+ * `Unable to move the cache` and runs without one; and the saved layout, which each window
+ * overwrites with its own panels. So the unpackaged build keeps both under `workspace/`, and
+ * everything that is the user's, boards, environments, offers, corpora, stays in the one root.
+ * The first workspace launch starts from the shared layout rather than from an empty window.
+ */
+export function workspaceHome(): string | null {
+    return app.isPackaged ? null : join(app.getPath('userData'), 'workspace')
+}
+
+function separateWorkspace(): void {
+    const home = workspaceHome()
+    if (!home) return
+    app.setPath('sessionData', home)
+    const shared = join(app.getPath('userData'), 'layout.json')
+    const own = join(home, 'layout.json')
+    if (!existsSync(own) && existsSync(shared)) {
+        mkdirSync(home, { recursive: true })
+        copyFileSync(shared, own)
+    }
 }
 
 export async function ensureDataHome(): Promise<string> {

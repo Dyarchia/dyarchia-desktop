@@ -9,7 +9,7 @@ at least 4.50 against every surface a row, a card or a tile sits on, and at leas
 the surfaces where it is only ever a mark. Among equally saturated answers the darker one wins,
 because the lightest colour that passes is the one that glares.
 
-`--mute 0.75` keeps each answer's lightness and hue and spends three quarters of its chroma. The
+`--mute 0.5` keeps each answer's lightness and hue and spends half its chroma. The
 most saturated colour that passes is the ceiling, not the choice: at full chroma the six read as a
 signal, and the system uses them as marks. Lowering chroma at a fixed OKLCH lightness moves every
 ratio up a little, never down, so a muted answer passes wherever its ceiling did.

@@ -26,10 +26,15 @@ const CLOSE_ICON =
 
 function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     const [active, setActive] = useState(props.api.isActive)
+    const [title, setTitle] = useState(props.api.title)
 
     useEffect(() => {
-        const subscription = props.api.onDidActiveChange((event) => setActive(event.isActive))
-        return () => subscription.dispose()
+        const activity = props.api.onDidActiveChange((event) => setActive(event.isActive))
+        const naming = props.api.onDidTitleChange((event) => setTitle(event.title))
+        return () => {
+            activity.dispose()
+            naming.dispose()
+        }
     }, [props.api])
 
     const hue = getPanel(props.api.id)?.descriptor.hue
@@ -41,7 +46,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             aria-selected={active}
         >
             {hue && <span className={`dya-dot dya-hue--${hue}`} />}
-            {props.api.title}
+            {title}
         </div>
     )
 }

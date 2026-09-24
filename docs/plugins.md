@@ -39,6 +39,11 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
   case that exists.
 - `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
   for somebody deciding whether to turn this on, not for somebody who already has.
+- `hue` is the plugin's colour, one of kanon's six by name: `amber`, `mint`, `cyan`, `blue`,
+  `violet` or `pink`. The shell draws the plugin's key, its launcher tile, its dock tab, its
+  row in Setup and the selected tab inside its panel in it, and fills it into every panel the
+  plugin registers, so a panel never restates it. A plugin never names a colour of its own;
+  a value the system does not carry is ignored.
 
 **Five more fields say what the plugin is made of, and every one of them is read rather than
 guessed.** This is what lets the installer carry a plugin correctly without knowing anything
@@ -136,6 +141,21 @@ library. `highlightLines` returns one string of HTML per line, for a panel that 
 able to point at line 412; a multi-line token is wrapped again on each line it crosses, so
 the count always matches the file. The language is a file extension or the word a fenced
 block declares, and one it does not know is shown uncoloured rather than guessed at.
+
+`hues(keys)` is exported the same way, and handed over as `ctx.hues` for the plugin with no
+build. It gives each of a set of things a plugin shows side by side — the groups of its
+corpora, the agents on its board — one of the six hues, distinct while there are six or
+fewer. A key keeps its hue across sessions and machines with nothing stored, and moves only
+when a key sorting before it arrives wanting the same one. The result is a name, used as
+`dya-hue--<name>`:
+
+```typescript
+const colour = ctx.hues(groups)
+cell.append(el('span', `dya-tag dya-tag--hue dya-hue--${colour[group]}`, group))
+```
+
+Hue is for which one, never for how it went: a state is a status badge, and the two are not
+mixed.
 
 ```typescript
 import type { PluginContext } from '@dyarchia/sdk'

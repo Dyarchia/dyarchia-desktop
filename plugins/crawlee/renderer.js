@@ -174,6 +174,12 @@ const STYLE = `
     overflow: auto;
     padding: 2px;
 }
+.crw-facts {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+}
 .crw-target,
 .crw-new {
     min-width: 0;
@@ -484,6 +490,17 @@ function mount(ctx, container) {
     let sink = null
     let busy = false
 
+    /*
+     * The groups this panel has seen, from the corpora and from the profiles alike, so the rounds
+     * table and the target cards give one group one hue. A group is the one category in this panel
+     * that the reader chooses by, and it was printed in the same grey as the date beside it.
+     */
+    const groups = new Set()
+    const groupTag = (group) => {
+        const hue = ctx.hues([...groups])[group]
+        return el('span', `dya-tag dya-tag--hue dya-hue--${hue}`, group)
+    }
+
     const views = [
         { id: 'rounds', title: 'Rounds', node: rounds },
         { id: 'targets', title: 'Targets', node: targets },
@@ -703,6 +720,7 @@ function mount(ctx, container) {
             where.title = state.folder ? `every corpus repository under ${state.folder}` : ''
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
+            for (const corpus of corpora) if (corpus.group) groups.add(corpus.group)
             table.replaceChildren()
             /*
              * A real head and a real body: the header row is not a row somebody can hover, and the
@@ -720,9 +738,11 @@ function mount(ctx, container) {
             const body = el('tbody')
             for (const corpus of corpora) {
                 const row = el('tr', 'dya-row')
+                const groupCell = el('td')
+                if (corpus.group) groupCell.append(groupTag(corpus.group))
                 row.append(
                     el('td', 'dya-mono', corpus.name),
-                    el('td', undefined, corpus.group || '-'),
+                    groupCell,
                     el('td', 'dya-table__num', String(corpus.pages)),
                     el('td', 'dya-table__num', bytes(corpus.bytes)),
                     el('td', undefined, day(corpus.swept_at)),
@@ -735,10 +755,10 @@ function mount(ctx, container) {
             }
             table.append(thead, body)
 
-            const groups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
+            const swept = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
             scope.replaceChildren()
             scope.appendChild(new Option('all targets', 'all'))
-            for (const group of groups) scope.appendChild(new Option(group, `group:${group}`))
+            for (const group of swept) scope.appendChild(new Option(group, `group:${group}`))
             for (const corpus of corpora) {
                 scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
             }
@@ -1109,6 +1129,7 @@ function mount(ctx, container) {
                 }
                 corpora = swept
 
+                for (const profile of profiles) if (profile.group) groups.add(profile.group)
                 for (const profile of profiles) grid.appendChild(targetCard(profile, swept.get(profile.name)))
             } catch (error) {
                 grid.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
@@ -1144,10 +1165,13 @@ function mount(ctx, container) {
 
             if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
 
-            const facts = [profile.group]
-            if (corpus) facts.push(`${corpus.pages} pages`, day(corpus.swept_at))
-            else facts.push(`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`)
-            card.append(el('span', 'dya-meta', facts.filter(Boolean).join('  ·  ')))
+            const facts = corpus
+                ? [`${corpus.pages} pages`, day(corpus.swept_at)]
+                : [`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`]
+            const line = el('div', 'crw-facts')
+            if (profile.group) line.append(groupTag(profile.group))
+            line.append(el('span', 'dya-meta', facts.join('  ·  ')))
+            card.append(line)
 
             card.addEventListener('click', () => void open(profile.name, card))
             return card

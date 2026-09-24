@@ -392,6 +392,56 @@ function el(tag, className, text) {
     return node
 }
 
+/*
+ * A line as its program coloured it. Crawlee colours its own log -- the crawler's name grey, the
+ * level in its colour -- and the console printed the escapes, so every line opened with a box
+ * and `[90m`. Only SGR is read, since colour is the only thing a log line asks for; any other
+ * escape is dropped rather than shown. The state is the sink's, because a colour set on one line
+ * holds until something resets it, which may be lines later.
+ */
+const ANSI_NAMES = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+const ESCAPE = /\x1b\[([\d;]*)([A-Za-z])/g
+
+function plainAnsi() {
+    return { fg: '', bold: false, dim: false }
+}
+
+function applySgr(state, parameters) {
+    const codes = parameters.split(';').filter(Boolean).map(Number)
+    if (codes.length === 0) codes.push(0)
+    for (let index = 0; index < codes.length; index++) {
+        const code = codes[index]
+        if (code === 0) Object.assign(state, plainAnsi())
+        else if (code === 1) state.bold = true
+        else if (code === 2) state.dim = true
+        else if (code === 22) Object.assign(state, { bold: false, dim: false })
+        else if (code === 39) state.fg = ''
+        else if (code >= 30 && code <= 37) state.fg = ANSI_NAMES[code - 30]
+        else if (code >= 90 && code <= 97) state.fg = `bright-${ANSI_NAMES[code - 90]}`
+        else if (code === 38 || code === 48) index += codes[index + 1] === 5 ? 2 : 4
+    }
+}
+
+function paintAnsi(text, state) {
+    const fragment = document.createDocumentFragment()
+    const push = (part) => {
+        if (!part) return
+        const classes = []
+        if (state.fg) classes.push(`dya-ansi--${state.fg}`)
+        if (state.dim) classes.push('dya-ansi--dim')
+        if (state.bold) classes.push('dya-ansi--bold')
+        fragment.append(classes.length ? el('span', classes.join(' '), part) : part)
+    }
+    let last = 0
+    for (const match of text.matchAll(ESCAPE)) {
+        push(text.slice(last, match.index))
+        if (match[2] === 'm') applySgr(state, match[1])
+        last = match.index + match[0].length
+    }
+    push(text.slice(last))
+    return fragment
+}
+
 function bytes(value) {
     const units = ['B', 'KB', 'MB', 'GB']
     let size = Number(value) || 0
@@ -537,6 +587,7 @@ function mount(ctx, container) {
      * is chosen when the job is started, by whichever view started it.
      */
     let sink = null
+    let ansi = plainAnsi()
     let busy = false
 
     /*
@@ -583,7 +634,7 @@ function mount(ctx, container) {
     const unsubscribeLine = ctx.on('line', (text) => {
         if (!sink) return
         const atBottom = sink.scrollHeight - sink.scrollTop - sink.clientHeight < 40
-        sink.textContent += `${String(text)}\n`
+        sink.append(paintAnsi(`${String(text)}\n`, ansi))
         if (atBottom) sink.scrollTop = sink.scrollHeight
     })
 
@@ -923,9 +974,18 @@ function mount(ctx, container) {
                 const at = new Date().toTimeString().slice(0, 5)
                 const head = failed ? 'Round finished with failures' : stopped ? 'Round stopped' : 'Round finished'
                 const parts = [`${head} at ${at}`]
-                if (total) parts.push(`${done} of ${total}`)
-                parts.push(`${report.changed ?? round.changed} changed`)
-                if (report.failed) parts.push(`${report.failed} failed`)
+                /*
+                 * The counts come from the progress lines the command prints. A command that
+                 * printed none -- one older than the panel driving it -- would be reported as zero
+                 * targets and nothing changed, whatever it did, so its own verdict is said instead.
+                 */
+                if (total) {
+                    parts.push(`${done} of ${total}`)
+                    parts.push(`${report.changed ?? round.changed} changed`)
+                    if (report.failed) parts.push(`${report.failed} failed`)
+                } else if (report.verdict) {
+                    parts.push(report.verdict)
+                }
                 parts.push(report.minutes ? `${report.minutes} min` : elapsed())
                 if (report.digest) parts.push(`digest at ${report.digest}`)
                 status.className = `dya-text crw-status ${failed ? 'dya-text--danger' : stopped ? '' : 'dya-text--success'}`
@@ -1587,6 +1647,7 @@ function mount(ctx, container) {
         }
         busy = true
         sink = into
+        ansi = plainAnsi()
         into.textContent = ''
         into.hidden = false
         /*

@@ -507,7 +507,7 @@ def _follow(ctx: Any, kind: str, process: subprocess.Popen[str]) -> None:
         },
     )
     if kind == 'run' and code != 30:
-        ctx.notify(_finished_title(code, tally), _finished_body(tally, minutes))
+        ctx.notify(_finished_title(code, tally), _finished_body(code, tally, minutes))
 
 
 PROGRESS_PREFIX = '::progress:: '
@@ -535,11 +535,14 @@ def _finished_title(code: int, tally: dict[str, int]) -> str:
     return 'Round finished'
 
 
-def _finished_body(tally: dict[str, int], minutes: int) -> str:
-    parts = [f"{tally['done']} of {tally['total']} targets"]
-    parts.append(f"{tally['changed']} changed")
-    if tally['failed']:
-        parts.append(f"{tally['failed']} failed")
+def _finished_body(code: int, tally: dict[str, int], minutes: int) -> str:
+    """The counts when the command reported them, and its own verdict when it reported none."""
+    if tally['total']:
+        parts = [f"{tally['done']} of {tally['total']} targets", f"{tally['changed']} changed"]
+        if tally['failed']:
+            parts.append(f"{tally['failed']} failed")
+    else:
+        parts = [VERDICTS.get(code, f'exited with {code}')]
     parts.append(f'{minutes} min' if minutes else 'under a minute')
     return ', '.join(parts)
 

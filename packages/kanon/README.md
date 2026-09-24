@@ -289,8 +289,24 @@ ground. `--dya-elev-focus` follows the accent in each theme.
 
 ## Relief
 
-- **Relief means pressable.** Buttons, keys and chips are raised. Rows, cells and
-  containers are flat and express state through background.
+- **Relief means pressable.** Buttons, keys, chips and tiles are raised, and a card that is
+  itself pressed or picked up — `card--lift`, the kanban card — stands off its board. Rows,
+  cells, tabs and containers are flat and express state through background: a row is chosen,
+  not pressed, and a table of raised rows reads as a keyboard.
+- **Relief is one recipe, and everything that presses wears all of it.** A face lit from
+  above (`--dya-face`, a white sheen over whatever ground the control has, so a primary, a
+  danger and a plain button catch one light), a lit top edge, a shaded bottom edge, the
+  contour ring, a contact shadow and a short cast. Pressing removes all of it at once and
+  sinks the control into `--dya-elev-pressed`, a well whose lower lip catches light. A key
+  whose panel is open stays sunk, tinted with its hue: open is held down.
+- **Relief is free because it is static.** Every layer is painted with the control and never
+  per frame. Scrolling the targets grid of fifteen raised tiles for 359 frames holds 16.70 ms
+  at the median and 17.00 at p95 in both themes, the figures the same grid measures flat.
+- **The face costs its inks a little and no text any of its floor.** At the vertical centre of
+  a control, where a label sits, a button's `--dya-text` measures 9.06 on the hover step in
+  Gi and 7.84 in Rei, and a chip's `--dya-text-3` 5.99 and 5.19. `--dya-text-4` and the hues
+  fall to 4.34 and 4.25 on the lit hover face, and there they are only ever a key's icon,
+  a mark with a 3.00 floor.
 - **`button--bare` is the one pressable without relief**, and it is allowed only where
   relief would lie: an icon that is the whole content of an empty region, where a raised
   button reads as an unfilled form. It carries no background and no shadow, so it is also

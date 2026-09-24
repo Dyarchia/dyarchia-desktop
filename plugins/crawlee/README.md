@@ -582,6 +582,6 @@ commands that crawl, and the read paths cost 0.33s. Measure with `python -X impo
 dyarchia_crawlee.cli"` before adding an import near the top of `cli.py`, `state.py`, `digest.py` or
 `watch.py`.
 
-This was a repository of its own until 2026-09-11, when dyarchia-desktop absorbed it with its
+This was a repository of its own until 2026-09-11, when Dyarchia desktop absorbed it with its
 history. Its history carries a target inventory that was taken out of the README; the repository is
 private, so it is contained, and opening it is the moment to rewrite that history.

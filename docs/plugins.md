@@ -1,4 +1,4 @@
-# Writing a dyarchia-desktop plugin
+# Writing a Dyarchia desktop plugin
 
 A plugin is a folder holding a manifest and one or two bundles; the shell discovers it at
 startup. This file is the whole contract — the code side and the UI side. The visual

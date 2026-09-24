@@ -87,7 +87,7 @@ token           value       bg   surf-1   raised   overlay   raised-hover   sele
 --dya-text-2    #d3d0c8  13.63    11.27     9.25      8.51           8.01       7.40
 --dya-text-3    #bdbab2  10.83     8.95     7.35      6.77           6.36       5.88
 --dya-text-4    #a19e96   7.85     6.49     5.33      4.90           4.61       4.26
---dya-accent    #ea874b   8.07     6.67     5.48      5.04           4.74       4.38
+--dya-accent    #d5936e   8.23     6.80     5.59      5.14           4.83       4.47
 --dya-accent-2  #6a9bcc   7.17     5.93     4.87      4.48           4.21       3.90
 --dya-accent-3  #788c5d   5.71     4.72     3.88      3.57           3.35       3.10
 ```
@@ -95,13 +95,13 @@ token           value       bg   surf-1   raised   overlay   raised-hover   sele
 Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.26;
 on that surface the label level is `--dya-text-3`.
 
-`--dya-accent` is the primary, an orange at OKLCH 0.72 / 0.142 / 50: text up to and
-including `--dya-raised-hover` at 4.74, a graphical object above it — which is where an icon, a dot
+`--dya-accent` is the primary, an orange at OKLCH 0.72 / 0.095 / 50: text up to and
+including `--dya-raised-hover` at 4.83, a graphical object above it — which is where an icon, a dot
 or a focus ring may still wear it. Its hue sits 23 degrees from `--dya-danger`, and that
 distance is the reason it is 50 and not the 39 of a warmer coral: an accent twelve degrees
-from red reads as stop. Its chroma is three quarters of the most the hue holds there, the same
-measure as the six hues. It is also `--dya-field`, where `--dya-on-field`
-`#181714` measures 6.88 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
+from red reads as stop. Its chroma is half the most the hue holds there, the same measure as the
+six hues. It is also `--dya-field`, where `--dya-on-field`
+`#181714` measures 7.02 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
 right choice for a link, a selected state or an informational mark. `--dya-accent-3` is
 the weakest ink in the system: text on the canvas, the sunken step, the chassis,
 `--dya-surface-1` at 4.72, and nowhere else: on `--dya-surface-2` it measures 4.42 and stops
@@ -200,15 +200,15 @@ shape, same offsets, same blur.
 - **A badge may wear an accent as well as a status.** A status says how something turned out;
   an accent says what kind of thing it is, and a system with six hues that let a label reach
   three has three it declared and never spends. `--dya-on-accent` over each fill measures
-  6.88 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
-  6.67 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
+  7.02 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
+  6.80 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
 
 - **Hue says which one; the accent says what matters; status says how it went.** Three axes,
   never mixed. Six categorical hues — amber, mint, cyan, blue, violet, pink — mark which of
   several things of one kind something is: which plugin, which group of corpora, which agent.
   They are solved rather than picked: one OKLCH lightness per theme, 0.74 in Gi and 0.76 in
-  Rei, and three quarters of the most chroma each hue holds there inside sRGB
-  (`palette.py --lightness 0.74 0.76 --mute 0.75`), so they read as one family, none is louder
+  Rei, and half the most chroma each hue holds there inside sRGB
+  (`palette.py --lightness 0.74 0.76 --mute 0.5`), so they read as one family, none is louder
   than another, and none is a neon: the ceiling itself read as a signal rather than a mark. At a lower lightness the dark hues stop being text on
   `--dya-raised`; at a higher one blue, violet and pink bleach towards pastel. Every hue is text
   from `--dya-bg` to `--dya-raised` in both themes and a mark above it:
@@ -216,12 +216,12 @@ shape, same offsets, same blur.
   ```text
   hue      Gi        sf-1   raised  selected    Rei       sf-1   raised  selected
   ------   -------   ----   ------  --------    -------   ----   ------  --------
-  amber    #d3a14f   7.40    6.08     4.86      #daa752   7.67    5.63     4.33
-  mint     #59c299   7.94    6.52     5.22      #5dc99e   8.22    6.03     4.64
-  cyan     #58bad1   7.81    6.41     5.13      #5bc1d9   8.10    5.94     4.57
-  blue     #89abea   7.49    6.15     4.92      #91b2ec   7.79    5.72     4.40
-  violet   #ba97eb   7.20    5.92     4.73      #bf9fec   7.55    5.54     4.26
-  pink     #ed83b7   7.05    5.79     4.63      #ed8ebc   7.33    5.38     4.13
+  amber    #c6a573   7.47    6.13     4.91      #cdab77   7.72    5.66     4.35
+  mint     #7bbb9f   7.81    6.42     5.13      #80c1a5   8.04    5.90     4.53
+  cyan     #7ab6c5   7.71    6.33     5.07      #7fbccc   7.94    5.83     4.48
+  blue     #94acd5   7.54    6.19     4.95      #9cb2d9   7.79    5.72     4.40
+  violet   #b59fd6   7.35    6.04     4.83      #baa6d9   7.60    5.58     4.29
+  pink     #d992b3   7.20    5.92     4.73      #db9bb9   7.49    5.50     4.22
   ```
 
   **A hue is a mark, never a fill, and it is shown while it says something.** A dot beside a
@@ -240,7 +240,7 @@ shape, same offsets, same blur.
 - **The terminal's sixteen colours are tokens.** `--dya-ansi-*` holds the six chromatic
   colours and their bright twins, solved the same way against `--dya-surface-1`, which is the
   terminal's ground: normal at OKLCH 0.72 in Gi and 0.74 in Rei, bright at 0.84 and 0.86, each at
-  three quarters of its ceiling chroma like the hues. The normal set measures between 6.30 and
+  three quarters of its ceiling chroma: output a program colours is read, not glanced at. The normal set measures between 6.30 and
   7.94 on it. Black and white are the system's own ink ranks, not colours of their own.
 
   A `log` renders the same colours when a program writes them: `ansi--<name>` for the twelve,

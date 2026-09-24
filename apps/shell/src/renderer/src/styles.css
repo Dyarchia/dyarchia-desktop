@@ -116,9 +116,9 @@ body,
     height: 15px;
 }
 
-/* In the overflow menu the icon is the only thing carrying the panel's hue, not a key around it. */
-.topbar-icon,
-.topbar-icon-text {
+/* In the overflow menu the icon takes its panel's hue only while that panel is open, as a key does. */
+.dya-menu__item--selected .topbar-icon,
+.dya-menu__item--selected .topbar-icon-text {
     color: var(--dya-hue, currentColor);
 }
 

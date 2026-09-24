@@ -631,7 +631,7 @@
     box-shadow: var(--dya-elev-raised);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
-    color: var(--dya-hue, var(--dya-text-4));
+    color: var(--dya-text-4);
     cursor: pointer;
     transition:
         transform var(--dya-dur-press) var(--dya-ease-press),
@@ -640,13 +640,18 @@
 
 .dya-key:hover {
     background-color: var(--dya-raised-hover);
-    color: var(--dya-hue, var(--dya-text-2));
+    color: var(--dya-text-2);
 }
 
 .dya-key:active {
     transform: translateY(var(--dya-press-y-key));
 }
 
+/*
+ * A key wears its hue only while what it controls is open, held down in it. At rest it is the
+ * quiet ink of every other key: six hues along the top bar all the time were a legend nobody
+ * asked to read, and the one fact the colour can carry there is which of them is open.
+ */
 .dya-key--active,
 .dya-key--active:hover {
     background-color: color-mix(in oklab, var(--dya-hue, var(--dya-accent)) var(--dya-hue-ground), var(--dya-sunken));
@@ -955,15 +960,16 @@ textarea.dya-field {
 .dya-pane--pink { --dya-pane-hue: var(--dya-hue-pink); }
 
 /*
- * A tag that says which one. The ink is the hue itself; the ground and the edge are the hue mixed
- * into whatever the tag sits on, so it never needs a second token per hue. The fill is the most
- * that keeps the ink text: at 8% the weakest case, pink in Rei, measures 4.66 over
- * `--dya-surface-1`, `--dya-surface-2` and `--dya-raised`; at 14% it fell to 4.20.
+ * Hue is spent sparingly: a mark beside a name, not a fill around it. A row that carried its group
+ * as a filled tag and its state as a filled badge was two colour axes shouting in one line, and a
+ * screen of them was ten hues at once. The dot says which one; the name stays in the ink of every
+ * other name, and the loud colour on the row is left to the state, which is what is read first.
  */
-.dya-tag--hue {
-    border-color: color-mix(in oklab, var(--dya-hue) var(--dya-hue-edge), transparent);
-    background: color-mix(in oklab, var(--dya-hue) var(--dya-hue-fill), transparent);
-    color: var(--dya-hue);
+.dya-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
 }
 
 /* The hue with nothing to read: beside a name in a list, a legend, a row that is one of a set. */

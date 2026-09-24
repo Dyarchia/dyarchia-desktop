@@ -84,10 +84,10 @@
     --dya-dashed: #46413a;
     --dya-faint: #ffffff3b;
 
-    --dya-accent: #ea874b;
-    --dya-accent-hover: #ed9e72;
-    --dya-accent-soft: #ea874b1f;
-    --dya-accent-faint: #ea874b0f;
+    --dya-accent: #d5936e;
+    --dya-accent-hover: #dba78a;
+    --dya-accent-soft: #d5936e1f;
+    --dya-accent-faint: #d5936e0f;
     --dya-on-accent: #181714;
     --dya-accent-2: #6a9bcc;
     --dya-accent-2-soft: #6a9bcc1f;
@@ -95,12 +95,12 @@
     --dya-accent-3-soft: #788c5d1f;
 
     --dya-hue-ground: 16%;
-    --dya-hue-amber: #d3a14f;
-    --dya-hue-mint: #59c299;
-    --dya-hue-cyan: #58bad1;
-    --dya-hue-blue: #89abea;
-    --dya-hue-violet: #ba97eb;
-    --dya-hue-pink: #ed83b7;
+    --dya-hue-amber: #c6a573;
+    --dya-hue-mint: #7bbb9f;
+    --dya-hue-cyan: #7ab6c5;
+    --dya-hue-blue: #94acd5;
+    --dya-hue-violet: #b59fd6;
+    --dya-hue-pink: #d992b3;
 
     --dya-ansi-red: #eb8278;
     --dya-ansi-green: #54bf6a;
@@ -115,7 +115,7 @@
     --dya-ansi-bright-magenta: #f2b2eb;
     --dya-ansi-bright-cyan: #6adef1;
 
-    --dya-field: #ea874b;
+    --dya-field: #d5936e;
     --dya-on-field: #181714;
 
     --dya-tag-bg: #e6e3db12;
@@ -183,7 +183,7 @@
 
     --dya-elev-focus:
         inset 0 2px 4px #000000cc,
-        0 0 0 1px #ea874b;
+        0 0 0 1px #d5936e;
 
     --dya-elev-popover:
         inset 0 1px 0 #ffffff26,
@@ -195,7 +195,7 @@
         0 0 0 1px #000000,
         0 24px 48px -12px #000000e6;
 
-    --dya-focus: #ea874b;
+    --dya-focus: #d5936e;
 
     --dya-press-y: 1px;
     --dya-press-y-key: 2px;
@@ -250,12 +250,12 @@
     --dya-accent-3: #7fd3b8;
     --dya-accent-3-soft: #7fd3b81f;
 
-    --dya-hue-amber: #daa752;
-    --dya-hue-mint: #5dc99e;
-    --dya-hue-cyan: #5bc1d9;
-    --dya-hue-blue: #91b2ec;
-    --dya-hue-violet: #bf9fec;
-    --dya-hue-pink: #ed8ebc;
+    --dya-hue-amber: #cdab77;
+    --dya-hue-mint: #80c1a5;
+    --dya-hue-cyan: #7fbccc;
+    --dya-hue-blue: #9cb2d9;
+    --dya-hue-violet: #baa6d9;
+    --dya-hue-pink: #db9bb9;
 
     --dya-ansi-red: #ec8d82;
     --dya-ansi-green: #58c66e;

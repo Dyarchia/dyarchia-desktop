@@ -229,9 +229,11 @@ newest release and nothing else.
 
 ### What an installed copy does with it
 
-The version in the top bar states which build is running. Eight seconds after start, and
-only in a packaged build, the shell asks GitHub whether there is a newer one; every release
-is a prerelease, so `allowPrerelease` is what makes one findable at all.
+The version in the top bar states which build is running. Only in a packaged build, the
+shell asks GitHub whether there is a newer one eight seconds after start, again every four
+hours, and when the window is returned to after half an hour away — never while an answer is
+already on screen or a download is under way. Every release is a prerelease, so
+`allowPrerelease` is what makes one findable at all.
 
 Nothing is downloaded without being asked. An update offers itself as one control beside
 the version -- `Update to <version>`, then the percentage, then `Restart to finish` --

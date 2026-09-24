@@ -15,6 +15,7 @@ import json
 import os
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -183,7 +184,9 @@ def _spawn(args: list[str], **extra: Any) -> subprocess.Popen[str]:
     """Run the CLI under the toolkit's own interpreter, with no console window of its own."""
     root = _toolkit_root()
     environment = dict(os.environ)
-    environment.update(PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1', COLUMNS=CONSOLE_WIDTH)
+    environment.update(
+        PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1', COLUMNS=CONSOLE_WIDTH, DYARCHIA_PROGRESS='1'
+    )
     environment.update(_installed_paths(root))
     return subprocess.Popen(
         [str(_interpreter(root)), '-m', 'dyarchia_crawlee', *args],
@@ -366,9 +369,22 @@ def _follow(ctx: Any, kind: str, process: subprocess.Popen[str]) -> None:
     end: a crawl the operator stops after twenty minutes should still have said what it found.
     """
     assert process.stdout is not None
+    started = time.monotonic()
+    tally = {'total': 0, 'done': 0, 'changed': 0, 'failed': 0}
     for line in process.stdout:
-        ctx.broadcast('line', line.rstrip('\n'))
+        line = line.rstrip('\n')
+        if line.startswith(PROGRESS_PREFIX):
+            try:
+                event = json.loads(line[len(PROGRESS_PREFIX):])
+            except json.JSONDecodeError:
+                ctx.broadcast('line', line)
+                continue
+            _count(tally, event)
+            ctx.broadcast('progress', event)
+            continue
+        ctx.broadcast('line', line)
     code = process.wait()
+    minutes = round((time.monotonic() - started) / 60)
 
     digest = None
     if kind == 'run' and code == 10:
@@ -383,8 +399,46 @@ def _follow(ctx: Any, kind: str, process: subprocess.Popen[str]) -> None:
             'code': code,
             'verdict': VERDICTS.get(code, f'exited with {code}'),
             'digest': digest,
+            'minutes': minutes,
+            **tally,
         },
     )
+    if kind == 'run' and code != 30:
+        ctx.notify(_finished_title(code, tally), _finished_body(tally, minutes))
+
+
+PROGRESS_PREFIX = '::progress:: '
+
+
+def _count(tally: dict[str, int], event: dict[str, Any]) -> None:
+    if event.get('event') == 'round':
+        tally['total'] = int(event.get('total') or 0)
+    elif event.get('event') == 'finished':
+        tally['done'] += 1
+        if event.get('error'):
+            tally['failed'] += 1
+        elif event.get('changed'):
+            tally['changed'] += 1
+
+
+def _finished_title(code: int, tally: dict[str, int]) -> str:
+    """What a round comes to, in the words a person needs when it finishes out of sight."""
+    if tally['failed']:
+        return 'Round finished with failures'
+    if tally['done'] < tally['total']:
+        return 'Round stopped'
+    if code == 1:
+        return 'Round finished with failures'
+    return 'Round finished'
+
+
+def _finished_body(tally: dict[str, int], minutes: int) -> str:
+    parts = [f"{tally['done']} of {tally['total']} targets"]
+    parts.append(f"{tally['changed']} changed")
+    if tally['failed']:
+        parts.append(f"{tally['failed']} failed")
+    parts.append(f'{minutes} min' if minutes else 'under a minute')
+    return ', '.join(parts)
 
 
 def _write_digest(ctx: Any) -> str | None:

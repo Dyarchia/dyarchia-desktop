@@ -134,6 +134,10 @@ const STYLE = `
     gap: var(--dya-space-2);
     flex: none;
 }
+.crw-meter {
+    flex-wrap: wrap;
+    max-width: 40%;
+}
 .crw-status {
     flex: 1;
     min-width: 120px;
@@ -536,6 +540,8 @@ function mount(ctx, container) {
         if (atBottom) sink.scrollTop = sink.scrollHeight
     })
 
+    const unsubscribeProgress = ctx.on('progress', (event) => roundsView.heard(event))
+
     const unsubscribeDone = ctx.on('done', (report) => {
         busy = false
         if (report.kind === 'run') roundsView.finished(report)
@@ -548,6 +554,7 @@ function mount(ctx, container) {
 
     return () => {
         unsubscribeLine()
+        unsubscribeProgress()
         unsubscribeDone()
         root.remove()
     }
@@ -673,7 +680,58 @@ function mount(ctx, container) {
         actionGroup.append(commitBox, run, stop)
 
         const status = el('span', 'dya-text crw-status', '')
-        bar.append(scopeGroup, actionGroup, status)
+        const meter = el('div', 'dya-meter crw-meter')
+        meter.hidden = true
+        bar.append(scopeGroup, actionGroup, meter, status)
+
+        /*
+         * Where a round is, said in the footer while it runs. A round of fourteen targets takes most
+         * of an hour, and all this said for that hour was the command it had started -- the reader
+         * could not tell a round on its last target from one on its first, or from one that had
+         * quietly finished while they were looking at another window. One pip per target, lit as
+         * each one ends; the target underway by name; the time it has been running.
+         */
+        const round = { total: 0, done: 0, changed: 0, failed: 0, current: '', started: 0, timer: 0 }
+
+        const elapsed = () => {
+            const seconds = Math.floor((Date.now() - round.started) / 1000)
+            return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+        }
+
+        const paintRound = () => {
+            status.className = 'dya-text crw-status'
+            const parts = [`Round running · ${round.done} of ${round.total || '…'}`]
+            if (round.current) parts.push(round.current)
+            if (round.changed) parts.push(`${round.changed} changed`)
+            if (round.failed) parts.push(`${round.failed} failed`)
+            parts.push(elapsed())
+            status.textContent = parts.join('  ·  ')
+        }
+
+        const pips = () => {
+            meter.replaceChildren()
+            for (let index = 0; index < round.total; index++) {
+                const pip = el('span', 'dya-meter__pip')
+                pip.dataset.on = String(index < round.done)
+                meter.appendChild(pip)
+            }
+            meter.hidden = round.total === 0
+        }
+
+        const heard = (event) => {
+            if (event.event === 'round') {
+                Object.assign(round, { total: event.total, done: 0, changed: 0, failed: 0, current: '' })
+            } else if (event.event === 'target') {
+                round.current = event.name
+            } else if (event.event === 'finished') {
+                round.done += 1
+                if (event.error) round.failed += 1
+                else if (event.changed) round.changed += 1
+                round.current = ''
+            }
+            pips()
+            paintRound()
+        }
 
         /*
          * Nothing sits here until a round writes something. The area used to carry a title and a
@@ -778,6 +836,10 @@ function mount(ctx, container) {
         }
 
         async function startRound() {
+            Object.assign(round, { total: 0, done: 0, changed: 0, failed: 0, current: '', started: Date.now() })
+            pips()
+            window.clearInterval(round.timer)
+            round.timer = window.setInterval(paintRound, 1000)
             const [kind, value] = scope.value.split(':')
             const payload = { commit: commit.checked }
             if (kind === 'group') payload.group = value
@@ -787,13 +849,32 @@ function mount(ctx, container) {
 
         return {
             refresh: refreshState,
+            heard,
+            /*
+             * How it ended, as the first thing on the line: finished, finished with failures, or
+             * stopped part way. The verdict the command reports, which is written for a scheduler,
+             * follows it rather than standing in for it.
+             */
             finished(report) {
+                window.clearInterval(round.timer)
                 stop.hidden = true
                 run.disabled = false
-                status.className = `dya-text crw-status ${report.code === 1 ? 'dya-text--danger' : ''}`
-                status.textContent = report.digest
-                    ? `${report.verdict}. Digest at ${report.digest}`
-                    : report.verdict
+                const total = report.total || round.total
+                const done = report.done ?? round.done
+                const stopped = total > 0 && done < total
+                const failed = (report.failed ?? round.failed) > 0 || (report.code === 1 && !stopped)
+                const at = new Date().toTimeString().slice(0, 5)
+                const head = failed ? 'Round finished with failures' : stopped ? 'Round stopped' : 'Round finished'
+                const parts = [`${head} at ${at}`]
+                if (total) parts.push(`${done} of ${total}`)
+                parts.push(`${report.changed ?? round.changed} changed`)
+                if (report.failed) parts.push(`${report.failed} failed`)
+                parts.push(report.minutes ? `${report.minutes} min` : elapsed())
+                if (report.digest) parts.push(`digest at ${report.digest}`)
+                status.className = `dya-text crw-status ${failed ? 'dya-text--danger' : stopped ? '' : 'dya-text--success'}`
+                status.textContent = parts.join('  ·  ')
+                round.done = done
+                pips()
                 void refreshState()
             },
         }

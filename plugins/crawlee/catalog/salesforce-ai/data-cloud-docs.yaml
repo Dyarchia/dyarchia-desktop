@@ -1,0 +1,18 @@
+name: data-cloud-docs
+group: salesforce-ai
+description: Data 360 developer documentation, formerly Data Cloud, from its published markdown
+sitemap_urls:
+  - https://developer.salesforce.com/docs/sitemap-contents-data-cloud.xml
+include:  # the sitemap also lists section roots, which publish no markdown at all
+  - 're:^https://developer\.salesforce\.com/docs/.*\.html$'
+exclude:  # measured 2026-08-22: 16 locales of agentforce-coworker/guide, 22 pages each, none with a markdown twin
+  - 're:^https://developer\.salesforce\.com/docs/data/[a-z]{2}-[a-z]{2}/'
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

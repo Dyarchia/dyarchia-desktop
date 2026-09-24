@@ -180,9 +180,26 @@ const STYLE = `
 }
 .crw-facts {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--dya-space-2);
+    gap: var(--dya-space-1) var(--dya-space-2);
     min-width: 0;
+}
+/*
+ * The group, the pages and the time are one line of data about the target, so they share its
+ * type, and the line wraps between them rather than cutting the last one off: a card too narrow
+ * for a salesforce-ai group, its pages and the time put the group on two lines and ended the time
+ * in an ellipsis.
+ */
+.crw-facts > .dya-legend {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-3);
+    white-space: nowrap;
+}
+.crw-facts > .dya-meta {
+    flex: none;
 }
 .crw-target,
 .crw-new {
@@ -510,7 +527,9 @@ function mount(ctx, container) {
     const groups = new Set()
     const groupTag = (group) => {
         const hue = ctx.hues([...groups])[group]
-        return el('span', `dya-tag dya-tag--hue dya-hue--${hue}`, group)
+        const legend = el('span', 'dya-legend')
+        legend.append(el('span', `dya-dot dya-hue--${hue}`), group)
+        return legend
     }
 
     const views = [
@@ -821,10 +840,10 @@ function mount(ctx, container) {
             }
             table.append(thead, body)
 
-            const swept = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
+            const sweptGroups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
             scope.replaceChildren()
             scope.appendChild(new Option('all targets', 'all'))
-            for (const group of swept) scope.appendChild(new Option(group, `group:${group}`))
+            for (const group of sweptGroups) scope.appendChild(new Option(group, `group:${group}`))
             for (const corpus of corpora) {
                 scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
             }
@@ -1212,14 +1231,14 @@ function mount(ctx, container) {
                     return
                 }
 
-                const swept = new Map()
+                const byName = new Map()
                 for (const repo of (state && state.repositories) || []) {
-                    for (const corpus of repo.corpora || []) swept.set(corpus.name, corpus)
+                    for (const corpus of repo.corpora || []) byName.set(corpus.name, corpus)
                 }
-                corpora = swept
+                corpora = byName
 
                 for (const profile of profiles) if (profile.group) groups.add(profile.group)
-                for (const profile of profiles) grid.appendChild(targetCard(profile, swept.get(profile.name)))
+                for (const profile of profiles) grid.appendChild(targetCard(profile, byName.get(profile.name)))
             } catch (error) {
                 grid.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
             }

@@ -673,7 +673,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (dispatching && meta) {
             const runner = resolveRunner(meta.runners, card.runners, status === 'review' ? 'review' : 'implement')
             node.who.replaceChildren(
-                el('span', `kanban-card-harness dya-hue--${harnessHues[runner.harness]}`, runner.harness),
+                (() => {
+                    const harness = el('span', 'dya-legend kanban-card-harness')
+                    harness.append(el('span', `dya-dot dya-hue--${harnessHues[runner.harness]}`), runner.harness)
+                    return harness
+                })(),
                 el('span', 'kanban-card-model', runner.model ?? 'default model')
             )
         }

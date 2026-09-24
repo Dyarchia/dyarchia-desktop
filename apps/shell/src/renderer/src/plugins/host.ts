@@ -127,6 +127,21 @@ async function invokeFor(id: string, channel: string, args: unknown[]): Promise<
     }
 }
 
+/*
+ * Each loaded plugin's face, from the first panel it registers, so a list of plugins can show the
+ * icon the plugin wears on its key and its tabs. A plugin that is not loaded has registered nothing
+ * and keeps its dot.
+ */
+const pluginIcons = new Map<string, string>()
+
+async function catalogue(): Promise<PluginCatalogue> {
+    const found = (await window.dyarchia!.invoke('shell:plugins:catalogue')) as PluginCatalogue
+    return {
+        ...found,
+        entries: found.entries.map((entry) => ({ ...entry, icon: pluginIcons.get(entry.manifest.id) }))
+    }
+}
+
 export async function loadPlugins(): Promise<void> {
     const bridge = window.dyarchia
     if (!bridge) return
@@ -139,11 +154,13 @@ export async function loadPlugins(): Promise<void> {
             await mod.activate({
                 pluginId: id,
                 token,
-                registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) =>
+                registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) => {
+                    if (!pluginIcons.has(id)) pluginIcons.set(id, descriptor.icon)
                     registerPanel(
                         { ...descriptor, hue: isHue(descriptor.hue) ? descriptor.hue : hue },
                         mount
-                    ),
+                    )
+                },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
@@ -152,8 +169,7 @@ export async function loadPlugins(): Promise<void> {
                 highlight,
                 hues,
                 shell: {
-                    catalogue: () =>
-                        bridge.invoke('shell:plugins:catalogue') as Promise<PluginCatalogue>,
+                    catalogue,
                     paths: () => bridge.invoke('shell:app:paths') as Promise<ShellPaths>,
                     enable: (ids) => bridge.invoke('shell:plugins:enable', ids) as Promise<string[]>,
                     relaunch: () => bridge.invoke('shell:app:relaunch') as Promise<void>,

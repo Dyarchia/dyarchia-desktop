@@ -1,5 +1,5 @@
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import { injectStyles } from '@dyarchia/sdk'
+import { brandIcon, injectStyles } from '@dyarchia/sdk'
 import type { PanelHandle, PluginContext } from '@dyarchia/sdk'
 import { installDrag } from './drag.js'
 import type { DragColumn } from './drag.js'
@@ -675,7 +675,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             node.who.replaceChildren(
                 (() => {
                     const harness = el('span', 'dya-legend kanban-card-harness')
-                    harness.append(el('span', `dya-dot dya-hue--${harnessHues[runner.harness]}`), runner.harness)
+                    const hue = `dya-hue--${harnessHues[runner.harness]}`
+                    const mark = brandIcon(runner.harness)
+                    const glyph = el('span', mark ? `dya-glyph ${hue}` : `dya-dot ${hue}`)
+                    if (mark) glyph.innerHTML = mark
+                    harness.append(glyph, runner.harness)
                     return harness
                 })(),
                 el('span', 'kanban-card-model', runner.model ?? 'default model')

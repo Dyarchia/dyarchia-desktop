@@ -186,14 +186,21 @@ function join(home: string, folder: string): string {
 }
 
 /*
- * A plugin's name beside the dot of its hue, the colour it wears on its key, its tile and its
- * tabs. This is the one screen that lists every plugin at once, so it is where a reader learns
- * which colour is which.
+ * A plugin's name beside its icon, in the hue it wears on its key, its tile and its tabs. This is
+ * the one screen that lists every plugin at once, so it is where a reader learns which face and
+ * which colour is which. A plugin that is not loaded has shown no icon yet and keeps the dot.
  */
 function named(entry: PluginCatalogueEntry, tag: string, className: string): HTMLElement {
     const name = el(tag, className)
     const inner = el('span', 'dya-legend')
-    if (isHue(entry.manifest.hue)) inner.append(el('span', `dya-dot dya-hue--${entry.manifest.hue}`))
+    const hue = isHue(entry.manifest.hue) ? ` dya-hue--${entry.manifest.hue}` : ''
+    if (entry.icon?.startsWith('<svg')) {
+        const glyph = el('span', `dya-glyph${hue}`)
+        glyph.innerHTML = entry.icon
+        inner.append(glyph)
+    } else if (hue) {
+        inner.append(el('span', `dya-dot${hue}`))
+    }
     inner.append(entry.manifest.name)
     name.append(inner)
     return name

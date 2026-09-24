@@ -162,6 +162,14 @@ Profiles section explains. The first `crawl --profile my-site --snapshot --commi
 then on, and the Setup panel of the desktop app never has to know, because it resolves the
 Python environment and not the corpus.
 
+**Or start from the profiles this plugin ships.** `catalog/` holds working profiles in two groups,
+`docs-labs` (the Claude, OpenAI, ChatGPT, Gemini, Mistral and xAI developer documentation) and
+`salesforce-ai` (Agentforce, Data 360, Einstein and the Multi-Framework guides). The panel's
+**Profile library**, on the Targets view, installs a group as a whole: into the repository that
+group already lives in, or into a new repository named after it under
+`DYARCHIA_CRAWLEE_REPOSITORIES_DIR`. A profile already on the disk is never replaced, because it may
+have been edited since. The next round crawls what was installed.
+
 
 ## Commands
 
@@ -467,6 +475,11 @@ waiting for the panel to be opened.
 The corpus in front of you, a round on a button, and a target written or edited without leaving the
 window. `uv sync --dev` here once, or the panel has no interpreter to call and says so. Restart the
 shell after changing `main.py`: main modules are imported once, at startup.
+
+Every command runs with this package's `src/` first on `PYTHONPATH`. An installed environment
+holds a copy of the package made when Setup built it, and an application update does not touch
+it, so without that the panel of a new release drove the CLI of whichever release built the
+environment. The environment is kept for the dependencies; the code is the code that shipped.
 
 Two things to know before using it. A round is one process, so stopping it kills the crawl where it
 stands, which is safe — the lock is released by the kernel and Crawlee's working directory is

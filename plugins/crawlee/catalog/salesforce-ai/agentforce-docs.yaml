@@ -1,0 +1,29 @@
+name: agentforce-docs
+group: salesforce-ai
+description: Agentforce developer documentation and HXL widgets, from the markdown developer.salesforce.com publishes for LLMs
+start_urls:
+  # HXL is in no sitemap at all: sitemap-contents-hxl.xml is 404 and neither salesforcedx nor
+  # lightning-type-systems lists it. It is only reachable by link, from the lightning-types pages
+  # this corpus already holds, so a sitemap-seeded profile would never find it. Named here instead.
+  # Both publish a markdown twin, checked 2026-09-04: 21 KB and 5 KB.
+  - https://developer.salesforce.com/docs/platform/hxl/guide/hxl-rich-ui.html
+  - https://developer.salesforce.com/docs/platform/hxl/references/hxl-reference-about/hxl-widgets-glossary.html
+sitemap_urls:
+  - https://developer.salesforce.com/docs/sitemap-contents-genai.xml  # 322 pages: developer guide, agent api, models api, dx, mobile sdk, agent script, testing api
+  - https://developer.salesforce.com/docs/sitemap-contents-agentforce-conversation-client.xml  # 11
+  - https://developer.salesforce.com/docs/sitemap-contents-agentforce-operations.xml  # 1
+  - https://developer.salesforce.com/docs/sitemap-contents-agentforce-partners.xml  # 7
+  - https://developer.salesforce.com/docs/sitemap-contents-hosted-mcp-servers.xml  # 52
+  - https://developer.salesforce.com/docs/sitemap-contents-lightning-type-systems.xml  # 15
+  - https://developer.salesforce.com/docs/sitemap-contents-data-ae.xml  # 40, agentic enterprise tutorials
+include:  # the sitemaps also list section roots, which publish no markdown at all
+  - 're:^https://developer\.salesforce\.com/docs/.*\.html$'
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

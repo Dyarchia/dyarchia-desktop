@@ -1,0 +1,17 @@
+name: einstein-apis
+group: salesforce-ai
+description: Einstein Vision and Language, and the Einstein Bots API that Agentforce grew out of
+sitemap_urls:
+  - https://developer.salesforce.com/docs/sitemap-contents-einstein-vision-language.xml  # 48
+  - https://developer.salesforce.com/docs/sitemap-contents-bot-api.xml  # 37
+include:  # the sitemaps also list section roots, which publish no markdown at all
+  - 're:^https://developer\.salesforce\.com/docs/.*\.html$'
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

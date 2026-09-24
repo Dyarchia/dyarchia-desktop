@@ -13,7 +13,9 @@
         "delete",
         "search",
         "start",
-        "stop"
+        "stop",
+        "catalog",
+        "install"
     ],
     "boot": true,
     "description": "A web scraping toolkit that snapshots documentation and reports what changed",
@@ -40,6 +42,7 @@
     ],
     "files": [
         "src",
+        "catalog",
         "pyproject.toml",
         "uv.lock",
         "README.md",

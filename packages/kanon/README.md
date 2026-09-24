@@ -222,6 +222,14 @@ shape, same offsets, same blur.
   pink     #ff71bb   6.89    5.66     4.53      #fe7fc0   7.18    5.27     4.05
   ```
 
+  **A hue is a mark, never a fill, and it is shown while it says something.** A dot beside a
+  name (`legend`), the underline of a selected tab, the icon of a key whose panel is open —
+  and nothing else. A key at rest is the quiet ink of every key, so the top bar's colour says
+  which panels are open rather than repeating a legend; a row carries its category as a dot and
+  its name in ordinary ink, and leaves the loud colour on the line to its state. A screen that
+  filled every category with its hue showed ten hues at once, and a fill is how a category
+  starts competing with a status for the same glance.
+
   A hue is assigned, never chosen per screen: a plugin declares one in its manifest, and a set
   of categories inside a plugin gets its hues from `ctx.hues`, which keeps a key's hue as long
   as the set does not force it to move. `tools/palette.py` is what solved them and what
@@ -436,8 +444,8 @@ Structure    pane bar (--flush --inset __group) card card__header masthead brand
 Pressable    button (--primary --success --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) checkbox form (__actions __push)
-Hue          hue--<name> pane--<name> dot   (amber mint cyan blue violet pink)
-Content      tag (--hue) badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
+Hue          hue--<name> pane--<name> dot legend   (amber mint cyan blue violet pink)
+Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
              pills table (__num __fit __key __name __end __prose) row (--selected)
              stat (__figure __value __unit __text __note) meter (__pip)
              title (--lg) lede text (--success --danger) label eyebrow value meta mono

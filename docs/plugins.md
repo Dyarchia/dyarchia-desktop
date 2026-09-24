@@ -147,11 +147,13 @@ build. It gives each of a set of things a plugin shows side by side — the grou
 corpora, the agents on its board — one of the six hues, distinct while there are six or
 fewer. A key keeps its hue across sessions and machines with nothing stored, and moves only
 when a key sorting before it arrives wanting the same one. The result is a name, used as
-`dya-hue--<name>`:
+`dya-hue--<name>` on a `dya-dot` beside the thing's name, never as a fill around it:
 
 ```typescript
 const colour = ctx.hues(groups)
-cell.append(el('span', `dya-tag dya-tag--hue dya-hue--${colour[group]}`, group))
+const legend = el('span', 'dya-legend')
+legend.append(el('span', `dya-dot dya-hue--${colour[group]}`), group)
+cell.append(legend)
 ```
 
 Hue is for which one, never for how it went: a state is a status badge, and the two are not

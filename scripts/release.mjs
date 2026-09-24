@@ -108,16 +108,30 @@ function refuseUnlessReleasable(tag) {
  * invisible to the updater, which is the one reader that matters.
  */
 function openRelease(tag) {
-    run('gh', [
-        'release',
-        'create',
-        tag,
-        '--prerelease',
-        '--title',
-        tag.replace(/^v/, ''),
-        '--notes',
-        `Alpha build ${tag.replace(/^v/, '')}.`
-    ])
+    run('gh', ['release', 'create', tag, '--prerelease', '--title', tag.replace(/^v/, ''), '--notes', notes(tag)])
+}
+
+/*
+ * The release page lists five things and a person wants one of them. The first reader of 0.2.7
+ * asked which to download, because the page said only that it was an alpha build: two of the
+ * assets exist for the updater and two are GitHub's own source archives, and nothing said so.
+ */
+function notes(tag) {
+    const version = tag.replace(/^v/, '')
+    return [
+        `Alpha build ${version}. Windows x64, unsigned.`,
+        '',
+        `**Download \`dyarchia-${version}-setup.exe\`** and run it. It installs for your user into`,
+        '`~/.dyarchia/app` without asking for elevation, and SmartScreen will warn about an unknown',
+        'publisher because the executable carries no code-signing certificate.',
+        '',
+        'An installed copy updates itself from here: it offers the newer version beside the version',
+        'number in its title bar. The other assets exist for that and are not for downloading by hand:',
+        '',
+        '- `latest.yml` is what an installed copy reads to learn that this version exists',
+        '- the `.blockmap` lets it download only what changed',
+        '- the source archives are the snapshot GitHub makes of every tag'
+    ].join('\n')
 }
 
 /*

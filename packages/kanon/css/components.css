@@ -1099,8 +1099,8 @@ textarea.dya-field {
  * Kinds that differ have to look different, and a system with six hues that lets a label reach
  * three of them has three it declared and never spends.
  *
- * `--dya-on-accent` over each fill: accent 6.88 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
- * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 6.67 / 6.12 /
+ * `--dya-on-accent` over each fill: accent 7.02 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
+ * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 6.80 / 6.12 /
  * 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
  */
 .dya-badge--accent {

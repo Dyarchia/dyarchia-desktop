@@ -119,7 +119,7 @@ const STYLE = `
  * the search view, the sheet's border in the target editor. Two rules twelve pixels apart with a
  * gap of background between them is not two boundaries; it is one boundary drawn twice.
  *
- * The selector used to say `.crw-view >`, which is narrower than the sentence above it and is why
+ * The selector used to say .crw-view >, which is narrower than the sentence above it and is why
  * the sheet drew the second line: its bar is the first child of the sheet, not of the view.
  */
 .crw-bar:first-child {

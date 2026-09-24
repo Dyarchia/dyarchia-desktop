@@ -396,8 +396,16 @@ function stateBadge(corpus) {
 }
 
 
-function day(iso) {
-    return iso ? String(iso).slice(0, 10) : '-'
+/*
+ * When a corpus was last swept, as the date and the minute on this machine's clock. It was the date
+ * alone, cut off the stored timestamp, and that timestamp is UTC: two rounds on one day read the
+ * same, and a round run at half past midnight in Madrid was dated the day before.
+ */
+function swept(iso) {
+    const at = iso ? new Date(iso) : null
+    if (!at || Number.isNaN(at.getTime())) return '-'
+    const two = (value) => String(value).padStart(2, '0')
+    return `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())} ${two(at.getHours())}:${two(at.getMinutes())}`
 }
 
 /*
@@ -803,7 +811,7 @@ function mount(ctx, container) {
                     groupCell,
                     el('td', 'dya-table__num', String(corpus.pages)),
                     el('td', 'dya-table__num', bytes(corpus.bytes)),
-                    el('td', undefined, day(corpus.swept_at)),
+                    el('td', undefined, swept(corpus.swept_at)),
                     verdictCell(corpus)
                 )
                 row.querySelectorAll('td').forEach((cell, column) => {
@@ -1247,7 +1255,7 @@ function mount(ctx, container) {
             if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
 
             const facts = corpus
-                ? [`${corpus.pages} pages`, day(corpus.swept_at)]
+                ? [`${corpus.pages} pages`, swept(corpus.swept_at)]
                 : [`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`]
             const line = el('div', 'crw-facts')
             if (profile.group) line.append(groupTag(profile.group))

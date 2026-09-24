@@ -222,11 +222,13 @@ ctx.notify({ title: 'the card is waiting on you', body: 'it wants permission', a
 ctx.on('notice', (action) => open((action as { cardId: string }).cardId))
 ```
 
-In Python the contract is the same with snake_case names and no `notify`:
+In Python the contract is the same, with `notify(title, body, action)` taking its three
+parts as arguments:
 
 ```python
 def activate(ctx):
     ctx.handle("greet", lambda name: f"hello {name}")
+    ctx.notify("Round finished", "14 of 14 targets, 13 changed, 51 min")
 ```
 
 - The shell spawns one interpreter per Python plugin and talks JSON lines over stdio.

@@ -3,6 +3,8 @@ import { spawn } from 'node:child_process'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { join, resolve } from 'node:path'
+import { showNotice } from './notices'
+import type { PluginNotice } from './notices'
 import { dataHome } from './paths'
 
 const READY_TIMEOUT_MS = 15_000
@@ -15,13 +17,14 @@ interface Pending {
 }
 
 interface HostMessage {
-    t: 'ready' | 'result' | 'error' | 'broadcast'
+    t: 'ready' | 'result' | 'error' | 'broadcast' | 'notice'
     id?: number
     plugin?: string
     channels?: string[]
     channel?: string
     args?: unknown[]
     result?: unknown
+    notice?: PluginNotice
     error?: string
 }
 
@@ -92,6 +95,10 @@ class PythonPlugin {
     }
 
     private receive(message: HostMessage): void {
+        if (message.t === 'notice') {
+            if (message.notice) showNotice(this.pluginId, message.notice)
+            return
+        }
         if (message.t === 'broadcast') {
             for (const win of BrowserWindow.getAllWindows()) {
                 win.webContents.send(

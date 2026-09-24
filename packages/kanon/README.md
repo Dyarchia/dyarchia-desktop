@@ -232,6 +232,11 @@ shape, same offsets, same blur.
   filled every category with its hue showed ten hues at once, and a fill is how a category
   starts competing with a status for the same glance.
 
+  **A thing with a face wears its face, not a dot.** `glyph` is the dot's place taken by an
+  icon: 14 px, drawn in `currentColor`, in the same hue. A plugin's tab and its row in Setup
+  carry the plugin's icon, a terminal running a known program carries that program's mark, and a
+  card carries its agent's. The dot stays for what has no face, such as a group of corpora.
+
   A hue is assigned, never chosen per screen: a plugin declares one in its manifest, and a set
   of categories inside a plugin gets its hues from `ctx.hues`, which keeps a key's hue as long
   as the set does not force it to move. `tools/palette.py` is what solved them and what

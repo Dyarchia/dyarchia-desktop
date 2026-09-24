@@ -1,6 +1,7 @@
 {
     "id": "settings",
     "name": "Setup",
+    "hue": "amber",
     "version": "0.1.0",
     "description": "Choose which plugins this installation loads, and install what each one needs",
     "renderer": "dist/renderer.js",

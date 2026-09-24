@@ -84,17 +84,40 @@
     --dya-dashed: #46413a;
     --dya-faint: #ffffff3b;
 
-    --dya-accent: #d97757;
-    --dya-accent-hover: #e2886a;
-    --dya-accent-soft: #d977571f;
-    --dya-accent-faint: #d977570f;
+    --dya-accent: #fe7802;
+    --dya-accent-hover: #fe9557;
+    --dya-accent-soft: #fe78021f;
+    --dya-accent-faint: #fe78020f;
     --dya-on-accent: #181714;
     --dya-accent-2: #6a9bcc;
     --dya-accent-2-soft: #6a9bcc1f;
     --dya-accent-3: #788c5d;
     --dya-accent-3-soft: #788c5d1f;
 
-    --dya-field: #d97757;
+    --dya-hue-fill: 8%;
+    --dya-hue-ground: 16%;
+    --dya-hue-edge: 40%;
+    --dya-hue-amber: #df9c02;
+    --dya-hue-mint: #0dc992;
+    --dya-hue-cyan: #07bfde;
+    --dya-hue-blue: #7caafe;
+    --dya-hue-violet: #c08eff;
+    --dya-hue-pink: #ff71bb;
+
+    --dya-ansi-red: #ff7267;
+    --dya-ansi-green: #02c650;
+    --dya-ansi-yellow: #c1a20b;
+    --dya-ansi-blue: #72a3fe;
+    --dya-ansi-magenta: #ff41f7;
+    --dya-ansi-cyan: #05b9cf;
+    --dya-ansi-bright-red: #ffb5ac;
+    --dya-ansi-bright-green: #08f364;
+    --dya-ansi-bright-yellow: #eec804;
+    --dya-ansi-bright-blue: #afcbfe;
+    --dya-ansi-bright-magenta: #fea8f6;
+    --dya-ansi-bright-cyan: #0fe3fe;
+
+    --dya-field: #fe7802;
     --dya-on-field: #181714;
 
     --dya-tag-bg: #e6e3db12;
@@ -151,7 +174,7 @@
 
     --dya-elev-focus:
         inset 0 2px 4px #000000cc,
-        0 0 0 1px #d97757;
+        0 0 0 1px #fe7802;
 
     --dya-elev-popover:
         inset 0 1px 0 #ffffff26,
@@ -163,7 +186,7 @@
         0 0 0 1px #000000,
         0 24px 48px -12px #000000e6;
 
-    --dya-focus: #d97757;
+    --dya-focus: #fe7802;
 
     --dya-press-y: 1px;
     --dya-press-y-key: 2px;
@@ -217,6 +240,26 @@
     --dya-accent-2-soft: #f0a45c1f;
     --dya-accent-3: #7fd3b8;
     --dya-accent-3-soft: #7fd3b81f;
+
+    --dya-hue-amber: #e7a203;
+    --dya-hue-mint: #0fd098;
+    --dya-hue-cyan: #03c6e6;
+    --dya-hue-blue: #86b1ff;
+    --dya-hue-violet: #c598ff;
+    --dya-hue-pink: #fe7fc0;
+
+    --dya-ansi-red: #ff7f73;
+    --dya-ansi-green: #01cd53;
+    --dya-ansi-yellow: #c9a90c;
+    --dya-ansi-blue: #7caafe;
+    --dya-ansi-magenta: #fe5bf6;
+    --dya-ansi-cyan: #11c0d6;
+    --dya-ansi-bright-red: #febfb7;
+    --dya-ansi-bright-green: #07fa68;
+    --dya-ansi-bright-yellow: #f5ce05;
+    --dya-ansi-bright-blue: #b9d2ff;
+    --dya-ansi-bright-magenta: #ffb4f7;
+    --dya-ansi-bright-cyan: #55e7fe;
 
     --dya-field: #74a9ff;
     --dya-on-field: #05080f;

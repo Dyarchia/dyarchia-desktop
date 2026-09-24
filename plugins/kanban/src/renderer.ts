@@ -6,6 +6,7 @@ import type { DragColumn } from './drag.js'
 import { openMenu, openSurface } from './menu.js'
 import type { MenuRow } from './menu.js'
 import { resolve as resolveRunner } from './runners.js'
+import { HARNESS_IDS } from './harness/ids.js'
 import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
@@ -337,6 +338,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     board.setAttribute('role', 'application')
     board.setAttribute('aria-label', 'task board')
 
+    /*
+     * Which agent a card goes to is the one thing on a card that tells two cards in the same
+     * column apart before their titles are read, and it was the quietest ink on the card. Each
+     * harness keeps one hue for as long as the list of harnesses does not change.
+     */
+    const harnessHues = ctx.hues(HARNESS_IDS)
+
     const drawer = el('aside', 'dya-sheet dya-sheet--side kanban-drawer')
     drawer.hidden = true
 
@@ -665,7 +673,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (dispatching && meta) {
             const runner = resolveRunner(meta.runners, card.runners, status === 'review' ? 'review' : 'implement')
             node.who.replaceChildren(
-                el('span', 'kanban-card-harness', runner.harness),
+                el('span', `kanban-card-harness dya-hue--${harnessHues[runner.harness]}`, runner.harness),
                 el('span', 'kanban-card-model', runner.model ?? 'default model')
             )
         }

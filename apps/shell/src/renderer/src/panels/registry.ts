@@ -9,6 +9,8 @@ export interface PanelDescriptor {
      */
     note?: string
     duplicable?: boolean
+    /* Filled from the plugin's manifest by the host, so a plugin's panels share its colour. */
+    hue?: string
 }
 
 export function basePanelId(instanceId: string): string {

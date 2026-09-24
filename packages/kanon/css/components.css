@@ -1084,6 +1084,15 @@ textarea.dya-field {
     height: 100%;
 }
 
+/*
+ * Somebody else's mark: the program a terminal runs, the agent a card goes to. It is theirs, not
+ * the panel's, so it never wears the panel's hue. A mark with colours of its own keeps them; a
+ * monochrome one takes the ink of the text beside it.
+ */
+.dya-glyph--mark {
+    color: inherit;
+}
+
 .dya-badge {
     display: inline-grid;
     place-items: center;

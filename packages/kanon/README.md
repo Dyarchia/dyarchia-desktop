@@ -236,6 +236,8 @@ shape, same offsets, same blur.
   icon: 14 px, drawn in `currentColor`, in the same hue. A plugin's tab and its row in Setup
   carry the plugin's icon, a terminal running a known program carries that program's mark, and a
   card carries its agent's. The dot stays for what has no face, such as a group of corpora.
+  `glyph--mark` is somebody else's mark and never wears a hue: in its own colours where it has
+  them, in the ink of the text beside it where it is monochrome.
 
   A hue is assigned, never chosen per screen: a plugin declares one in its manifest, and a set
   of categories inside a plugin gets its hues from `ctx.hues`, which keeps a key's hue as long

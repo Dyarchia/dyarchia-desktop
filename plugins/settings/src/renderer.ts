@@ -1,5 +1,5 @@
-import { injectStyles } from '@dyarchia/sdk'
-import type { PluginContext } from '@dyarchia/sdk'
+import { injectStyles, isHue } from '@dyarchia/sdk'
+import type { PluginCatalogueEntry, PluginContext } from '@dyarchia/sdk'
 
 /*
  * The panel that decides what this installation is.
@@ -122,6 +122,11 @@ const STYLES = `
 .set-title > .dya-badge {
     margin-inline-start: auto;
 }
+.set-named {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
 .set-needs {
     display: flex;
     flex-direction: column;
@@ -183,6 +188,20 @@ const STYLES = `
 /* A path under the data home, in whatever separator the shell just handed back. */
 function join(home: string, folder: string): string {
     return home.includes('\\') ? `${home}\\${folder}` : `${home}/${folder}`
+}
+
+/*
+ * A plugin's name beside the dot of its hue, the colour it wears on its key, its tile and its
+ * tabs. This is the one screen that lists every plugin at once, so it is where a reader learns
+ * which colour is which.
+ */
+function named(entry: PluginCatalogueEntry, tag: string, className: string): HTMLElement {
+    const name = el(tag, className)
+    const inner = el('span', 'set-named')
+    if (isHue(entry.manifest.hue)) inner.append(el('span', `dya-dot dya-hue--${entry.manifest.hue}`))
+    inner.append(entry.manifest.name)
+    name.append(inner)
+    return name
 }
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
@@ -339,7 +358,7 @@ export function activate(ctx: PluginContext): void {
 
             const body = el('div', 'set-body')
             const title = el('div', 'set-title')
-            title.append(el('strong', 'dya-text', entry.manifest.name))
+            title.append(named(entry, 'strong', 'dya-text'))
 
             const state = loadedIds.has(entry.manifest.id)
                 ? { text: 'loaded', kind: 'dya-badge--success' }
@@ -461,7 +480,7 @@ export function activate(ctx: PluginContext): void {
                 for (const entry of core) {
                     const row = el('tr', 'dya-row')
                     row.append(
-                        el('td', 'dya-table__name', entry.manifest.name),
+                        named(entry, 'td', 'dya-table__name'),
                         el('td', 'dya-table__prose', entry.manifest.description ?? '')
                     )
                     body.append(row)

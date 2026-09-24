@@ -232,9 +232,9 @@
  *
  * The strip is eleven pixels so it can be caught with a pointer and pulls its own height back out
  * of the layout with a negative margin, so adding one does not move what is above it. The grip is
- * a graphical object rather than text: `--dya-text-4` measures 6.70 on `--dya-surface-1` in Gi and
- * 8.04 in Rei, well clear of the 3.00 a mark has to make, and it takes `--dya-accent` under the
- * pointer and while dragging, 5.74 and 7.47 on the same ground. Arrow keys move it for anybody who
+ * a 64 by 4 pill in `--dya-text-3`, 8.95 on `--dya-surface-1` in Gi and 8.76 in Rei, because a
+ * handle is found before it is used; it takes `--dya-accent` under the pointer and while
+ * dragging, 6.53 and 7.06 on the same ground. Arrow keys move it for anybody who
  * is not holding one.
  */
 .dya-splitter {
@@ -252,10 +252,10 @@
 
 .dya-splitter::after {
     content: "";
-    width: 46px;
-    height: 3px;
+    width: 64px;
+    height: 4px;
     border-radius: var(--dya-radius-full);
-    background: var(--dya-text-4);
+    background: var(--dya-text-3);
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
@@ -548,7 +548,7 @@
     display: block;
     width: 18px;
     height: 18px;
-    color: var(--dya-accent);
+    color: var(--dya-hue, var(--dya-accent));
 }
 
 .dya-tile__icon > svg {
@@ -618,7 +618,7 @@
     background: transparent;
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
-    color: var(--dya-text-4);
+    color: var(--dya-hue, var(--dya-text-4));
     cursor: pointer;
     transition:
         transform var(--dya-dur-press) var(--dya-ease-press),
@@ -627,7 +627,7 @@
 
 .dya-key:hover {
     background-color: var(--dya-flat-hover);
-    color: var(--dya-text-2);
+    color: var(--dya-hue, var(--dya-text-2));
 }
 
 .dya-key:active {
@@ -635,8 +635,8 @@
 }
 
 .dya-key--active {
-    background: var(--dya-accent-soft);
-    color: var(--dya-accent);
+    background: color-mix(in oklab, var(--dya-hue, var(--dya-accent)) var(--dya-hue-ground), transparent);
+    color: var(--dya-hue, var(--dya-accent));
 }
 
 .dya-key > svg {
@@ -910,6 +910,55 @@ textarea.dya-field {
     color: var(--dya-text-2);
 }
 
+/*
+ * Hue is the categorical axis: which of several things of one kind this is -- which plugin, which
+ * group of corpora, which agent. It is not status, which has its own three tokens and its own
+ * filled badges, and it is not emphasis, which is the accent's. The six are solved rather than
+ * picked: one OKLCH lightness per theme, the most chroma each hue holds there, so they read as
+ * one family and none of them is louder than another. Every one is text from `--dya-bg` up to
+ * `--dya-raised` in both themes; above that it is a mark.
+ *
+ * `.dya-hue--<name>` sets `--dya-hue` on an element and nothing else. Components with one colour
+ * to give read it with their usual colour as the fallback, so a component with no hue anywhere
+ * above it draws exactly as it did. The pane variant sets a different property on purpose: a
+ * panel's hue colours its selected tabs, and must not leak into every key and tag inside it.
+ */
+.dya-hue--amber { --dya-hue: var(--dya-hue-amber); }
+.dya-hue--mint { --dya-hue: var(--dya-hue-mint); }
+.dya-hue--cyan { --dya-hue: var(--dya-hue-cyan); }
+.dya-hue--blue { --dya-hue: var(--dya-hue-blue); }
+.dya-hue--violet { --dya-hue: var(--dya-hue-violet); }
+.dya-hue--pink { --dya-hue: var(--dya-hue-pink); }
+
+.dya-pane--amber { --dya-pane-hue: var(--dya-hue-amber); }
+.dya-pane--mint { --dya-pane-hue: var(--dya-hue-mint); }
+.dya-pane--cyan { --dya-pane-hue: var(--dya-hue-cyan); }
+.dya-pane--blue { --dya-pane-hue: var(--dya-hue-blue); }
+.dya-pane--violet { --dya-pane-hue: var(--dya-hue-violet); }
+.dya-pane--pink { --dya-pane-hue: var(--dya-hue-pink); }
+
+/*
+ * A tag that says which one. The ink is the hue itself; the ground and the edge are the hue mixed
+ * into whatever the tag sits on, so it never needs a second token per hue. The fill is the most
+ * that keeps the ink text: at 8% the weakest case, pink in Rei, measures 4.66 over
+ * `--dya-surface-1`, `--dya-surface-2` and `--dya-raised`; at 14% it fell to 4.20.
+ */
+.dya-tag--hue {
+    border-color: color-mix(in oklab, var(--dya-hue) var(--dya-hue-edge), transparent);
+    background: color-mix(in oklab, var(--dya-hue) var(--dya-hue-fill), transparent);
+    color: var(--dya-hue);
+}
+
+/* The hue with nothing to read: beside a name in a list, a legend, a row that is one of a set. */
+.dya-dot {
+    display: inline-block;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-hue, var(--dya-text-4));
+}
+
 .dya-badge {
     display: inline-grid;
     place-items: center;
@@ -945,8 +994,8 @@ textarea.dya-field {
  * Kinds that differ have to look different, and a system with six hues that lets a label reach
  * three of them has three it declared and never spends.
  *
- * `--dya-on-accent` over each fill: accent 5.74 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
- * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 5.74 / 6.12 /
+ * `--dya-on-accent` over each fill: accent 6.74 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
+ * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 6.53 / 6.12 /
  * 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
  */
 .dya-badge--accent {
@@ -1381,7 +1430,7 @@ textarea.dya-field {
 }
 
 .dya-tab[aria-selected="true"] {
-    border-bottom-color: var(--dya-accent);
+    border-bottom-color: var(--dya-pane-hue, var(--dya-accent));
     color: var(--dya-text);
 }
 

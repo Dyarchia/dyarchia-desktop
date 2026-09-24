@@ -1,6 +1,10 @@
 export { highlight, highlightLines } from './highlight.js'
 export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
+export { HUES, hues, isHue } from './hues.js'
+export type { Hue } from './hues.js'
+
+import type { Hue } from './hues.js'
 
 export interface PanelDescriptor {
     id: string
@@ -9,6 +13,11 @@ export interface PanelDescriptor {
     /* One line saying what this panel is for, shown on its tile when nothing is open. */
     note?: string
     duplicable?: boolean
+    /*
+     * Which hue identifies this panel. Leave it out: the shell fills it from the plugin's manifest,
+     * so a plugin's panels share its colour without restating it.
+     */
+    hue?: Hue
 }
 
 export type PanelDispose = () => void
@@ -38,6 +47,7 @@ export interface PluginCatalogueEntry {
         version: string
         description?: string
         data?: string
+        hue?: Hue
         requires?: PluginRequirement[]
     }
     directory: string
@@ -71,8 +81,8 @@ export interface OpenerDescriptor {
 }
 
 /*
- * Where this installation keeps things. `dataHome` is the one a user opens: a folder under
- * Documents, named after the application, holding whatever a plugin produces on their behalf. A
+ * Where this installation keeps things. `dataHome` is the one a user opens: `data/` under the
+ * application's one root, `~/.dyarchia`, holding whatever a plugin produces on their behalf. A
  * plugin that writes something durable puts it there rather than beside its own code, which in a
  * packaged build is a directory it does not own and must not assume will still exist.
  */
@@ -115,6 +125,12 @@ export interface PluginContext {
      * showing code gets kanon's measured hues either way, and neither way carries a library.
      */
     highlight(source: string, language?: string): string
+    /*
+     * A hue for each of a set of things this plugin shows side by side -- the groups of its
+     * corpora, the agents on its board. The same function this package exports, handed over for
+     * the plugin with no build step, like `highlight`.
+     */
+    hues(keys: Iterable<string>): Record<string, Hue>
     shell: ShellApi
 }
 

@@ -197,13 +197,13 @@ export const STYLES = `
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
-.kanban-card:hover { background: var(--dya-flat-hover); }
+.kanban-card:hover { background-color: var(--dya-flat-hover); }
 .kanban-card[data-selected='true'] { border-color: var(--dya-accent); }
 .kanban-card[data-dragging='true'] { opacity: 0.35; }
 .kanban-card[data-pending='true'] { opacity: 0.6; cursor: progress; }
 .kanban-card[data-locked='true'] { cursor: default; }
 .kanban-card[data-problem='true'] { border-color: var(--dya-danger); }
-.kanban-card[data-marked='true'] { background: var(--dya-accent-soft); }
+.kanban-card[data-marked='true'] { background-color: var(--dya-accent-soft); }
 
 .kanban-marks {
     flex: 0 0 auto;

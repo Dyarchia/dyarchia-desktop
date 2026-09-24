@@ -321,6 +321,17 @@
     box-shadow: var(--dya-elev-flat);
 }
 
+/*
+ * A card that is itself the thing pressed or picked up: a kanban card opens its drawer and
+ * is dragged between columns. It stands off the board the way a button stands off a bar. Its
+ * border stays, because a card reports selection and trouble through its edge, so the lift
+ * has no contour ring of its own; a second ring beside the border would be a double edge.
+ */
+.dya-card--lift {
+    background-image: var(--dya-face);
+    box-shadow: var(--dya-elev-lift);
+}
+
 .dya-card__header {
     display: flex;
     align-items: center;
@@ -418,6 +429,7 @@
 
 .dya-button[aria-pressed="true"] {
     box-shadow: var(--dya-elev-pressed);
+    background-image: none;
 }
 
 .dya-button:disabled {
@@ -615,7 +627,8 @@
     padding: 0;
     border: none;
     border-radius: var(--dya-radius);
-    background: transparent;
+    background: var(--dya-raised);
+    box-shadow: var(--dya-elev-raised);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
     color: var(--dya-hue, var(--dya-text-4));
@@ -626,7 +639,7 @@
 }
 
 .dya-key:hover {
-    background-color: var(--dya-flat-hover);
+    background-color: var(--dya-raised-hover);
     color: var(--dya-hue, var(--dya-text-2));
 }
 
@@ -634,8 +647,11 @@
     transform: translateY(var(--dya-press-y-key));
 }
 
-.dya-key--active {
-    background: color-mix(in oklab, var(--dya-hue, var(--dya-accent)) var(--dya-hue-ground), transparent);
+.dya-key--active,
+.dya-key--active:hover {
+    background-color: color-mix(in oklab, var(--dya-hue, var(--dya-accent)) var(--dya-hue-ground), var(--dya-sunken));
+    background-image: none;
+    box-shadow: var(--dya-elev-pressed);
     color: var(--dya-hue, var(--dya-accent));
 }
 
@@ -665,9 +681,10 @@
     place-items: center;
     height: 22px;
     padding: 0 var(--dya-space-3);
-    border: var(--dya-border-width) solid var(--dya-border);
+    border: none;
     border-radius: var(--dya-radius-full);
-    background: transparent;
+    background: var(--dya-raised);
+    box-shadow: var(--dya-elev-raised);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
@@ -679,7 +696,7 @@
 }
 
 .dya-chip:hover {
-    background-color: var(--dya-flat-hover);
+    background-color: var(--dya-raised-hover);
 }
 
 .dya-chip:active {
@@ -1326,6 +1343,34 @@ textarea.dya-field {
     z-index: 19;
     background: var(--dya-scrim);
     animation: dya-fade-in var(--dya-dur-fast) var(--dya-ease-out);
+}
+
+/*
+ * Relief is one recipe, and everything that presses wears all of it.
+ *
+ * A face lit from above -- `--dya-face`, a sheen over whatever ground the control has, so a
+ * primary, a danger and a plain button all catch the same light -- a lit top edge and a shaded
+ * bottom edge, the contour ring, a contact shadow and a short cast. Pressing takes all of it away
+ * at once and sinks the control into `--dya-elev-pressed`: a well with its lip catching light
+ * below. The change is instant because a transition may not name `box-shadow`; the translation
+ * that carries the press is what animates.
+ *
+ * Every layer is static. It is painted when the control is, never per frame, so a panel of it
+ * scrolls at the rate a panel without it does; the measurement is in the README.
+ */
+.dya-button:not(.dya-button--bare),
+.dya-tile,
+.dya-chip,
+.dya-key:not(.dya-key--active) {
+    background-image: var(--dya-face);
+}
+
+.dya-button:not(.dya-button--bare):active,
+.dya-tile:active,
+.dya-chip:active,
+.dya-key:active {
+    background-image: none;
+    box-shadow: var(--dya-elev-pressed);
 }
 
 /*

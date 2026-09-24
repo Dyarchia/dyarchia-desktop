@@ -200,7 +200,7 @@ export function TopBar({
 
     return (
         <div className="dya-bar dya-bar--flush topbar">
-            <span className="dya-brand">dyarchia</span>
+            <span className="dya-brand">Dyarchia desktop</span>
             <Build />
             <div className="topbar-right">
                 <div className="topbar-actions">

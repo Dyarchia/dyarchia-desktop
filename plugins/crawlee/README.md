@@ -369,6 +369,15 @@ through its exit code:
     1       at least one target failed, so the sweep cannot vouch for itself
     30      another round already holds the lock
 
+**A round says where it is, to a panel.** With `DYARCHIA_PROGRESS=1` in its environment,
+`watch` prints one `::progress::` line of JSON as the round starts (`round`, with the number of
+targets), as each target begins (`target`) and as it ends (`finished`, with its pages, whether
+it changed and any error). The desktop panel sets the variable and turns the lines into a pip
+per target, the target underway and the time running, and says how the round ended as the
+first words of its status: finished, finished with failures, or stopped part way. When it
+ends out of sight it says so as a system notification. Without the variable nothing is
+printed, so a terminal or a scheduler reads exactly what it always has.
+
 - **A first snapshot is not a change.** There is nothing yet for it to differ from, and a monitor
   that cries on its own first run teaches you to ignore it.
 - **Neither is a reordering.** A page whose lines are the same in a different order is classified

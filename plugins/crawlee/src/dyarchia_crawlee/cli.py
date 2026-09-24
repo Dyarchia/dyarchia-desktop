@@ -909,8 +909,11 @@ def watch_command(
         error_console.print(f'[bold red]{whose}, so there is nothing to watch[/bold red]')
         raise typer.Exit(code=1)
 
+    total = sum(len(selected) for _, selected in covered)
+    _progress('round', total=total, repositories=len(covered))
+    counter = [0]
     codes = [
-        _one_round(repository, selected, group, commit, named=len(covered) > 1)
+        _one_round(repository, selected, group, commit, len(covered) > 1, counter, total)
         for repository, selected in covered
     ]
     raise typer.Exit(code=max(codes, key=_exit_rank))
@@ -932,7 +935,29 @@ def _exit_rank(code: int) -> int:
     return _EXIT_RANK.get(code, len(_EXIT_RANK))
 
 
-def _one_round(settings: Settings, selected: list[str], group: str | None, commit: bool, named: bool) -> int:
+PROGRESS_PREFIX = '::progress:: '
+
+
+def _progress(event: str, **data: Any) -> None:
+    """One line a panel can read, and only when a panel is the one asking.
+
+    The desktop plugin sets DYARCHIA_PROGRESS and turns these lines into a headline; a person
+    at a terminal never sees them, because the report at the end is already what they read.
+    """
+    if os.environ.get('DYARCHIA_PROGRESS') != '1':
+        return
+    print(PROGRESS_PREFIX + json.dumps({'event': event, **data}, default=str), flush=True)
+
+
+def _one_round(
+    settings: Settings,
+    selected: list[str],
+    group: str | None,
+    commit: bool,
+    named: bool,
+    counter: list[int] | None = None,
+    total: int = 0,
+) -> int:
     """Sweep one repository, report it, and hand back its exit code.
 
     Named when the request covered more than one, because two reports in a row with nothing between
@@ -945,7 +970,23 @@ def _one_round(settings: Settings, selected: list[str], group: str | None, commi
     key = group or locking.EVERYTHING
     try:
         with locking.hold(key, f'watch {" ".join(selected)}'[:120], settings):
-            result = asyncio.run(sweep(selected, settings))
+            counter = counter if counter is not None else [0]
+
+            def announce(moment: str, entry: Any) -> None:
+                if moment == 'start':
+                    counter[0] += 1
+                    _progress('target', name=entry.name, index=counter[0], total=total or len(selected))
+                    return
+                _progress(
+                    'finished',
+                    name=entry.name,
+                    group=entry.group,
+                    pages=entry.pages,
+                    changed=bool(entry.added or entry.removed or entry.modified),
+                    error=entry.error,
+                )
+
+            result = asyncio.run(sweep(selected, settings, announce))
             document = save_report(result, settings)
     except locking.RoundInProgressError as busy:
         error_console.print(f'[bold yellow]{busy}[/bold yellow]')

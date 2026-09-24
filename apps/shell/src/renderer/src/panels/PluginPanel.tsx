@@ -12,7 +12,8 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
         if (!registered || !container) return
         const dispose = registered.mount(container, {
             instanceId: props.api.id,
-            close: () => props.api.close()
+            close: () => props.api.close(),
+            setTitle: (title) => props.api.setTitle(title ?? registered.descriptor.title)
         })
         return () => {
             dispose?.()

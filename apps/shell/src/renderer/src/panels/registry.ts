@@ -23,6 +23,7 @@ export type PanelDispose = () => void
 export interface PanelHandle {
     readonly instanceId: string
     close(): void
+    setTitle(title: string | null): void
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void

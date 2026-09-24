@@ -580,7 +580,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildCard = (card: Card): CardNode => {
-        const shell = el('article', 'dya-card kanban-card')
+        const shell = el('article', 'dya-card dya-card--lift kanban-card')
         shell.dataset.card = card.id
         shell.setAttribute('role', 'listitem')
         shell.tabIndex = -1

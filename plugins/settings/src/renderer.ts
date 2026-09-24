@@ -122,11 +122,6 @@ const STYLES = `
 .set-title > .dya-badge {
     margin-inline-start: auto;
 }
-.set-named {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-}
 .set-needs {
     display: flex;
     flex-direction: column;
@@ -197,7 +192,7 @@ function join(home: string, folder: string): string {
  */
 function named(entry: PluginCatalogueEntry, tag: string, className: string): HTMLElement {
     const name = el(tag, className)
-    const inner = el('span', 'set-named')
+    const inner = el('span', 'dya-legend')
     if (isHue(entry.manifest.hue)) inner.append(el('span', `dya-dot dya-hue--${entry.manifest.hue}`))
     inner.append(entry.manifest.name)
     name.append(inner)

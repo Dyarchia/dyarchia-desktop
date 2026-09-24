@@ -240,7 +240,7 @@ export const STYLES = `
 
 .kanban-card-who[hidden] { display: none; }
 
-.kanban-card-harness { color: var(--dya-hue, var(--dya-text-4)); }
+.kanban-card-harness { color: var(--dya-text-4); }
 
 .kanban-card-model { color: var(--dya-text-2); }
 

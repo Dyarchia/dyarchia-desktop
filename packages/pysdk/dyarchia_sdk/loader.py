@@ -13,7 +13,9 @@ ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]*$")
 
 
 def load_plugin(
-    plugin_dir: Path, publish: Callable[[str, list[Any]], None]
+    plugin_dir: Path,
+    publish: Callable[[str, list[Any]], None],
+    notice: Callable[[dict[str, Any]], None] | None = None,
 ) -> tuple[str, PluginContext]:
     manifest = json.loads((plugin_dir / MANIFEST_FILE).read_text(encoding="utf-8"))
     plugin_id = manifest.get("id", "")
@@ -26,7 +28,7 @@ def load_plugin(
     if not module_path.is_file():
         raise FileNotFoundError(module_path)
 
-    context = PluginContext(plugin_id, publish)
+    context = PluginContext(plugin_id, publish, notice)
     module_name = f"dyarchia_plugin_{plugin_id.replace('-', '_')}"
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:

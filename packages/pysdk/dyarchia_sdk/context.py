@@ -4,9 +4,15 @@ from typing import Any
 
 
 class PluginContext:
-    def __init__(self, plugin_id: str, publish: Callable[[str, list[Any]], None]) -> None:
+    def __init__(
+        self,
+        plugin_id: str,
+        publish: Callable[[str, list[Any]], None],
+        notice: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
         self.plugin_id = plugin_id
         self._publish = publish
+        self._notice = notice
         self._handlers: dict[str, Callable[..., Any]] = {}
 
     def handle(self, channel: str, handler: Callable[..., Any]) -> None:
@@ -14,6 +20,13 @@ class PluginContext:
 
     def broadcast(self, channel: str, *args: Any) -> None:
         self._publish(channel, list(args))
+
+    def notify(self, title: str, body: str = "", action: Any = None) -> None:
+        """Tell the person, not the panel: the shell's notice, and the system's when the window
+        is not in front. The same contract a Node main module has in `ctx.notify`, for the
+        thing that finishes while nobody is watching -- a crawl, a build, a long probe."""
+        if self._notice is not None:
+            self._notice({"title": title, "body": body, "action": action})
 
     @property
     def channels(self) -> Iterable[str]:

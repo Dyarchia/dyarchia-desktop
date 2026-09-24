@@ -19,6 +19,7 @@ from crawlee.request_loaders import RequestManager
 from dyarchia_crawlee.config import Settings
 from dyarchia_crawlee.crawlers.adaptive import make_result_checker
 from dyarchia_crawlee.crawlers.hooks import make_resource_blocker
+from dyarchia_crawlee.crawlers.retries import install as announce_retries
 from dyarchia_crawlee.crawlers.settings import build_concurrency, build_http_client, effective_user_agent
 from dyarchia_crawlee.errors import ConfigurationError
 from dyarchia_crawlee.models import CrawlerKind, RunSpec
@@ -36,15 +37,17 @@ def _common_options(
         'request_manager': request_manager,
         'http_client': build_http_client(spec, settings),
         'concurrency_settings': build_concurrency(spec, settings),
-        'max_request_retries': (
-            settings.max_request_retries if spec.max_request_retries is None else spec.max_request_retries
-        ),
+        'max_request_retries': _retries(spec, settings),
         'max_requests_per_crawl': spec.max_pages,
         'max_crawl_depth': spec.max_depth if spec.max_depth > 0 else None,
         'request_handler_timeout': timedelta(seconds=settings.request_timeout_seconds),
         'respect_robots_txt_file': spec.respect_robots,
         **({'ignore_http_error_status_codes': {404}} if _404_is_an_answer(spec) else {}),
     }
+
+
+def _retries(spec: RunSpec, settings: Settings) -> int:
+    return settings.max_request_retries if spec.max_request_retries is None else spec.max_request_retries
 
 
 def _404_is_an_answer(spec: RunSpec) -> bool:
@@ -109,6 +112,7 @@ def build_crawler(
 
     crawler = _instantiate(spec, settings, request_manager)
     crawler.router.default_handler(handler)
+    announce_retries(crawler, _retries(spec, settings))
 
     if failure_handler is not None:
         crawler.failed_request_handler(failure_handler)

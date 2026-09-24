@@ -516,6 +516,20 @@ opposite cases. Crawlee's crawl-delay warning is *wrong* on the seeded path and 
 only. This one is right, and is dropped because being right about an anchor nobody can act on is
 not worth burying the round in.
 
+**A retry is rewritten, not dropped.** Crawlee's own line, `Retrying request to <url> due to:
+<message>`, printed `due to: .` whenever the error carried no text, which is what a connection the
+server drops mid-response raises, followed by a fragment of asyncio's event loop. It is replaced by
+one line per attempt:
+
+```text
+[HttpCrawler] WARN  retry 1 of 3 · [WinError 10054] An existing connection was forcibly closed · <url>
+```
+
+The reason is the first message found down the exception chain, which is usually the socket error
+the HTTP client wrapped; a chain with no message anywhere is named by what it is. A retry is not a
+failure: only a URL that exhausts its attempts counts in `requests_failed`. The panel's console
+renders the colours the crawler writes rather than printing their escapes.
+
 
 ## A 404 is an answer, not a fault
 

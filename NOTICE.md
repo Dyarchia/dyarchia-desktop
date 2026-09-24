@@ -1,6 +1,6 @@
 # Third-party notices
 
-dyarchia is MIT licensed; see [LICENSE](LICENSE). It is built on, and ships with, work that
+Dyarchia desktop is MIT licensed; see [LICENSE](LICENSE). It is built on, and ships with, work that
 belongs to other people. This file says whose.
 
 ## Crawlee

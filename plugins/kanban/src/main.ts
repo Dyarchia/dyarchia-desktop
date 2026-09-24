@@ -33,7 +33,7 @@ let host: UtilityProcess | null = null
 function ptyHost(): UtilityProcess {
     if (host) return host
     const spawned = utilityProcess.fork(join(import.meta.dirname, 'ptyhost.cjs'), [], {
-        serviceName: 'dyarchia kanban pty host'
+        serviceName: 'Dyarchia desktop kanban pty host'
     })
     spawned.on('exit', () => {
         if (host === spawned) host = null

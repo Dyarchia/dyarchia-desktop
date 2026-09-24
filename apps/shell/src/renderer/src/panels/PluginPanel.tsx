@@ -4,6 +4,7 @@ import { getPanel } from './registry'
 
 export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
     const containerRef = useRef<HTMLDivElement>(null)
+    const hue = getPanel(props.api.id)?.descriptor.hue
 
     useEffect(() => {
         const registered = getPanel(props.api.id)
@@ -19,5 +20,10 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
         }
     }, [props.api.id])
 
-    return <div ref={containerRef} className="dya-pane plugin-panel-container" />
+    return (
+        <div
+            ref={containerRef}
+            className={`dya-pane plugin-panel-container${hue ? ` dya-pane--${hue}` : ''}`}
+        />
+    )
 }

@@ -178,6 +178,9 @@ export function activate(ctx: PluginContext): void {
   its own mount and dispose; the instance id is `<id>#<n>` and the plugin never handles it.
 - `dispose` must release everything: observers, `on()` subscriptions, sessions opened
   through `invoke`.
+- `handle.close()` closes the panel; `handle.setTitle(title)` renames its tab while something
+  more specific is true, such as the program a terminal is running, and `setTitle(null)` puts
+  the descriptor's title back. A saved layout reopens with the descriptor's title.
 - **`ctx.token` returns a copy, so it goes stale when the theme changes.** Pair it with
   `ctx.onThemeChange`, resolve again in the listener, unsubscribe from the dispose. It
   exists for what `var()` cannot reach — a canvas, a WebGL context, xterm's theme object.

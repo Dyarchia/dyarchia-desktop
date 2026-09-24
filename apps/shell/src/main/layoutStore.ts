@@ -1,9 +1,10 @@
 import { app, ipcMain } from 'electron'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { workspaceHome } from './paths'
 
 function layoutPath(): string {
-    return join(app.getPath('userData'), 'layout.json')
+    return join(workspaceHome() ?? app.getPath('userData'), 'layout.json')
 }
 
 export function registerLayoutStore(): void {

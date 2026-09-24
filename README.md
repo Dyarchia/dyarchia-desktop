@@ -306,7 +306,8 @@ somebody presses the button, and every step skips what the machine already has.
 
     Data                  Path
     ------------------    -------------------------------------------
-    Layout                <root>/layout.json
+    Layout                <root>/layout.json, <root>/workspace/layout.json in dev
+    Chromium profile      <root>, <root>/workspace/ in dev
     Enabled plugins       <root>/plugins.json
     Acquired tools        <root>/tools/
     Plugin environments   <root>/environments/<id>/.venv
@@ -321,6 +322,12 @@ somebody presses the button, and every step skips what the machine already has.
 this application keeps: one place to look, one to back up, one to delete. `DYARCHIA_HOME`
 moves it, and an explicit Chromium `--user-data-dir` still wins, which is how a second
 instance runs against a throwaway profile.
+
+A workspace build (`pnpm dev`) runs beside an installed copy as a matter of course, so it keeps
+its Chromium profile and its layout in `<root>/workspace/`: the profile is locked by whichever
+instance opened it first, and each window rewrites the layout with its own panels. Its first
+launch copies the shared layout. The theme choice lives in that profile, so dev keeps its own.
+Everything else, boards, environments, offers and corpora, is shared.
 
 It was two roots until 0.2.0-alpha, and both were places nobody chose. Electron's default
 `userData` is `%APPDATA%/dyarchia`, where nobody navigates; and `app.getPath('documents')` is

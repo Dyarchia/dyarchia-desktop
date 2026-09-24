@@ -87,7 +87,7 @@ token           value       bg   surf-1   raised   overlay   raised-hover   sele
 --dya-text-2    #d3d0c8  13.63    11.27     9.25      8.51           8.01       7.40
 --dya-text-3    #bdbab2  10.83     8.95     7.35      6.77           6.36       5.88
 --dya-text-4    #a19e96   7.85     6.49     5.33      4.90           4.61       4.26
---dya-accent    #d97757   6.73     5.56     4.57      4.20           3.95       3.65
+--dya-accent    #fe7802   7.90     6.53     5.36      4.94           4.64       4.29
 --dya-accent-2  #6a9bcc   7.17     5.93     4.87      4.48           4.21       3.90
 --dya-accent-3  #788c5d   5.71     4.72     3.88      3.57           3.35       3.10
 ```
@@ -95,9 +95,12 @@ token           value       bg   surf-1   raised   overlay   raised-hover   sele
 Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.26;
 on that surface the label level is `--dya-text-3`.
 
-`--dya-accent` is the primary: text up to and including `--dya-surface-2` at 5.21, a graphical
-object above it — which is where an icon, a dot or a focus ring may still wear it. It is also `--dya-field`, where `--dya-on-field` `#181714` measures 5.74
-against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
+`--dya-accent` is the primary, a straight orange at OKLCH 0.72 / 0.190 / 50: text up to and
+including `--dya-raised` at 5.36, a graphical object above it — which is where an icon, a dot
+or a focus ring may still wear it. Its hue sits 23 degrees from `--dya-danger`, and that
+distance is the reason it is 50 and not the 39 of a warmer coral: at this chroma an accent
+twelve degrees from red reads as stop. It is also `--dya-field`, where `--dya-on-field`
+`#181714` measures 6.74 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
 right choice for a link, a selected state or an informational mark. `--dya-accent-3` is
 the weakest ink in the system: text on the canvas, the sunken step, the chassis,
 `--dya-surface-1` at 4.72, and nowhere else: on `--dya-surface-2` it measures 4.42 and stops
@@ -196,8 +199,39 @@ shape, same offsets, same blur.
 - **A badge may wear an accent as well as a status.** A status says how something turned out;
   an accent says what kind of thing it is, and a system with six hues that let a label reach
   three has three it declared and never spends. `--dya-on-accent` over each fill measures
-  5.74 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
-  5.74 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
+  6.74 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
+  6.53 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
+
+- **Hue says which one; the accent says what matters; status says how it went.** Three axes,
+  never mixed. Six categorical hues — amber, mint, cyan, blue, violet, pink — mark which of
+  several things of one kind something is: which plugin, which group of corpora, which agent.
+  They are solved rather than picked: one OKLCH lightness per theme, 0.74 in Gi and 0.76 in
+  Rei, and the most chroma each hue holds there inside sRGB, so they read as one family and
+  none is louder than another. At a lower lightness the dark hues stop being text on
+  `--dya-raised`; at a higher one blue, violet and pink bleach towards pastel. Every hue is text
+  from `--dya-bg` to `--dya-raised` in both themes and a mark above it:
+
+  ```text
+  hue      Gi        sf-1   raised  selected    Rei       sf-1   raised  selected
+  ------   -------   ----   ------  --------    -------   ----   ------  --------
+  amber    #df9c02   7.35    6.04     4.83      #e7a203   7.62    5.59     4.30
+  mint     #0dc992   8.09    6.64     5.32      #0fd098   8.36    6.14     4.72
+  cyan     #07bfde   7.87    6.46     5.17      #03c6e6   8.14    5.98     4.59
+  blue     #7caafe   7.47    6.14     4.91      #86b1ff   7.76    5.70     4.38
+  violet   #c08eff   7.07    5.81     4.65      #c598ff   7.42    5.44     4.18
+  pink     #ff71bb   6.89    5.66     4.53      #fe7fc0   7.18    5.27     4.05
+  ```
+
+  A hue is assigned, never chosen per screen: a plugin declares one in its manifest, and a set
+  of categories inside a plugin gets its hues from `ctx.hues`, which keeps a key's hue as long
+  as the set does not force it to move. `tools/palette.py` is what solved them and what
+  re-solves them when a surface moves.
+
+- **The terminal's sixteen colours are tokens.** `--dya-ansi-*` holds the six chromatic
+  colours and their bright twins, solved the same way against `--dya-surface-1`, which is the
+  terminal's ground: normal at OKLCH 0.72 in Gi and 0.74 in Rei, bright at 0.84 and 0.86. The
+  normal set measures between 6.08 and 7.85 on it. Black and white are the system's own ink
+  ranks, not colours of their own.
 
 - **Green means go and red means stop, in the colours everybody already reads.** A control
   that starts something is `--dya-success`, one that stops or destroys is `--dya-danger`, and
@@ -386,7 +420,8 @@ Structure    pane bar (--flush --inset __group) card card__header masthead brand
 Pressable    button (--primary --success --quiet --sm --danger --bare) key (--active) chip
              entry (--active) tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) checkbox form (__actions __push)
-Content      tag badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
+Hue          hue--<name> pane--<name> dot   (amber mint cyan blue violet pink)
+Content      tag (--hue) badge (--accent --accent-2 --accent-3 --success --warning --danger --soft)
              pills table (__num __fit __key __name __end __prose) row (--selected)
              stat (__figure __value __unit __text __note) meter (__pip)
              title (--lg) lede text (--success --danger) label eyebrow value meta mono
@@ -410,8 +445,9 @@ cells and never on the `tr`, where it would sit behind them and never be seen.
 application resizes and the regions inside a panel did not, so a console filling with output a
 line at a time was whatever height its plugin wrote down. The strip is 11px for a pointer to
 catch and pulls its own height back out of the layout with a negative margin, so adding one
-moves nothing above it; the grip is `--dya-text-4`, a graphical object at 6.70 in Gi and 8.04
-in Rei on `--dya-surface-1`, and takes `--dya-accent` under the pointer and while dragging.
+moves nothing above it; the grip is a 64 by 4 pill in `--dya-text-3`, 8.95 in Gi and 8.76 in
+Rei on `--dya-surface-1`, and takes `--dya-accent` under the pointer and while dragging. A
+handle is found before it is used, so it is drawn in an ink that is found.
 The consumer owns the drag, the clamp and where the size is remembered.
 
 **A sheet that covers is modal, and modality is two things or it is neither.** A sheet is

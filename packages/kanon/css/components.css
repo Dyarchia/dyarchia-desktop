@@ -32,8 +32,8 @@
  * `--dya-danger` is the colour of a control that stops or destroys, and it has to read as red
  * beside a warm orange accent — which the salmon it used to be did not: a RUN and a STOP forty
  * pixels apart were the same colour and neither said which was which. Red enough to be read as red
- * under `--dya-on-status` is too dark to be read as text on a dark surface: #ff5f56 as an ink
- * measures 4.42 on `--dya-raised-hover` in Gi and 3.93 in Rei, under the floor on the one step a
+ * under `--dya-on-status` is too dark to be read as text on a dark surface: #ea746a as an ink
+ * measures 4.23 on `--dya-raised-hover` in Gi and 3.62 in Rei, under the floor on the one step a
  * quiet danger button spends its life on. So the ink is a token of its own, `--dya-danger-ink`,
  * 7.09 on `--dya-raised` in both themes and 6.11 and 5.80 on the hover step.
  */
@@ -432,7 +432,16 @@
     background-image: none;
 }
 
-.dya-button:disabled {
+/*
+ * A control that cannot be pressed gives up its meaning along with its function. The ink used to
+ * change and the fill did not, so a disabled RUN was `--dya-text-4` over `--dya-success`: 1.54 in
+ * Gi and 1.26 in Rei, a green lozenge with no word on it, and a disabled primary was 1.03. Every
+ * filled variant falls back to the plain raised ground here, where the same ink measures 5.33 in
+ * Gi and 5.58 in Rei before the opacity, and keeps its shape.
+ */
+.dya-button:disabled,
+.dya-button:disabled:hover {
+    background-color: var(--dya-raised);
     color: var(--dya-text-4);
     cursor: default;
     opacity: 0.6;
@@ -464,7 +473,7 @@
  *
  * It is not a second primary. A primary is the one action a view is about and there is at most one
  * of them; a success button is a meaning, and a view may hold one beside its opposite.
- * `--dya-on-status` over it measures 10.29 in Gi and 11.50 in Rei, 11.71 and 13.09 on the hover.
+ * `--dya-on-status` over it measures 10.13 in Gi and 11.33 in Rei, 11.53 and 12.88 on the hover.
  */
 .dya-button--success {
     background: var(--dya-success);
@@ -1017,8 +1026,8 @@ textarea.dya-field {
  * Kinds that differ have to look different, and a system with six hues that lets a label reach
  * three of them has three it declared and never spends.
  *
- * `--dya-on-accent` over each fill: accent 6.74 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
- * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 6.53 / 6.12 /
+ * `--dya-on-accent` over each fill: accent 6.88 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
+ * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 6.67 / 6.12 /
  * 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
  */
 .dya-badge--accent {

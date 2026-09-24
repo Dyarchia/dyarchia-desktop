@@ -1,0 +1,20 @@
+name: claude-cookbook
+group: docs-labs
+description: Claude Cookbook recipes, extracted from HTML for want of a markdown variant
+sitemap_urls:
+  # Declared in robots.txt and separate from https://platform.claude.com/sitemap.xml, whose 3,468
+  # URLs list no recipe at all. That is why claude-api-docs never collected one: its own sitemap
+  # does not know they exist, and its `/docs/en/` include would have dropped them anyway.
+  - https://platform.claude.com/cookbook/sitemap.xml  # 96: the index and 95 recipes
+crawler: parsel
+extract: auto
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+# No fetch_suffix on purpose. Every other Claude target here reads a markdown twin; this one has
+# none. Probed 2026-09-09 on three recipes: both `<recipe>.md` and `<recipe>/index.md` answer 404
+# with the same 76 KB application shell. The HTML is server-rendered and carries the whole recipe,
+# so extraction reads the page itself, the way mistral-docs does.
+min_success_rate: 0.95

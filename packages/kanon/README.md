@@ -87,7 +87,7 @@ token           value       bg   surf-1   raised   overlay   raised-hover   sele
 --dya-text-2    #d3d0c8  13.63    11.27     9.25      8.51           8.01       7.40
 --dya-text-3    #bdbab2  10.83     8.95     7.35      6.77           6.36       5.88
 --dya-text-4    #a19e96   7.85     6.49     5.33      4.90           4.61       4.26
---dya-accent    #fe7802   7.90     6.53     5.36      4.94           4.64       4.29
+--dya-accent    #ea874b   8.07     6.67     5.48      5.04           4.74       4.38
 --dya-accent-2  #6a9bcc   7.17     5.93     4.87      4.48           4.21       3.90
 --dya-accent-3  #788c5d   5.71     4.72     3.88      3.57           3.35       3.10
 ```
@@ -95,12 +95,13 @@ token           value       bg   surf-1   raised   overlay   raised-hover   sele
 Every text level clears AA everywhere except `--dya-text-4` on `--dya-selected` at 4.26;
 on that surface the label level is `--dya-text-3`.
 
-`--dya-accent` is the primary, a straight orange at OKLCH 0.72 / 0.190 / 50: text up to and
-including `--dya-raised` at 5.36, a graphical object above it — which is where an icon, a dot
+`--dya-accent` is the primary, an orange at OKLCH 0.72 / 0.142 / 50: text up to and
+including `--dya-raised-hover` at 4.74, a graphical object above it — which is where an icon, a dot
 or a focus ring may still wear it. Its hue sits 23 degrees from `--dya-danger`, and that
-distance is the reason it is 50 and not the 39 of a warmer coral: at this chroma an accent
-twelve degrees from red reads as stop. It is also `--dya-field`, where `--dya-on-field`
-`#181714` measures 6.74 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
+distance is the reason it is 50 and not the 39 of a warmer coral: an accent twelve degrees
+from red reads as stop. Its chroma is three quarters of the most the hue holds there, the same
+measure as the six hues. It is also `--dya-field`, where `--dya-on-field`
+`#181714` measures 6.88 against it. `--dya-accent-2` is the cool secondary, measures better everywhere, and is the
 right choice for a link, a selected state or an informational mark. `--dya-accent-3` is
 the weakest ink in the system: text on the canvas, the sunken step, the chassis,
 `--dya-surface-1` at 4.72, and nowhere else: on `--dya-surface-2` it measures 4.42 and stops
@@ -199,27 +200,28 @@ shape, same offsets, same blur.
 - **A badge may wear an accent as well as a status.** A status says how something turned out;
   an accent says what kind of thing it is, and a system with six hues that let a label reach
   three has three it declared and never spends. `--dya-on-accent` over each fill measures
-  6.74 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
-  6.53 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
+  6.88 / 6.12 / 4.87 in Gi and 8.46 / 9.70 / 11.37 in Rei; as soft inks on `--dya-surface-1`,
+  6.67 / 6.12 / 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
 
 - **Hue says which one; the accent says what matters; status says how it went.** Three axes,
   never mixed. Six categorical hues — amber, mint, cyan, blue, violet, pink — mark which of
   several things of one kind something is: which plugin, which group of corpora, which agent.
   They are solved rather than picked: one OKLCH lightness per theme, 0.74 in Gi and 0.76 in
-  Rei, and the most chroma each hue holds there inside sRGB, so they read as one family and
-  none is louder than another. At a lower lightness the dark hues stop being text on
+  Rei, and three quarters of the most chroma each hue holds there inside sRGB
+  (`palette.py --lightness 0.74 0.76 --mute 0.75`), so they read as one family, none is louder
+  than another, and none is a neon: the ceiling itself read as a signal rather than a mark. At a lower lightness the dark hues stop being text on
   `--dya-raised`; at a higher one blue, violet and pink bleach towards pastel. Every hue is text
   from `--dya-bg` to `--dya-raised` in both themes and a mark above it:
 
   ```text
   hue      Gi        sf-1   raised  selected    Rei       sf-1   raised  selected
   ------   -------   ----   ------  --------    -------   ----   ------  --------
-  amber    #df9c02   7.35    6.04     4.83      #e7a203   7.62    5.59     4.30
-  mint     #0dc992   8.09    6.64     5.32      #0fd098   8.36    6.14     4.72
-  cyan     #07bfde   7.87    6.46     5.17      #03c6e6   8.14    5.98     4.59
-  blue     #7caafe   7.47    6.14     4.91      #86b1ff   7.76    5.70     4.38
-  violet   #c08eff   7.07    5.81     4.65      #c598ff   7.42    5.44     4.18
-  pink     #ff71bb   6.89    5.66     4.53      #fe7fc0   7.18    5.27     4.05
+  amber    #d3a14f   7.40    6.08     4.86      #daa752   7.67    5.63     4.33
+  mint     #59c299   7.94    6.52     5.22      #5dc99e   8.22    6.03     4.64
+  cyan     #58bad1   7.81    6.41     5.13      #5bc1d9   8.10    5.94     4.57
+  blue     #89abea   7.49    6.15     4.92      #91b2ec   7.79    5.72     4.40
+  violet   #ba97eb   7.20    5.92     4.73      #bf9fec   7.55    5.54     4.26
+  pink     #ed83b7   7.05    5.79     4.63      #ed8ebc   7.33    5.38     4.13
   ```
 
   **A hue is a mark, never a fill, and it is shown while it says something.** A dot beside a
@@ -237,8 +239,9 @@ shape, same offsets, same blur.
 
 - **The terminal's sixteen colours are tokens.** `--dya-ansi-*` holds the six chromatic
   colours and their bright twins, solved the same way against `--dya-surface-1`, which is the
-  terminal's ground: normal at OKLCH 0.72 in Gi and 0.74 in Rei, bright at 0.84 and 0.86. The
-  normal set measures between 6.08 and 7.85 on it. Black and white are the system's own ink
+  terminal's ground: normal at OKLCH 0.72 in Gi and 0.74 in Rei, bright at 0.84 and 0.86, each at
+  three quarters of its ceiling chroma like the hues. The normal set measures between 6.30 and
+  7.94 on it. Black and white are the system's own ink
   ranks, not colours of their own.
 
 - **Green means go and red means stop, in the colours everybody already reads.** A control
@@ -250,26 +253,27 @@ shape, same offsets, same blur.
 ```text
 token             Gi        fill    Rei       fill    role
 ---------------   -------   -----   -------   -----   ------------------------
---dya-success     #4ade80   10.29   both      11.50   go, and a positive outcome
+--dya-success     #74d791   10.13   both      11.33   go, and a positive outcome
 --dya-warning     #d6a95c    8.27   #e2b268   10.31   caution, not failure
---dya-danger      #ff5f56    6.00   both       6.70   stop, destroy, fail
+--dya-danger      #ea746a    6.15   both       6.87   stop, destroy, fail
 --dya-danger-ink  #f59790    8.29   #ff9b95    9.90   the same meaning, as text
 --dya-idle        per theme  7.73   per theme  6.81   no outcome yet
 ```
 
 `fill` is `--dya-on-status` over the hue, or `--dya-on-idle` over `--dya-idle`. Each hue has
 a `-soft` companion at 10% for the ground of a row or a quiet badge, and success and danger
-carry a `-hover` step for the two filled buttons: `#6ae997` at 11.71 and 13.09, `#ff7d75` at
-7.21 and 8.05.
+carry a `-hover` step for the two filled buttons: `#8ae2a5` at 11.53 and 12.88, `#ec8b83` at
+7.33 and 8.19. Both fills sit at three quarters of the chroma they used to carry: at full
+strength a green RUN was the loudest thing on any screen it appeared on.
 
 **Red is the one hue whose fill cannot also be its ink.** A red saturated enough to read as
-red beside a warm orange accent is too dark to be read as text on a dark surface: `#ff5f56`
-as an ink measures 4.42 on `--dya-raised-hover` in Gi and 3.93 in Rei, under the floor on the
+red beside a warm orange accent is too dark to be read as text on a dark surface: `#ea746a`
+as an ink measures 4.23 on `--dya-raised-hover` in Gi and 3.62 in Rei, under the floor on the
 one step a quiet danger button spends its life on. So `--dya-danger-ink` is a token of its
 own — 7.09 on `--dya-raised` in both themes, 6.11 and 5.80 on the hover step, 6.96 and 7.37
 on its own soft ground — and `.dya-text--danger`, `.dya-badge--danger.dya-badge--soft` and
 `.dya-button--danger.dya-button--quiet` all take it. Green needs no such split: `--dya-success`
-measures 10.29 in Gi and 10.16 in Rei on `--dya-surface-1` and 8.50 and 8.35 on its own soft.
+measures 9.82 in Gi and 9.46 in Rei on `--dya-surface-1` and 8.03 and 7.67 on its own soft.
 
 **Green and red are the two colour tokens Rei does not redefine.** Every other hue in this
 system is tuned to its theme's ground; these two are quotations of a convention the reader
@@ -515,6 +519,10 @@ is wrong and nothing is first. `title`, `lede`, `button--primary`, `tile`,
   a second first is none. It is the only filled control in the system that does not report
   a status, and its hover step is `--dya-accent-hover` — a token rather than a filter,
   because a transition may name `background-color` and nothing else.
+- **A disabled button gives up its fill with its function.** Every variant, filled or not,
+  falls back to `--dya-raised` under `--dya-text-4` at 60% opacity: 5.33 in Gi and 5.58 in
+  Rei before the opacity. The same ink over a fill it kept measured 1.54 on success and 1.03
+  on the primary, a coloured lozenge with no word on it.
 - **`tile` is a pressable card**: an icon, a name and one line. It is how a region with
   nothing in it yet offers what to do next, and the shell's launcher is built from nothing
   else.

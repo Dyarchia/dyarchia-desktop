@@ -9,6 +9,11 @@ at least 4.50 against every surface a row, a card or a tile sits on, and at leas
 the surfaces where it is only ever a mark. Among equally saturated answers the darker one wins,
 because the lightest colour that passes is the one that glares.
 
+`--mute 0.75` keeps each answer's lightness and hue and spends three quarters of its chroma. The
+most saturated colour that passes is the ceiling, not the choice: at full chroma the six read as a
+signal, and the system uses them as marks. Lowering chroma at a fixed OKLCH lightness moves every
+ratio up a little, never down, so a muted answer passes wherever its ceiling did.
+
 It prints hex values for tokens.css and the grid the commit body needs. contrast.py remains the
 tool that re-measures a token once it is in the file.
 """
@@ -96,6 +101,7 @@ def main() -> None:
     parser.add_argument('--text', nargs='*', default=TEXT_ON)
     parser.add_argument('--graphic', nargs='*', default=MARK_ON)
     parser.add_argument('--lightness', nargs=2, type=float, metavar=('GI', 'REI'))
+    parser.add_argument('--mute', type=float, default=1.0)
     args = parser.parse_args()
 
     hues = {f'h{h:g}': h for h in args.hue} if args.hue else HUES
@@ -108,6 +114,9 @@ def main() -> None:
         print('    ' + '-' * (len(header) - 4))
         for name, hue in hues.items():
             ink, lightness, chroma = solve(hue, theme, args.text, args.graphic, fixed.get(theme_name))
+            if args.mute != 1.0:
+                chroma *= args.mute
+                ink = to_hex(oklch_to_rgb(lightness, chroma, hue))
             ratios = ' '.join(f'{contrast.ratio(ink, theme[f"--dya-{g}"]):>9.2f}' for g in grounds)
             print(f'    {name:<8} {ink:<8} {lightness:>5.3f} {chroma:>5.3f}  {ratios}')
 

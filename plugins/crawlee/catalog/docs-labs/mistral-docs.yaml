@@ -1,0 +1,30 @@
+name: mistral-docs
+group: docs-labs
+description: Mistral AI developer documentation, extracted from HTML for want of a markdown variant on all but two sections
+sitemap_urls:
+  - https://docs.mistral.ai/sitemap.xml  # 888 URLs, 444 of them the French edition
+exclude:
+  # The French edition is half the sitemap and the same documentation. It gets a corpus of its own if
+  # it is ever wanted, the way the Spanish Claude editions do, rather than doubling this one and
+  # mixing a retranslation into the weekly diff.
+  - 're:^https://docs\.mistral\.ai/fr(/|$)'
+crawler: parsel
+extract: auto
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+# No fetch_suffix on purpose. Measured 2026-09-08 on 12 URLs per section: only /getting-started
+# (12 of 12) and /vibe (11 of 12) publish a .md twin, and the other six sections publish none, which
+# is 811 of the 888 URLs. The engine does not fall back from a missing twin to the page itself, so
+# asking for markdown would keep 72 pages and lose the rest without ever erroring.
+#
+# The site's own llms.txt is no help either: its 75 links all sit under /docs/, and that whole tree
+# answers 404. It describes a structure the site no longer serves.
+#
+# One sitemap entry fails every run and is not excluded:
+# studio-api/workflows/building-workflows/workflow_tags redirects to the same path under
+# studio/, and that answers 404, so the page is gone rather than moved. An exclude would hide
+# the day it comes back, and 443 of 444 stays well clear of the floor below.
+min_success_rate: 0.95

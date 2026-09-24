@@ -180,12 +180,33 @@ def _fallback_repository(corpora: Path) -> Path:
     return existing[0] if existing else corpora / 'local'
 
 
+def _source_path(root: Path) -> str:
+    """The toolkit's own source, ahead of whatever copy of it the environment holds.
+
+    An installed environment is built once, by Setup, with the package copied into it rather than
+    linked, and an application update replaces the plugin's files without touching it. A build
+    that changed the CLI therefore kept running the one Setup had copied: 0.2.9 shipped round
+    progress, and a machine that had built its environment on an earlier release ran a CLI that
+    never printed any, so the panel said `0 of …` for the whole round. The environment is kept for
+    the dependencies, which a lockfile pins; the code that runs is the code that shipped with this
+    build.
+    """
+    entries = [str(root / 'src')]
+    if os.environ.get('PYTHONPATH'):
+        entries.append(os.environ['PYTHONPATH'])
+    return os.pathsep.join(entries)
+
+
 def _spawn(args: list[str], **extra: Any) -> subprocess.Popen[str]:
     """Run the CLI under the toolkit's own interpreter, with no console window of its own."""
     root = _toolkit_root()
     environment = dict(os.environ)
     environment.update(
-        PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1', COLUMNS=CONSOLE_WIDTH, DYARCHIA_PROGRESS='1'
+        PYTHONIOENCODING='utf-8',
+        PYTHONUNBUFFERED='1',
+        PYTHONPATH=_source_path(root),
+        COLUMNS=CONSOLE_WIDTH,
+        DYARCHIA_PROGRESS='1',
     )
     environment.update(_installed_paths(root))
     return subprocess.Popen(
@@ -265,11 +286,74 @@ def _publish() -> None:
         'server': OFFER_SERVER,
         'command': str(_interpreter(root)),
         'args': ['-m', 'dyarchia_crawlee', 'mcp', '--root', str(root)],
-        'env': {'PYTHONIOENCODING': 'utf-8', 'PYTHONUNBUFFERED': '1'},
+        'env': {'PYTHONIOENCODING': 'utf-8', 'PYTHONUNBUFFERED': '1', 'PYTHONPATH': str(root / 'src')},
         'tools': [{'name': 'search_corpus', 'note': OFFER_NOTE}],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(offer, indent=4) + '\n', encoding='utf-8')
+
+
+CATALOG = Path(__file__).resolve().parent / 'catalog'
+
+
+def _heading(path: Path) -> dict[str, str]:
+    """The name and the description a profile opens with, read without a YAML parser.
+
+    This process runs under the shell's interpreter, which has the standard library and nothing
+    else, and the two keys it needs are plain scalars on the first lines of every file in the
+    catalogue. Anything richer is the CLI's business once the profile is installed.
+    """
+    found: dict[str, str] = {}
+    for line in path.read_text(encoding='utf-8').splitlines():
+        key, _, value = line.partition(':')
+        if key in ('name', 'description') and value.strip():
+            found[key] = value.strip()
+        if len(found) == 2:
+            break
+    return {'name': found.get('name', path.stem), 'description': found.get('description', '')}
+
+
+def _catalog(installed: dict[str, str]) -> list[dict[str, Any]]:
+    """Every group the plugin ships profiles for, and which of them this machine already has."""
+    if not CATALOG.is_dir():
+        return []
+    groups = []
+    for folder in sorted(child for child in CATALOG.iterdir() if child.is_dir()):
+        profiles = []
+        for path in sorted(folder.glob('*.yaml')):
+            heading = _heading(path)
+            profiles.append({**heading, 'installed': heading['name'] in installed})
+        if profiles:
+            groups.append({'group': folder.name, 'profiles': profiles})
+    return groups
+
+
+def _install(group: str, installed: dict[str, str], folder: str) -> dict[str, Any]:
+    """Copy the profiles of one group that this machine does not have yet.
+
+    They go where that group already lives, so a group is never split across two repositories; a
+    group nobody has installed gets a repository of its own, named after it, under the directory
+    every corpus repository sits in. A profile that is already here is left exactly as it is,
+    because it may have been edited since, and an install that overwrote it would lose the edit.
+    """
+    source = (CATALOG / group).resolve()
+    if not source.is_dir() or source.parent != CATALOG:
+        raise RuntimeError(f'no group called {group!r} in the catalogue')
+
+    names = [_heading(path)['name'] for path in source.glob('*.yaml')]
+    homes = {installed[name] for name in names if name in installed}
+    repository = Path(sorted(homes)[0]) if homes else Path(folder) / group
+    target = repository / 'profiles'
+    target.mkdir(parents=True, exist_ok=True)
+
+    copied = []
+    for path in sorted(source.glob('*.yaml')):
+        name = _heading(path)['name']
+        if name in installed or (target / path.name).exists():
+            continue
+        (target / path.name).write_bytes(path.read_bytes())
+        copied.append(name)
+    return {'group': group, 'repository': str(repository), 'installed': copied}
 
 
 def activate(ctx: Any) -> None:
@@ -351,6 +435,23 @@ def activate(ctx: Any) -> None:
             _running.terminate()
             return True
 
+    def installed() -> dict[str, str]:
+        """Each profile this machine has, by name, and the repository it lives in."""
+        return {entry['name']: entry['repository'] for entry in json.loads(_read(['profiles', '--json']))}
+
+    def catalog() -> Any:
+        """The profiles this plugin ships, grouped, each marked with whether it is already here."""
+        try:
+            return _catalog(installed())
+        except RuntimeError as thrown:
+            if NO_ENVIRONMENT not in str(thrown):
+                raise
+            return {'needsEnvironment': True}
+
+    def install(group: str) -> Any:
+        folder = json.loads(_read(['state', '--json']))['folder']
+        return _install(group, installed(), folder)
+
     ctx.handle('state', state)
     ctx.handle('profiles', profiles)
     ctx.handle('show', show)
@@ -359,6 +460,8 @@ def activate(ctx: Any) -> None:
     ctx.handle('search', search)
     ctx.handle('start', start)
     ctx.handle('stop', stop)
+    ctx.handle('catalog', catalog)
+    ctx.handle('install', install)
     threading.Thread(target=_publish, daemon=True).start()
 
 

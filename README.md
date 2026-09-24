@@ -1,4 +1,4 @@
-# dyarchia-desktop
+# Dyarchia desktop
 
 **ALPHA — 0.2.8-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
@@ -21,7 +21,7 @@ several of its parts are documented as working but unproven. What that means in 
   `~/.dyarchia/data/crawlee`; a checkout uses the `.env` beside its `pyproject.toml`, and
   its own README is the authority.
 
-Desktop shell for the dyarchia ecosystem. A panel container in the style of the Claude
+Dyarchia desktop is the desktop shell of the Dyarchia ecosystem. A panel container in the style of the Claude
 Desktop Code tab: it starts empty, and every feature registers itself as a plugin with its
 own panels — draggable, resizable, and persistent across sessions.
 
@@ -394,7 +394,7 @@ are a paid feature. Nothing in the shell is affected.
 
 ## 9. Licence and attribution
 
-dyarchia is MIT licensed. See [LICENSE](LICENSE).
+Dyarchia desktop is MIT licensed. See [LICENSE](LICENSE).
 
 The crawling in the crawlee plugin is not this project's work: it is
 [Crawlee for Python](https://github.com/apify/crawlee-python), by Apify, under Apache-2.0.

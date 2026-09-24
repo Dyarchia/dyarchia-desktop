@@ -1,5 +1,9 @@
 appId: dev.dyarchia.desktop
-productName: dyarchia
+productName: Dyarchia desktop
+# The executable keeps its name when the product name changes. Every shortcut, every taskbar pin
+# and the updater replacing the running build find the application by this file, and renaming it
+# would leave each of them pointing at a file the next install no longer writes.
+executableName: dyarchia
 directories:
     output: release
 files:
@@ -74,7 +78,7 @@ nsis:
     allowToChangeInstallationDirectory: true
     createDesktopShortcut: true
     createStartMenuShortcut: true
-    shortcutName: dyarchia
-    uninstallDisplayName: dyarchia ${version}
+    shortcutName: Dyarchia desktop
+    uninstallDisplayName: Dyarchia desktop ${version}
     deleteAppDataOnUninstall: false
     artifactName: dyarchia-${version}-setup.exe

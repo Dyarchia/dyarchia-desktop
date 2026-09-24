@@ -25,6 +25,13 @@ export type PanelDispose = () => void
 export interface PanelHandle {
     readonly instanceId: string
     close(): void
+    /*
+     * What this panel's tab says while it says something more specific than the descriptor's
+     * title, such as the program a terminal is running. `null` puts the descriptor's title back.
+     * The layout keeps whatever was last set, and the shell restores the descriptor's title when
+     * it loads a saved layout, so a name that stopped being true does not outlive the session.
+     */
+    setTitle(title: string | null): void
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void

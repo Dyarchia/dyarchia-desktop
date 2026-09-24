@@ -12,6 +12,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 from dyarchia_crawlee import registry, repositories
@@ -185,8 +186,17 @@ def rounds(
     return covered
 
 
-async def sweep(names: list[str], settings: Settings | None = None) -> WatchResult:
-    """Run each target in turn, letting one failure cost only its own target."""
+async def sweep(
+    names: list[str],
+    settings: Settings | None = None,
+    announce: Callable[[str, WatchEntry], None] | None = None,
+) -> WatchResult:
+    """Run each target in turn, letting one failure cost only its own target.
+
+    `announce` hears `start` before a target and `end` after it, with the entry as it stands.
+    A round of fourteen targets runs for most of an hour, and without it the only thing a
+    watcher could learn in that time was that something was still running.
+    """
     from dyarchia_crawlee.engine import execute
 
     """Imported here rather than at module scope because it is the only thing in this module that
@@ -201,6 +211,8 @@ async def sweep(names: list[str], settings: Settings | None = None) -> WatchResu
 
     for name in names:
         entry = WatchEntry(name=name)
+        if announce is not None:
+            announce('start', entry)
         try:
             profile = registry.load(name, settings)
             entry.group = profile.group
@@ -224,6 +236,8 @@ async def sweep(names: list[str], settings: Settings | None = None) -> WatchResu
                 entry.directory = run.snapshot.directory
                 entry.warnings = list(run.snapshot.warnings)
         result.entries.append(entry)
+        if announce is not None:
+            announce('end', entry)
 
     result.finished_at = utcnow()
     return result

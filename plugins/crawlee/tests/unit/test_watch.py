@@ -177,3 +177,37 @@ def test_the_packaged_example_does_not_enrol_itself(tmp_path: Path) -> None:
     settings = Settings(data_dir=tmp_path / 'data', profiles_dir=empty)
 
     assert watchable(settings) == []
+
+
+def test_a_sweep_announces_each_target_before_and_after(settings: Settings) -> None:
+    """A round runs for most of an hour; what it says per target is all a watcher can follow."""
+    import asyncio
+
+    from dyarchia_crawlee.watch import sweep
+
+    heard: list[tuple[str, str, bool]] = []
+    result = asyncio.run(
+        sweep(['no-such-target', 'nor-this'], settings, lambda moment, entry: heard.append((moment, entry.name, bool(entry.error))))
+    )
+
+    assert heard == [
+        ('start', 'no-such-target', False),
+        ('end', 'no-such-target', True),
+        ('start', 'nor-this', False),
+        ('end', 'nor-this', True),
+    ]
+    assert result.exit_code == EXIT_FAILED
+
+
+def test_progress_lines_are_only_for_a_panel(monkeypatch, capsys) -> None:
+    from dyarchia_crawlee.cli import PROGRESS_PREFIX, _progress
+
+    monkeypatch.delenv('DYARCHIA_PROGRESS', raising=False)
+    _progress('round', total=3)
+    assert capsys.readouterr().out == ''
+
+    monkeypatch.setenv('DYARCHIA_PROGRESS', '1')
+    _progress('round', total=3)
+    line = capsys.readouterr().out.strip()
+    assert line.startswith(PROGRESS_PREFIX)
+    assert json.loads(line[len(PROGRESS_PREFIX):]) == {'event': 'round', 'total': 3}

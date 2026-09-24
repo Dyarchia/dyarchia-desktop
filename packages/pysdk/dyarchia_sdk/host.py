@@ -18,7 +18,7 @@ class StdioHost:
         sys.stdout = sys.stderr
         self._write_lock = threading.Lock()
         self._pool = ThreadPoolExecutor(max_workers=MAX_WORKERS)
-        self.plugin_id, self.context = load_plugin(plugin_dir, self._broadcast)
+        self.plugin_id, self.context = load_plugin(plugin_dir, self._broadcast, self._notice)
 
     def _send(self, payload: dict[str, Any]) -> None:
         line = json.dumps(payload, default=str)
@@ -31,6 +31,9 @@ class StdioHost:
 
     def _broadcast(self, channel: str, args: list[Any]) -> None:
         self._send({"t": "broadcast", "channel": channel, "args": args})
+
+    def _notice(self, notice: dict[str, Any]) -> None:
+        self._send({"t": "notice", "notice": notice})
 
     def _run_invoke(self, message_id: Any, channel: str, args: list[Any]) -> None:
         try:

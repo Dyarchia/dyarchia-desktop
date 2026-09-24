@@ -26,12 +26,20 @@ const wanted = new Set(process.argv.slice(2))
 const publishing = wanted.has('--publish')
 const pruning = !wanted.has('--keep-old')
 
+/*
+ * A shell only where one is unavoidable. On Windows pnpm is a `.cmd`, and node refuses to spawn
+ * one without a shell; but a shell joins the arguments with spaces and quotes none of them, so
+ * `--notes "Alpha build 0.2.7-alpha."` reached gh as three arguments and the two strays were
+ * taken for files to upload. Every other command here is a real executable and gets its
+ * arguments as given. pnpm's arguments are all single words, which is what makes the shell safe
+ * for it and for nothing else.
+ */
 function run(command, args, options = {}) {
     return execFileSync(command, args, {
         cwd: root,
         encoding: 'utf8',
         stdio: options.quiet ? 'pipe' : 'inherit',
-        shell: process.platform === 'win32',
+        shell: process.platform === 'win32' && command === 'pnpm',
         ...options
     })
 }

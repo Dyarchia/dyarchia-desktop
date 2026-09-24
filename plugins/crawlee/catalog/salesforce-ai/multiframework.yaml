@@ -1,0 +1,21 @@
+name: multiframework
+group: salesforce-ai
+description: Salesforce Multi-Framework, React on Headless 360, from the markdown developer.salesforce.com publishes for LLMs
+sitemap_urls:
+  # The set is `multi-framework` with a hyphen, unlike the `multiframework` path segment its pages
+  # live under: sitemap-contents-multiframework.xml answers 404. The name comes from docs/llms.txt.
+  - https://developer.salesforce.com/docs/sitemap-contents-multi-framework.xml  # 19: 16 pages and 3 section roots
+include:  # the sitemap also lists three section roots, which carry no extension and publish no markdown
+  - 're:^https://developer\.salesforce\.com/docs/platform/multiframework/.*\.html$'
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+# All 16 pages publish a usable twin, measured 2026-09-04: every one answered 200 with a non-empty
+# body, the smallest 1,511 bytes. The set derived from the sitemap under s/.html$/.md/ matches
+# llms-multi-framework.txt exactly, all 16, compared rather than sampled.
+min_success_rate: 0.95

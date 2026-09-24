@@ -1,0 +1,24 @@
+name: agentforce-vibes
+group: salesforce-ai
+description: Agentforce Vibes developer guide, from the markdown developer.salesforce.com publishes for LLMs
+sitemap_urls:
+  # Vibes has no sitemap of its own; it lives inside salesforcedx, 49 of that set's 596 URLs. The
+  # rest of salesforcedx is VS Code and CLI tooling and stays out.
+  - https://developer.salesforce.com/docs/sitemap-contents-salesforcedx.xml
+include:
+  # Narrows the set to Vibes and drops the three section roots at the same time: those carry no
+  # extension and publish no markdown at all.
+  - 're:^https://developer\.salesforce\.com/docs/platform/agentforcevibes/.*\.html$'
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+# 45 of the 46 pages publish a usable twin, measured 2026-09-04. afv-toolkit.md answers 200 with an
+# empty body against a 27 KB HTML page. It is not excluded: an empty fetch reaches no manifest entry
+# at all, so the corpus holds 45 and the day Salesforce fills that page in, the sweep reports it as
+# added. Excluding it would trade that signal for nothing.
+min_success_rate: 0.95

@@ -41,6 +41,8 @@ const CHANNEL = 'shell:update'
  * interpreter for the same few hundred milliseconds, and nothing about the answer is urgent.
  */
 const FIRST_CHECK_MS = 8000
+const RECHECK_MS = 4 * 60 * 60 * 1000
+const REFOCUS_MS = 30 * 60 * 1000
 
 let state: UpdateState = {
     phase: 'idle',
@@ -132,9 +134,25 @@ export function registerUpdates(): void {
         return state
     })
 
-    setTimeout(() => {
+    /*
+     * Asked again while the window stays open, not only at start. 0.2.8 was published while the
+     * one person running 0.2.7 had it open mid-crawl: it had asked at startup, been told it was
+     * current, and would never have asked again. It asks every few hours, and when the window is
+     * returned to after a while away, which is when somebody is likely to notice a new control --
+     * and never while an answer is already on screen or a download is under way.
+     */
+    let asked = 0
+    const ask = (): void => {
+        if (!['idle', 'current', 'failed'].includes(state.phase)) return
+        asked = Date.now()
         void autoUpdater.checkForUpdates().catch((error: unknown) => {
             publish({ phase: 'failed', note: describe(error) })
         })
-    }, FIRST_CHECK_MS)
+    }
+
+    setTimeout(ask, FIRST_CHECK_MS)
+    setInterval(ask, RECHECK_MS)
+    app.on('browser-window-focus', () => {
+        if (Date.now() - asked > REFOCUS_MS) ask()
+    })
 }

@@ -32,8 +32,15 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
         return () => subscription.dispose()
     }, [props.api])
 
+    const hue = getPanel(props.api.id)?.descriptor.hue
+
     return (
-        <div className="dya-tab panel-tab" role="tab" aria-selected={active}>
+        <div
+            className={`dya-tab panel-tab${hue ? ` dya-pane--${hue}` : ''}`}
+            role="tab"
+            aria-selected={active}
+        >
+            {hue && <span className={`dya-dot dya-hue--${hue}`} />}
             {props.api.title}
         </div>
     )

@@ -19,11 +19,12 @@ const OVERFLOW_ICON =
 const CLOSE_ICON =
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><line x1="2.5" y1="2.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="2.5" x2="2.5" y2="9.5"/></svg>'
 
-function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
+function PanelIcon({ icon, hue }: { icon: string; hue?: string }): React.JSX.Element {
+    const tint = hue ? ` dya-hue--${hue}` : ''
     if (icon.trim().startsWith('<svg')) {
-        return <span className="topbar-icon" dangerouslySetInnerHTML={{ __html: icon }} />
+        return <span className={`topbar-icon${tint}`} dangerouslySetInnerHTML={{ __html: icon }} />
     }
-    return <span className="topbar-icon-text">{icon}</span>
+    return <span className={`topbar-icon-text${tint}`}>{icon}</span>
 }
 
 /*
@@ -207,6 +208,7 @@ export function TopBar({
                         <TipKey
                             key={panel.id}
                             label={panel.title}
+                            className={panel.hue ? `dya-key dya-hue--${panel.hue}` : undefined}
                             active={openPanelIds.has(panel.id)}
                             onClick={() => onToggle(panel.id)}
                         >
@@ -242,7 +244,7 @@ export function TopBar({
                                                 setMenuOpen(false)
                                             }}
                                         >
-                                            <PanelIcon icon={panel.icon} />
+                                            <PanelIcon icon={panel.icon} hue={panel.hue} />
                                             {panel.title}
                                         </button>
                                     ))}

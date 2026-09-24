@@ -1,5 +1,5 @@
 import { token } from '@dyarchia/kanon'
-import { highlight } from '@dyarchia/sdk'
+import { highlight, hues, isHue } from '@dyarchia/sdk'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import { canOpen, openFile, registerOpener } from '../panels/openers'
@@ -10,6 +10,7 @@ interface PluginListEntry {
         id: string
         name: string
         version: string
+        hue?: string
     }
     rendererUrl: string
 }
@@ -46,6 +47,7 @@ export interface PluginCatalogueEntry {
         description?: string
         optional?: boolean
         data?: string
+        hue?: string
         requires?: { kind: string; label: string; [key: string]: unknown }[]
     }
     directory: string
@@ -73,6 +75,7 @@ interface PluginModule {
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         onThemeChange(listener: () => void): () => void
         highlight(source: string, language?: string): string
+        hues(keys: Iterable<string>): Record<string, string>
         shell: ShellApi
     }): void | Promise<void>
 }
@@ -130,18 +133,24 @@ export async function loadPlugins(): Promise<void> {
     const entries = (await bridge.invoke('shell:plugins:list')) as PluginListEntry[]
     for (const entry of entries) {
         const { id } = entry.manifest
+        const hue = isHue(entry.manifest.hue) ? entry.manifest.hue : undefined
         try {
             const mod = (await import(/* @vite-ignore */ entry.rendererUrl)) as PluginModule
             await mod.activate({
                 pluginId: id,
                 token,
-                registerPanel,
+                registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) =>
+                    registerPanel(
+                        { ...descriptor, hue: isHue(descriptor.hue) ? descriptor.hue : hue },
+                        mount
+                    ),
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 onThemeChange,
                 highlight,
+                hues,
                 shell: {
                     catalogue: () =>
                         bridge.invoke('shell:plugins:catalogue') as Promise<PluginCatalogue>,

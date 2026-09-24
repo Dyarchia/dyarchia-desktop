@@ -10,6 +10,9 @@ const ICON =
 const PLUS =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
 
+const BOOK =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>'
+
 const STYLE = `
 .crw-root {
     display: flex;
@@ -215,6 +218,23 @@ const STYLE = `
 }
 .crw-sheet-bar {
     padding-inline: 0;
+}
+.crw-library {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-4);
+}
+.crw-libhead {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--dya-space-3);
+}
+.crw-libhead > .dya-button {
+    margin-inline-start: auto;
 }
 /*
  * A profile is the one thing in this panel somebody writes by hand, and it was a wall of one
@@ -716,9 +736,12 @@ function mount(ctx, container) {
          * of an hour, and all this said for that hour was the command it had started -- the reader
          * could not tell a round on its last target from one on its first, or from one that had
          * quietly finished while they were looking at another window. One pip per target, lit as
-         * each one ends; the target underway by name; the time it has been running.
+         * each one ends; the target underway by its place in the round and by name; the time it has
+         * been running. Until the command has said how many targets it holds, the line says the round
+         * is starting and nothing else: `0 of …` read as a position nobody can be at, over a count
+         * nobody had given.
          */
-        const round = { total: 0, done: 0, changed: 0, failed: 0, current: '', started: 0, timer: 0 }
+        const round = { total: 0, done: 0, changed: 0, failed: 0, current: '', index: 0, started: 0, timer: 0 }
 
         const elapsed = () => {
             const seconds = Math.floor((Date.now() - round.started) / 1000)
@@ -727,8 +750,13 @@ function mount(ctx, container) {
 
         const paintRound = () => {
             status.className = 'dya-text crw-status'
-            const parts = [`Round running · ${round.done} of ${round.total || '…'}`]
-            if (round.current) parts.push(round.current)
+            if (!round.total) {
+                status.textContent = `Round starting  ·  ${elapsed()}`
+                return
+            }
+            const parts = round.current
+                ? [`Round running  ·  target ${round.index} of ${round.total}`, round.current]
+                : [`Round running  ·  ${round.done} of ${round.total} done`]
             if (round.changed) parts.push(`${round.changed} changed`)
             if (round.failed) parts.push(`${round.failed} failed`)
             parts.push(elapsed())
@@ -747,9 +775,10 @@ function mount(ctx, container) {
 
         const heard = (event) => {
             if (event.event === 'round') {
-                Object.assign(round, { total: event.total, done: 0, changed: 0, failed: 0, current: '' })
+                Object.assign(round, { total: event.total, done: 0, changed: 0, failed: 0, current: '', index: 0 })
             } else if (event.event === 'target') {
                 round.current = event.name
+                round.index = event.index ?? round.done + 1
             } else if (event.event === 'finished') {
                 round.done += 1
                 if (event.error) round.failed += 1
@@ -863,7 +892,7 @@ function mount(ctx, container) {
         }
 
         async function startRound() {
-            Object.assign(round, { total: 0, done: 0, changed: 0, failed: 0, current: '', started: Date.now() })
+            Object.assign(round, { total: 0, done: 0, changed: 0, failed: 0, current: '', index: 0, started: Date.now() })
             pips()
             window.clearInterval(round.timer)
             round.timer = window.setInterval(paintRound, 1000)
@@ -885,6 +914,7 @@ function mount(ctx, container) {
             finished(report) {
                 window.clearInterval(round.timer)
                 stop.hidden = true
+                run.hidden = false
                 run.disabled = false
                 const total = report.total || round.total
                 const done = report.done ?? round.done
@@ -1082,7 +1112,24 @@ function mount(ctx, container) {
          */
         const status = el('div', 'dya-text crw-note')
         status.hidden = true
-        targets.append(grid, status, scrim, sheet)
+
+        /*
+         * The profiles this plugin ships, offered as a sheet of their own. A corpus repository is
+         * not part of this one, so a fresh installation had a Targets view holding one tile and no
+         * way to learn what a working profile looks like short of writing one. Each group installs
+         * as a whole, into the repository that group already lives in, and a profile already on
+         * the disk is never replaced: it may have been edited since.
+         */
+        const library = el('div', 'dya-sheet crw-sheet')
+        library.hidden = true
+        const libraryBar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
+        const libraryClose = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
+        libraryBar.append(el('span', 'dya-title crw-status', 'Profile library'), libraryClose)
+        const shelves = el('div', 'crw-library')
+        const libraryNote = el('div', 'dya-text crw-note')
+        library.append(libraryBar, shelves, libraryNote)
+
+        targets.append(grid, status, scrim, sheet, library)
 
         let current = null
         let raisedBy = null
@@ -1154,7 +1201,93 @@ function mount(ctx, container) {
         }
 
         close.addEventListener('click', leave)
-        scrim.addEventListener('click', leave)
+        scrim.addEventListener('click', () => (library.hidden ? leave() : shut()))
+        libraryClose.addEventListener('click', () => shut())
+
+        function browse(source) {
+            raisedBy = source ?? null
+            libraryNote.textContent = ''
+            grid.inert = true
+            scrim.hidden = false
+            library.hidden = false
+            void shelve()
+        }
+
+        function shut() {
+            library.hidden = true
+            scrim.hidden = true
+            grid.inert = false
+            if (raisedBy && raisedBy.isConnected) raisedBy.focus()
+            raisedBy = null
+        }
+
+        async function shelve() {
+            try {
+                const catalog = await ctx.invoke('catalog')
+                if (catalog && catalog.needsEnvironment) {
+                    shelves.replaceChildren(
+                        el('div', 'dya-empty', 'needs its Python environment — turn this plugin on in Setup')
+                    )
+                    return
+                }
+                for (const shelf of catalog) groups.add(shelf.group)
+                shelves.replaceChildren(...catalog.map(shelfOf))
+            } catch (error) {
+                shelves.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
+            }
+        }
+
+        function shelfOf(shelf) {
+            const node = el('section')
+            const head = el('div', 'crw-libhead')
+            const here = shelf.profiles.filter((profile) => profile.installed).length
+            const missing = shelf.profiles.length - here
+            const counts = [`${shelf.profiles.length} profiles`]
+            if (here) counts.push(missing ? `${here} installed` : 'all installed')
+            head.append(groupTag(shelf.group), el('span', 'dya-meta', counts.join('  ·  ')))
+            if (missing) {
+                const install = el('button', 'dya-button dya-button--sm', `Install ${missing}`)
+                install.addEventListener('click', () => void put(shelf.group, install))
+                head.append(install)
+            }
+
+            const table = el('table', 'dya-table')
+            const body = el('tbody')
+            for (const profile of shelf.profiles) {
+                const row = el('tr')
+                const end = el('td', 'dya-table__end')
+                if (profile.installed && missing) {
+                    end.append(el('span', 'dya-badge dya-badge--success dya-badge--soft', 'installed'))
+                }
+                row.append(
+                    el('td', 'dya-table__name', profile.name),
+                    el('td', 'dya-table__prose', profile.description),
+                    end
+                )
+                body.appendChild(row)
+            }
+            table.appendChild(body)
+            node.append(head, table)
+            return node
+        }
+
+        async function put(group, button) {
+            button.disabled = true
+            libraryNote.className = 'dya-text crw-note'
+            libraryNote.textContent = `installing ${group}…`
+            try {
+                const done = await ctx.invoke('install', group)
+                const count = done.installed.length
+                const noun = count === 1 ? 'profile' : 'profiles'
+                libraryNote.className = 'dya-text crw-note dya-text--success'
+                libraryNote.textContent = `${count} ${noun} of ${group} installed in ${done.repository}`
+                await Promise.all([shelve(), refreshList(), roundsView.refresh()])
+            } catch (error) {
+                button.disabled = false
+                libraryNote.className = 'dya-text crw-note dya-text--danger'
+                libraryNote.textContent = reason(error)
+            }
+        }
 
         /*
          * Deleting a target is the profile, the snapshot and the exports, because that is what a
@@ -1208,16 +1341,17 @@ function mount(ctx, container) {
          */
         root.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape' || event.defaultPrevented) return
-            if (targets.hidden || sheet.hidden) return
+            if (targets.hidden || (sheet.hidden && library.hidden)) return
             event.preventDefault()
-            leave()
+            if (library.hidden) leave()
+            else shut()
         })
 
         inspect.addEventListener('click', () => void probe())
         save.addEventListener('click', () => void write())
 
         async function refreshList() {
-            grid.replaceChildren(newTargetCard())
+            grid.replaceChildren(newTargetCard(), libraryCard())
             try {
                 const [profiles, state] = await Promise.all([ctx.invoke('profiles'), ctx.invoke('state')])
                 if (profiles && profiles.needsEnvironment) {
@@ -1257,6 +1391,19 @@ function mount(ctx, container) {
                 raise(null, card)
                 form.open()
             })
+            return card
+        }
+
+        function libraryCard() {
+            const card = el('button', 'dya-tile crw-new')
+            const icon = el('span', 'dya-tile__icon')
+            icon.innerHTML = BOOK
+            card.append(icon, el('span', 'dya-tile__name', 'Profile library'), el(
+                'span',
+                'dya-tile__note',
+                'Ready-made targets for the AI labs and Salesforce documentation.'
+            ))
+            card.addEventListener('click', () => browse(card))
             return card
         }
 
@@ -1442,7 +1589,13 @@ function mount(ctx, container) {
         sink = into
         into.textContent = ''
         into.hidden = false
-        controls.run.disabled = true
+        /*
+         * Something that can be stopped trades its start button for the stop: a RUN left beside
+         * STOP for the whole round was a control that could not be pressed, drawn as one that could.
+         * A probe cannot be stopped, so its button stays where it is and waits.
+         */
+        controls.run.disabled = !controls.stop
+        controls.run.hidden = Boolean(controls.stop)
         if (controls.stop) controls.stop.hidden = false
         status.className = 'dya-text crw-status'
         try {
@@ -1450,6 +1603,7 @@ function mount(ctx, container) {
         } catch (error) {
             busy = false
             controls.run.disabled = false
+            controls.run.hidden = false
             if (controls.stop) controls.stop.hidden = true
             status.className = 'dya-text crw-status dya-text--danger'
             status.textContent = reason(error)

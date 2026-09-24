@@ -1,0 +1,20 @@
+name: claude-docs
+group: docs-labs
+description: Claude documentation, snapshotted from its markdown variants to track changes
+sitemap_urls:
+  - https://claude.com/docs/sitemap.xml
+exclude:  # excluded 2026-08-17 after auditing what the corpus had collected
+  - /government/org-admin/  # console admin UI guides, not API reference
+  - /government/tenant-admin/  # console admin UI guides, not API reference
+  - /government/account/  # account and billing UI guides
+  - /government/config/  # deployment policy settings
+  - /cowork/changelog  # changelog
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

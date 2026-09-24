@@ -84,10 +84,10 @@
     --dya-dashed: #46413a;
     --dya-faint: #ffffff3b;
 
-    --dya-accent: #fe7802;
-    --dya-accent-hover: #fe9557;
-    --dya-accent-soft: #fe78021f;
-    --dya-accent-faint: #fe78020f;
+    --dya-accent: #ea874b;
+    --dya-accent-hover: #ed9e72;
+    --dya-accent-soft: #ea874b1f;
+    --dya-accent-faint: #ea874b0f;
     --dya-on-accent: #181714;
     --dya-accent-2: #6a9bcc;
     --dya-accent-2-soft: #6a9bcc1f;
@@ -95,39 +95,39 @@
     --dya-accent-3-soft: #788c5d1f;
 
     --dya-hue-ground: 16%;
-    --dya-hue-amber: #df9c02;
-    --dya-hue-mint: #0dc992;
-    --dya-hue-cyan: #07bfde;
-    --dya-hue-blue: #7caafe;
-    --dya-hue-violet: #c08eff;
-    --dya-hue-pink: #ff71bb;
+    --dya-hue-amber: #d3a14f;
+    --dya-hue-mint: #59c299;
+    --dya-hue-cyan: #58bad1;
+    --dya-hue-blue: #89abea;
+    --dya-hue-violet: #ba97eb;
+    --dya-hue-pink: #ed83b7;
 
-    --dya-ansi-red: #ff7267;
-    --dya-ansi-green: #02c650;
-    --dya-ansi-yellow: #c1a20b;
-    --dya-ansi-blue: #72a3fe;
-    --dya-ansi-magenta: #ff41f7;
-    --dya-ansi-cyan: #05b9cf;
-    --dya-ansi-bright-red: #ffb5ac;
-    --dya-ansi-bright-green: #08f364;
-    --dya-ansi-bright-yellow: #eec804;
-    --dya-ansi-bright-blue: #afcbfe;
-    --dya-ansi-bright-magenta: #fea8f6;
-    --dya-ansi-bright-cyan: #0fe3fe;
+    --dya-ansi-red: #eb8278;
+    --dya-ansi-green: #54bf6a;
+    --dya-ansi-yellow: #baa34d;
+    --dya-ansi-blue: #7fa5e8;
+    --dya-ansi-magenta: #eb68e3;
+    --dya-ansi-cyan: #54b5c5;
+    --dya-ansi-bright-red: #f3bbb4;
+    --dya-ansi-bright-green: #6aea83;
+    --dya-ansi-bright-yellow: #e5ca60;
+    --dya-ansi-bright-blue: #b6cbf1;
+    --dya-ansi-bright-magenta: #f2b2eb;
+    --dya-ansi-bright-cyan: #6adef1;
 
-    --dya-field: #fe7802;
+    --dya-field: #ea874b;
     --dya-on-field: #181714;
 
     --dya-tag-bg: #e6e3db12;
     --dya-tag-border: #e6e3db2b;
 
-    --dya-success: #4ade80;
-    --dya-success-hover: #6ae997;
-    --dya-success-soft: #4ade801a;
+    --dya-success: #74d791;
+    --dya-success-hover: #8ae2a5;
+    --dya-success-soft: #74d7911a;
     --dya-warning: #d6a95c;
     --dya-warning-soft: #d6a95c1a;
-    --dya-danger: #ff5f56;
-    --dya-danger-hover: #ff7d75;
+    --dya-danger: #ea746a;
+    --dya-danger-hover: #ec8b83;
     --dya-danger-ink: #f59790;
     --dya-danger-soft: #f597901a;
     --dya-on-status: #181714;
@@ -183,7 +183,7 @@
 
     --dya-elev-focus:
         inset 0 2px 4px #000000cc,
-        0 0 0 1px #fe7802;
+        0 0 0 1px #ea874b;
 
     --dya-elev-popover:
         inset 0 1px 0 #ffffff26,
@@ -195,7 +195,7 @@
         0 0 0 1px #000000,
         0 24px 48px -12px #000000e6;
 
-    --dya-focus: #fe7802;
+    --dya-focus: #ea874b;
 
     --dya-press-y: 1px;
     --dya-press-y-key: 2px;
@@ -250,25 +250,25 @@
     --dya-accent-3: #7fd3b8;
     --dya-accent-3-soft: #7fd3b81f;
 
-    --dya-hue-amber: #e7a203;
-    --dya-hue-mint: #0fd098;
-    --dya-hue-cyan: #03c6e6;
-    --dya-hue-blue: #86b1ff;
-    --dya-hue-violet: #c598ff;
-    --dya-hue-pink: #fe7fc0;
+    --dya-hue-amber: #daa752;
+    --dya-hue-mint: #5dc99e;
+    --dya-hue-cyan: #5bc1d9;
+    --dya-hue-blue: #91b2ec;
+    --dya-hue-violet: #bf9fec;
+    --dya-hue-pink: #ed8ebc;
 
-    --dya-ansi-red: #ff7f73;
-    --dya-ansi-green: #01cd53;
-    --dya-ansi-yellow: #c9a90c;
-    --dya-ansi-blue: #7caafe;
-    --dya-ansi-magenta: #fe5bf6;
-    --dya-ansi-cyan: #11c0d6;
-    --dya-ansi-bright-red: #febfb7;
-    --dya-ansi-bright-green: #07fa68;
-    --dya-ansi-bright-yellow: #f5ce05;
-    --dya-ansi-bright-blue: #b9d2ff;
-    --dya-ansi-bright-magenta: #ffb4f7;
-    --dya-ansi-bright-cyan: #55e7fe;
+    --dya-ansi-red: #ec8d82;
+    --dya-ansi-green: #58c66e;
+    --dya-ansi-yellow: #c1aa51;
+    --dya-ansi-blue: #88abea;
+    --dya-ansi-magenta: #ec77e4;
+    --dya-ansi-cyan: #59bbcb;
+    --dya-ansi-bright-red: #f3c4be;
+    --dya-ansi-bright-green: #6df188;
+    --dya-ansi-bright-yellow: #ecd063;
+    --dya-ansi-bright-blue: #bfd2f4;
+    --dya-ansi-bright-magenta: #f4bcee;
+    --dya-ansi-bright-cyan: #81e2f3;
 
     --dya-field: #74a9ff;
     --dya-on-field: #05080f;

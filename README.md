@@ -1,6 +1,6 @@
 # dyarchia-desktop
 
-**ALPHA — 0.2.5-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.2.7-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 This is an early build published so it can be installed and exercised on a second machine.
@@ -18,7 +18,7 @@ several of its parts are documented as working but unproven. What that means in 
 - The kanban plugin drives real agent CLIs, and those spend real money on your account when
   you point them at a real model. Read `plugins/kanban/README.md` before running a card.
 - The crawlee plugin needs a corpus repository. An installed copy is given one under
-  `~/Dyarchia/crawlee`; a checkout uses the `.env` beside its `pyproject.toml`, and
+  `~/.dyarchia/data/crawlee`; a checkout uses the `.env` beside its `pyproject.toml`, and
   its own README is the authority.
 
 Desktop shell for the dyarchia ecosystem. A panel container in the style of the Claude
@@ -94,6 +94,8 @@ The pieces:
             stage-plugins.mjs    collects plugins from their manifests, for the installer
             install-plugins.mjs  the same, into ~/.dyarchia/plugins
             build-plugin.mjs     the shared esbuild invocation every plugin builds with
+            release.mjs          cuts a release: tag, build, publish, verify, prune
+            screenshot.mjs       captures a running instance over the debugging port
         docs/
             plugins.md           the whole plugin contract: code and UI
 
@@ -130,44 +132,55 @@ A packaged build carries them already, so this is only for the copy that overrid
 node scripts/install-plugins.mjs
 ```
 
-There is no test runner, linter or formatter. Type checking is manual, as every tsconfig
-sets noEmit:
+Type checking is manual, as every tsconfig sets noEmit, and is run per package:
 
 ```bash
 npx tsc -p apps/shell
 ```
 
+The crawlee plugin is the one package with a test suite. It is Python, and its renderer is
+plain JavaScript with no build and no typecheck, so one of those tests imports the renderer
+under node — which is what catches a panel that parses and then fails to evaluate. It needs
+`uv sync --dev` in the package once:
+
+```bash
+cd plugins/crawlee && .venv/Scripts/python.exe -m pytest tests/unit -q
+```
+
+There is no linter or formatter.
+
 
 ## 4. Branches and releases
 
-One repository, three kinds of branch. `master` is the trunk, `develop` is where work
-lands, and everything is built on a `feature/*` cut from `develop`.
+One repository, three kinds of branch. `master` is the released state, `develop` is where
+work is integrated, and everything is built on a `feature/*` cut from `develop`.
 
 ```text
-Branch       Holds                              Merged with
-----------   --------------------------------   ----------------------------
-master       the released state                 --no-ff, from develop only
-develop      integrated, unreleased work        --no-ff, from feature/* only
-feature/*    one piece of work                  deleted after merging
+Branch       Holds                              Changed by
+----------   --------------------------------   ----------------------------------------
+master       the released state                 the maintainer, --no-ff from develop only
+develop      integrated, unreleased work        a reviewed pull request from feature/*
+feature/*    one piece of work                  its author; deleted after merging
 ```
+
+**Every change arrives as a pull request against `develop`.** Neither `master` nor `develop`
+takes a direct push: `master` is protected and says so to anybody who tries, and a change
+that reaches `develop` without a review has skipped the one step that is the reason a
+branch exists. The maintainer reviews it, and merges it or declines it with a reason.
 
 The rules, in order:
 
 - **Cut the branch before the first edit, not after.** A change that has already started
   on `develop` has lost the review surface the branch exists to give it.
-- **Merge with `--no-ff`, always.** A fast-forward erases the fact that a set of commits
-  belonged together, which is the only thing that makes the history readable later.
-- **A branch that is finished, committed and verified lands on its own judgement**, and it
-  lands on both: `develop` and then `master`, both `--no-ff`, both pushed. The two hops were
-  one rule until 2026-09-11, then two until 2026-09-22, and are one again — nobody follows
-  this repository, and a `master` held back from a `develop` that works was a ceremony
-  protecting an audience that does not exist. Nothing is committed directly to either.
+- **Merge with `--no-ff`.** A fast-forward erases the fact that a set of commits belonged
+  together, which is the only thing that makes the history readable later. The one
+  exception is the maintainer bringing `develop` level with `master` after a release merge,
+  with `--ff-only`: the two then name the same commit, and neither reads as ahead of the
+  other.
 - **A feature branch holds a piece of work, not necessarily a single change.** It can live
   until that work is done. Two branches cut the same day that both append to the end of one
   document will conflict on the second merge, which is cheap to fix and is a reason not to
   split work that belongs together.
-- **The remote is never a partial view of what happened.** `develop` and `master` are pushed
-  together, so what the repository says publicly is what the working tree says here.
 - **Delete the feature branch after it merges.** The merge commit holds the name.
 - **Commit bodies are long and evidentiary.** State the measurement or the failure that
   forced the change, what the alternative was, and what was deliberately left alone. A
@@ -221,7 +234,7 @@ only in a packaged build, the shell asks GitHub whether there is a newer one; ev
 is a prerelease, so `allowPrerelease` is what makes one findable at all.
 
 Nothing is downloaded without being asked. An update offers itself as one control beside
-the version -- `Update to 0.2.6-alpha`, then the percentage, then `Restart to finish` --
+the version -- `Update to <version>`, then the percentage, then `Restart to finish` --
 and there is no idle button when there is nothing to offer. A check that failed says so in
 the tip on the version rather than taking the bar: it is a background request to a service
 that may simply be unreachable.
@@ -375,6 +388,7 @@ the pair shows.
 Known note: dockview 8 logs a console error about the ContextMenu module of
 dockview-enterprise. It is harmless — the free edition is warning that tab context menus
 are a paid feature. Nothing in the shell is affected.
+
 
 ## 9. Licence and attribution
 

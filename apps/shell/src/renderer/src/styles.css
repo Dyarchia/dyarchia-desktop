@@ -293,7 +293,7 @@ body,
     align-items: center;
     gap: var(--dya-space-1);
     height: 100%;
-    padding-inline-start: var(--dya-space-2);
+    padding-right: var(--dya-space-2);
 }
 
 .group-actions svg {

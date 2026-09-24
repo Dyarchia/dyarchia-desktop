@@ -55,6 +55,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     const descriptor = getPanel(props.api.id)?.descriptor
     const hue = descriptor?.hue
     const icon = mark ?? descriptor?.icon
+    const glyph = mark ? 'dya-glyph dya-glyph--mark' : `dya-glyph${hue ? ` dya-hue--${hue}` : ''}`
 
     /*
      * The close is on the tab it closes, shown on the one that is open and on the one under the
@@ -69,10 +70,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             aria-selected={active}
         >
             {icon ? (
-                <span
-                    className={`dya-glyph${hue ? ` dya-hue--${hue}` : ''}`}
-                    dangerouslySetInnerHTML={{ __html: icon }}
-                />
+                <span className={glyph} dangerouslySetInnerHTML={{ __html: icon }} />
             ) : (
                 hue && <span className={`dya-dot dya-hue--${hue}`} />
             )}
@@ -92,8 +90,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 }
 
 /*
- * A new instance of the open panel, placed right after the last tab where a browser puts it,
- * rather than at the far end of the header. Only a duplicable panel offers one.
+ * A new instance of the open panel, at the far end of the header where the reader expects it;
+ * the close moved onto the tab it closes and this stayed. Only a duplicable panel offers one.
  */
 function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element | null {
     const active = props.activePanel
@@ -177,7 +175,7 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
             watermarkComponent={watermark}
-            leftHeaderActionsComponent={GroupActions}
+            rightHeaderActionsComponent={GroupActions}
             onReady={handleReady}
         />
     )

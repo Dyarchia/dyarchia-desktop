@@ -677,7 +677,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     const harness = el('span', 'dya-legend kanban-card-harness')
                     const hue = `dya-hue--${harnessHues[runner.harness]}`
                     const mark = brandIcon(runner.harness)
-                    const glyph = el('span', mark ? `dya-glyph ${hue}` : `dya-dot ${hue}`)
+                    const glyph = el('span', mark ? 'dya-glyph dya-glyph--mark' : `dya-dot ${hue}`)
                     if (mark) glyph.innerHTML = mark
                     harness.append(glyph, runner.harness)
                     return harness

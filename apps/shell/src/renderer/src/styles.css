@@ -116,6 +116,12 @@ body,
     height: 15px;
 }
 
+/* In the overflow menu the icon is the only thing carrying the panel's hue, not a key around it. */
+.topbar-icon,
+.topbar-icon-text {
+    color: var(--dya-hue, currentColor);
+}
+
 .topbar-icon-text {
     letter-spacing: var(--dya-tracking-ui);
 }
@@ -257,6 +263,7 @@ body,
 .panel-tab {
     display: flex;
     align-items: center;
+    gap: var(--dya-space-2);
     height: 100%;
     padding-inline: var(--dya-space-3);
     white-space: nowrap;

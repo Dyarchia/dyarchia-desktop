@@ -24,24 +24,32 @@ const STYLES =
     '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {' +
     ' background-color: var(--dya-border-strong); }'
 
-const ANSI: ITheme = {
-    black: '#3a3d42',
-    red: '#e07b7b',
-    green: '#7fc99a',
-    yellow: '#d6b168',
-    blue: '#7ba6e8',
-    magenta: '#c493dd',
-    cyan: '#6dc3cf',
-    white: '#a0a3a8',
-    brightBlack: '#909398',
-    brightRed: '#f09a9a',
-    brightGreen: '#9bdcb2',
-    brightYellow: '#e8c98a',
-    brightBlue: '#9dbef2',
-    brightMagenta: '#d7b0e8',
-    brightCyan: '#8fd6e0',
-    brightWhite: '#f4f4f6'
-}
+/*
+ * The sixteen colours a program asks for by number, taken from kanon rather than written here. They
+ * were sixteen hex values in this file, the one place in the application a plugin declared colours
+ * of its own, and they were measured against nothing: a green chosen by eye on one theme's ground
+ * is a green on the other theme's ground too, whatever it measures there. The chromatic six and
+ * their bright twins are solved per theme against the surface the terminal draws on; black and
+ * white are the system's own ink ranks, so a program's dim text is the dimmest text the system has.
+ */
+const ANSI_TOKENS = {
+    black: 'border-strong',
+    red: 'ansi-red',
+    green: 'ansi-green',
+    yellow: 'ansi-yellow',
+    blue: 'ansi-blue',
+    magenta: 'ansi-magenta',
+    cyan: 'ansi-cyan',
+    white: 'text-3',
+    brightBlack: 'text-4',
+    brightRed: 'ansi-bright-red',
+    brightGreen: 'ansi-bright-green',
+    brightYellow: 'ansi-bright-yellow',
+    brightBlue: 'ansi-bright-blue',
+    brightMagenta: 'ansi-bright-magenta',
+    brightCyan: 'ansi-bright-cyan',
+    brightWhite: 'text'
+} as const satisfies Partial<Record<keyof ITheme, string>>
 
 const TERMINAL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>'
@@ -69,7 +77,9 @@ export function activate(ctx: PluginContext): void {
         container.classList.add('dyarchia-terminal')
 
         const terminalTheme = (): ITheme => ({
-            ...ANSI,
+            ...Object.fromEntries(
+                Object.entries(ANSI_TOKENS).map(([slot, name]) => [slot, ctx.token(name)])
+            ),
             background: ctx.token('surface-1'),
             foreground: ctx.token('text'),
             cursor: ctx.token('text'),

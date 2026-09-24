@@ -223,6 +223,79 @@
 }
 
 /*
+ * What a program's own colours become inside a log. A tool that colours its output writes SGR
+ * escapes, and a log that prints them shows `[90m` and a box where the escape character was,
+ * on every line. The twelve chromatic colours are the terminal's tokens; black and white are the
+ * system's ink ranks, as they are in the terminal, and dim is the quietest of them. Every one is
+ * text on `--dya-sunken`, the ground of a log: 7.14 at the least in Gi, 7.70 in Rei.
+ */
+.dya-ansi--black,
+.dya-ansi--bright-black,
+.dya-ansi--dim {
+    color: var(--dya-text-4);
+}
+
+.dya-ansi--white {
+    color: var(--dya-text-2);
+}
+
+.dya-ansi--bright-white {
+    color: var(--dya-text);
+}
+
+.dya-ansi--red {
+    color: var(--dya-ansi-red);
+}
+
+.dya-ansi--green {
+    color: var(--dya-ansi-green);
+}
+
+.dya-ansi--yellow {
+    color: var(--dya-ansi-yellow);
+}
+
+.dya-ansi--blue {
+    color: var(--dya-ansi-blue);
+}
+
+.dya-ansi--magenta {
+    color: var(--dya-ansi-magenta);
+}
+
+.dya-ansi--cyan {
+    color: var(--dya-ansi-cyan);
+}
+
+.dya-ansi--bright-red {
+    color: var(--dya-ansi-bright-red);
+}
+
+.dya-ansi--bright-green {
+    color: var(--dya-ansi-bright-green);
+}
+
+.dya-ansi--bright-yellow {
+    color: var(--dya-ansi-bright-yellow);
+}
+
+.dya-ansi--bright-blue {
+    color: var(--dya-ansi-bright-blue);
+}
+
+.dya-ansi--bright-magenta {
+    color: var(--dya-ansi-bright-magenta);
+}
+
+.dya-ansi--bright-cyan {
+    color: var(--dya-ansi-bright-cyan);
+}
+
+.dya-ansi--bold {
+    font-weight: var(--dya-weight-medium);
+}
+
+/*
  * The handle that decides how a panel divides its room between two regions.
  *
  * Everything in this application resizes — the window, the dock, every panel in it — and the

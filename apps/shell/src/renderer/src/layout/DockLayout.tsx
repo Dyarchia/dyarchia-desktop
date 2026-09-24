@@ -10,7 +10,13 @@ import type {
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
 import { PluginPanel } from '../panels/PluginPanel'
-import { basePanelId, getPanel, getRegisteredPanels } from '../panels/registry'
+import {
+    basePanelId,
+    getPanel,
+    getRegisteredPanels,
+    getTabIcon,
+    onTabIconChange
+} from '../panels/registry'
 
 const dyarchiaTheme: DockviewTheme = {
     ...themeAbyssSpaced,
@@ -37,26 +43,64 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
         }
     }, [props.api])
 
-    const hue = getPanel(props.api.id)?.descriptor.hue
+    const [mark, setMark] = useState(() => getTabIcon(props.api.id))
+    useEffect(
+        () =>
+            onTabIconChange((instanceId) => {
+                if (instanceId === props.api.id) setMark(getTabIcon(instanceId))
+            }),
+        [props.api.id]
+    )
 
+    const descriptor = getPanel(props.api.id)?.descriptor
+    const hue = descriptor?.hue
+    const icon = mark ?? descriptor?.icon
+
+    /*
+     * The close is on the tab it closes, shown on the one that is open and on the one under the
+     * pointer, as every browser does. It sat at the far end of the header, a whole window away
+     * from the tab it acted on and acting on whichever tab happened to be open. The press is kept
+     * from the tab so it does not start a drag or select the tab on its way out.
+     */
     return (
         <div
             className={`dya-tab panel-tab${hue ? ` dya-pane--${hue}` : ''}`}
             role="tab"
             aria-selected={active}
         >
-            {hue && <span className={`dya-dot dya-hue--${hue}`} />}
+            {icon ? (
+                <span
+                    className={`dya-glyph${hue ? ` dya-hue--${hue}` : ''}`}
+                    dangerouslySetInnerHTML={{ __html: icon }}
+                />
+            ) : (
+                hue && <span className={`dya-dot dya-hue--${hue}`} />
+            )}
             {title}
+            <button
+                className="dya-button dya-button--bare panel-tab-close"
+                title={`Close ${title}`}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                    event.stopPropagation()
+                    props.api.close()
+                }}
+                dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
+            />
         </div>
     )
 }
 
-function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {
+/*
+ * A new instance of the open panel, placed right after the last tab where a browser puts it,
+ * rather than at the far end of the header. Only a duplicable panel offers one.
+ */
+function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element | null {
     const active = props.activePanel
     const descriptor = active ? getPanel(active.id)?.descriptor : undefined
+    if (!active || !descriptor?.duplicable) return null
 
     const duplicate = (): void => {
-        if (!active || !descriptor?.duplicable) return
         const base = basePanelId(active.id)
         let n = 2
         while (props.containerApi.getPanel(`${base}#${n}`)) n++
@@ -70,22 +114,12 @@ function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element {
 
     return (
         <div className="group-actions">
-            {descriptor?.duplicable && (
-                <button
-                    className="dya-key"
-                    title={`New ${descriptor.title}`}
-                    onClick={duplicate}
-                    dangerouslySetInnerHTML={{ __html: DUPLICATE_ICON }}
-                />
-            )}
-            {active && (
-                <button
-                    className="dya-key"
-                    title="Close panel"
-                    onClick={() => active.api.close()}
-                    dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
-                />
-            )}
+            <button
+                className="dya-key"
+                title={`New ${descriptor.title}`}
+                onClick={duplicate}
+                dangerouslySetInnerHTML={{ __html: DUPLICATE_ICON }}
+            />
         </div>
     )
 }
@@ -143,7 +177,7 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
             watermarkComponent={watermark}
-            rightHeaderActionsComponent={GroupActions}
+            leftHeaderActionsComponent={GroupActions}
             onReady={handleReady}
         />
     )

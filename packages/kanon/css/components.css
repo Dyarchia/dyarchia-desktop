@@ -1064,6 +1064,26 @@ textarea.dya-field {
     background: var(--dya-hue, var(--dya-text-4));
 }
 
+/*
+ * The dot when the thing it marks has a face: a plugin's icon on its tab and its row in Setup, the
+ * mark of the program a terminal is running, the agent a card goes to. Six dots told six plugins
+ * apart only by a hue at half its chroma; a shape is read before a colour is. It wears the same
+ * hue a dot would, as a graphical object: 4.22 at the least, pink in Rei on `--dya-selected`.
+ */
+.dya-glyph {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 14px;
+    height: 14px;
+    color: var(--dya-hue, var(--dya-text-4));
+}
+
+.dya-glyph > svg {
+    width: 100%;
+    height: 100%;
+}
+
 .dya-badge {
     display: inline-grid;
     place-items: center;

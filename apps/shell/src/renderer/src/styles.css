@@ -269,12 +269,31 @@ body,
     white-space: nowrap;
 }
 
+.panel-tab-close {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    margin-inline-start: var(--dya-space-1);
+    visibility: hidden;
+}
+
+.panel-tab-close svg {
+    width: 10px;
+    height: 10px;
+}
+
+.panel-tab:hover .panel-tab-close,
+.panel-tab[aria-selected='true'] .panel-tab-close {
+    visibility: visible;
+}
+
 .group-actions {
     display: flex;
     align-items: center;
     gap: var(--dya-space-1);
     height: 100%;
-    padding-right: var(--dya-space-2);
+    padding-inline-start: var(--dya-space-2);
 }
 
 .group-actions svg {

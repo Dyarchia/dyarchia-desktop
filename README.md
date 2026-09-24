@@ -404,5 +404,6 @@ and installs it from PyPI, so the copy you run is the one Apify publishes.
 
 [NOTICE.md](NOTICE.md) lists everything else: what ships inside the installer, what the Setup
 panel fetches on demand, and the agent CLIs the kanban drives without bundling any of them.
-An installed copy carries `LICENSE.txt`, `NOTICE.md` and `licenses/OFL.txt` beside the
+An installed copy carries `LICENSE.txt`, `NOTICE.md`, `licenses/OFL.txt` and
+`licenses/lobe-icons.txt` beside the
 executable, next to the Electron and Chromium notices that were already there.

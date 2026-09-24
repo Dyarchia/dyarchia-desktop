@@ -8,7 +8,7 @@ let host: UtilityProcess | null = null
 function ensureHost(): UtilityProcess {
     if (host) return host
     const spawned = utilityProcess.fork(join(import.meta.dirname, 'ptyhost.cjs'), [], {
-        serviceName: 'dyarchia pty host'
+        serviceName: 'Dyarchia desktop pty host'
     })
     spawned.on('exit', () => {
         if (host === spawned) host = null

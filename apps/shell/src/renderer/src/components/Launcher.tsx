@@ -27,7 +27,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
     return (
         <div className="launcher">
             <div className="launcher-head">
-                <span className="dya-carved">dyarchia</span>
+                <span className="dya-carved">Dyarchia desktop</span>
             </div>
             <div className="launcher-grid">
                 {panels.map((panel) => (

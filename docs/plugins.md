@@ -172,8 +172,11 @@ export function activate(ctx: PluginContext): void {
 }
 ```
 
-- `icon` is the content of the top-bar toggle: inline SVG with `stroke="currentColor"`, or
-  a one-character string as a fallback.
+- `icon` is the content of the top-bar toggle, the tab and the Setup row: inline SVG with
+  `stroke="currentColor"`, which takes the plugin's hue, or a mark in its own colours, or a
+  one-character string as a fallback. A mark may define gradients by id; the shell gives every
+  copy it draws ids of its own. A plugin that puts an svg with ids into the page itself passes it
+  through `ownIds` from `@dyarchia/sdk` for the same reason.
 - `duplicable: true` allows several instances through a `+` in the group header. Each gets
   its own mount and dispose; the instance id is `<id>#<n>` and the plugin never handles it.
 - `dispose` must release everything: observers, `on()` subscriptions, sessions opened

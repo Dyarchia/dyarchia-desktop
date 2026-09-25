@@ -1,4 +1,5 @@
 import type { PanelDescriptor } from '../panels/registry'
+import { Svg } from './Svg'
 
 /*
  * What the window shows when nothing is open in it.
@@ -37,10 +38,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
                         onClick={() => onOpen(panel.id)}
                     >
                         {panel.icon.trim().startsWith('<svg') ? (
-                            <span
-                                className="dya-tile__icon"
-                                dangerouslySetInnerHTML={{ __html: panel.icon }}
-                            />
+                            <Svg className="dya-tile__icon" svg={panel.icon} />
                         ) : (
                             <span className="dya-tile__name">{panel.icon}</span>
                         )}

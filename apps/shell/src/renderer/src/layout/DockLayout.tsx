@@ -9,6 +9,7 @@ import type {
     SerializedDockview
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
+import { Svg } from '../components/Svg'
 import { PluginPanel } from '../panels/PluginPanel'
 import {
     basePanelId,
@@ -70,7 +71,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             aria-selected={active}
         >
             {icon ? (
-                <span className={glyph} dangerouslySetInnerHTML={{ __html: icon }} />
+                <Svg className={glyph} svg={icon} />
             ) : (
                 hue && <span className={`dya-dot dya-hue--${hue}`} />
             )}

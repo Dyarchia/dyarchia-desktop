@@ -32,15 +32,19 @@ const ALIASES: Record<string, string> = {
 let drawn = 0
 
 /*
- * The mark for a program, or null when the set has none. A colour mark defines its gradients by
- * id, and the same mark on two tabs would define the same id twice; a reference resolves to the
- * first, and when that one is hidden Chromium paints the second with nothing. Each copy therefore
- * gets ids of its own.
+ * An icon that defines a gradient does so by id, and the same icon on a key, a tab and a Setup row
+ * defines the same id three times; a reference resolves to the first, and when that one is hidden
+ * Chromium paints the others with nothing. Every place that puts an svg into the page passes it
+ * through here, so each copy gets ids of its own. An svg without ids comes back unchanged.
  */
+export function ownIds(svg: string): string {
+    if (!svg.includes('id="')) return svg
+    const suffix = `-${++drawn}`
+    return svg.replace(/id="([^"]+)"/g, `id="$1${suffix}"`).replace(/url\(#([^)]+)\)/g, `url(#$1${suffix})`)
+}
+
 export function brandIcon(program: string): string | null {
     const key = program.toLowerCase()
     const svg = BRANDS[ALIASES[key] ?? key]
-    if (!svg) return null
-    const suffix = `-${++drawn}`
-    return svg.replace(/id="([^"]+)"/g, `id="$1${suffix}"`).replace(/url\(#([^)]+)\)/g, `url(#$1${suffix})`)
+    return svg ? ownIds(svg) : null
 }

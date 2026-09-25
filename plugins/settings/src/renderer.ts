@@ -1,4 +1,4 @@
-import { injectStyles, isHue } from '@dyarchia/sdk'
+import { injectStyles, isHue, ownIds } from '@dyarchia/sdk'
 import type { PluginCatalogueEntry, PluginContext } from '@dyarchia/sdk'
 
 /*
@@ -196,7 +196,7 @@ function named(entry: PluginCatalogueEntry, tag: string, className: string): HTM
     const hue = isHue(entry.manifest.hue) ? ` dya-hue--${entry.manifest.hue}` : ''
     if (entry.icon?.startsWith('<svg')) {
         const glyph = el('span', `dya-glyph${hue}`)
-        glyph.innerHTML = entry.icon
+        glyph.innerHTML = ownIds(entry.icon)
         inner.append(glyph)
     } else if (hue) {
         inner.append(el('span', `dya-dot${hue}`))

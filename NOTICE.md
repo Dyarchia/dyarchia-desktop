@@ -17,6 +17,9 @@ Crawlee is not redistributed by this project. The Setup panel creates a Python e
 the machine that runs it and installs Crawlee from PyPI, so the copy you use is the one Apify
 publishes, unmodified.
 
+The plugin's icon is the Crawlee logo, cropped to its symbol and with its gradient reduced to
+three stops. It is Apify's mark, shown only to identify the plugin that drives their crawler.
+
 ## What ships inside the installer
 
 ```

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { PanelDescriptor } from '../panels/registry'
 import { THEMES } from '../theme'
+import { Svg } from './Svg'
 
 interface TopBarProps {
     panels: PanelDescriptor[]
@@ -22,7 +23,7 @@ const CLOSE_ICON =
 function PanelIcon({ icon, hue }: { icon: string; hue?: string }): React.JSX.Element {
     const tint = hue ? ` dya-hue--${hue}` : ''
     if (icon.trim().startsWith('<svg')) {
-        return <span className={`topbar-icon${tint}`} dangerouslySetInnerHTML={{ __html: icon }} />
+        return <Svg className={`topbar-icon${tint}`} svg={icon} />
     }
     return <span className={`topbar-icon-text${tint}`}>{icon}</span>
 }

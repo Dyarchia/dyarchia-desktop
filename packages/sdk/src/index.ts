@@ -2,7 +2,7 @@ export { highlight, highlightLines } from './highlight.js'
 export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
 export { HUES, hues, isHue } from './hues.js'
-export { brandIcon } from './brands.js'
+export { brandIcon, ownIds } from './brands.js'
 export type { Hue } from './hues.js'
 
 import type { Hue } from './hues.js'

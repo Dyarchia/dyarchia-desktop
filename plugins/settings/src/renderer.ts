@@ -72,15 +72,11 @@ const STYLES = `
     height: 100%;
     overflow: hidden;
 }
-.set-head {
-    padding: var(--dya-space-5) var(--dya-space-5) var(--dya-space-4);
-    border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
-}
 .set-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-4) var(--dya-space-5) var(--dya-space-5);
+    padding: var(--dya-space-5);
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-5);
@@ -158,7 +154,6 @@ const STYLES = `
     align-items: center;
     gap: var(--dya-space-3);
     padding: var(--dya-space-3) var(--dya-space-5);
-    border-top: var(--dya-border-width) dashed var(--dya-dashed);
 }
 .set-foot-note {
     flex: 1;
@@ -223,9 +218,6 @@ export function activate(ctx: PluginContext): void {
         (container) => {
         const root = el('div', 'set')
 
-        const head = el('div', 'set-head')
-        head.append(el('h1', 'dya-title', 'Setup'))
-
         /*
          * Tips live in one holder under the panel root, so they leave with it. A detail that is a
          * whole command — crawlee declares a five-line Python program as the proof its environment
@@ -253,7 +245,7 @@ export function activate(ctx: PluginContext): void {
         restart.hidden = true
         foot.append(note, restart)
 
-        root.append(head, scroll, log, foot, tips)
+        root.append(scroll, log, foot, tips)
         container.append(root)
 
         const wanted = new Set<string>()

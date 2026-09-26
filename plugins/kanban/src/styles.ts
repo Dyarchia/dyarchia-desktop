@@ -350,7 +350,6 @@ export const STYLES = `
         grid-row: 1;
         height: auto;
         min-height: 0;
-        border-bottom: none;
         border-left: var(--dya-border-width) solid var(--dya-hairline);
     }
 }
@@ -634,7 +633,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     min-height: 160px;
     display: flex;
     flex-direction: column;
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
     background: var(--dya-surface-1);
 }
 

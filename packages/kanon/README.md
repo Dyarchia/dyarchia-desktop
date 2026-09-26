@@ -249,8 +249,8 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   `box-shadow`.
 - **A key that is on stays up and brightens**: `--dya-selected` under `--dya-border-strong`,
   white ink. A key whose panel is open is held down: it sits on its edge with its glyph in the
-  top ink; in the title bar it is also `key--open`, a crimson face (`--dya-open` #9b1b1e
-  under `--dya-open-border`) with the glyph at 6.66, the one fill that is neither a light nor
+  top ink; in the title bar it is also `key--open`, a clotted-blood face (`--dya-open` #4d1012
+  under `--dya-open-border` #7a2226) with the glyph at 12.24, the one fill that is neither a light nor
   a surface. A key that cannot be pressed keeps its shape, loses its light and wears
   `--dya-text-off` over `--dya-disabled`.
 - **Three keys are lit.** A lit key has a border in its light, an ink mixed from its light

@@ -51,14 +51,19 @@ export const STYLES = `
     align-items: stretch;
 }
 
+/*
+ * The stages are strips of one board, not cards on it: flush, darker than the glass, with a
+ * hairline between each and the next. The hairline is the board's own ground showing through a
+ * one-pixel gap, so there is no border to double up where two stages meet.
+ */
 .kanban-board {
     flex: 1;
     min-width: 0;
     min-height: 0;
     display: flex;
     align-items: stretch;
-    gap: var(--dya-space-2);
-    padding: var(--dya-space-3);
+    gap: var(--dya-border-width);
+    background: var(--dya-hairline);
     overflow-x: auto;
     overflow-y: hidden;
 }
@@ -66,10 +71,10 @@ export const STYLES = `
 .kanban-column {
     flex: 1 1 168px;
     min-width: 168px;
-    max-width: 340px;
     min-height: 0;
     display: flex;
     flex-direction: column;
+    background: var(--dya-chassis);
 }
 
 .kanban-column[data-collapsed='true'] {
@@ -115,13 +120,13 @@ export const STYLES = `
     margin-bottom: var(--dya-space-2);
 }
 
-.kanban-column[data-drop='accept'] { border-color: var(--dya-accent); }
-.kanban-column[data-drop='refuse'] { border-color: var(--dya-danger); }
-
 .kanban-column-head {
     flex: none;
-    height: 32px;
+    display: flex;
+    align-items: center;
     gap: var(--dya-space-2);
+    min-height: 44px;
+    padding: var(--dya-space-2) var(--dya-space-3) 0;
 }
 
 .kanban-column-title { flex: 1; min-width: 0; }
@@ -139,10 +144,7 @@ export const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-2);
-    background: var(--dya-chassis);
-    border-bottom-left-radius: var(--dya-radius);
-    border-bottom-right-radius: var(--dya-radius);
+    padding: var(--dya-space-2) var(--dya-space-3) var(--dya-space-3);
 }
 
 .kanban-column[data-drop='accept'] .kanban-scroll { background: var(--dya-accent-soft); }
@@ -179,11 +181,6 @@ export const STYLES = `
 
 .kanban-board[data-dragging='true'] .kanban-drop {
     display: block;
-}
-
-/* An empty column steps back: it is a place for something, not a thing. */
-.kanban-column[data-empty='true'] .kanban-scroll {
-    background: var(--dya-sunken);
 }
 
 .kanban-card {
@@ -258,20 +255,6 @@ export const STYLES = `
     margin-top: var(--dya-space-2);
 }
 
-.kanban-dot {
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-idle);
-}
-
-.kanban-dot[data-tone='accent'] { background: var(--dya-accent); }
-.kanban-dot[data-tone='accent-2'] { background: var(--dya-accent-2); }
-.kanban-dot[data-tone='accent-3'] { background: var(--dya-accent-3); }
-.kanban-dot[data-tone='warning'] { background: var(--dya-warning); }
-.kanban-dot[data-tone='success'] { background: var(--dya-success); }
-.kanban-dot[data-tone='danger'] { background: var(--dya-danger); }
 
 .kanban-card-note {
     flex: 1;

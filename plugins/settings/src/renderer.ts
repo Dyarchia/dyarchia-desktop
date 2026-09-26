@@ -302,7 +302,7 @@ export function activate(ctx: PluginContext): void {
             for (const status of statuses) {
                 const chip = el(
                     'span',
-                    `dya-badge ${status.met ? 'dya-badge--success' : 'dya-badge--warning'} dya-badge--soft`,
+                    `dya-badge ${status.met ? 'dya-badge--success' : 'dya-badge--warning'}`,
                     status.label
                 )
                 withTip(chip, `${status.met ? 'ready' : 'needed'} — ${status.detail.replace(/\s+/g, ' ').trim()}`)
@@ -314,7 +314,7 @@ export function activate(ctx: PluginContext): void {
             if (missing.length === 0) return
 
             if (missing.every((status) => !status.acquirable)) {
-                box.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'install it yourself'))
+                box.append(el('span', 'dya-badge dya-badge--warning', 'install it yourself'))
                 return
             }
 
@@ -366,7 +366,7 @@ export function activate(ctx: PluginContext): void {
                 ? { text: 'loaded', kind: 'dya-badge--success' }
                 : wanted.has(entry.manifest.id)
                   ? { text: 'next launch', kind: 'dya-badge--warning' }
-                  : { text: 'not loaded', kind: 'dya-badge--soft' }
+                  : { text: 'not loaded', kind: '' }
             const badge = el('span', `dya-badge ${state.kind}`, state.text)
             title.append(badge)
             body.append(title)
@@ -392,7 +392,7 @@ export function activate(ctx: PluginContext): void {
                         ? 'dya-badge--success'
                         : tick.checked
                           ? 'dya-badge--warning'
-                          : 'dya-badge--soft'
+                          : ''
                 }`
                 badge.textContent = loadedIds.has(entry.manifest.id)
                     ? 'loaded'

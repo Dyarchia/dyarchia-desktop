@@ -132,7 +132,6 @@ export interface PluginContext {
     registerOpener(descriptor: OpenerDescriptor, open: (request: OpenRequest) => void | Promise<void>): void
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
-    onThemeChange(listener: () => void): () => void
     /*
      * The same `highlight` this package exports, handed over rather than imported, because a
      * plugin the shell serves as written has no build step to import anything with. A panel

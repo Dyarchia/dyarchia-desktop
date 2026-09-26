@@ -44,10 +44,10 @@ export function openTerminal(
 ): Attached {
     const theme = (): ITheme => ({
         ...ANSI,
-        background: ctx.token('surface-1'),
+        background: ctx.token('sunken'),
         foreground: ctx.token('text'),
         cursor: ctx.token('text'),
-        cursorAccent: ctx.token('surface-1'),
+        cursorAccent: ctx.token('sunken'),
         selectionBackground: ctx.token('accent-soft')
     })
 
@@ -107,10 +107,6 @@ export function openTerminal(
             ask()
         }
     }
-
-    const stopThemeWatch = ctx.onThemeChange(() => {
-        terminal.options.theme = theme()
-    })
 
     const stopWaiting = (): void => {
         if (!quiet) return
@@ -197,7 +193,6 @@ export function openTerminal(
         dispose(): void {
             disposed = true
             stopWaiting()
-            stopThemeWatch()
             observer.disconnect()
             window.removeEventListener('message', onAnnouncement)
             onInput.dispose()

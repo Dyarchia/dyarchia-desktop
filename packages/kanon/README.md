@@ -249,7 +249,9 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   `box-shadow`.
 - **A key that is on stays up and brightens**: `--dya-selected` under `--dya-border-strong`,
   white ink. A key whose panel is open is held down: it sits on its edge with its glyph in the
-  top ink. A key that cannot be pressed keeps its shape, loses its light and wears
+  top ink; in the title bar it is also `key--open`, a crimson face (`--dya-open` #9b1b1e
+  under `--dya-open-border`) with the glyph at 6.66, the one fill that is neither a light nor
+  a surface. A key that cannot be pressed keeps its shape, loses its light and wears
   `--dya-text-off` over `--dya-disabled`.
 - **Three keys are lit.** A lit key has a border in its light, an ink mixed from its light
   and `--dya-text`, and a still glow cast on the glass around it, `--dya-glow` in the light at
@@ -319,7 +321,7 @@ static faces: sans at 300, 400 and 500, mono at 400 and 500, serif at 300 and 50
 --dya-size-pill       11.5px   the word inside a pill
 --dya-size-label      11px     the head of a table column, a key's shortcut
 --dya-size-label-sm   10.5px   the eyebrow
---dya-size-brand      46px     the wordmark in the title bar, capitals 30px
+--dya-size-brand      30px     the wordmark in the title bar, 472px wide
 ```
 
 ```text
@@ -380,7 +382,7 @@ contrast measured and its rule written in this file, and only then uses it.
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift) card__header masthead brand
              carved splitter (--vertical) sheet (--side)
-Keys         button (--primary --success --danger --quiet --sm --bare) key (--active) chip
+Keys         button (--primary --success --danger --quiet --sm --bare) key (--active --open) chip
              tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) select checkbox form (__actions __push)
 Pills        tag (--key) badge (--success --warning --danger) pills

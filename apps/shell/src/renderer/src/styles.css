@@ -5,15 +5,36 @@ body,
     overflow: hidden;
 }
 
+/*
+ * The ground the glass sits on: three soft pools of light over the near-black and a fine grain
+ * over all of it. The panels are translucent, so this is what makes them read as glass rather than
+ * as grey: every pool shows through whatever panel is over it, and no panel needs a
+ * `backdrop-filter` to look frosted, because the ground is already blurred. The grain is a static
+ * image, painted once.
+ */
 .shell {
+    position: relative;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--dya-bg);
+    background: var(--dya-ground);
+}
+
+.shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: var(--dya-noise);
+    opacity: 0.9;
+    pointer-events: none;
 }
 
 .topbar {
     justify-content: space-between;
+    padding-block: 0;
+    padding-left: var(--dya-space-2);
     -webkit-app-region: drag;
     user-select: none;
 }
@@ -68,8 +89,9 @@ body,
 .topbar-actions {
     display: flex;
     align-items: center;
-    gap: var(--dya-space-1);
-    padding-right: var(--dya-space-3);
+    gap: 6px;
+    padding-right: var(--dya-space-4);
+    padding-bottom: 3px;
     -webkit-app-region: no-drag;
 }
 
@@ -91,22 +113,6 @@ body,
 .topbar-menu .topbar-icon svg {
     width: 12px;
     height: 12px;
-}
-
-.topbar-themes {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-1);
-    padding-right: var(--dya-space-3);
-    -webkit-app-region: no-drag;
-}
-
-.topbar-themes::before {
-    content: '';
-    width: var(--dya-border-width);
-    height: 14px;
-    background: var(--dya-border);
-    margin-right: var(--dya-space-3);
 }
 
 .topbar-icon,
@@ -136,7 +142,7 @@ body,
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
+    width: 46px;
     height: 100%;
     border: none;
     background: transparent;
@@ -163,8 +169,6 @@ body,
 .shell-body {
     flex: 1;
     min-height: 0;
-    background: var(--dya-chassis);
-    box-shadow: var(--dya-elev-chassis);
 }
 
 .shell-loading {
@@ -185,9 +189,9 @@ body,
     --dv-tab-divider-color: transparent;
     --dv-separator-border: transparent;
     --dv-icon-hover-background-color: var(--dya-flat-hover);
-    --dv-border-radius: var(--dya-radius);
-    --dv-tab-border-radius: var(--dya-radius);
-    --dv-tabs-and-actions-container-height: 34px;
+    --dv-border-radius: var(--dya-radius-chassis);
+    --dv-tab-border-radius: 0;
+    --dv-tabs-and-actions-container-height: 40px;
     --dv-tab-margin-block: 0;
     --dv-floating-border: var(--dya-border-width) solid var(--dya-border);
     --dv-floating-group-border: var(--dya-border-width) solid var(--dya-border);
@@ -200,24 +204,45 @@ body,
     --dv-edge-dock-indicator-color: var(--dya-accent);
 }
 
+/*
+ * The panel is glass, and the only glass: a translucent white that fades from the top edge down,
+ * under a hairline, with a lit rim that is bright along the top and all but gone halfway down the
+ * sides. The rim is a gradient border cut out of a pseudo-element with a mask, because a border
+ * cannot carry a gradient and a panel lit from above is lit unevenly. Nothing here blurs what is
+ * behind it: the ground is blurred already.
+ */
 .dv-shell.dockview-theme-abyss-spaced .dv-groupview {
-    background: var(--dya-surface-1);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
-    box-shadow: var(--dya-elev-flat);
+    position: relative;
+    background: var(--dya-glass);
+    border: var(--dya-border-width) solid var(--dya-hairline);
+    border-radius: var(--dya-radius-chassis);
+    box-shadow: var(--dya-elev-chassis);
+}
+
+.dv-shell.dockview-theme-abyss-spaced .dv-groupview::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: 1;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--dya-glass-edge);
+    mask:
+        linear-gradient(#000 0 0) content-box exclude,
+        linear-gradient(#000 0 0);
+    pointer-events: none;
 }
 
 /*
  * No rule under this one. It is the shell's tab strip, and the first thing almost every plugin
- * draws inside its panel is a bar or a tab strip of its own, with a rule of its own, forty
- * pixels below. Two rules that close to each other with one row of words between them read as a
- * mistake rather than as two boundaries. This strip already separates itself twice over: the
- * gradient it sits on, and the accent under the tab that is open. The rule inside the panel is
- * the one that marks something — controls above, content below — so it is the one that stays.
+ * draws inside its panel is a bar or a tab strip of its own, with a rule of its own, a line below.
+ * Two rules that close to each other with one row of words between them read as a mistake rather
+ * than as two boundaries, so the rule inside the panel is the one that stays.
  */
 .dv-shell.dockview-theme-abyss-spaced .dv-tabs-and-actions-container {
-    background: var(--dya-grad-header);
-    border-radius: var(--dya-radius) var(--dya-radius) 0 0;
+    background: transparent;
+    border-radius: var(--dya-radius-chassis) var(--dya-radius-chassis) 0 0;
+    padding-inline: var(--dya-space-2);
 }
 
 /*
@@ -265,8 +290,13 @@ body,
     align-items: center;
     gap: var(--dya-space-2);
     height: 100%;
-    padding-inline: var(--dya-space-3);
+    padding: 0 var(--dya-space-2);
+    font-size: var(--dya-size-body-sm);
     white-space: nowrap;
+}
+
+.panel-tab[aria-selected='true'] {
+    font-weight: var(--dya-weight-medium);
 }
 
 .panel-tab-close {

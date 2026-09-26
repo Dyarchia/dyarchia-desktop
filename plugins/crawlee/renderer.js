@@ -7,6 +7,12 @@
 const ICON =
     '<svg viewBox="9.15 5 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M39.843 34.81h-29.4c-.42 0-.683-.474-.473-.855l7.35-13.24 7.351-13.238a.537.537 0 0 1 .947 0l4.728 8.517a6.521 6.521 0 0 0 1.57 12.848c1.765 0 3.369-.7 4.542-1.843l3.861 6.956c.21.378-.053.854-.473.854h-.003Z" fill="url(#crawlee-body)" stroke="url(#crawlee-body)" stroke-width="1.039"/><path d="M37.855 25.017a6.519 6.519 0 0 1-5.938 3.825 6.518 6.518 0 0 1-6.52-6.52 6.518 6.518 0 0 1 9.343-5.878" stroke="url(#crawlee-arc)" stroke-width="2"/><defs><linearGradient id="crawlee-body" x1="40.393" y1="7.193" x2="12.912" y2="37.541" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient><linearGradient id="crawlee-arc" x1="37.855" y1="15.803" x2="24.829" y2="28.247" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient></defs></svg>'
 
+const PLAY =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l11 7-11 7z"/></svg>'
+
+const STOP =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>'
+
 const PLUS =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
 
@@ -194,13 +200,6 @@ const STYLE = `
  * for a salesforce-ai group, its pages and the time put the group on two lines and ended the time
  * in an ellipsis.
  */
-.crw-facts > .dya-legend {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-3);
-    white-space: nowrap;
-}
 .crw-facts > .dya-meta {
     flex: none;
 }
@@ -455,30 +454,27 @@ function bytes(value) {
 
 function stateBadge(corpus) {
     if (corpus.error) {
-        const badge = el('span', 'dya-badge dya-badge--soft dya-badge--danger', 'unreadable')
+        const badge = el('span', 'dya-badge dya-badge--danger', 'unreadable')
         badge.title = corpus.error
         return badge
     }
 
     if (!corpus.changed) {
-        const [text, tone] = corpus.stale ? ['stale', ''] : ['quiet', ' dya-badge--success']
-        const badge = el('span', `dya-badge dya-badge--soft${tone}`, text)
+        const [text, tone] = corpus.stale ? ['stale', 'warning'] : ['fresh', 'success']
+        const badge = el('span', `dya-badge dya-badge--${tone}`, text)
         if (corpus.stale) badge.title = 'not swept since it last moved'
         return badge
     }
 
     const pills = el('span', 'dya-pills')
     const counts = [
-        [corpus.added, '+', ' dya-badge--success', 'added'],
-        [corpus.modified, '~', ' dya-badge--warning', 'changed'],
-        [corpus.removed, '−', ' dya-badge--danger', 'removed']
-    ]
-    for (const [count, sign, tone, what] of counts) {
-        if (!count) continue
-        const badge = el('span', `dya-badge dya-badge--soft${tone}`, `${sign}${count}`)
-        badge.title = `${count} ${what}`
-        pills.appendChild(badge)
-    }
+        [corpus.added, '+', 'added'],
+        [corpus.modified, '~', 'changed'],
+        [corpus.removed, '−', 'removed']
+    ].filter(([count]) => count)
+    const delta = el('span', 'dya-tag', counts.map(([count, sign]) => `${sign}${count}`).join(' '))
+    delta.title = counts.map(([count, , what]) => `${count} ${what}`).join(', ')
+    pills.append(el('span', 'dya-badge dya-badge--warning', 'changed'), delta)
     return pills
 }
 
@@ -592,15 +588,13 @@ function mount(ctx, container) {
 
     /*
      * The groups this panel has seen, from the corpora and from the profiles alike, so the rounds
-     * table and the target cards give one group one hue. A group is the one category in this panel
-     * that the reader chooses by, and it was printed in the same grey as the date beside it.
+     * table and the target cards give one group one hue. A group is information, so it is a pill,
+     * and its word wears the hue: a dot inside a pill is a status light, and a group is not one.
      */
     const groups = new Set()
     const groupTag = (group) => {
         const hue = ctx.hues([...groups])[group]
-        const legend = el('span', 'dya-legend')
-        legend.append(el('span', `dya-dot dya-hue--${hue}`), group)
-        return legend
+        return el('span', `dya-tag dya-hue--${hue}`, group)
     }
 
     const views = [
@@ -764,15 +758,19 @@ function mount(ctx, container) {
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
         const scopeGroup = el('div', 'dya-bar__group')
-        scopeGroup.append(el('span', 'dya-key-label', 'round'), scopeBox)
+        scopeGroup.append(el('span', 'dya-eyebrow', 'round'), scopeBox)
 
         const commitBox = el('label', 'crw-check')
         const commit = el('input', 'dya-checkbox')
         commit.type = 'checkbox'
         commit.checked = true
         commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = el('button', 'dya-button dya-button--success', 'Run')
-        const stop = el('button', 'dya-button dya-button--danger', 'Stop')
+        const run = el('button', 'dya-button dya-button--success')
+        run.innerHTML = PLAY
+        run.append('Run')
+        const stop = el('button', 'dya-button dya-button--danger')
+        stop.innerHTML = STOP
+        stop.append('Stop')
         stop.hidden = true
         const actionGroup = el('div', 'dya-bar__group')
         actionGroup.append(commitBox, run, stop)
@@ -923,7 +921,9 @@ function mount(ctx, container) {
             const sweptGroups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
             scope.replaceChildren()
             scope.appendChild(new Option('all targets', 'all'))
+            scope.appendChild(el('hr'))
             for (const group of sweptGroups) scope.appendChild(new Option(group, `group:${group}`))
+            scope.appendChild(el('hr'))
             for (const corpus of corpora) {
                 scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
             }
@@ -1317,7 +1317,7 @@ function mount(ctx, container) {
                 const row = el('tr')
                 const end = el('td', 'dya-table__end')
                 if (profile.installed && missing) {
-                    end.append(el('span', 'dya-badge dya-badge--success dya-badge--soft', 'installed'))
+                    end.append(el('span', 'dya-badge dya-badge--success', 'installed'))
                 }
                 row.append(
                     el('td', 'dya-table__name', profile.name),

@@ -118,7 +118,6 @@ An ESM module exporting `activate(ctx)`:
     invoke(channel, ...args)      calls a handler in the plugin's main module
     on(channel, listener)         subscribes to broadcasts from the main module
     token(name)                   resolves a --dya-* custom property to its value
-    onThemeChange(listener)       fires when the theme changes; returns unsubscribe
     shell                         the shell itself: catalogue(), paths(), enable(ids),
                                   relaunch(), canOpen(), open(), reveal()
 
@@ -147,17 +146,16 @@ build. It gives each of a set of things a plugin shows side by side — the grou
 corpora, the agents on its board — one of the six hues, distinct while there are six or
 fewer. A key keeps its hue across sessions and machines with nothing stored, and moves only
 when a key sorting before it arrives wanting the same one. The result is a name, used as
-`dya-hue--<name>` on a `dya-dot` beside the thing's name, never as a fill around it:
+`dya-hue--<name>` on a `dya-tag`, where it colours the word, or on a `dya-dot` beside a name,
+and never as a fill:
 
 ```typescript
 const colour = ctx.hues(groups)
-const legend = el('span', 'dya-legend')
-legend.append(el('span', `dya-dot dya-hue--${colour[group]}`), group)
-cell.append(legend)
+cell.append(el('span', `dya-tag dya-hue--${colour[group]}`, group))
 ```
 
-Hue is for which one, never for how it went: a state is a status badge, and the two are not
-mixed.
+Hue is for which one, never for how it went: a state is a `dya-badge` with its light, and
+the two are not mixed. A dot inside a pill is a light, so a hue never goes there.
 
 ```typescript
 import type { PluginContext } from '@dyarchia/sdk'
@@ -184,11 +182,9 @@ export function activate(ctx: PluginContext): void {
 - `handle.close()` closes the panel; `handle.setTitle(title)` renames its tab while something
   more specific is true, such as the program a terminal is running, and `setTitle(null)` puts
   the descriptor's title back. A saved layout reopens with the descriptor's title.
-- **`ctx.token` returns a copy, so it goes stale when the theme changes.** Pair it with
-  `ctx.onThemeChange`, resolve again in the listener, unsubscribe from the dispose. It
-  exists for what `var()` cannot reach — a canvas, a WebGL context, xterm's theme object.
-  A panel drawn with `dya-*` classes and `var()` needs neither, and must never branch on
-  which theme is mounted.
+- **`ctx.token` resolves a token to its value at the moment it is called.** It exists for
+  what `var()` cannot reach: a canvas, a WebGL context, xterm's theme object. A panel drawn
+  with `dya-*` classes and `var()` never needs it.
 
 **A renderer is written in plain DOM. The shell's framework is not available to it and must
 not be assumed.** The shell is React and dockview; that is an implementation detail, is not
@@ -315,8 +311,6 @@ same document. So:
   no fonts.
 - **The reset has applied**, including `[hidden] { display: none !important }`. Toggle
   `el.hidden` and never write a display rule for it.
-- **The theme is an attribute and the shell owns it.** A plugin never reads it and never
-  branches on it: it writes `var(--dya-surface-1)` and gets whichever theme is mounted.
 - **The browser is the one Electron ships, and nothing else.** Electron 43 carries
   Chromium 150, so the popover attribute, interest invokers (`interestfor`), anchor
   positioning and container queries are native; a plugin uses them as written and ships no
@@ -337,37 +331,27 @@ The system declares only what something consumes, so the list above is short on 
 a gap in it is normal rather than an oversight. Building your own and proposing it is the
 route every class added in the last week took.
 
-```text
-Structure    dya-bar (--flush --inset)  dya-card  dya-card__header  dya-brand
-Pressable    dya-button (--quiet --sm --danger --bare)  dya-key (--active)
-             dya-chip  dya-entry (--active)
-Input        dya-field (--sm --auto)  dya-checkbox
-Content      dya-tag  dya-badge (--success --warning --danger --soft)  dya-table  dya-row
-             dya-text (--success --danger)  dya-label  dya-eyebrow  dya-value
-             dya-mono  dya-key-label
-Documents    dya-code  dya-log  dya-math (--block)  dya-prose__scroll
-Layers       dya-menu  dya-menu__item (--selected)  dya-menu__shortcut
-Navigation   dya-tabs  dya-tab
-Absence      dya-empty  dya-loading
-Assistive    dya-sr-only
-```
+The full list, with what each one is for, is in `packages/kanon/README.md`. The four
+materials decide which to reach for: **every control is a key** (`dya-button`, `dya-key`,
+`dya-chip`, `dya-tile`, a `dya-select` around a native `<select>`), **every piece of
+information is a pill** (`dya-tag`), **status is a light** (`dya-badge--success`, `--warning`,
+`--danger`, or `dya-light` on its own), and **the glass is the panel**, which the shell paints.
 
 Four carry a trap worth knowing before the first render: **`dya-field` is full width** and
-`--auto` opts out; **`dya-bar` is window chrome**, 38px with a gradient and a hairline, and
-`--inset` keeps only the rhythm; **`dya-log` is for what a process printed**, wraps instead
-of scrolling sideways, and sets no height; **`dya-text--*` is a sentence and `dya-badge--*`
-is a chip**.
+`--auto` opts out; **`dya-bar` is a strip of the glass with a hairline under it**, and
+`--inset` drops the padding and the hairline; **`dya-log` is for what a process printed**,
+wraps instead of scrolling sideways, and sets no height; **`dya-text--*` is a sentence and
+`dya-badge--*` is a pill with a light**.
 
 The mandate is in kanon's README and holds here unchanged. Three rules are specific to
 being a panel rather than the system:
 
-- **Panel interiors are transparent.** The dock group already paints `--dya-surface-1`.
-  Painting anything else hides the group's border and breaks the gap rhythm. The exception
-  is a renderer that computes contrast and has to know its ground — the terminal paints
-  `token('surface-1')` for exactly that.
-- **`--dya-field` is a surface, not an ink.** Never set `color: var(--dya-field)`.
-- **A label never sits on `--dya-selected` in Gi**, where `--dya-text-4` measures 4.45.
-  Use `--dya-text-3` there. In Rei the same pair measures 4.65 and needs no reservation.
+- **Panel interiors are transparent.** The dock group paints the glass, and the ground's
+  light shows through it; a panel that paints a ground of its own hides both. The exception
+  is a renderer that computes contrast and has to know its ground: the terminal is a well and
+  paints `token('sunken')` for exactly that.
+- **Nothing inside a panel is glass.** A card is `dya-card`, a region that holds text a
+  program wrote is `--dya-sunken`, and a surface that covers content is a `dya-sheet`.
 
 The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
 declares it under its own prefix and says so in its README, or proposes it upstream — the
@@ -403,8 +387,9 @@ Before a panel is done:
 3. Grep for `border-radius`, `box-shadow`, `font-family` — every hit is either layout or a
    component the system should own.
 4. No `box-shadow` inside any `transition`. No local rule targets a bare `.dya-*` selector.
-5. Chrome text is mono uppercase; prose is sans; file names and paths are mono, normal case.
-6. Walk every state: idle, hover, pressed, selected, empty, error. In both themes.
+5. Interface text is sentence case in the sans; data is mono in its own case; capitals are
+   the eyebrow's and the table head's alone.
+6. Walk every state: idle, hover, pressed, selected, empty, error.
 7. No `backdrop-filter`, no infinite animation.
 8. If there is a main module, exercise `invoke` and `broadcast` from the panel.
 

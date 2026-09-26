@@ -29,7 +29,6 @@ const STYLES = `
     align-items: center;
     gap: var(--dya-space-3);
     padding: var(--dya-space-2) var(--dya-space-3);
-    border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
 }
 .docviewer-header[hidden] {
     display: none;

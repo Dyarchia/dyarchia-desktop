@@ -5,7 +5,6 @@ import { Svg } from './Svg'
 interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
-    activePanelId: string | null
     onToggle: (id: string) => void
     wordmark: boolean
 }
@@ -35,7 +34,6 @@ function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
 interface KeyProps {
     label: string
     active?: boolean
-    here?: boolean
     className?: string
     onClick: () => void
     children: React.ReactNode
@@ -45,7 +43,6 @@ interface KeyProps {
 function TipKey({
     label,
     active,
-    here,
     className,
     onClick,
     children,
@@ -55,7 +52,7 @@ function TipKey({
     return (
         <>
             <button
-                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}${here ? ' dya-key--here' : ''}`}
+                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}`}
                 aria-label={label}
                 aria-pressed={expanded === undefined ? active : undefined}
                 aria-haspopup={expanded === undefined ? undefined : 'menu'}
@@ -123,7 +120,7 @@ function Build(): React.JSX.Element {
 
     return (
         <div className="topbar-build">
-            <span className="dya-tag topbar-alpha" interestfor={id}>
+            <span className="dya-tag dya-tag--key topbar-alpha" interestfor={id}>
                 {__DYARCHIA_VERSION__}
             </span>
             <div className="dya-tip" popover="hint" id={id}>
@@ -155,11 +152,16 @@ function Build(): React.JSX.Element {
 }
 
 /*
- * How many panels get their own key before the rest go behind the overflow. Six is every plugin
- * this application ships, which is the point: on the installation it was built for, nothing is one
- * click further away than anything else. The menu is there for the machine that adds more.
+ * Three keys, and everything else behind the overflow. A plugin earns a key by naming its place in
+ * the bar in its manifest (`toolbar`); the three every session reaches for are the shell, the
+ * board and the reader. Six keys side by side read as a toolbar nobody chose, and a panel opened
+ * once a week is one click further away without anyone missing it.
  */
-const VISIBLE_TOGGLES = 6
+const VISIBLE_TOGGLES = 3
+
+function byToolbar(a: PanelDescriptor, b: PanelDescriptor): number {
+    return (a.toolbar ?? Infinity) - (b.toolbar ?? Infinity)
+}
 
 function windowAction(action: string): void {
     void window.dyarchia?.invoke(`shell:window:${action}`)
@@ -168,15 +170,15 @@ function windowAction(action: string): void {
 export function TopBar({
     panels,
     openPanelIds,
-    activePanelId,
     onToggle,
     wordmark
 }: TopBarProps): React.JSX.Element {
     const [menuOpen, setMenuOpen] = useState(false)
     const overflowRef = useRef<HTMLDivElement>(null)
 
-    const visible = panels.slice(0, VISIBLE_TOGGLES)
-    const overflow = panels.slice(VISIBLE_TOGGLES)
+    const ordered = [...panels].sort(byToolbar)
+    const visible = ordered.filter((panel) => panel.toolbar !== undefined).slice(0, VISIBLE_TOGGLES)
+    const overflow = ordered.filter((panel) => !visible.includes(panel))
     const overflowHasOpen = overflow.some((panel) => openPanelIds.has(panel.id))
 
     useEffect(() => {
@@ -210,7 +212,6 @@ export function TopBar({
                             key={panel.id}
                             label={panel.title}
                             active={openPanelIds.has(panel.id)}
-                            here={activePanelId === panel.id}
                             onClick={() => onToggle(panel.id)}
                         >
                             <PanelIcon icon={panel.icon} />

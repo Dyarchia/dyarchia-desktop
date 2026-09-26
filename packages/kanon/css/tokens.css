@@ -40,7 +40,7 @@
     --dya-size-label: 11px;
     --dya-size-label-sm: 10.5px;
     --dya-size-pill: 11.5px;
-    --dya-size-brand: 22px;
+    --dya-size-brand: 17px;
 
     --dya-tracking-ui: 0;
     --dya-tracking-key: -0.005em;
@@ -103,52 +103,60 @@
     --dya-accent-soft: #c9ced61f;
     --dya-on-accent: #0a0b0d;
 
-    --dya-hue-amber: #c6a573;
-    --dya-hue-mint: #7bbb9f;
-    --dya-hue-cyan: #7ab6c5;
-    --dya-hue-blue: #94acd5;
-    --dya-hue-violet: #b59fd6;
-    --dya-hue-pink: #d992b3;
+    --dya-blue: #1970fd;
+    --dya-purple: #8559f9;
+    --dya-orange: #f07a35;
+    --dya-green: #4bbc6e;
+    --dya-yellow: #f5b031;
+    --dya-red: #ec4b3a;
 
-    --dya-ansi-red: #eb8278;
-    --dya-ansi-green: #8fd1a1;
-    --dya-ansi-yellow: #f1d27a;
-    --dya-ansi-blue: #7fa5e8;
-    --dya-ansi-magenta: #eb68e3;
+    --dya-blue-ink: #75a8fe;
+    --dya-purple-ink: #c790fe;
+    --dya-orange-ink: #fe8743;
+    --dya-green-ink: #4dbe70;
+    --dya-yellow-ink: #f5b031;
+    --dya-red-ink: #ff8472;
+
+    --dya-ansi-red: #ff8472;
+    --dya-ansi-green: #4dbe70;
+    --dya-ansi-yellow: #f5b031;
+    --dya-ansi-blue: #75a8fe;
+    --dya-ansi-magenta: #c790fe;
     --dya-ansi-cyan: #54b5c5;
-    --dya-ansi-bright-red: #f3bbb4;
-    --dya-ansi-bright-green: #b3e5c0;
-    --dya-ansi-bright-yellow: #f6e2a8;
-    --dya-ansi-bright-blue: #b6cbf1;
-    --dya-ansi-bright-magenta: #f2b2eb;
+    --dya-ansi-bright-red: #ffcac1;
+    --dya-ansi-bright-green: #7dec9b;
+    --dya-ansi-bright-yellow: #ffce83;
+    --dya-ansi-bright-blue: #bfd7fe;
+    --dya-ansi-bright-magenta: #e4cefe;
     --dya-ansi-bright-cyan: #6adef1;
 
-    --dya-success: #34a853;
-    --dya-success-soft: #34a8531f;
-    --dya-success-line: #34a85352;
-    --dya-success-ink: #9ad8ab;
-    --dya-warning: #fbbc04;
-    --dya-warning-soft: #fbbc041c;
-    --dya-warning-line: #fbbc044d;
-    --dya-warning-ink: #f3d687;
-    --dya-danger: #ea4335;
-    --dya-danger-soft: #ea43351f;
-    --dya-danger-line: #ea433552;
-    --dya-danger-ink: #f4a59d;
+    --dya-success: #4bbc6e;
+    --dya-success-soft: #4bbc6e1f;
+    --dya-success-line: #4bbc6e52;
+    --dya-success-ink: #4dbe70;
+    --dya-warning: #f5b031;
+    --dya-warning-soft: #f5b0311c;
+    --dya-warning-line: #f5b0314d;
+    --dya-warning-ink: #f5b031;
+    --dya-danger: #ec4b3a;
+    --dya-danger-soft: #ec4b3a1f;
+    --dya-danger-line: #ec4b3a52;
+    --dya-danger-ink: #ff8472;
     --dya-on-status: #0a0b0d;
     --dya-idle: #858b95;
 
-    --dya-code-keyword: #cf8fb4;
-    --dya-code-string: #8fb87a;
-    --dya-code-number: #d6a95c;
+    --dya-code-keyword: #c790fe;
+    --dya-code-string: #4dbe70;
+    --dya-code-number: #fe8743;
+    --dya-code-function: #75a8fe;
+    --dya-code-key: #f5b031;
+    --dya-code-deleted: #ff8472;
     --dya-code-comment: #9499a3;
-    --dya-code-function: #7fb0dd;
     --dya-code-punct: #a3a8b2;
 
-    --dya-brand-ink: #2c2e33;
-    --dya-carve:
-        0 -1px 0 #000000e6,
-        0 1px 0 #ffffff17;
+    --dya-halo: 0 0 22px -4px #c9ced6b3;
+    --dya-halo-text: 0 0 12px #c9ced680;
+
     --dya-carve-filter:
         drop-shadow(0 -1px 0 #000000e6)
         drop-shadow(0 1px 0 #ffffff17);
@@ -179,7 +187,8 @@
 
     --dya-elev-focus:
         inset 0 1px 3px #00000099,
-        0 0 0 1px var(--dya-focus);
+        0 0 0 1px var(--dya-focus),
+        var(--dya-halo);
 
     --dya-elev-popover:
         inset 0 1px 0 #ffffff0f,

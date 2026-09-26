@@ -36,6 +36,7 @@ winpty, ConPTY / OpenConsole       MIT            what node-pty drives on Window
 mermaid                            MIT            diagrams in the reader
 KaTeX                              MIT            formulas in those diagrams
 marked                             MIT            markdown in the reader
+highlight.js                       BSD-3-Clause   the colour of code everywhere it is shown
 IBM Plex Sans, IBM Plex Mono       OFL 1.1        the interface and data faces
 Spectral                           OFL 1.1        the brand face
 Lobe Icons, by LobeHub             MIT            the marks of the agent CLIs
@@ -45,7 +46,9 @@ Lobe Icons, by LobeHub             MIT            the marks of the agent CLIs
 Electron and Chromium require. `licenses/OFL.txt` carries the font licence, with both copyright
 notices, as the Open Font License requires of anything that bundles them. `licenses/lobe-icons.txt`
 carries the MIT notice of Lobe Icons (https://github.com/lobehub/lobe-icons), from which the
-monochrome marks in `packages/sdk/src/brands.ts` are taken unmodified.
+monochrome marks in `packages/sdk/src/brands.ts` are taken unmodified. `licenses/highlight-js.txt`
+carries the BSD 3-Clause notice of highlight.js (https://github.com/highlightjs/highlight.js), by
+Ivan Sagalaev and its contributors, which `packages/sdk/src/highlight.ts` bundles unmodified.
 
 Those marks are trademarks of the companies that own them. They are shown only to identify the
 program a terminal tab is running or the agent a card goes to, and Dyarchia desktop is not

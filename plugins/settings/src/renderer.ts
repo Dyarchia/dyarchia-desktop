@@ -1,4 +1,4 @@
-import { injectStyles, isHue, ownIds } from '@dyarchia/sdk'
+import { injectStyles, ownIds } from '@dyarchia/sdk'
 import type { PluginCatalogueEntry, PluginContext } from '@dyarchia/sdk'
 
 /*
@@ -186,20 +186,17 @@ function join(home: string, folder: string): string {
 }
 
 /*
- * A plugin's name beside its icon, in the hue it wears on its key, its tile and its tabs. This is
- * the one screen that lists every plugin at once, so it is where a reader learns which face and
- * which colour is which. A plugin that is not loaded has shown no icon yet and keeps the dot.
+ * A plugin's name beside its icon, the face it wears on its key, its tile and its tabs. This is
+ * the one screen that lists every plugin at once, so it is where a reader learns which face is
+ * which. A plugin that is not loaded has shown no icon yet and is its name alone.
  */
 function named(entry: PluginCatalogueEntry, tag: string, className: string): HTMLElement {
     const name = el(tag, className)
     const inner = el('span', 'dya-legend')
-    const hue = isHue(entry.manifest.hue) ? ` dya-hue--${entry.manifest.hue}` : ''
     if (entry.icon?.startsWith('<svg')) {
-        const glyph = el('span', `dya-glyph${hue}`)
+        const glyph = el('span', 'dya-glyph')
         glyph.innerHTML = ownIds(entry.icon)
         inner.append(glyph)
-    } else if (hue) {
-        inner.append(el('span', `dya-dot${hue}`))
     }
     inner.append(entry.manifest.name)
     name.append(inner)
@@ -434,7 +431,7 @@ export function activate(ctx: PluginContext): void {
             ]
             for (const [label, value, openable] of rows) {
                 const row = el('tr', 'dya-row')
-                row.append(el('td', 'dya-table__key', label), el('td', undefined, value))
+                row.append(el('td', 'dya-table__key', label), el('td', 'dya-table__subject', value))
                 const last = el('td', 'dya-table__end')
                 if (openable) {
                     const open = el('button', 'dya-button dya-button--sm', 'Open')

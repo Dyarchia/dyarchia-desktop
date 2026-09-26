@@ -15,7 +15,7 @@ css/motion.css       four keyframes, all prefixed dya-
 css/components.css   the dya-* classes
 fonts/               eight static woff2, 536 KB
 tools/contrast.py    the measurement Verification requires
-tools/palette.py     what solved the six hues and the terminal's colours
+tools/palette.py     what lifts the six reference colours to lights, inks and bright twins
 ```
 
 The shell links `css/dyarchia.css` once, before React mounts, and every plugin renders
@@ -43,7 +43,7 @@ key        a flat face, 3px corners, a hard 3px edge      every control
            2px onto its edge and the edge is gone
 pill       round, a faint glass of its own, its words     every piece of information:
            in the mono                                    a group, a tag, a count
-light      a dot in green, amber or red with a glow of    status, and only status
+light      a dot in green, yellow or red with a glow of   status, and only status
            its own colour
 ```
 
@@ -55,7 +55,7 @@ round, so a reader never has to try something to learn whether it does anything.
 which is pressable, is square. A tag, which is not, is round.
 
 **A light lives inside a pill or around a key, and nowhere else is colour spent on status.**
-Green is up to date or running, amber is changed or waiting, red is failed or stopping. A pill
+Green is up to date or running, yellow is changed or waiting, red is failed or stopping. A pill
 without a light is information with no outcome: a group, a count, a kind. Which of several
 things of one kind something is, is a hue, and it is never a dot inside a pill, because a dot
 inside a pill is a light.
@@ -146,77 +146,85 @@ inside the glass, a table's rows, a bar from what is under it, and outlines a pa
   says which one of several things of one kind this is. Emphasis is the silver accent, the
   type scale and the ink rank.
 
-**The lights are the colours everybody already reads, at full strength.** They are not tuned
-to the ground: green, amber and red are quotations of a convention the reader brings with
-them, saturated enough to be read as green, amber and red from across the room.
+**Six colours and no others.** Blue, purple, orange, green, yellow and red, taken from one
+reference, and every one of them has a single job. Green is success, yellow is warning and
+red is error, everywhere and always: a green that meant anything else would be read as a
+green that passed. Blue, purple and orange mean nothing about how anything went, so they are
+the three that say which one. A mark that belongs to somebody else keeps its own colours and
+is none of the six.
+
+Each colour is two tokens. The colour itself, `--dya-<name>`, is for what is not text: a
+light, a dot, a bar, a glow. Blue and purple are the reference lifted in OKLCH until they
+clear 3.00 as graphical objects on the lightest ground a panel has. The `-ink` is the same hue
+lifted until it is text on every ground, and it is what a word in that colour is written in.
+Purple's ink turns 15 degrees toward magenta before it is lifted: at its own hue it lands so
+close to blue's that a keyword and the name it declares read as one colour.
 
 ```text
-token             value     on surface-1   role
----------------   -------   ------------   ---------------------------------------
---dya-success     #34a853           5.87   up to date, running, done, go
---dya-warning     #fbbc04          10.50   changed, waiting, blocked, caution
---dya-danger      #ea4335           4.57   failed, stopped, destroyed, stop
---dya-idle        #858b95           5.23   no outcome yet
+colour    value     worst     ink       worst
+-------   -------   -----     -------   -----
+blue      #1970fd    3.00     #75a8fe    5.52
+purple    #8559f9    3.01     #c790fe    5.56
+orange    #f07a35    4.74     #fe8743    5.50
+green     #4bbc6e    5.48     #4dbe70    5.60
+yellow    #f5b031    7.00     #f5b031    7.00
+red       #ec4b3a    3.54     #ff8472    5.53
 ```
 
-Each light has four tokens: the light itself, a `-soft` tint at 11 to 12% for the ground of
-its pill, a `-line` at 30 to 32% for the pill's border, and an `-ink`, the same hue lifted
-toward white, for its words. **A light is never text**: red measures 3.36 on a card at the
-brightest point of the glass, and every light's words are its ink, 6.73 at the least.
-`--dya-idle` is the grey dot of a pill with nothing to report, 3.85 at the least, a graphical
-object everywhere it sits. `--dya-on-status` is the ground's own near-black, and ticks a
-checkbox over green at 6.44.
+Worst is the ratio on `card-peak`, the lightest place a panel's text lands.
 
-**Hue says which one.** Six categorical hues, amber, mint, cyan, blue, violet and pink, mark
-which of several things of one kind something is: which plugin, which group of corpora, which
-agent. They are solved rather than picked: one OKLCH lightness and half the most chroma each
-hue holds there inside sRGB (`palette.py --mute 0.5`), so they read as one family and none is
-louder than another.
+**The lights are green, yellow and red.** `--dya-success`, `--dya-warning` and `--dya-danger`
+are those three colours, and each has four tokens: the light itself, a `-soft` tint at 11 to
+12% for the ground of its pill, a `-line` at 30 to 32% for the pill's border, and an `-ink`
+for its words. **A light is never text**: red is 3.54 on `card-peak`, and every light's words
+are its ink, 5.53 at the least. `--dya-idle` is the grey dot of a pill with nothing to report,
+3.85 at the least, a graphical object everywhere it sits. `--dya-on-status` is the ground's own
+near-black, and ticks a checkbox over green at 8.17.
+
+**Hue says which one.** Three categorical hues, blue, purple and orange, mark which of several
+things of one kind something is: which group of corpora, which agent. `hue--<name>` sets
+`--dya-hue` to the colour's ink and `--dya-hue-light` to the colour itself. A plugin has no
+hue: the chrome is black and white, and a plugin is told apart by its icon and its name.
+
+**A hue is an ink, never a fill.** It colours the word of a pill (`tag` under `hue--<name>`)
+and the dot beside a name (`dot`, `legend`), and nothing else. A thing with a face wears its
+face rather than a dot: a plugin's tab and its row in Setup carry the plugin's icon, a
+terminal running a known program carries that program's mark, a card carries its agent's.
+`glyph--mark` is somebody else's mark and never wears a hue: in its own colours where it has
+them, in the ink of the text beside it where it is monochrome.
+
+A hue is assigned, never chosen per screen: a set of categories inside a plugin gets its hues
+from `ctx.hues`, which keeps a key's hue as long as the set does not force it to move. Past
+three, hues repeat, and the name beside the colour is what tells them apart.
+
+**The terminal's sixteen colours are tokens.** `--dya-ansi-*` holds the six chromatic colours
+and their bright twins; black and white are the system's own ink ranks. Red, green, yellow,
+blue and magenta are the inks of red, green, yellow, blue and purple; cyan is the one colour a
+terminal needs that the palette does not have, and keeps its own. The bright twins are the
+same hues lifted to 9.00. A `log` renders the same colours when a program writes them:
+`ansi--<name>` for the twelve, `--black`, `--bright-black` and `--dim` in `--dya-text-4`,
+`--white` and `--bright-white` in `--dya-text-2` and `--dya-text`, `--bold` at 500.
 
 ```text
-hue      value     surface-1   raised   selected   card-peak
-------   -------   ---------   ------   --------   ---------
-amber    #c6a573        7.71     6.93       5.94        5.67
-mint     #7bbb9f        8.07     7.26       6.22        5.94
-cyan     #7ab6c5        7.97     7.16       6.14        5.86
-blue     #94acd5        7.79     7.00       6.00        5.73
-violet   #b59fd6        7.60     6.83       5.85        5.59
-pink     #d992b3        7.44     6.69       5.73        5.47
+token                 value     on sunken   on card-peak   says
+-------------------   -------   ---------   ------------   -------------------------------
+--dya-code-keyword    #c790fe        8.20           5.56   the language's own words
+--dya-code-string     #4dbe70        8.26           5.60   what is quoted, an added line
+--dya-code-number     #fe8743        8.12           5.50   a value written out
+--dya-code-function   #75a8fe        8.14           5.52   a name being declared, a heading
+--dya-code-key        #f5b031       10.32           7.00   the key of a pair
+--dya-code-deleted    #ff8472        8.15           5.53   a removed line
+--dya-code-punct      #a3a8b2        8.15           5.53   punctuation and operators
+--dya-code-comment    #9499a3        6.80           4.61   a comment
 ```
 
-**A hue is an ink, never a fill.** It colours the word of a pill (`tag` under `hue--<name>`),
-the dot beside a name (`dot`, `legend`), the icon of a plugin (`glyph`) and the icon of a key
-whose panel is open, and nothing else. A thing with a face wears its face rather than a dot:
-a plugin's tab and its row in Setup carry the plugin's icon, a terminal running a known
-program carries that program's mark, a card carries its agent's. `glyph--mark` is somebody
-else's mark and never wears a hue: in its own colours where it has them, in the ink of the
-text beside it where it is monochrome.
-
-A hue is assigned, never chosen per screen: a plugin declares one in its manifest, and a set
-of categories inside a plugin gets its hues from `ctx.hues`, which keeps a key's hue as long
-as the set does not force it to move.
-
-**The terminal's sixteen colours are tokens.** `--dya-ansi-*` holds the six chromatic
-colours and their bright twins; black and white are the system's own ink ranks. A `log`
-renders the same colours when a program writes them: `ansi--<name>` for the twelve,
-`--black`, `--bright-black` and `--dim` in `--dya-text-4`, `--white` and `--bright-white` in
-`--dya-text-2` and `--dya-text`, `--bold` at 500. On `--dya-sunken`, the ground of a log and of
-the terminal, the least of them measures 6.80.
-
-```text
-token                 value     on sunken   on card-peak
--------------------   -------   ---------   ------------
---dya-code-keyword    #cf8fb4        7.63           5.18
---dya-code-string     #8fb87a        8.62           5.85
---dya-code-number     #d6a95c        8.98           6.09
---dya-code-function   #7fb0dd        8.48           5.75
---dya-code-punct      #a3a8b2        8.15           5.53
---dya-code-comment    #9499a3        6.80           4.61
-```
-
-A code block sits on `--dya-sunken`. `--dya-code-comment` is the most recessive of the six
-and shares its value with `--dya-text-4`. Keyword and string converge under deuteranopia; a
-code block accepts that, because the reader still has indentation, quotes and delimiters.
+**Code is coloured by highlight.js**, through `highlight` in `@dyarchia/sdk`, which registers
+the grammars the application meets and emits every scope under the `dya-code__` prefix. The
+scopes are grouped onto the eight inks above in `components.css`, so a grammar added later
+lands on a colour without a rule of its own. The key of a pair has its own ink, which is what
+sets a JSON or YAML key apart from its value. A block that declares no language is guessed
+among the common ones and left plain when no grammar is confident. `--dya-code-comment` shares
+its value with `--dya-text-4` and is the most recessive of the eight.
 
 
 ## Materials
@@ -236,15 +244,21 @@ code block accepts that, because the reader still has indentation, quotes and de
   `box-shadow`.
 - **A key that is on stays up and brightens**: `--dya-selected` under `--dya-border-strong`,
   white ink. A key whose panel is open is held down: it sits on its edge with its glyph in the
-  panel's hue. A key that cannot be pressed keeps its shape, loses its light and wears
+  top ink. A key that cannot be pressed keeps its shape, loses its light and wears
   `--dya-text-off` over `--dya-disabled`.
 - **Three keys are lit.** A lit key has a border in its light, an ink mixed from its light
   and `--dya-text`, and a still glow cast on the glass around it, `--dya-glow` in the light at
   70%. `button--primary` is lit in the silver accent, the one action a view is about, at most
   one per view. `button--success` is lit green: go, run, approve. `button--danger` is lit red:
-  stop, delete. Lit inks measure 11.49, 8.00 and 6.60 on the key's face and 10.83, 7.54 and
-  6.22 on its hover step. `button--danger button--quiet` is a plain key with a red ink, for a
+  stop, delete. Lit inks measure 11.49, 9.05 and 6.87 on the key's face and 10.83, 8.53 and
+  6.47 on its hover step. `button--danger button--quiet` is a plain key with a red ink, for a
   destructive action offered among others: the light is for the confirmation.
+- **The halo says here.** `--dya-halo` is the primary key's silver glow, and it is spent on
+  one other thing: where the window is. The key of the panel being worked in (`key--here`),
+  the open tab in the group being worked in, the open tab inside a panel, the tile under the
+  pointer, the field being typed into. Words take it as `--dya-halo-text`. Several keys can be
+  held down at once; only one is here. A tile's halo is a pseudo-element that fades in on
+  `opacity`, because a hover never changes a key's shadow.
 - **A glow never breathes.** Nothing in this system animates for as long as a panel is open,
   and a light that pulsed would be the one thing on screen that did.
 - **A pill is information.** `tag` and `badge` share one shape: 22px tall, round, the mono at
@@ -255,16 +269,17 @@ code block accepts that, because the reader still has indentation, quotes and de
   would be too much. The same dot a badge carries, with the same three modifiers.
 - **Only what receives input is recessed.** A `field` is set into the glass: `--dya-sunken`
   under a hairline, with `--dya-elev-sunken` falling in from the top edge, and
-  `--dya-elev-focus` adds a ring in `--dya-focus` while it is being typed into. A list to
+  `--dya-elev-focus` adds a ring in `--dya-focus` and the halo while it is being typed into. A list to
   choose from is a key, because nothing is typed into it.
 - **`button--bare` is the one control that is not a key**: a glyph with no face, for the close
   on a tab and the icons inside a row, where a key's edge would be a stamp on every line. It
   presses by scale, because nothing that never stood up can sink.
-- **Carving is relief for a word.** The brand is stamped into the metal: `--dya-brand-ink`,
-  1.45 against the ground, with `--dya-carve`, a dark lip above and a light one below. It is
-  not text and says so: the window's title carries the name for anything that reads it.
-  `.dya-carved` is the same stamp at display size, a gradient of `--dya-carve-a` to
-  `--dya-carve-b` cut by `--dya-carve-filter`.
+- **Carving is relief for a word.** The wordmark is cut into the metal: a gradient of
+  `--dya-carve-a` to `--dya-carve-b` clipped to the letters and cut by `--dya-carve-filter`, a
+  dark lip above and a light one below. It is not text and says so: the window's title carries
+  the name for anything that reads it. `.dya-carved` is the wordmark at display size, the
+  whole content of the launcher; `.dya-brand` is the same cut at `--dya-size-brand`, centred in
+  the title bar whenever a panel is open, and absent while the launcher shows the large one.
 - **The focus ring is an outline**, 2px in `--dya-focus` at an offset of 3px, and never a
   shadow, because a key's shadow is its edge.
 
@@ -299,7 +314,7 @@ static faces: sans at 300, 400 and 500, mono at 400 and 500, serif at 300 and 50
 --dya-size-pill       11.5px   the word inside a pill
 --dya-size-label      11px     the head of a table column, a key's shortcut
 --dya-size-label-sm   10.5px   the eyebrow
---dya-size-brand      22px     the brand
+--dya-size-brand      17px     the wordmark in the title bar
 ```
 
 ```text
@@ -360,17 +375,17 @@ contrast measured and its rule written in this file, and only then uses it.
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift) card__header masthead brand
              carved splitter (--vertical) sheet (--side)
-Keys         button (--primary --success --danger --quiet --sm --bare) key (--active) chip
+Keys         button (--primary --success --danger --quiet --sm --bare) key (--active --here) chip
              tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) select checkbox form (__actions __push)
 Pills        tag badge (--success --warning --danger) pills
 Lights       light (--success --warning --danger) meter (__pip)
-Hue          hue--<name> dot legend glyph (--mark)   (amber mint cyan blue violet pink)
-Content      table (__num __fit __key __name __end __prose) row (--selected)
+Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
+Content      table (__num __fit __key __name __subject __end __prose) row (--selected)
              stat (__figure __value __unit __text __note)
              title (--lg) lede text (--success --danger) label eyebrow value meta mono
              key-label
-Documents    prose__scroll code (__kw __str __num __com __fn __pun) log math (--block)
+Documents    prose__scroll code (__<highlight.js scope>) log math (--block)
 Layers       menu menu__item (--selected) tip scrim
 Navigation   tabs tab
 Absence      empty (--inline __actions) loading
@@ -383,10 +398,17 @@ surface on a surface. The head of each column is small tracked capitals over the
 lifts a row's cells by `--dya-glass-hover`, white at 2%; a selected row is `--dya-glass-press`,
 white at 5%, in the first ink. Digits are `tabular-nums`.
 
+**A row has one cell in the top ink, and only one: what the row is about.** Everything else,
+the description, the figures, the dates, the group, is in `--dya-text-3`, the table's own ink.
+A table where every cell is lifted reads as white and one where none is reads as grey, and
+neither says where to look. `__name` is that cell when it is data naming the row, a profile, a
+corpus, a plugin, on one line; `__subject` is that cell when it is a sentence or a path and
+wraps: the value beside a key, the lead of a log line, the first column of a table somebody
+wrote in markdown. `__prose` sets a cell in the sans and leaves its rank alone.
+
 **`table__key` and `table__name` are the same column and not the same thing.** A key is
-interface text saying what the value beside it is, sans and `--dya-text-4`. A name is data, a
-plugin, a board, a file, so it keeps its case and takes `--dya-text`, the rank the subject of
-a row is owed. `__fit` is the width both share and nothing else, `__end` is that width at the
+interface text saying what the value beside it is, sans and `--dya-text-4`. A name is data, so
+it keeps its case. `__fit` is the width both share and nothing else, `__end` is that width at the
 end of the row, where an action sits, and a `td` wraps anywhere, because a table cell that
 makes a panel scroll sideways to read a path is unusable at panel width.
 
@@ -502,8 +524,6 @@ There is nothing to build, lint or test. What replaces those commands:
 - The two thresholds in use are properties of their content, not of the system: 640 for a
   corpus row and 900 for the cost panel's ten columns, both measured against the data on one
   machine.
-- The six hues were solved against a warm near-black and still measure above 5.47 everywhere
-  on the graphite; they have not been re-solved against it.
 - The SDK's markdown renderer emits `code`, `math` and `prose__scroll`. docviewer styles the
   elements between them with its own prefixed rules; a second consumer is what would move
   those rules upstream.

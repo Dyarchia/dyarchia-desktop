@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { highlight, highlightLines, injectStyles } from '@dyarchia/sdk'
 import type { OpenRequest, PluginContext } from '@dyarchia/sdk'
@@ -586,8 +587,14 @@ export function activate(ctx: PluginContext): void {
                     return
                 }
                 if (current.markdown && mode === 'rendered') {
+                    /*
+                     * A markdown file is somebody else's HTML. marked passes raw HTML through,
+                     * and this panel draws into the shell's own document, where window.dyarchia
+                     * can spawn a terminal: an `<img onerror>` in a downloaded README ran code
+                     * the moment it was opened. Everything marked produces is sanitised first.
+                     */
                     const holder = document.createElement('div')
-                    holder.innerHTML = await marked.parse(current.content ?? '')
+                    holder.innerHTML = DOMPurify.sanitize(await marked.parse(current.content ?? ''))
                     for (const table of holder.querySelectorAll('table')) {
                         table.className = 'dya-table'
                     }

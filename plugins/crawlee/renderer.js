@@ -904,7 +904,7 @@ function mount(ctx, container) {
                 const groupCell = el('td')
                 if (corpus.group) groupCell.append(groupTag(corpus.group))
                 row.append(
-                    el('td', 'dya-mono', corpus.name),
+                    el('td', 'dya-table__name', corpus.name),
                     groupCell,
                     el('td', 'dya-table__num', String(corpus.pages)),
                     el('td', 'dya-table__num', bytes(corpus.bytes)),

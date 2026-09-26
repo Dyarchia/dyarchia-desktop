@@ -1,7 +1,6 @@
 {
     "id": "terminal",
     "name": "Terminal",
-    "hue": "mint",
     "version": "0.1.0",
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",

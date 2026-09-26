@@ -28,10 +28,10 @@
 
 /*
  * A status colour is a light, and its ink is a token of its own. The three lights are saturated
- * enough to read as green, amber and red from across the room, and that is exactly what stops red
- * being text: `--dya-danger` measures 3.36 on a card at the brightest point of the glass. Each
+ * enough to read as green, yellow and red from across the room, and that is exactly what stops red
+ * being text: `--dya-danger` measures 3.54 on a card at the brightest point of the glass. Each
  * light therefore has an ink, the same hue lifted toward white, and every one of the three is text
- * on every ground the system has: 6.73 at the least, for red.
+ * on every ground the system has: 5.53 at the least, for red.
  */
 .dya-text--danger {
     color: var(--dya-danger-ink);
@@ -173,28 +173,81 @@
     color: inherit;
 }
 
-.dya-code__kw {
+/*
+ * The classes are highlight.js scopes under kanon's prefix, and every scope a grammar emits lands
+ * on one of six inks. Purple is the language's own words, green what is quoted, orange a value
+ * written out, blue a name being declared or a heading, yellow the key of a pair, which is what
+ * sets a JSON or YAML key apart from its value. A comment steps down to the fourth ink and
+ * punctuation to the third, so the code outranks the notes about it. In a diff an added line is
+ * green and a removed one red, the one place a syntax hue says how something went.
+ */
+.dya-code__keyword,
+.dya-code__built_in,
+.dya-code__type,
+.dya-code__name,
+.dya-code__selector-tag,
+.dya-code__meta {
     color: var(--dya-code-keyword);
 }
 
-.dya-code__str {
+.dya-code__string,
+.dya-code__regexp,
+.dya-code__symbol,
+.dya-code__code,
+.dya-code__addition {
     color: var(--dya-code-string);
 }
 
-.dya-code__num {
+.dya-code__number,
+.dya-code__literal,
+.dya-code__template-variable,
+.dya-code__variable.constant_ {
     color: var(--dya-code-number);
 }
 
-.dya-code__com {
-    color: var(--dya-code-comment);
-}
-
-.dya-code__fn {
+.dya-code__title,
+.dya-code__section,
+.dya-code__link,
+.dya-code__selector-class,
+.dya-code__selector-id {
     color: var(--dya-code-function);
 }
 
-.dya-code__pun {
+.dya-code__attr,
+.dya-code__attribute,
+.dya-code__property,
+.dya-code__selector-attr,
+.dya-code__selector-pseudo {
+    color: var(--dya-code-key);
+}
+
+.dya-code__deletion {
+    color: var(--dya-code-deleted);
+}
+
+.dya-code__comment,
+.dya-code__quote,
+.dya-code__doctag {
+    color: var(--dya-code-comment);
+}
+
+.dya-code__punctuation,
+.dya-code__operator,
+.dya-code__bullet,
+.dya-code__tag {
     color: var(--dya-code-punct);
+}
+
+.dya-code__meta .dya-code__string {
+    color: var(--dya-code-string);
+}
+
+.dya-code__emphasis {
+    font-style: italic;
+}
+
+.dya-code__strong {
+    font-weight: var(--dya-weight-medium);
 }
 
 .dya-log {
@@ -431,20 +484,7 @@
  * is not text; the window's title carries the name for anything that reads it. It is the one
  * element in the system that is allowed to be decoration.
  */
-.dya-brand {
-    display: inline-flex;
-    align-items: center;
-    padding: 0 var(--dya-space-3);
-    font-family: var(--dya-font-serif);
-    font-size: var(--dya-size-brand);
-    font-weight: var(--dya-weight-medium);
-    letter-spacing: var(--dya-tracking-brand);
-    line-height: var(--dya-leading-tight);
-    text-transform: uppercase;
-    color: var(--dya-brand-ink);
-    text-shadow: var(--dya-carve);
-}
-
+.dya-brand,
 .dya-carved {
     font-family: var(--dya-font-serif);
     font-size: var(--dya-size-display);
@@ -459,6 +499,11 @@
     filter: var(--dya-carve-filter);
 }
 
+.dya-brand {
+    font-size: var(--dya-size-brand);
+    white-space: nowrap;
+}
+
 /*
  * Four materials, three voices.
  *
@@ -466,7 +511,7 @@
  * 3px and a hard edge of 3px underneath with no blur, which is gone when it is pressed and the
  * key drops 2px onto it. A pill is every piece of information, round so that it can never be taken
  * for a key. A light is status and only status, and it lives inside a pill or around a key: green
- * is up to date or running, amber is changed, red is failed or stopping.
+ * is up to date or running, yellow is changed, red is failed or stopping.
  *
  * The press is instant and short. A transition may name `transform` and `background-color` and
  * nothing else, so the edge swaps in a frame while the drop animates over 50ms; the border moves
@@ -577,7 +622,7 @@
  * Three keys are lit. The primary is lit in the accent, the one action a view is about, at most
  * one per view. Success is lit green: go, run, approve, the affirmative half of a pair. Danger is
  * lit red: stop, delete, the other half. Lit inks over the key face measure 11.49 for the
- * primary, 8.00 for success and 6.60 for danger, and 10.83, 7.54 and 6.22 over its hover step.
+ * primary, 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover step.
  */
 .dya-button--primary {
     --dya-lit: var(--dya-accent);
@@ -667,11 +712,31 @@
     text-align: left;
 }
 
+/*
+ * A tile under the pointer is where the next click lands, so it takes the halo. The halo is a
+ * pseudo-element that fades in, because a hover never changes a key's shadow: the shadow is its
+ * edge, and a transition may name opacity where it may never name box-shadow.
+ */
+.dya-tile::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow: var(--dya-halo);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-tile:hover::after {
+    opacity: 1;
+}
+
 .dya-tile__icon {
     display: block;
     width: 18px;
     height: 18px;
-    color: var(--dya-hue, var(--dya-text-2));
+    color: var(--dya-text-2);
 }
 
 .dya-tile__icon > svg {
@@ -728,7 +793,8 @@
 /*
  * The icon key: a panel to open, a window to act on. A square key with the glyph in the second ink.
  * A key whose panel is open is held down: it sits on its edge, its face goes to the selected step
- * and its glyph takes the panel's hue, the one fact the colour carries in the top bar.
+ * and its glyph goes to the top ink. Several can be held down at once; only one is here, the key of
+ * the panel the window is working in, and it wears the halo.
  */
 .dya-key {
     display: grid;
@@ -751,7 +817,12 @@
     background-color: var(--dya-selected);
     border-color: var(--dya-border-strong);
     box-shadow: var(--dya-elev-key-down);
-    color: var(--dya-hue, var(--dya-text));
+    color: var(--dya-text);
+}
+
+.dya-key--here,
+.dya-key--here:hover {
+    box-shadow: var(--dya-elev-key-down), var(--dya-halo);
 }
 
 .dya-key > svg {
@@ -1056,22 +1127,19 @@ textarea.dya-field {
 }
 
 /*
- * Hue is the categorical axis: which of several things of one kind this is, which plugin, which
- * group of corpora, which agent. It is not status, which has its three lights, and it is not
- * emphasis. The six are solved rather than picked: one OKLCH lightness, the most chroma each hue
- * holds there, so they read as one family. Every one is text on every ground in the system, 5.47
- * at the least.
+ * Hue is the categorical axis: which of several things of one kind this is, which group of
+ * corpora, which agent. It is not status, which has green, yellow and red to itself, and it is
+ * not emphasis, so the three hues are the three colours of the palette that mean nothing else:
+ * blue, purple and orange.
  *
- * `.dya-hue--<name>` sets `--dya-hue` on an element and nothing else. Components with one colour
- * to give read it with their usual colour as the fallback, so a component with no hue anywhere
- * above it draws exactly as it did.
+ * `.dya-hue--<name>` sets two properties on an element and nothing else: `--dya-hue`, the ink,
+ * which is text on every ground, and `--dya-hue-light`, the colour itself, for a dot. Components
+ * read them with their usual colour as the fallback, so a component with no hue anywhere above it
+ * draws exactly as it did.
  */
-.dya-hue--amber { --dya-hue: var(--dya-hue-amber); }
-.dya-hue--mint { --dya-hue: var(--dya-hue-mint); }
-.dya-hue--cyan { --dya-hue: var(--dya-hue-cyan); }
-.dya-hue--blue { --dya-hue: var(--dya-hue-blue); }
-.dya-hue--violet { --dya-hue: var(--dya-hue-violet); }
-.dya-hue--pink { --dya-hue: var(--dya-hue-pink); }
+.dya-hue--blue { --dya-hue: var(--dya-blue-ink); --dya-hue-light: var(--dya-blue); }
+.dya-hue--purple { --dya-hue: var(--dya-purple-ink); --dya-hue-light: var(--dya-purple); }
+.dya-hue--orange { --dya-hue: var(--dya-orange-ink); --dya-hue-light: var(--dya-orange); }
 
 /*
  * Hue is spent sparingly: a mark beside a name, not a fill around it. The dot says which one; the
@@ -1090,7 +1158,7 @@ textarea.dya-field {
     width: 8px;
     height: 8px;
     border-radius: var(--dya-radius-full);
-    background: var(--dya-hue, var(--dya-idle));
+    background: var(--dya-hue-light, var(--dya-idle));
 }
 
 /*
@@ -1135,7 +1203,7 @@ textarea.dya-field {
     flex: none;
     width: 14px;
     height: 14px;
-    color: var(--dya-hue, var(--dya-text-4));
+    color: var(--dya-text-4);
 }
 
 .dya-glyph > svg {
@@ -1324,6 +1392,20 @@ textarea.dya-field {
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-sm);
     letter-spacing: normal;
+}
+
+/*
+ * A row has one cell in the top ink and only one: what the row is about. Everything else in it,
+ * the description, the figures, the dates, the group, sits in the third ink, which is the table's
+ * own. A table where every cell was lifted read as white and one where none was read as grey, and
+ * neither said where to look.
+ *
+ * `__name` is that cell when it is data that names the row, a profile, a corpus, a plugin, and
+ * keeps to one line. `__subject` is that cell when it is a sentence or a path and wraps: the value
+ * beside a key, the lead of a log line, the first column of a table somebody wrote in markdown.
+ */
+.dya-table .dya-table__name,
+.dya-table .dya-table__subject {
     color: var(--dya-text);
 }
 
@@ -1332,8 +1414,7 @@ textarea.dya-field {
  * fits, the two ways a row names itself, and the end of the row, which is where an action sits.
  *
  * A key is interface text, it says what the value beside it is, so it is sans and quiet. A name is
- * data, a plugin, a board, a file, so it keeps its case and takes `--dya-text`, the rank the
- * subject of a row is owed.
+ * data, a plugin, a board, a file, so it keeps its case.
  */
 .dya-table .dya-table__fit,
 .dya-table .dya-table__key,
@@ -1350,9 +1431,6 @@ textarea.dya-field {
     color: var(--dya-text-4);
 }
 
-.dya-table .dya-table__name {
-    color: var(--dya-text);
-}
 
 .dya-table .dya-table__end {
     text-align: right;
@@ -1491,8 +1569,9 @@ textarea.dya-field {
 }
 
 /*
- * Tabs are words on the glass. The open one is in the first ink with a hairline of the third under
- * it, drawn as an inset shadow so that it sits on the strip's own rule and adds no height.
+ * Tabs are words on the glass. The open one is in the first ink, lit by the halo, with a hairline of
+ * the accent under it, drawn as an inset shadow so that it sits on the strip's own rule and adds no
+ * height.
  */
 .dya-tabs {
     display: flex;
@@ -1518,7 +1597,8 @@ textarea.dya-field {
 
 .dya-tab[aria-selected="true"] {
     color: var(--dya-text);
-    box-shadow: inset 0 -1px 0 var(--dya-text-3);
+    box-shadow: inset 0 -1px 0 var(--dya-accent);
+    text-shadow: var(--dya-halo-text);
 }
 
 /*

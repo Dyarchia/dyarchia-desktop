@@ -1,17 +1,14 @@
 /*
- * The six categorical hues kanon declares, by the name its `dya-hue--<name>` classes use.
+ * The three categorical hues kanon declares, by the name its `dya-hue--<name>` classes use.
  *
- * Hue says which one of several things of one kind something is. A plugin never chooses a colour:
- * it declares one of these names in its manifest for itself, and asks `hues` for the things inside
- * it that come in sets -- groups of corpora, agents, boards.
+ * Hue says which one of several things of one kind something is. Green, yellow and red are not
+ * among them: those three are success, warning and error everywhere, and a group coloured green
+ * would read as a group that passed. A plugin never chooses a colour: it asks `hues` for the
+ * things inside it that come in sets -- groups of corpora, agents, boards.
  */
-export const HUES = ['amber', 'mint', 'cyan', 'blue', 'violet', 'pink'] as const
+const HUES = ['blue', 'purple', 'orange'] as const
 
 export type Hue = (typeof HUES)[number]
-
-export function isHue(value: unknown): value is Hue {
-    return typeof value === 'string' && (HUES as readonly string[]).includes(value)
-}
 
 function hash(key: string): number {
     let value = 0x811c9dc5
@@ -23,13 +20,13 @@ function hash(key: string): number {
 }
 
 /*
- * A hue for each key, distinct while there are six or fewer, and as stable as a set allows.
+ * A hue for each key, distinct while there are three or fewer, and as stable as a set allows.
  *
  * Each key hashes to the hue it would like, so a key keeps its colour across sessions and across
  * machines without anything being stored. Keys are placed in sorted order and a key whose hue is
  * taken moves to the next free one: two groups never share a colour while there are colours to
- * spare, and a key only moves when a key sorting before it arrives wanting the same hue. Past six,
- * hues repeat; a seventh category is a reason to show a name, not to invent a colour.
+ * spare, and a key only moves when a key sorting before it arrives wanting the same hue. Past
+ * three, hues repeat; a fourth category is a reason to show a name, not to invent a colour.
  */
 export function hues(keys: Iterable<string>): Record<string, Hue> {
     const assigned: Record<string, Hue> = {}

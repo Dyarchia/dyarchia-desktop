@@ -13,6 +13,7 @@ export function App(): React.JSX.Element {
     const [pluginsReady, setPluginsReady] = useState(false)
     const [, setRevision] = useState(0)
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
+    const [activePanelId, setActivePanelId] = useState<string | null>(null)
 
     useEffect(() => {
         const unsubscribe = onRegistryChange(() => setRevision((r) => r + 1))
@@ -46,6 +47,10 @@ export function App(): React.JSX.Element {
             refreshOpenPanels(dockApi)
             dockApi.onDidAddPanel(() => refreshOpenPanels(dockApi))
             dockApi.onDidRemovePanel(() => refreshOpenPanels(dockApi))
+            setActivePanelId(dockApi.activePanel ? basePanelId(dockApi.activePanel.id) : null)
+            dockApi.onDidActivePanelChange(({ panel }) =>
+                setActivePanelId(panel ? basePanelId(panel.id) : null)
+            )
         },
         [refreshOpenPanels]
     )
@@ -99,7 +104,9 @@ export function App(): React.JSX.Element {
             <TopBar
                 panels={getRegisteredPanels().map((panel) => panel.descriptor)}
                 openPanelIds={openPanelIds}
+                activePanelId={activePanelId}
                 onToggle={handleToggle}
+                wordmark={pluginsReady && openPanelIds.size > 0}
             />
             <div className="shell-body">
                 {pluginsReady ? (

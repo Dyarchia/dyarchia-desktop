@@ -1,7 +1,6 @@
 {
     "id": "crawlee",
     "name": "Crawlee",
-    "hue": "cyan",
     "version": "0.1.0",
     "renderer": "renderer.js",
     "python": "main.py",

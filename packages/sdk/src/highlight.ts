@@ -1,13 +1,88 @@
-type TokenKind = 'kw' | 'str' | 'num' | 'com' | 'fn' | 'pun'
+import hljs from 'highlight.js/lib/core'
+import bash from 'highlight.js/lib/languages/bash'
+import c from 'highlight.js/lib/languages/c'
+import cpp from 'highlight.js/lib/languages/cpp'
+import csharp from 'highlight.js/lib/languages/csharp'
+import css from 'highlight.js/lib/languages/css'
+import diff from 'highlight.js/lib/languages/diff'
+import dockerfile from 'highlight.js/lib/languages/dockerfile'
+import go from 'highlight.js/lib/languages/go'
+import ini from 'highlight.js/lib/languages/ini'
+import java from 'highlight.js/lib/languages/java'
+import javascript from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import markdown from 'highlight.js/lib/languages/markdown'
+import powershell from 'highlight.js/lib/languages/powershell'
+import python from 'highlight.js/lib/languages/python'
+import rust from 'highlight.js/lib/languages/rust'
+import shell from 'highlight.js/lib/languages/shell'
+import sql from 'highlight.js/lib/languages/sql'
+import typescript from 'highlight.js/lib/languages/typescript'
+import xml from 'highlight.js/lib/languages/xml'
+import yaml from 'highlight.js/lib/languages/yaml'
 
-interface Rule {
-    kind: TokenKind | 'word' | 'plain'
-    re: RegExp
+/*
+ * highlight.js, with the grammars this application meets and nothing else, emitting its scopes
+ * under kanon's prefix so that `dya-code__string` and its siblings land on the six measured inks.
+ * The hand-written tokeniser this replaces coloured a block only when it was declared in one of
+ * the languages it knew, gave Rust and Go the grammar of JavaScript, and could not tell a JSON
+ * key from its value.
+ */
+const GRAMMARS = {
+    bash, c, cpp, csharp, css, diff, dockerfile, go, ini, java, javascript, json, markdown,
+    powershell, python, rust, shell, sql, typescript, xml, yaml
 }
 
-interface Grammar {
-    rules: Rule[]
-    keywords: Set<string>
+for (const [name, grammar] of Object.entries(GRAMMARS)) hljs.registerLanguage(name, grammar)
+hljs.configure({ classPrefix: 'dya-code__' })
+
+/*
+ * What a fence or a file extension says, to the grammar that reads it. Apex has no grammar of its
+ * own and is Java closely enough to read as it. Text is named so that it is left alone rather
+ * than guessed at.
+ */
+const ALIASES: Record<string, string> = {
+    js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
+    ts: 'typescript', tsx: 'typescript', mts: 'typescript', cts: 'typescript',
+    py: 'python', pyi: 'python',
+    jsonc: 'json', json5: 'json', jsonl: 'json',
+    yml: 'yaml',
+    md: 'markdown', mdx: 'markdown',
+    sh: 'bash', zsh: 'bash', console: 'shell',
+    ps1: 'powershell', psm1: 'powershell', pwsh: 'powershell',
+    scss: 'css',
+    html: 'xml', htm: 'xml', svg: 'xml', xhtml: 'xml',
+    apex: 'java', cls: 'java', trigger: 'java',
+    patch: 'diff',
+    toml: 'ini', env: 'ini', cfg: 'ini', conf: 'ini', properties: 'ini',
+    rs: 'rust', cs: 'csharp', 'c++': 'cpp', hpp: 'cpp', h: 'c',
+    docker: 'dockerfile'
+}
+
+const PLAIN = new Set(['text', 'txt', 'plain', 'plaintext', 'log', 'csv', 'ascii', 'none'])
+
+/*
+ * An undeclared block is guessed, and left plain when nothing is sure: a paragraph of prose inside
+ * a fence coloured as if it were SQL is worse than no colour at all. highlight.js scores a sentence
+ * of English as SQL at 4 and a short YAML block at 4 too, so its score alone cannot tell them
+ * apart. JSON is known for certain by parsing it, YAML by every line being a key, an item or a
+ * comment, and anything else has to score 5 or more.
+ */
+const GUESSES = ['python', 'typescript', 'javascript', 'bash', 'powershell', 'sql', 'xml', 'css', 'java']
+const CONFIDENT = 5
+const YAML_LINE = /^\s*(?:#.*|- .*|-$|[\w.\-"']+:(?:\s.*)?|---)$/
+
+function guess(source: string): string | null {
+    const trimmed = source.trim()
+    if (/^[[{]/.test(trimmed)) {
+        try {
+            JSON.parse(trimmed)
+            return 'json'
+        } catch {}
+    }
+    const lines = trimmed.split('\n').filter((line) => line.trim())
+    if (lines.length > 0 && lines.every((line) => YAML_LINE.test(line))) return 'yaml'
+    return null
 }
 
 const ENTITIES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;' }
@@ -16,304 +91,86 @@ function escape(text: string): string {
     return text.replace(/[&<>]/g, (char) => ENTITIES[char])
 }
 
-function sticky(source: string): RegExp {
-    return new RegExp(source, 'y')
-}
+const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([^\s`]*)/
 
-function words(list: string): Set<string> {
-    return new Set(list.split(' '))
-}
-
-const PUNCTUATION = String.raw`[{}()\[\];:,.<>+\-*/%=!&|^~?@]+`
-const WORD = String.raw`[A-Za-z_$][\w$]*`
-const SAFE = String.raw`[^\s\w$'"\`#{}()\[\];:,.<>+\-*/%=!&|^~?@]+`
-
-function grammar(rules: Rule[], keywords: string): Grammar {
-    return {
-        rules: [
-            ...rules,
-            { kind: 'word', re: sticky(WORD) },
-            { kind: 'pun', re: sticky(PUNCTUATION) },
-            { kind: 'plain', re: sticky(SAFE) }
-        ],
-        keywords: words(keywords)
+/*
+ * Markdown read as source, with every fenced block coloured in the language it declares. The
+ * markdown grammar sees a fence as one string and paints the whole block green, which is how a
+ * document full of code read as a document with no colour in it. The prose between fences goes to
+ * that grammar, each fence's body to its own, and the fence lines are punctuation.
+ */
+function markdownSource(source: string): string {
+    const out: string[] = []
+    let prose: string[] = []
+    const lines = source.split('\n')
+    const flush = (): void => {
+        if (prose.length) out.push(hljs.highlight(prose.join('\n'), { language: 'markdown', ignoreIllegals: true }).value)
+        prose = []
     }
-}
-
-const C_COMMENTS: Rule[] = [
-    { kind: 'com', re: sticky(String.raw`//[^\n]*`) },
-    { kind: 'com', re: sticky(String.raw`/\*[\s\S]*?(?:\*/|$)`) }
-]
-
-const HASH_COMMENT: Rule = { kind: 'com', re: sticky(String.raw`#[^\n]*`) }
-
-const QUOTED: Rule[] = [
-    { kind: 'str', re: sticky(String.raw`'(?:[^'\\\n]|\\.)*'?`) },
-    { kind: 'str', re: sticky(String.raw`"(?:[^"\\\n]|\\.)*"?`) }
-]
-
-const NUMBER: Rule = {
-    kind: 'num',
-    re: sticky(String.raw`0[xXbBoO][0-9a-fA-F_]+n?|\d[\d_]*(?:\.[\d_]+)?(?:[eE][+-]?\d+)?n?`)
-}
-
-const SCRIPT = grammar(
-    [
-        ...C_COMMENTS,
-        { kind: 'str', re: sticky(String.raw`\`(?:[^\`\\]|\\[\s\S])*\`?`) },
-        ...QUOTED,
-        NUMBER
-    ],
-    'abstract any as async await boolean break case catch class const constructor continue ' +
-        'debugger declare default delete do else enum export extends false finally for from ' +
-        'function get if implements import in infer instanceof interface is keyof let map ' +
-        'namespace never new null number of private protected public readonly record require ' +
-        'return satisfies set static string super switch symbol this throw true try type ' +
-        'typeof undefined union unknown var void while with yield'
-)
-
-const PYTHON = grammar(
-    [
-        HASH_COMMENT,
-        { kind: 'str', re: sticky(String.raw`[rbfu]{0,2}'''[\s\S]*?(?:'''|$)`) },
-        { kind: 'str', re: sticky(String.raw`[rbfu]{0,2}"""[\s\S]*?(?:"""|$)`) },
-        { kind: 'str', re: sticky(String.raw`[rbfu]{0,2}'(?:[^'\\\n]|\\.)*'?`) },
-        { kind: 'str', re: sticky(String.raw`[rbfu]{0,2}"(?:[^"\\\n]|\\.)*"?`) },
-        NUMBER
-    ],
-    'and as assert async await break class continue def del elif else except False finally ' +
-        'for from global if import in is lambda match None nonlocal not or pass raise return ' +
-        'self True try while with yield'
-)
-
-const JSON_GRAMMAR = grammar([...QUOTED, NUMBER], 'true false null')
-
-const SHELL = grammar(
-    [
-        HASH_COMMENT,
-        ...QUOTED,
-        { kind: 'num', re: sticky(String.raw`\$\{[^}]*\}|\$[\w@*#?]+`) },
-        NUMBER
-    ],
-    'break case cat cd continue do done echo elif else esac exit export fi for function ' +
-        'grep if in local read return set shift source then unset until while'
-)
-
-const SQL = grammar(
-    [{ kind: 'com', re: sticky(String.raw`--[^\n]*`) }, ...C_COMMENTS.slice(1), ...QUOTED, NUMBER],
-    'ALTER AND AS ASC BY CASE COUNT CREATE DELETE DESC DISTINCT DROP ELSE END EXISTS FROM ' +
-        'FULL GROUP HAVING IN INNER INSERT INTO IS JOIN LEFT LIKE LIMIT NOT NULL OFFSET ON OR ' +
-        'ORDER OUTER RIGHT SELECT SET TABLE THEN UNION UPDATE VALUES WHEN WHERE WITH'
-)
-
-const CSS_GRAMMAR = grammar(
-    [
-        C_COMMENTS[1],
-        ...QUOTED,
-        { kind: 'num', re: sticky(String.raw`#[0-9a-fA-F]{3,8}\b`) },
-        { kind: 'num', re: sticky(String.raw`\d[\d.]*(?:px|rem|em|%|vh|vw|s|ms|fr|deg)?`) }
-    ],
-    'and important media not supports keyframes container layer'
-)
-
-const MARKUP: Grammar = {
-    rules: [
-        { kind: 'com', re: sticky(String.raw`<!--[\s\S]*?(?:-->|$)`) },
-        { kind: 'kw', re: sticky(String.raw`</?[A-Za-z][\w:-]*`) },
-        ...QUOTED,
-        { kind: 'fn', re: sticky(String.raw`[A-Za-z-][\w:-]*(?==)`) },
-        { kind: 'pun', re: sticky(String.raw`/?>`) },
-        { kind: 'plain', re: sticky(String.raw`[^<'">]+`) }
-    ],
-    keywords: new Set()
-}
-
-/*
- * YAML was reading as shell, which gave it `done` and `esac` as keywords and nothing for the one
- * thing a YAML file is made of. A key is the name of the thing under it, so it takes the colour
- * a function name takes; an anchor and an alias are the only two references the format has.
- */
-const YAML = grammar(
-    [
-        HASH_COMMENT,
-        { kind: 'kw', re: sticky(String.raw`(?<=^|\n)(?:---|\.\.\.)(?=\s|$)`) },
-        ...QUOTED,
-        /*
-         * A colon followed by anything but whitespace is not a key, which is what keeps the
-         * scheme of a URL an ordinary word.
-         */
-        { kind: 'fn', re: sticky(String.raw`[A-Za-z_][\w.\- ]*(?= *:(?:\s|$))`) },
-        { kind: 'str', re: sticky(String.raw`[&*][\w.-]+`) },
-        NUMBER
-    ],
-    'true false null True False Null TRUE FALSE NULL yes no on off ~'
-)
-
-/*
- * Apex is Java with a query language inside square brackets. The SOQL words are listed in upper
- * case only, which is how they are written and which keeps `select` as an ordinary identifier.
- */
-const APEX = grammar(
-    [...C_COMMENTS, ...QUOTED, NUMBER],
-    'abstract break case catch class continue default delete do else enum extends final ' +
-        'finally for global if implements insert instanceof interface merge new null override ' +
-        'private protected public return static super switch testMethod this throw transient ' +
-        'trigger try undelete update upsert virtual void while sharing without with ' +
-        'Boolean Date Datetime Decimal Double Id Integer Long Object String Time Blob ' +
-        'List Map Set SObject Database System Test Schema Trigger ' +
-        'true false ' +
-        'SELECT FROM WHERE AND OR NOT IN LIKE ORDER BY GROUP HAVING LIMIT OFFSET ASC DESC ' +
-        'NULLS FIRST LAST COUNT TYPEOF WHEN THEN ELSE END FOR UPDATE VIEW ALL ROWS'
-)
-
-/*
- * Prose is not code, and the fallback grammar was treating it as such: a `#` opening a heading
- * became a comment that swallowed the line, and an apostrophe in an ordinary word opened a
- * string that ran to the next one. This grammar marks only what markdown actually punctuates
- * with and leaves every sentence alone, which is why it does not go through `grammar()` and
- * take its keyword and punctuation fall-through.
- */
-const MARKDOWN: Grammar = {
-    rules: [
-        { kind: 'pun', re: sticky(String.raw`(?<=^|\n)\x60{3,}[^\n]*`) },
-        { kind: 'kw', re: sticky(String.raw`(?<=^|\n)#{1,6} [^\n]*`) },
-        { kind: 'str', re: sticky(String.raw`\x60[^\x60\n]*\x60`) },
-        { kind: 'fn', re: sticky(String.raw`!?\[[^\]\n]*\]`) },
-        { kind: 'pun', re: sticky(String.raw`(?<=^|\n)[ \t]*(?:[-*+]|\d+\.)(?= )`) },
-        { kind: 'pun', re: sticky(String.raw`(?<=^|\n)[ \t]*>[ \t]?`) },
-        { kind: 'plain', re: sticky(String.raw`[^\n\x60\[\]]+`) }
-    ],
-    keywords: new Set()
-}
-
-const PLAIN = grammar([HASH_COMMENT, ...C_COMMENTS, ...QUOTED, NUMBER], '')
-
-const BY_LANGUAGE: Record<string, Grammar> = {
-    js: SCRIPT,
-    jsx: SCRIPT,
-    javascript: SCRIPT,
-    ts: SCRIPT,
-    tsx: SCRIPT,
-    typescript: SCRIPT,
-    mjs: SCRIPT,
-    cjs: SCRIPT,
-    java: APEX,
-    apex: APEX,
-    cls: APEX,
-    trigger: APEX,
-    c: SCRIPT,
-    cpp: SCRIPT,
-    cs: SCRIPT,
-    go: SCRIPT,
-    rust: SCRIPT,
-    rs: SCRIPT,
-    swift: SCRIPT,
-    kotlin: SCRIPT,
-    py: PYTHON,
-    python: PYTHON,
-    json: JSON_GRAMMAR,
-    jsonc: JSON_GRAMMAR,
-    sh: SHELL,
-    bash: SHELL,
-    zsh: SHELL,
-    shell: SHELL,
-    console: SHELL,
-    ps1: SHELL,
-    powershell: SHELL,
-    yaml: YAML,
-    yml: YAML,
-    toml: YAML,
-    sql: SQL,
-    css: CSS_GRAMMAR,
-    scss: CSS_GRAMMAR,
-    html: MARKUP,
-    xml: MARKUP,
-    svg: MARKUP,
-    md: MARKDOWN,
-    markdown: MARKDOWN,
-    mdx: MARKDOWN,
-    txt: MARKDOWN
-}
-
-function wrap(kind: TokenKind, text: string): string {
-    return `<span class="dya-code__${kind}">${escape(text)}</span>`
-}
-
-interface Token {
-    kind: TokenKind | null
-    text: string
-}
-
-function tokenise(source: string, language: string): Token[] {
-    const spec = BY_LANGUAGE[language.toLowerCase()] ?? PLAIN
-    const out: Token[] = []
     let index = 0
-
-    while (index < source.length) {
-        let matched = false
-
-        for (const rule of spec.rules) {
-            rule.re.lastIndex = index
-            const found = rule.re.exec(source)
-            if (!found || !found[0]) continue
-
-            const text = found[0]
-            if (rule.kind === 'word') {
-                if (spec.keywords.has(text)) {
-                    out.push({ kind: 'kw', text })
-                } else if (source[index + text.length] === '(') {
-                    out.push({ kind: 'fn', text })
-                } else {
-                    out.push({ kind: null, text })
-                }
-            } else if (rule.kind === 'plain') {
-                out.push({ kind: null, text })
-            } else {
-                out.push({ kind: rule.kind, text })
-            }
-
-            index += text.length
-            matched = true
-            break
-        }
-
-        if (!matched) {
-            out.push({ kind: null, text: source[index] })
+    while (index < lines.length) {
+        const open = FENCE.exec(lines[index])
+        if (!open) {
+            prose.push(lines[index])
             index += 1
+            continue
         }
+        const marker = open[1]
+        let close = index + 1
+        while (close < lines.length && !new RegExp(`^ {0,3}${marker[0]}{${marker.length},}\\s*$`).test(lines[close])) close += 1
+        flush()
+        const body = lines.slice(index + 1, close).join('\n')
+        const fence = (line: string): string => `<span class="dya-code__punctuation">${escape(line)}</span>`
+        out.push(fence(lines[index]) + (close > index + 1 ? `\n${highlight(body, open[2])}` : ''))
+        if (close < lines.length) out.push(fence(lines[close]))
+        index = close + 1
     }
-
-    return out
-}
-
-function piece(token: Token, text: string): string {
-    return token.kind === null ? escape(text) : wrap(token.kind, text)
+    flush()
+    return out.join('\n')
 }
 
 export function highlight(source: string, language = ''): string {
-    return tokenise(source, language)
-        .map((token) => piece(token, token.text))
-        .join('')
+    const declared = language.trim().toLowerCase()
+    if (PLAIN.has(declared)) return escape(source)
+    const name = ALIASES[declared] ?? declared
+    if (name === 'markdown') return markdownSource(source)
+    if (name && hljs.getLanguage(name)) {
+        return hljs.highlight(source, { language: name, ignoreIllegals: true }).value
+    }
+    if (declared) return escape(source)
+    const known = guess(source)
+    if (known) return hljs.highlight(source, { language: known, ignoreIllegals: true }).value
+    const scored = hljs.highlightAuto(source, GUESSES)
+    return scored.relevance >= CONFIDENT ? scored.value : escape(source)
 }
 
 /*
  * The same highlighting, one string of HTML per line, because a reader that can be asked to show
  * line 412 needs an element per line to point at and a block comment does not stop at a newline.
- * Splitting the finished HTML by `\n` would cut a span in half; splitting the tokens cannot,
- * since every piece of a token that crosses a line is wrapped again on the line it lands on.
+ * A span that crosses a line is closed at the end of it and opened again at the start of the
+ * next, so every line is well formed on its own and keeps the colour it is written in.
  */
 export function highlightLines(source: string, language = ''): string[] {
     const lines: string[] = []
+    const open: string[] = []
     let current = ''
 
-    for (const token of tokenise(source, language)) {
-        const parts = token.text.split('\n')
-        for (const [index, part] of parts.entries()) {
-            if (index > 0) {
-                lines.push(current)
-                current = ''
+    for (const piece of highlight(source, language).split(/(<span [^>]*>|<\/span>)/)) {
+        if (piece.startsWith('<span ')) {
+            open.push(piece)
+            current += piece
+        } else if (piece === '</span>') {
+            open.pop()
+            current += piece
+        } else {
+            const parts = piece.split('\n')
+            for (const [index, part] of parts.entries()) {
+                if (index > 0) {
+                    lines.push(current + '</span>'.repeat(open.length))
+                    current = open.join('')
+                }
+                current += part
             }
-            if (part) current += piece(token, part)
         }
     }
 

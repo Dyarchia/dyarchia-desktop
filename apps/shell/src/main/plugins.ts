@@ -34,12 +34,6 @@ export interface PluginManifest {
      * it, which is the question a packaged build had no answer to at all.
      */
     data?: string
-    /*
-     * One of kanon's six categorical hues, by name. It is the plugin's colour everywhere the
-     * shell names it -- its key, its tile, its tabs, its row in Setup -- and a name the system
-     * does not carry is ignored rather than guessed at.
-     */
-    hue?: string
     requires?: PluginRequirement[]
 }
 

@@ -6,11 +6,9 @@ body,
 }
 
 /*
- * The ground the glass sits on: three soft pools of light over the near-black and a fine grain
- * over all of it. The panels are translucent, so this is what makes them read as glass rather than
- * as grey: every pool shows through whatever panel is over it, and no panel needs a
- * `backdrop-filter` to look frosted, because the ground is already blurred. The grain is a static
- * image, painted once.
+ * The ground the glass sits on: an even near-black under a fine grain. The panels are
+ * translucent, so the grain is what shows through them and reads as frosted, and no panel needs
+ * a `backdrop-filter`. The grain is a static image, painted once.
  */
 .shell {
     position: relative;

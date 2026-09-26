@@ -52,7 +52,7 @@ function TipKey({
     return (
         <>
             <button
-                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}`}
+                className={`${className ?? 'dya-key'}${active ? ' dya-key--active dya-key--open' : ''}`}
                 aria-label={label}
                 aria-pressed={expanded === undefined ? active : undefined}
                 aria-haspopup={expanded === undefined ? undefined : 'menu'}

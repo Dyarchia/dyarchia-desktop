@@ -40,7 +40,7 @@
     --dya-size-label: 11px;
     --dya-size-label-sm: 10.5px;
     --dya-size-pill: 11.5px;
-    --dya-size-brand: 46px;
+    --dya-size-brand: 30px;
 
     --dya-tracking-ui: 0;
     --dya-tracking-key: -0.005em;
@@ -68,6 +68,8 @@
     --dya-overlay: #141518;
     --dya-raised-hover: #23262a;
     --dya-selected: #2a2d32;
+    --dya-open: #9b1b1e;
+    --dya-open-border: #c4474a;
     --dya-disabled: #1a1b1e;
     --dya-scrim: #0a0b0db8;
 

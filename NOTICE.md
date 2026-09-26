@@ -36,6 +36,8 @@ winpty, ConPTY / OpenConsole       MIT            what node-pty drives on Window
 mermaid                            MIT            diagrams in the reader
 KaTeX                              MIT            formulas in those diagrams
 marked                             MIT            markdown in the reader
+DOMPurify, by Cure53               MPL-2.0 or     sanitises that markdown before it is shown
+                                   Apache-2.0
 highlight.js                       BSD-3-Clause   the colour of code everywhere it is shown
 IBM Plex Sans, IBM Plex Mono       OFL 1.1        the interface and data faces
 Spectral                           OFL 1.1        the brand face

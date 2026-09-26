@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'node:path'
 import { registerLayoutStore } from './layoutStore'
 import { adoptUserData, registerPaths } from './paths'
@@ -54,6 +54,28 @@ function createWindow(): void {
             sandbox: false,
             webviewTag: true
         }
+    })
+
+    /*
+     * The window is the application and never goes anywhere else. It carries the preload, so any
+     * document it navigated to would hold window.dyarchia and with it every plugin handler, a
+     * terminal among them; a link in a rendered markdown file was enough to hand that to whatever
+     * site it pointed at. A web link opens in the user's own browser instead, a new window is
+     * refused, and nothing else is followed.
+     */
+    const outward = (url: string): void => {
+        if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
+    }
+    win.webContents.on('will-navigate', (event, url) => {
+        event.preventDefault()
+        outward(url)
+    })
+    win.webContents.on('will-frame-navigate', (event) => {
+        if (!event.isMainFrame) event.preventDefault()
+    })
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        outward(url)
+        return { action: 'deny' }
     })
 
     /*

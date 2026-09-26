@@ -11,6 +11,17 @@ export interface PanelDescriptor {
     duplicable?: boolean
     /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is the menu. */
     toolbar?: number
+    keepAlive?: boolean
+}
+
+/*
+ * How the dock should hold a panel. A panel that keeps a live page in it asks to stay in the
+ * document while it is hidden, because a `<webview>` taken out of the document is a page thrown
+ * away and loaded again when it comes back; everything else is removed while hidden, as dockview
+ * does by default.
+ */
+export function panelRenderer(descriptor: PanelDescriptor | undefined): { renderer?: 'always' } {
+    return descriptor?.keepAlive ? { renderer: 'always' } : {}
 }
 
 export function basePanelId(instanceId: string): string {

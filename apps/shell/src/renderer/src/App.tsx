@@ -3,7 +3,7 @@ import type { DockviewApi } from 'dockview-react'
 import { DockLayout } from './layout/DockLayout'
 import { Notices } from './components/Notices'
 import { TopBar } from './components/TopBar'
-import { basePanelId, getRegisteredPanels, onRegistryChange } from './panels/registry'
+import { basePanelId, getRegisteredPanels, onRegistryChange, panelRenderer } from './panels/registry'
 import { installOpeners } from './panels/openers'
 import { loadPlugins } from './plugins/host'
 import { installShortcuts } from './shortcuts'
@@ -65,7 +65,8 @@ export function App(): React.JSX.Element {
             api.addPanel({
                 id,
                 component: 'plugin-panel',
-                title: registered.descriptor.title
+                title: registered.descriptor.title,
+                ...panelRenderer(registered.descriptor)
             })
         },
         [api]

@@ -27,6 +27,7 @@ interface Requirement {
     name?: string
     hint?: string
     note?: string
+    withPlugin?: boolean
 }
 
 interface CatalogueEntry {
@@ -282,6 +283,24 @@ export function activate(ctx: PluginContext): void {
             refreshFoot()
         }
 
+        /*
+         * A requirement that says it comes with its plugin is fetched the moment the plugin is
+         * ticked, with no Install button in between: turning the plugin on is the decision, and a
+         * plugin that is on without what it needs is a plugin that fails the first time it is
+         * used. Only those requirements travel; anything else waits for its button as before.
+         */
+        function acquireWith(entry: CatalogueEntry): void {
+            const requires = entry.manifest.requires ?? []
+            if (!requires.some((requirement) => requirement.withPlugin)) return
+            say(`${entry.manifest.name} is on, so what it comes with is installed now`)
+            void ctx.invoke('acquire', {
+                pluginId: entry.manifest.id,
+                directory: entry.directory,
+                requires,
+                withPlugin: true
+            })
+        }
+
         function renderNeeds(entry: CatalogueEntry, box: HTMLElement, statuses: Status[]): void {
             box.replaceChildren()
             const requires = entry.manifest.requires ?? []
@@ -376,6 +395,7 @@ export function activate(ctx: PluginContext): void {
             tick.addEventListener('change', () => {
                 if (tick.checked) wanted.add(entry.manifest.id)
                 else wanted.delete(entry.manifest.id)
+                if (tick.checked) acquireWith(entry)
                 badge.className = `dya-badge ${
                     loadedIds.has(entry.manifest.id)
                         ? 'dya-badge--success'

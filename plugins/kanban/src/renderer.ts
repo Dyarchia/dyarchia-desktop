@@ -202,31 +202,27 @@ function order(cards: Card[]): Card[] {
 const FOLDED_BY_DEFAULT: Status[] = ['done', 'archived']
 
 /*
- * What colour a decision wears. Kinds that differ have to look different — a row saying a card was
- * created and a row saying one was deleted wore the same soft tag, so the list read as one texture
- * and the eye had nothing to catch on. Four families: routine, motion, good, bad.
+ * What a decision wears. Colour is status and nothing else, so a decision is lit only when it is
+ * an outcome: green for work that finished, amber for work that stopped short, red for work that
+ * failed or was destroyed. Routine and motion are plain pills, and their word says which.
  */
-const DECISION_TONE: Record<string, string> = {
-    created: 'dya-badge--accent-3',
-    edited: 'dya-badge--soft',
-    commented: 'dya-badge--soft',
-    attached: 'dya-badge--soft',
-    detached: 'dya-badge--soft',
-    moved: 'dya-badge--accent',
-    promoted: 'dya-badge--accent',
-    claimed: 'dya-badge--accent',
-    completed: 'dya-badge--accent-3',
-    reviewed: 'dya-badge--accent-3',
-    unblocked: 'dya-badge--accent-3',
-    landed: 'dya-badge--accent-3',
-    blocked: 'dya-badge--warning',
-    guarded: 'dya-badge--warning',
-    violation: 'dya-badge--warning',
-    block_loop: 'dya-badge--warning',
-    stopped: 'dya-badge--warning',
-    crashed: 'dya-badge--danger',
-    gave_up: 'dya-badge--danger',
-    deleted: 'dya-badge--danger'
+const DECISION_PILL: Record<string, string> = {
+    completed: 'dya-badge dya-badge--success',
+    reviewed: 'dya-badge dya-badge--success',
+    unblocked: 'dya-badge dya-badge--success',
+    landed: 'dya-badge dya-badge--success',
+    blocked: 'dya-badge dya-badge--warning',
+    guarded: 'dya-badge dya-badge--warning',
+    violation: 'dya-badge dya-badge--warning',
+    block_loop: 'dya-badge dya-badge--warning',
+    stopped: 'dya-badge dya-badge--warning',
+    crashed: 'dya-badge dya-badge--danger',
+    gave_up: 'dya-badge dya-badge--danger',
+    deleted: 'dya-badge dya-badge--danger'
+}
+
+function light(tone: string): string {
+    return tone === 'idle' ? 'dya-light' : `dya-light dya-light--${tone}`
 }
 
 function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle): () => void {
@@ -501,13 +497,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         (await ctx.invoke(channel, ...args)) as T
 
     const buildColumn = (status: Status, label: string): Column => {
-        const shell = el('section', 'dya-card kanban-column')
+        const shell = el('section', 'kanban-column')
         shell.dataset.status = status
         shell.setAttribute('role', 'group')
         shell.setAttribute('aria-label', label)
 
-        const head = el('div', 'dya-card__header kanban-column-head')
-        const title = el('span', 'dya-label kanban-column-title', label)
+        const head = el('div', 'kanban-column-head')
+        const title = el('span', 'dya-eyebrow kanban-column-title', label)
         const count = el('span', 'kanban-count', '0')
         head.append(title, count)
 
@@ -589,7 +585,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const who = el('div', 'kanban-card-who')
         const marks = el('div', 'dya-pills')
         const foot = el('div', 'kanban-card-foot')
-        const dot = el('span', 'kanban-dot')
+        const dot = el('span', 'dya-light')
         const note = el('span', 'kanban-card-note')
         foot.append(dot, note)
         shell.append(title, who, marks, foot)
@@ -687,7 +683,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
 
         node.title.textContent = card.title
-        node.dot.dataset.tone = tone
+        node.dot.className = light(tone)
         /*
          * The dot is the state's colour and it has nothing to colour on its own. A card with
          * nothing to report was rendering it alone on an empty line, which reads as a card that
@@ -697,7 +693,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         node.foot.hidden = bits.length === 0
         node.marks.hidden = marks.length === 0
         node.marks.replaceChildren(
-            ...marks.map((mark) => el('span', 'dya-badge dya-badge--soft', mark))
+            ...marks.map((mark) => el('span', 'dya-tag', mark))
         )
         node.note.replaceChildren(...bits.map((bit) => el('span', undefined, bit)))
         node.root.dataset.status = status
@@ -1564,7 +1560,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         node.dataset.kind = row.kind
         const head = el('div', 'kanban-row-head')
         head.append(
-            el('span', 'dya-badge dya-badge--soft', row.kind.replace('_', ' ')),
+            el('span', 'dya-tag', row.kind.replace('_', ' ')),
             el('span', 'kanban-card-note', `${when(row.at)}${row.detail ? ` · ${row.detail}` : ''}`)
         )
         node.append(head)
@@ -1590,7 +1586,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                   ? (row.error ? 'error' : 'result')
                   : row.kind
         head.append(
-            el('span', 'dya-badge dya-badge--soft', label),
+            el('span', 'dya-tag', label),
             el('span', 'kanban-card-note', row.kind === 'tool' ? row.body : row.body.slice(0, 90))
         )
 
@@ -1750,7 +1746,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         text.addEventListener('change', () => patch(card.id, { body: text.value }))
         bodyGroup.appendChild(text)
 
-        const priority = el('input', 'dya-field dya-field--sm')
+        const priority = el('input', 'dya-field')
         priority.type = 'number'
         priority.value = String(card.priority)
         priority.addEventListener('change', () => patch(card.id, { priority: Number(priority.value) }))
@@ -1760,7 +1756,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const settings = el('div', 'kanban-settings')
 
         const number = (value: number | null, unit: string, apply: (next: number | null) => void): HTMLInputElement => {
-            const input = el('input', 'dya-field dya-field--sm')
+            const input = el('input', 'dya-field')
             input.type = 'number'
             input.min = '1'
             input.placeholder = unit
@@ -1778,7 +1774,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 patch(card.id, { runners: { [kind]: next } satisfies RunnersPatch })
             )
 
-        const override = el('input', 'dya-field dya-field--sm')
+        const override = el('input', 'dya-field')
         override.type = 'text'
         override.spellcheck = false
         override.placeholder = meta?.workdir ?? 'the board directory'
@@ -1932,7 +1928,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const item = el('div', 'kanban-comment')
             const itemHead = el('div', 'kanban-comment-head')
             itemHead.append(
-                el('span', 'dya-badge dya-badge--soft', entry.author),
+                el('span', 'dya-tag', entry.author),
                 el('span', 'kanban-card-note', ago(entry.at, clock))
             )
             item.append(itemHead, el('div', 'kanban-comment-text', entry.text))
@@ -1960,15 +1956,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             runsGroup.append(el('span', 'dya-label', 'runs'))
             for (const run of [...card.runs].reverse().slice(0, 6)) {
                 const row = el('div', 'kanban-run')
-                const dot = el('span', 'kanban-dot')
-                dot.dataset.tone =
-                    run.outcome === 'completed'
-                        ? 'success'
-                        : run.outcome === null
-                          ? 'accent'
-                          : run.outcome === 'blocked'
-                            ? 'warning'
-                            : 'idle'
+                const dot = el(
+                    'span',
+                    light(
+                        run.outcome === 'completed' || run.outcome === null
+                            ? 'success'
+                            : run.outcome === 'blocked'
+                              ? 'warning'
+                              : 'idle'
+                    )
+                )
                 const kind = run.kind === 'review' ? 'review · ' : ''
                 const label = el(
                     'span',
@@ -2396,8 +2393,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         row.type = 'button'
         row.title = 'open this card, and its session'
 
-        const dot = el('span', 'kanban-dot')
-        dot.dataset.tone = run.waiting ? 'warning' : 'accent'
+        const dot = el('span', light(run.waiting ? 'warning' : 'success'))
 
         const said = [
             run.board,
@@ -2473,7 +2469,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         const role = el(
             'span',
-            `dya-badge ${shape.holding ? 'dya-badge--accent' : 'dya-badge--soft'}`,
+            shape.holding ? 'dya-badge dya-badge--success' : 'dya-tag',
             shape.holding ? 'dispatcher' : 'follower'
         )
         withTip(
@@ -2506,21 +2502,21 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const top = el('div', 'dya-tile__head')
             top.append(el('span', 'dya-tile__name', entry.name))
             if (entry.cap === 0) {
-                top.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'paused'))
+                top.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
             } else if (entry.running > 0) {
-                top.append(el('span', 'dya-badge dya-badge--accent', `${entry.running} running`))
+                top.append(el('span', 'dya-badge dya-badge--success', `${entry.running} running`))
             }
             card.append(top)
 
             const pills = el('div', 'dya-pills')
             const tallies: [number, string, string][] = [
-                [entry.counts.ready, 'ready', 'dya-badge--accent-3'],
-                [entry.counts.review, 'in review', 'dya-badge--accent-2'],
-                [entry.counts.blocked, 'blocked', 'dya-badge--danger'],
+                [entry.counts.ready, 'ready', 'dya-tag'],
+                [entry.counts.review, 'in review', 'dya-tag'],
+                [entry.counts.blocked, 'blocked', 'dya-badge dya-badge--warning'],
                 [
                     entry.counts.todo + entry.counts.triage + entry.counts.scheduled,
                     'waiting',
-                    'dya-badge--soft'
+                    'dya-tag'
                 ]
             ]
             const shown = tallies.filter(([n]) => n > 0)
@@ -2528,7 +2524,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 pills.append(el('span', 'dya-empty dya-empty--inline', 'nothing queued'))
             } else {
                 for (const [n, word, tone] of shown) {
-                    pills.append(el('span', `dya-badge dya-badge--soft ${tone}`, `${n} ${word}`))
+                    pills.append(el('span', tone, `${n} ${word}`))
                 }
             }
             card.append(pills)
@@ -2568,7 +2564,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             problemGroup.append(el('span', 'dya-eyebrow', 'problems'))
             for (const entry of shape.problems) {
                 const row = el('div', 'kanban-run')
-                row.append(el('span', 'dya-badge dya-badge--warning dya-badge--soft', 'check'))
+                row.append(el('span', 'dya-badge dya-badge--warning', 'check'))
                 const where = shape.boards.find((board) => board.slug === entry.slug)?.name ?? 'this machine'
                 row.append(el('span', 'dya-text', where), el('span', 'kanban-card-note', entry.problem))
                 problemGroup.appendChild(row)
@@ -2590,7 +2586,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 const kind = el('td', 'dya-table__fit')
                 const pill = el(
                     'span',
-                    `dya-badge dya-badge--soft ${DECISION_TONE[row.kind] ?? 'dya-badge--soft'}`,
+                    DECISION_PILL[row.kind] ?? 'dya-tag',
                     row.kind.replace('_', ' ')
                 )
                 if (gone) withTip(pill, row.cardId)
@@ -2657,8 +2653,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const card = entry.cardId ? cardById(entry.cardId) : undefined
             const row = el(card ? 'button' : 'div', 'kanban-health-row')
             if (row instanceof HTMLButtonElement) row.type = 'button'
-            const dot = el('span', 'kanban-dot')
-            dot.dataset.tone = 'warning'
+            const dot = el('span', light('warning'))
             const where = el('span', 'kanban-health-where')
             where.append(dot, el('span', 'dya-text', card?.title ?? 'this machine'))
             row.append(where, el('span', 'kanban-health-problem', entry.problem))

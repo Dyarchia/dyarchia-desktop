@@ -43,7 +43,7 @@ function createWindow(): void {
         show: false,
         autoHideMenuBar: true,
         titleBarStyle: 'hidden',
-        backgroundColor: '#000000',
+        backgroundColor: '#0a0b0d',
         icon: DEV_ICON,
         webPreferences: {
             preload: join(import.meta.dirname, '../preload/index.mjs'),
@@ -61,8 +61,8 @@ function createWindow(): void {
      * loaded, running its plugins and invisible for as long as the process lived. An application
      * whose only way onto the screen is an event that usually does not come is an application
      * that usually does not open, so the load and a deadline open it too and the first of the
-     * three wins. The background colour is what a frame that has not painted yet shows, and both
-     * themes are dark, so arriving before the paint costs nothing.
+     * three wins. The background colour is what a frame that has not painted yet shows, and it is
+     * the ground's own, so arriving before the paint costs nothing.
      */
     let shown = false
     const reveal = (): void => {

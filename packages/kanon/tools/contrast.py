@@ -1,4 +1,4 @@
-"""Measure a colour token against every surface it can sit on, in both themes.
+"""Measure a colour token against every surface it can sit on.
 
     py packages/kanon/tools/contrast.py --dya-text-2
     py packages/kanon/tools/contrast.py '#85857f' --against surface-1 surface-2
@@ -15,24 +15,28 @@ import re
 CSS = pathlib.Path(__file__).resolve().parent.parent / 'css' / 'tokens.css'
 
 SURFACES = [
-    'bg', 'sunken', 'chassis', 'surface-1', 'surface-2',
-    'flat-hover', 'raised', 'overlay', 'raised-hover', 'selected'
+    'bg', 'sunken', 'chassis', 'surface-1', 'surface-2', 'flat-hover',
+    'raised', 'overlay', 'raised-hover', 'selected', 'disabled'
 ]
+
+"""
+Two grounds no token declares, because they only exist where translucent layers stack: the
+panel's glass over the brightest part of `--dya-ground`, and a card on that glass. They are the
+lightest places a panel's text can land, so every ink is measured against them too.
+"""
+COMPOSITES = {
+    'glass-peak': '#27292c',
+    'card-peak': '#2f3033',
+}
 
 FLOOR = 4.50
 GRAPHIC = 3.00
 
 
-def themes() -> dict[str, dict[str, str]]:
-    css = CSS.read_text(encoding='utf-8')
-    blocks = re.split(r'\[data-theme="([a-z]+)"\]\s*\{', css)
-
-    parsed: dict[str, dict[str, str]] = {'Gi': tokens(blocks[0])}
-    for name, body in zip(blocks[1::2], blocks[2::2]):
-        merged = dict(parsed['Gi'])
-        merged.update(tokens(body))
-        parsed[name.capitalize()] = merged
-    return parsed
+def palette() -> dict[str, str]:
+    values = tokens(CSS.read_text(encoding='utf-8'))
+    values.update({f'--dya-{name}': value for name, value in COMPOSITES.items()})
+    return values
 
 
 def tokens(block: str) -> dict[str, str]:
@@ -70,21 +74,17 @@ def main() -> None:
     parser.add_argument('--against', nargs='*', default=SURFACES, help='surface suffixes')
     args = parser.parse_args()
 
-    palettes = themes()
-    print(f'{"theme":8} {"surface":14} {"ground":9} {"ratio":>6}  reading')
-    print('-' * 52)
-
-    for theme, palette in palettes.items():
-        ink = args.ink if args.ink.startswith('#') else palette.get(f'--dya-{args.ink}')
-        if not ink:
-            raise SystemExit(f'--dya-{args.ink} is not defined in {theme}')
-        for surface in args.against:
-            ground = palette.get(f'--dya-{surface}')
-            if not ground:
-                continue
+    values = palette()
+    ink = args.ink if args.ink.startswith('#') else values.get(f'--dya-{args.ink}')
+    if not ink:
+        raise SystemExit(f'--dya-{args.ink} is not defined')
+    print(f'{"surface":14} {"ground":9} {"ratio":>6}  reading')
+    print('-' * 43)
+    for surface in args.against + [name for name in COMPOSITES if name not in args.against]:
+        ground = values.get(f'--dya-{surface}')
+        if ground:
             value = ratio(ink, ground)
-            print(f'{theme:8} {surface:14} {ground:9} {value:6.2f}  {verdict(value)}')
-        print()
+            print(f'{surface:14} {ground:9} {value:6.2f}  {verdict(value)}')
 
 
 if __name__ == '__main__':

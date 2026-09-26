@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { PanelDescriptor } from '../panels/registry'
-import { THEMES } from '../theme'
 import { Svg } from './Svg'
 
 interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
     onToggle: (id: string) => void
-    theme: string
-    onThemeChange: (id: string) => void
 }
 
 const MINIMIZE_ICON =
@@ -168,9 +165,7 @@ function windowAction(action: string): void {
 export function TopBar({
     panels,
     openPanelIds,
-    onToggle,
-    theme,
-    onThemeChange
+    onToggle
 }: TopBarProps): React.JSX.Element {
     const [menuOpen, setMenuOpen] = useState(false)
     const overflowRef = useRef<HTMLDivElement>(null)
@@ -201,7 +196,7 @@ export function TopBar({
 
     return (
         <div className="dya-bar dya-bar--flush topbar">
-            <span className="dya-brand">Dyarchia desktop</span>
+            <span className="dya-brand">Dyarchia</span>
             <Build />
             <div className="topbar-right">
                 <div className="topbar-actions">
@@ -253,21 +248,6 @@ export function TopBar({
                             )}
                         </div>
                     )}
-                </div>
-                <div className="topbar-themes" role="group" aria-label="Theme">
-                    {THEMES.map((entry) => (
-                        <TipKey
-                            key={entry.id}
-                            label={`${entry.label} theme`}
-                            active={entry.id === theme}
-                            onClick={() => onThemeChange(entry.id)}
-                        >
-                            <span
-                                className="topbar-icon"
-                                dangerouslySetInnerHTML={{ __html: entry.icon }}
-                            />
-                        </TipKey>
-                    ))}
                 </div>
                 <div className="topbar-window-controls">
                     <button

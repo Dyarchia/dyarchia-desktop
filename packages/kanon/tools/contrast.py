@@ -21,8 +21,9 @@ SURFACES = [
 
 """
 Two grounds no token declares, because they only exist where translucent layers stack: the
-panel's glass over the brightest part of `--dya-ground`, and a card on that glass. They are the
-lightest places a panel's text can land, so every ink is measured against them too.
+panel's glass over the brightest ground the system has allowed, and a card on that glass. They
+were measured over a pool of light `--dya-ground` no longer carries and are kept as a ceiling:
+the lightest place a panel's text could land, so every ink is measured against them too.
 """
 COMPOSITES = {
     'glass-peak': '#27292c',

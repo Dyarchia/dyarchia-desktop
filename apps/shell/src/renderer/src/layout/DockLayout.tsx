@@ -16,7 +16,8 @@ import {
     getPanel,
     getRegisteredPanels,
     getTabIcon,
-    onTabIconChange
+    onTabIconChange,
+    panelRenderer
 } from '../panels/registry'
 
 const dyarchiaTheme: DockviewTheme = {
@@ -107,7 +108,8 @@ function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element | n
             id: `${base}#${n}`,
             component: 'plugin-panel',
             title: descriptor.title,
-            position: { referencePanel: active.id, direction: 'within' }
+            position: { referencePanel: active.id, direction: 'within' },
+            ...panelRenderer(descriptor)
         })
     }
 

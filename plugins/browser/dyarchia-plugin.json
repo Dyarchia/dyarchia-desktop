@@ -1,0 +1,23 @@
+{
+    "id": "browser",
+    "name": "Browser",
+    "version": "0.1.0",
+    "renderer": "dist/renderer.js",
+    "main": "dist/main.js",
+    "description": "A web browser in a panel, with a home page, bookmarks and a way out to your own browser",
+    "requires": [
+        {
+            "kind": "binary",
+            "name": "ffmpeg",
+            "label": "FFmpeg",
+            "withPlugin": true,
+            "assets": {
+                "win32-x64": "https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip",
+                "win32-arm64": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-winarm64-gpl-9.0.zip",
+                "linux-x64": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-linux64-gpl-9.0.tar.xz",
+                "linux-arm64": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-linuxarm64-gpl-9.0.tar.xz"
+            },
+            "note": "115 MB to download and 315 MB on disk, fetched once from GitHub when the browser is turned on, and only when ffmpeg is not already on this machine"
+        }
+    ]
+}

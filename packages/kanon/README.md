@@ -250,7 +250,7 @@ its value with `--dya-text-4` and is the most recessive of the eight.
 - **A key that is on stays up and brightens**: `--dya-selected` under `--dya-border-strong`,
   white ink. A key whose panel is open is held down: it sits on its edge with its glyph in the
   top ink. A key that cannot be pressed keeps its shape, loses its light and wears
-  `--dya-text-off` over `--dya-disabled`.
+  `--dya-text-off` over `--dya-disabled`; a `button` and a `key` alike.
 - **Three keys are lit.** A lit key has a border in its light, an ink mixed from its light
   and `--dya-text`, and a still glow cast on the glass around it, `--dya-glow` in the light at
   70%. `button--primary` is lit in the silver accent, the one action a view is about, at most

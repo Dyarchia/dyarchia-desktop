@@ -135,10 +135,10 @@ export function activate(ctx: PluginContext): void {
             ...Object.fromEntries(
                 Object.entries(ANSI_TOKENS).map(([slot, name]) => [slot, ctx.token(name)])
             ),
-            background: ctx.token('surface-1'),
+            background: ctx.token('sunken'),
             foreground: ctx.token('text'),
             cursor: ctx.token('text'),
-            cursorAccent: ctx.token('surface-1'),
+            cursorAccent: ctx.token('sunken'),
             selectionBackground: ctx.token('accent-soft')
         })
 
@@ -163,10 +163,6 @@ export function activate(ctx: PluginContext): void {
             terminal.loadAddon(webgl)
         } catch {}
         fit.fit()
-
-        const stopThemeWatch = ctx.onThemeChange(() => {
-            terminal.options.theme = terminalTheme()
-        })
 
         /*
          * The pty lives in its own process and starting it is not instant. A terminal that shows a
@@ -310,7 +306,6 @@ export function activate(ctx: PluginContext): void {
 
         return () => {
             disposed = true
-            stopThemeWatch()
             observer.disconnect()
             window.removeEventListener('message', onPortAnnouncement)
             container.removeEventListener('mouseup', onMouseUp)

@@ -1,4 +1,4 @@
-"""Solve a categorical hue for both themes: the most chroma a hue can carry and still be text.
+"""Solve a categorical hue: the most chroma a hue can carry and still be text.
 
     py packages/kanon/tools/palette.py
     py packages/kanon/tools/palette.py --hue 305 --text raised --graphic selected
@@ -100,25 +100,25 @@ def main() -> None:
     parser.add_argument('--hue', type=float, action='append')
     parser.add_argument('--text', nargs='*', default=TEXT_ON)
     parser.add_argument('--graphic', nargs='*', default=MARK_ON)
-    parser.add_argument('--lightness', nargs=2, type=float, metavar=('GI', 'REI'))
+    parser.add_argument('--lightness', type=float)
     parser.add_argument('--mute', type=float, default=1.0)
     args = parser.parse_args()
 
     hues = {f'h{h:g}': h for h in args.hue} if args.hue else HUES
     grounds = [*args.text, *args.graphic]
-    fixed = dict(zip(('Gi', 'Rei'), args.lightness)) if args.lightness else {}
-    for theme_name, theme in contrast.themes().items():
-        print(f'\n{theme_name}' + (f'  at OKLCH L {fixed[theme_name]}' if theme_name in fixed else ''))
-        header = f'    {"name":<8} {"value":<8} {"L":>5} {"C":>5}  ' + ' '.join(f'{g[:9]:>9}' for g in grounds)
-        print(header)
-        print('    ' + '-' * (len(header) - 4))
-        for name, hue in hues.items():
-            ink, lightness, chroma = solve(hue, theme, args.text, args.graphic, fixed.get(theme_name))
-            if args.mute != 1.0:
-                chroma *= args.mute
-                ink = to_hex(oklch_to_rgb(lightness, chroma, hue))
-            ratios = ' '.join(f'{contrast.ratio(ink, theme[f"--dya-{g}"]):>9.2f}' for g in grounds)
-            print(f'    {name:<8} {ink:<8} {lightness:>5.3f} {chroma:>5.3f}  {ratios}')
+    theme = contrast.palette()
+    if args.lightness:
+        print(f'at OKLCH L {args.lightness}')
+    header = f'{"name":<8} {"value":<8} {"L":>5} {"C":>5}  ' + ' '.join(f'{g[:9]:>9}' for g in grounds)
+    print(header)
+    print('-' * len(header))
+    for name, hue in hues.items():
+        ink, lightness, chroma = solve(hue, theme, args.text, args.graphic, args.lightness)
+        if args.mute != 1.0:
+            chroma *= args.mute
+            ink = to_hex(oklch_to_rgb(lightness, chroma, hue))
+        ratios = ' '.join(f'{contrast.ratio(ink, theme[f"--dya-{g}"]):>9.2f}' for g in grounds)
+        print(f'{name:<8} {ink:<8} {lightness:>5.3f} {chroma:>5.3f}  {ratios}')
 
 
 if __name__ == '__main__':

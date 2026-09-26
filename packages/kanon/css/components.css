@@ -23,19 +23,15 @@
 }
 
 .dya-text--success {
-    color: var(--dya-success);
+    color: var(--dya-success-ink);
 }
 
 /*
- * A status hue is a fill, and red is the one whose fill cannot also be its ink.
- *
- * `--dya-danger` is the colour of a control that stops or destroys, and it has to read as red
- * beside a warm orange accent — which the salmon it used to be did not: a RUN and a STOP forty
- * pixels apart were the same colour and neither said which was which. Red enough to be read as red
- * under `--dya-on-status` is too dark to be read as text on a dark surface: #ea746a as an ink
- * measures 4.23 on `--dya-raised-hover` in Gi and 3.62 in Rei, under the floor on the one step a
- * quiet danger button spends its life on. So the ink is a token of its own, `--dya-danger-ink`,
- * 7.09 on `--dya-raised` in both themes and 6.11 and 5.80 on the hover step.
+ * A status colour is a light, and its ink is a token of its own. The three lights are saturated
+ * enough to read as green, amber and red from across the room, and that is exactly what stops red
+ * being text: `--dya-danger` measures 3.36 on a card at the brightest point of the glass. Each
+ * light therefore has an ink, the same hue lifted toward white, and every one of the three is text
+ * on every ground the system has: 6.73 at the least, for red.
  */
 .dya-text--danger {
     color: var(--dya-danger-ink);
@@ -45,9 +41,8 @@
  * The emphasis layer.
  *
  * Every other rule in this file prevents something: do not glare, do not truncate, never below
- * 4.50. Prohibitions reliably produce a screen where nothing is wrong and nothing is first, which
- * is what a panel of this system looked like — labels, values, rows and headings all quiet, and
- * the eye with nowhere to land. These six say what matters instead of what is forbidden.
+ * 4.50. Prohibitions reliably produce a screen where nothing is wrong and nothing is first. These
+ * say what matters instead of what is forbidden.
  *
  * A title is a size and a tracking, never a weight: hierarchy in this system comes from the type
  * scale and the ink rank, and reaching for 500 is how a screen ends up with four kinds of bold and
@@ -77,8 +72,7 @@
 
 /*
  * A label names a control. It is sentence case in the sans, because an interface that shouts every
- * word of itself in 10px mono capitals reads as a terminal wearing a costume — which is what this
- * one did, from its tabs to its table heads to the word COMMIT beside a checkbox.
+ * word of itself in capitals reads as a terminal wearing a costume.
  */
 .dya-label {
     font-family: var(--dya-font-sans);
@@ -90,9 +84,8 @@
 }
 
 /*
- * The eyebrow is the one thing left in capitals, and it earns them by being rare: one per view,
- * naming the region under it, with the accent dot before it. Capitals are a signal when almost
- * nothing else wears them.
+ * The eyebrow names the region under it, in small tracked capitals. Capitals are a signal when
+ * almost nothing else wears them: the eyebrow and the head of a table column, and nothing else.
  */
 .dya-eyebrow {
     display: inline-flex;
@@ -105,15 +98,6 @@
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
     color: var(--dya-text-4);
-}
-
-.dya-eyebrow::before {
-    content: "";
-    width: 5px;
-    height: 5px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-accent);
-    flex: none;
 }
 
 .dya-key-label {
@@ -161,14 +145,20 @@
     overflow-x: auto;
 }
 
+/*
+ * A code block and a log are the two places the glass goes dark: text a program wrote, set into
+ * the panel rather than laid on it. Both are the sunken ground under a hairline with a shadow
+ * falling in from the top edge, which is what makes them read as a well and not as a card.
+ */
 .dya-code {
     display: block;
     margin: 0 0 var(--dya-space-3);
     padding: var(--dya-space-3);
     overflow-x: auto;
     border: var(--dya-border-width) solid var(--dya-hairline);
-    border-radius: var(--dya-radius);
-    background: var(--dya-surface-2);
+    border-radius: var(--dya-radius-card);
+    background: var(--dya-sunken);
+    box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
     line-height: var(--dya-leading-body);
@@ -209,15 +199,16 @@
 
 .dya-log {
     overflow: auto;
-    padding: var(--dya-space-3);
+    padding: var(--dya-space-3) 14px;
+    border: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius-card);
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-mono);
-    line-height: var(--dya-leading-body);
-    color: var(--dya-text-3);
+    line-height: var(--dya-leading-log);
+    color: var(--dya-text-4);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
@@ -227,7 +218,7 @@
  * escapes, and a log that prints them shows `[90m` and a box where the escape character was,
  * on every line. The twelve chromatic colours are the terminal's tokens; black and white are the
  * system's ink ranks, as they are in the terminal, and dim is the quietest of them. Every one is
- * text on `--dya-sunken`, the ground of a log: 7.14 at the least in Gi, 7.70 in Rei.
+ * text on `--dya-sunken`, the ground of a log.
  */
 .dya-ansi--black,
 .dya-ansi--bright-black,
@@ -296,19 +287,15 @@
 }
 
 /*
- * The handle that decides how a panel divides its room between two regions.
- *
- * Everything in this application resizes — the window, the dock, every panel in it — and the
- * regions inside a panel did not: a console filling with output a line at a time was whatever
- * height its plugin had written down, for ever. A region that grows is a region that needs a
- * handle, and a handle drawn by each plugin is a handle each plugin gets wrong.
+ * The handle that decides how a panel divides its room between two regions. A region that grows
+ * is a region that needs a handle, and a handle drawn by each plugin is a handle each plugin gets
+ * wrong.
  *
  * The strip is eleven pixels so it can be caught with a pointer and pulls its own height back out
  * of the layout with a negative margin, so adding one does not move what is above it. The grip is
- * a 64 by 4 pill in `--dya-text-3`, 8.95 on `--dya-surface-1` in Gi and 8.76 in Rei, because a
- * handle is found before it is used; it takes `--dya-accent` under the pointer and while
- * dragging, 6.53 and 7.06 on the same ground. Arrow keys move it for anybody who
- * is not holding one.
+ * a 64 by 4 pill in `--dya-text-4`, because a handle is found before it is used; it takes
+ * `--dya-accent` under the pointer and while dragging. Arrow keys move it for anybody who is not
+ * holding one.
  */
 .dya-splitter {
     display: grid;
@@ -328,7 +315,7 @@
     width: 64px;
     height: 4px;
     border-radius: var(--dya-radius-full);
-    background: var(--dya-text-3);
+    background: var(--dya-text-4);
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
@@ -350,17 +337,17 @@
     height: 46px;
 }
 
+/*
+ * A bar is a strip of the panel's own glass with a hairline under it. It has no ground of its own,
+ * because the panel already has one, and a second gradient inside the first reads as a panel
+ * inside a panel. It is tall enough for a key and the edge under it.
+ */
 .dya-bar {
-    height: 44px;
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-    padding: 0 var(--dya-space-3);
-}
-
-.dya-bar {
-    height: 38px;
-    background: var(--dya-grad-bar);
+    min-height: 50px;
+    padding: var(--dya-space-2) var(--dya-space-4);
     border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }
 
@@ -369,9 +356,8 @@
 }
 
 .dya-bar--inset {
-    height: auto;
+    min-height: 0;
     padding: 0;
-    background: none;
     border-bottom: none;
 }
 
@@ -387,41 +373,45 @@
     flex: none;
 }
 
+/*
+ * A card is a pane of the same glass as the panel, one step brighter, under a hairline. It is not
+ * relief: nothing about it says press, because a card is a thing that is there and not a thing
+ * that acts.
+ */
 .dya-card {
-    background: var(--dya-surface-1);
-    border: var(--dya-border-width) solid var(--dya-border);
+    border: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius-card);
+    background: var(--dya-glass-card);
     box-shadow: var(--dya-elev-flat);
 }
 
 /*
- * A card that is itself the thing pressed or picked up: a kanban card opens its drawer and
- * is dragged between columns. It stands off the board the way a button stands off a bar. Its
- * border stays, because a card reports selection and trouble through its edge, so the lift
- * has no contour ring of its own; a second ring beside the border would be a double edge.
+ * A card that is itself the thing opened or picked up: a kanban card opens its drawer and is
+ * dragged between columns. It answers the pointer with its ground, and its border stays free for
+ * selection and trouble.
  */
 .dya-card--lift {
-    background-image: var(--dya-face);
-    box-shadow: var(--dya-elev-lift);
+    cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-card--lift:hover {
+    background-color: var(--dya-glass-hover);
 }
 
 .dya-card__header {
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
-    height: 44px;
-    padding: 0 var(--dya-space-3);
-    background: var(--dya-grad-header);
-    border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
+    min-height: 44px;
+    padding: 0 var(--dya-space-4);
+    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }
 
 /*
- * The band at the head of a view: what the view is about, said once, on a ground of its own.
- *
- * Three panels arrived at this shape independently and each drew it differently, which is the
- * failure the system exists to prevent. It is flat and not relief, because a header is not
- * pressable: `--dya-elev-chassis` is a seam under its top edge, the same seam the panel carries.
- * It wraps, because at 400px a stat, a name and two badges are three lines and not one.
+ * The band at the head of a view: what the view is about, said once. It is a card and not relief,
+ * because a header is not pressable. It wraps, because at 400px a stat, a name and two badges are
+ * three lines and not one.
  */
 .dya-masthead {
     display: flex;
@@ -429,15 +419,21 @@
     gap: var(--dya-space-4);
     flex-wrap: wrap;
     padding: var(--dya-space-4);
-    border-radius: var(--dya-radius);
-    background: var(--dya-surface-2);
+    border: var(--dya-border-width) solid var(--dya-hairline);
+    border-radius: var(--dya-radius-card);
+    background: var(--dya-glass-card);
     box-shadow: var(--dya-elev-chassis);
 }
 
+/*
+ * The word in the title bar is stamped into the metal rather than printed on it: an ink barely
+ * off the ground, a dark lip above and a light one below. It measures 1.45 against the ground and
+ * is not text; the window's title carries the name for anything that reads it. It is the one
+ * element in the system that is allowed to be decoration.
+ */
 .dya-brand {
     display: inline-flex;
     align-items: center;
-    gap: var(--dya-space-2);
     padding: 0 var(--dya-space-3);
     font-family: var(--dya-font-serif);
     font-size: var(--dya-size-brand);
@@ -445,17 +441,8 @@
     letter-spacing: var(--dya-tracking-brand);
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
-    color: var(--dya-text);
+    color: var(--dya-brand-ink);
     text-shadow: var(--dya-carve);
-}
-
-.dya-brand::after {
-    content: "";
-    width: 5px;
-    height: 5px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-accent);
-    flex: none;
 }
 
 .dya-carved {
@@ -472,52 +459,110 @@
     filter: var(--dya-carve-filter);
 }
 
-.dya-button {
-    display: inline-grid;
-    place-items: center;
-    height: 30px;
-    padding: 0 14px;
-    border: none;
-    border-radius: var(--dya-radius);
+/*
+ * Four materials, three voices.
+ *
+ * Glass is the panel and only the panel. A key is every control: a flat face, straight corners at
+ * 3px and a hard edge of 3px underneath with no blur, which is gone when it is pressed and the
+ * key drops 2px onto it. A pill is every piece of information, round so that it can never be taken
+ * for a key. A light is status and only status, and it lives inside a pill or around a key: green
+ * is up to date or running, amber is changed, red is failed or stopping.
+ *
+ * The press is instant and short. A transition may name `transform` and `background-color` and
+ * nothing else, so the edge swaps in a frame while the drop animates over 50ms; the border moves
+ * with the pointer without a transition at all.
+ */
+.dya-button,
+.dya-key,
+.dya-chip,
+.dya-tile,
+.dya-select > .dya-field {
+    position: relative;
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius-sm);
     background: var(--dya-raised);
-    box-shadow: var(--dya-elev-raised);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-sm);
-    font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text);
+    box-shadow: var(--dya-elev-key);
     cursor: pointer;
     transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
+        transform var(--dya-dur-press) linear,
         background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
-.dya-button:hover {
+.dya-button:hover,
+.dya-key:hover,
+.dya-chip:hover,
+.dya-tile:hover,
+.dya-select > .dya-field:hover {
     background-color: var(--dya-raised-hover);
+    border-color: var(--dya-border-hover);
 }
 
-.dya-button:active {
+.dya-button:active,
+.dya-key:active,
+.dya-chip:active,
+.dya-tile:active,
+.dya-select > .dya-field:active {
     transform: translateY(var(--dya-press-y));
+    box-shadow: var(--dya-elev-key-down);
 }
 
-.dya-button[aria-pressed="true"] {
-    box-shadow: var(--dya-elev-pressed);
-    background-image: none;
+.dya-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--dya-space-2);
+    height: 34px;
+    padding: 0 14px;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-key);
+    line-height: var(--dya-leading-tight);
+    white-space: nowrap;
+    color: var(--dya-text);
+}
+
+.dya-button > svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+}
+
+.dya-button kbd {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label);
+    color: var(--dya-text-4);
 }
 
 /*
- * A control that cannot be pressed gives up its meaning along with its function. The ink used to
- * change and the fill did not, so a disabled RUN was `--dya-text-4` over `--dya-success`: 1.54 in
- * Gi and 1.26 in Rei, a green lozenge with no word on it, and a disabled primary was 1.03. Every
- * filled variant falls back to the plain raised ground here, where the same ink measures 5.33 in
- * Gi and 5.58 in Rei before the opacity, and keeps its shape.
+ * A toggle that is on stays a key and brightens: a lighter face, a stronger border, white ink.
+ * It does not sink, because a sunk key reads as one being held, and this one has been let go.
+ */
+.dya-button[aria-pressed="true"],
+.dya-chip[aria-pressed="true"] {
+    background-color: var(--dya-selected);
+    border-color: var(--dya-border-strong);
+    color: var(--dya-text);
+}
+
+/*
+ * A key that cannot be pressed keeps its shape and loses its light: a darker face, a fainter lip
+ * and the ink of something that is off. An inactive control is exempt from the contrast floor,
+ * and `--dya-text-off` is chosen to look off rather than to be read.
  */
 .dya-button:disabled,
-.dya-button:disabled:hover {
-    background-color: var(--dya-raised);
-    color: var(--dya-text-4);
+.dya-button:disabled:hover,
+.dya-button:disabled:active {
+    background-color: var(--dya-disabled);
+    border-color: var(--dya-border);
+    box-shadow: var(--dya-elev-key-off);
+    color: var(--dya-text-off);
     cursor: default;
-    opacity: 0.6;
+    transform: none;
+}
+
+.dya-button:disabled::after {
+    display: none;
 }
 
 .dya-button--quiet {
@@ -525,41 +570,70 @@
 }
 
 /*
- * The one action a screen is about. At most one per view: a second primary is two firsts, which is
- * none. It is the only filled control in the system that is not a status, and the hover step is a
- * token rather than a filter because a transition may name background-color and nothing else.
+ * A lit key. The light is a border in its colour, an ink mixed from its colour and white, and a
+ * glow cast on the glass around the key. The glow is still: nothing in this system animates for as
+ * long as a panel is open, and a light that breathed would be the one thing on screen that did.
+ *
+ * Three keys are lit. The primary is lit in the accent, the one action a view is about, at most
+ * one per view. Success is lit green: go, run, approve, the affirmative half of a pair. Danger is
+ * lit red: stop, delete, the other half. Lit inks over the key face measure 11.49 for the
+ * primary, 8.00 for success and 6.60 for danger, and 10.83, 7.54 and 6.22 over its hover step.
  */
 .dya-button--primary {
-    background: var(--dya-accent);
-    color: var(--dya-on-accent);
+    --dya-lit: var(--dya-accent);
 }
 
-.dya-button--primary:hover {
-    background-color: var(--dya-accent-hover);
+.dya-button--success {
+    --dya-lit: var(--dya-success);
+}
+
+.dya-button--danger {
+    --dya-lit: var(--dya-danger);
+}
+
+.dya-button--primary,
+.dya-button--success,
+.dya-button--danger:not(.dya-button--quiet) {
+    border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
+    color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
+}
+
+.dya-button--primary:hover,
+.dya-button--success:hover,
+.dya-button--danger:not(.dya-button--quiet):hover {
+    border-color: color-mix(in srgb, var(--dya-lit) 70%, transparent);
+}
+
+.dya-button--primary::after,
+.dya-button--success::after,
+.dya-button--danger:not(.dya-button--quiet)::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow: var(--dya-glow) color-mix(in srgb, var(--dya-lit) 70%, transparent);
+    pointer-events: none;
 }
 
 /*
- * Go. The affirmative half of a pair whose other half stops or destroys: run a round, approve a
- * change, confirm the thing that was asked. It is green because every application the reader has
- * ever used makes it green, and a system that spends its one accent on both sides of that pair
- * makes two controls that mean opposite things look identical.
- *
- * It is not a second primary. A primary is the one action a view is about and there is at most one
- * of them; a success button is a meaning, and a view may hold one beside its opposite.
- * `--dya-on-status` over it measures 10.13 in Gi and 11.33 in Rei, 11.53 and 12.88 on the hover.
+ * A destructive action offered among others is not lit. It is a plain key with a red ink, so the
+ * most destructive control is never the first thing the eye lands on; the light is for the
+ * confirmation, where destroying is the thing being asked for.
  */
-.dya-button--success {
-    background: var(--dya-success);
-    color: var(--dya-on-status);
+.dya-button--danger.dya-button--quiet {
+    color: var(--dya-danger-ink);
 }
 
-.dya-button--success:hover {
-    background-color: var(--dya-success-hover);
-}
-
-.dya-button--bare {
+/*
+ * The one control that is not a key: a glyph with no face, for the close on a tab and the icons
+ * inside a row, where a key's edge would be a row of stamps along every line.
+ */
+.dya-button--bare,
+.dya-button--bare:hover,
+.dya-button--bare:active {
     height: auto;
     padding: 0;
+    border: none;
     background: none;
     box-shadow: none;
     color: var(--dya-text-4);
@@ -567,7 +641,6 @@
 }
 
 .dya-button--bare:hover {
-    background-color: transparent;
     color: var(--dya-text);
 }
 
@@ -576,73 +649,29 @@
 }
 
 .dya-button--sm {
-    height: 26px;
+    height: 28px;
     padding: 0 10px;
     font-size: var(--dya-size-body-xs);
-    letter-spacing: var(--dya-tracking-ui);
-}
-
-.dya-button--danger {
-    background: var(--dya-danger);
-    color: var(--dya-on-status);
-}
-
-.dya-button--danger:hover {
-    background-color: var(--dya-danger-hover);
-}
-
-/*
- * A destructive action is not an emphasis. A filled danger button is exactly as loud as the one
- * primary a view is allowed, so spending it on delete makes the most destructive control the
- * first thing the eye lands on — which is what every panel here did, with a red DELETE beside a
- * grey MOVE. Quiet danger is the ordinary shape: a button that looks like a button, with an ink
- * that says what it does, `--dya-danger-ink` over `--dya-raised` at 7.09 in both themes and 6.11
- * and 5.80 on the hover step. The fill is for the confirmation, where destroying is the action being
- * asked for rather than one of several offered.
- */
-.dya-button--danger.dya-button--quiet {
-    background: var(--dya-raised);
-    color: var(--dya-danger-ink);
-}
-
-.dya-button--danger.dya-button--quiet:hover {
-    background-color: var(--dya-raised-hover);
 }
 
 /*
  * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
- * nothing on it yet offers what to do next, rather than stating that there is nothing — which is
- * the shape every empty state in this application had.
+ * nothing on it yet offers what to do next, rather than stating that there is nothing. It is a
+ * key, as large as it needs to be, with the same corners, edge and drop.
  */
 .dya-tile {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-2);
     padding: var(--dya-space-5);
-    border: none;
-    border-radius: var(--dya-radius-card);
-    background: var(--dya-raised);
-    box-shadow: var(--dya-elev-raised);
     text-align: left;
-    cursor: pointer;
-    transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
-        background-color var(--dya-dur-fast) var(--dya-ease);
-}
-
-.dya-tile:hover {
-    background-color: var(--dya-raised-hover);
-}
-
-.dya-tile:active {
-    transform: translateY(var(--dya-press-y));
 }
 
 .dya-tile__icon {
     display: block;
     width: 18px;
     height: 18px;
-    color: var(--dya-hue, var(--dya-accent));
+    color: var(--dya-hue, var(--dya-text-2));
 }
 
 .dya-tile__icon > svg {
@@ -667,27 +696,29 @@
 
 /*
  * A tile whose content is a row instead of an icon: a name, what is happening to it, and the
- * tallies under. The same relief and the same press, tighter, because a grid of these is a list
- * of things to open rather than the one thing a blank region offers.
- *
- * Its name is data — a board, a file, a host — so it keeps its case and its mono tracking, where
- * the icon tile names a panel and is therefore a label. That is the system's own division between
- * interface text and data, and a tile sits on both sides of it.
+ * tallies under. Its name is data, a board, a file, a host, so it keeps its case and its mono
+ * tracking, where the icon tile names a panel and is therefore a label.
  */
 .dya-tile--dense {
     padding: var(--dya-space-4);
 }
 
+/*
+ * The head wraps before the name does. A name squeezed by the pills beside it broke at its own
+ * hyphens, `claude-` over `code-docs`, while the pills kept their width; the name keeps its line
+ * and the pills go under it when both do not fit.
+ */
 .dya-tile__head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--dya-space-2);
     min-width: 0;
 }
 
 .dya-tile--dense .dya-tile__name {
-    flex: 1;
-    min-width: 0;
+    flex: 1 0 auto;
+    max-width: 100%;
     font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
     text-transform: none;
@@ -695,51 +726,32 @@
 }
 
 /*
- * The icon control: a panel to open, a theme to choose, a window to close. It carries no outline at
- * rest, because a row of them that each wear one is a row of identical stamps and says nothing
- * about which is which — the top bar of this application was seven of those. The ground answers the
- * pointer and the ink answers the state: quiet when there is nothing to say, the accent when what
- * it controls is on.
+ * The icon key: a panel to open, a window to act on. A square key with the glyph in the second ink.
+ * A key whose panel is open is held down: it sits on its edge, its face goes to the selected step
+ * and its glyph takes the panel's hue, the one fact the colour carries in the top bar.
  */
 .dya-key {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
     padding: 0;
-    border: none;
-    border-radius: var(--dya-radius);
-    background: var(--dya-raised);
-    box-shadow: var(--dya-elev-raised);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
-    color: var(--dya-text-4);
-    cursor: pointer;
-    transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
-        background-color var(--dya-dur-fast) var(--dya-ease);
-}
-
-.dya-key:hover {
-    background-color: var(--dya-raised-hover);
     color: var(--dya-text-2);
 }
 
-.dya-key:active {
-    transform: translateY(var(--dya-press-y-key));
+.dya-key:hover {
+    color: var(--dya-text);
 }
 
-/*
- * A key wears its hue only while what it controls is open, held down in it. At rest it is the
- * quiet ink of every other key: six hues along the top bar all the time were a legend nobody
- * asked to read, and the one fact the colour can carry there is which of them is open.
- */
 .dya-key--active,
 .dya-key--active:hover {
-    background-color: color-mix(in oklab, var(--dya-hue, var(--dya-accent)) var(--dya-hue-ground), var(--dya-sunken));
-    background-image: none;
-    box-shadow: var(--dya-elev-pressed);
-    color: var(--dya-hue, var(--dya-accent));
+    transform: translateY(var(--dya-press-y));
+    background-color: var(--dya-selected);
+    border-color: var(--dya-border-strong);
+    box-shadow: var(--dya-elev-key-down);
+    color: var(--dya-hue, var(--dya-text));
 }
 
 .dya-key > svg {
@@ -754,8 +766,8 @@
 
 /*
  * A tip on something that is not a control. The cursor is the only thing saying a word is
- * explained rather than pressable, and a reader who cannot tell does not hover. A button, a key
- * or a chip carrying a tip keeps its own cursor: it is pressable and the tip is extra.
+ * explained rather than pressable, and a reader who cannot tell does not hover. A key carrying a
+ * tip keeps its own cursor: it is pressable and the tip is extra.
  */
 .dya-badge[interestfor],
 .dya-tag[interestfor],
@@ -763,82 +775,32 @@
     cursor: help;
 }
 
+/*
+ * A small key: a filter to toggle, a suggestion to take. It was round once, and round is now the
+ * shape of information; a chip is pressable, so it is square like every other key.
+ */
 .dya-chip {
     display: inline-grid;
     place-items: center;
-    height: 22px;
+    height: 26px;
     padding: 0 var(--dya-space-3);
-    border: none;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-raised);
-    box-shadow: var(--dya-elev-raised);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
-    letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-3);
-    cursor: pointer;
-    transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
-        background-color var(--dya-dur-fast) var(--dya-ease);
-}
-
-.dya-chip:hover {
-    background-color: var(--dya-raised-hover);
-}
-
-.dya-chip:active {
-    transform: translateY(var(--dya-press-y));
+    letter-spacing: var(--dya-tracking-key);
+    color: var(--dya-text-2);
 }
 
 /*
- * The list row, and a card for the same reason a table row is one: a column of names with nothing
- * around them is a column of text, and what the reader is choosing between is objects. It is the
- * one row in the system that does not uppercase, because what it holds is a name and a name is
- * data.
+ * A field receives input, so it is the one control set into the glass rather than standing on
+ * it: the sunken ground, a hairline and the shadow of a well. It is as tall as a key so that a
+ * field and the key that submits it share a baseline.
  */
-.dya-entry {
-    display: block;
-    width: 100%;
-    padding: 8px var(--dya-space-3);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius-card);
-    background: var(--dya-surface-1);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-3);
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
-        background-color var(--dya-dur-fast) var(--dya-ease);
-}
-
-.dya-entry:hover {
-    background-color: var(--dya-flat-hover);
-    color: var(--dya-text);
-}
-
-.dya-entry:active {
-    transform: scale(var(--dya-press-scale));
-}
-
-.dya-entry--active {
-    background-color: var(--dya-selected);
-    border-color: var(--dya-border-strong);
-    box-shadow: inset 2px 0 0 var(--dya-accent);
-    color: var(--dya-text);
-}
-
 .dya-field {
-    height: 30px;
+    height: 34px;
     width: 100%;
     padding: 0 var(--dya-space-3);
-    border: none;
-    border-radius: var(--dya-radius);
+    border: var(--dya-border-width) solid var(--dya-hairline);
+    border-radius: var(--dya-radius-sm);
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
     font-family: var(--dya-font-mono);
@@ -852,14 +814,24 @@
     color: var(--dya-text-4);
 }
 
-.dya-field:focus,
-.dya-field:focus-visible {
+.dya-field:not(select):focus,
+.dya-field:not(select):focus-visible {
+    outline: none;
     box-shadow: var(--dya-elev-focus);
 }
 
-.dya-field--sm {
-    height: 20px;
-    padding: 0 var(--dya-space-2);
+/*
+ * The small field is as tall as the small key, so a compact form lines up whether a row holds a
+ * field, a list to choose from or a button.
+ */
+.dya-field--sm,
+.dya-select > .dya-field--sm {
+    height: 28px;
+    padding-inline: var(--dya-space-2);
+}
+
+.dya-select > .dya-field--sm {
+    padding-inline-end: var(--dya-space-6);
 }
 
 .dya-field--auto {
@@ -874,16 +846,10 @@ textarea.dya-field {
 }
 
 /*
- * A sentence, inside something this system sets in mono.
- *
- * Mono is for data — a path, a model name, a log line, a column of figures — and the field and
- * the table are both mono because most of what they hold is data. A title someone typed, a brief,
- * a description is prose, and prose set in mono at a tracking meant for identifiers reads as a
- * ransom note: every word the same width and every letter held apart from the next. The eye stops
- * reading words and starts reading characters.
- *
- * The rule the system already states is that interface text is uppercase and data keeps its case.
- * This is the third case it never named: prose is neither, and it is sans.
+ * A sentence, inside something this system sets in mono. Mono is for data, and a title someone
+ * typed, a brief, a description is prose: set in mono at a tracking meant for identifiers, every
+ * word is the same width and every letter held apart from the next. Prose is neither interface
+ * text nor data, and it is sans.
  */
 .dya-field--prose {
     font-family: var(--dya-font-sans);
@@ -892,19 +858,14 @@ textarea.dya-field {
     letter-spacing: normal;
 }
 
-/* Sans is wider than the mono a small field was measured against, so it steps down a size. */
 .dya-field--sm.dya-field--prose {
     font-size: var(--dya-size-body-sm);
 }
 
 /*
- * A form is a two-column grid: what the field is called, and the field. Nothing else.
- *
- * The system had no form, so every consumer invented one, and each of them reached for the same
- * wrong answer — a centred paragraph above the input explaining what it does. Three of those in a
- * column is a page of prose with three boxes in it, and the reader has to parse a sentence to find
- * out that the next box takes a number. A label names; the sentence behind it is a tip on the
- * label, which is where an explanation that is not always needed belongs.
+ * A form is a two-column grid: what the field is called, and the field. Nothing else. A label
+ * names; the sentence behind it is a tip on the label, which is where an explanation that is not
+ * always needed belongs.
  */
 .dya-form {
     display: grid;
@@ -919,9 +880,7 @@ textarea.dya-field {
 
 /*
  * A label that carries a tip, wherever it is. A sentence explaining a control does not go inside
- * the control — a field whose placeholder reads "seconds, blank for none" is an instruction
- * standing where the value goes, and it vanishes the moment anyone types. It goes on the label,
- * and the dotted underline is what says there is one to read.
+ * the control; it goes on the label, and the dotted underline is what says there is one to read.
  */
 .dya-label[interestfor] {
     cursor: help;
@@ -937,21 +896,83 @@ textarea.dya-field {
     margin-top: var(--dya-space-2);
 }
 
-/* Whatever carries this, and everything after it, sits at the far end: destructive actions go there. */
 .dya-form__push {
     margin-inline-start: auto;
 }
 
+/*
+ * A choice from a list is a key that opens a menu, not a field: nothing is typed into it. The
+ * select is the platform's own, in its customisable form, so the list it opens is drawn by this
+ * system and not by the operating system: the menu's ground and hairline, rows in the mono, the
+ * chosen one marked with a green check. The chevron is the wrapper's, and turns over while the
+ * list is open.
+ */
 .dya-select {
     position: relative;
     display: inline-flex;
     align-items: center;
 }
 
+.dya-select > .dya-field,
+.dya-select > .dya-field::picker(select) {
+    appearance: base-select;
+}
+
 .dya-select > .dya-field {
-    appearance: none;
-    padding-right: var(--dya-space-6);
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 var(--dya-space-6) 0 var(--dya-space-3);
+    color: var(--dya-text);
+}
+
+.dya-select > .dya-field::picker-icon {
+    display: none;
+}
+
+.dya-select > .dya-field::picker(select) {
+    margin-block: var(--dya-space-2);
+    padding: var(--dya-space-1);
+    border: var(--dya-border-width) solid var(--dya-border-menu);
+    border-radius: var(--dya-radius);
+    background: var(--dya-overlay);
+    box-shadow: var(--dya-elev-popover);
+}
+
+.dya-select option {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-height: 32px;
+    padding: 0 var(--dya-space-2);
+    border-radius: var(--dya-radius-sm);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-3);
     cursor: pointer;
+}
+
+.dya-select option:hover,
+.dya-select option:focus-visible {
+    outline: none;
+    background: var(--dya-glass-press);
+    color: var(--dya-text);
+}
+
+.dya-select option:checked {
+    color: var(--dya-text);
+}
+
+.dya-select option::checkmark {
+    color: var(--dya-success);
+}
+
+.dya-select hr {
+    height: var(--dya-border-width);
+    margin: var(--dya-space-1) 6px;
+    border: none;
+    background: var(--dya-hairline);
 }
 
 .dya-select::after {
@@ -965,8 +986,17 @@ textarea.dya-field {
     border-bottom: 1.5px solid var(--dya-text-4);
     transform: translateY(-70%) rotate(45deg);
     pointer-events: none;
+    transition: transform var(--dya-dur-fast) var(--dya-ease);
 }
 
+.dya-select:has(> .dya-field:open)::after {
+    transform: translateY(-30%) rotate(225deg);
+}
+
+/*
+ * A box that is ticked is lit: the green of something done, with the ground's own black for the
+ * tick, 6.44 over the fill.
+ */
 .dya-checkbox {
     appearance: none;
     display: grid;
@@ -978,54 +1008,63 @@ textarea.dya-field {
     border-radius: var(--dya-radius-sm);
     background: var(--dya-sunken);
     cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-checkbox::after {
     content: "";
     width: 7px;
     height: 4px;
-    border-left: 1.5px solid var(--dya-accent);
-    border-bottom: 1.5px solid var(--dya-accent);
+    border-left: 1.5px solid var(--dya-on-status);
+    border-bottom: 1.5px solid var(--dya-on-status);
     transform: rotate(-45deg) translate(0.5px, -1px);
     opacity: 0;
-    transition: opacity var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-checkbox:checked {
-    border-color: var(--dya-accent);
+    border-color: var(--dya-success);
+    background-color: var(--dya-success);
 }
 
 .dya-checkbox:checked::after {
     opacity: 1;
 }
 
-.dya-tag {
+/*
+ * The pill: every piece of information, a group, a tag, a count. Round, so that it is never taken
+ * for a key; a faint glass of its own with a lit top edge; its words in the mono, because what a
+ * pill holds is data.
+ */
+.dya-tag,
+.dya-badge {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 6px;
     height: 22px;
-    padding: 0 11px;
-    border: var(--dya-border-width) solid var(--dya-tag-border);
+    padding: 0 10px;
+    border: var(--dya-border-width) solid var(--dya-pill-border);
     border-radius: var(--dya-radius-full);
-    background: var(--dya-tag-bg);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-xs);
+    background: var(--dya-glass-pill);
+    box-shadow: var(--dya-elev-pill);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-pill);
+    font-weight: var(--dya-weight-medium);
     letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-2);
+    line-height: var(--dya-leading-tight);
+    white-space: nowrap;
+    color: var(--dya-hue, var(--dya-text-3));
 }
 
 /*
- * Hue is the categorical axis: which of several things of one kind this is -- which plugin, which
- * group of corpora, which agent. It is not status, which has its own three tokens and its own
- * filled badges, and it is not emphasis, which is the accent's. The six are solved rather than
- * picked: one OKLCH lightness per theme, the most chroma each hue holds there, so they read as
- * one family and none of them is louder than another. Every one is text from `--dya-bg` up to
- * `--dya-raised` in both themes; above that it is a mark.
+ * Hue is the categorical axis: which of several things of one kind this is, which plugin, which
+ * group of corpora, which agent. It is not status, which has its three lights, and it is not
+ * emphasis. The six are solved rather than picked: one OKLCH lightness, the most chroma each hue
+ * holds there, so they read as one family. Every one is text on every ground in the system, 5.47
+ * at the least.
  *
  * `.dya-hue--<name>` sets `--dya-hue` on an element and nothing else. Components with one colour
  * to give read it with their usual colour as the fallback, so a component with no hue anywhere
- * above it draws exactly as it did. The pane variant sets a different property on purpose: a
- * panel's hue colours its selected tabs, and must not leak into every key and tag inside it.
+ * above it draws exactly as it did.
  */
 .dya-hue--amber { --dya-hue: var(--dya-hue-amber); }
 .dya-hue--mint { --dya-hue: var(--dya-hue-mint); }
@@ -1034,18 +1073,9 @@ textarea.dya-field {
 .dya-hue--violet { --dya-hue: var(--dya-hue-violet); }
 .dya-hue--pink { --dya-hue: var(--dya-hue-pink); }
 
-.dya-pane--amber { --dya-pane-hue: var(--dya-hue-amber); }
-.dya-pane--mint { --dya-pane-hue: var(--dya-hue-mint); }
-.dya-pane--cyan { --dya-pane-hue: var(--dya-hue-cyan); }
-.dya-pane--blue { --dya-pane-hue: var(--dya-hue-blue); }
-.dya-pane--violet { --dya-pane-hue: var(--dya-hue-violet); }
-.dya-pane--pink { --dya-pane-hue: var(--dya-hue-pink); }
-
 /*
- * Hue is spent sparingly: a mark beside a name, not a fill around it. A row that carried its group
- * as a filled tag and its state as a filled badge was two colour axes shouting in one line, and a
- * screen of them was ten hues at once. The dot says which one; the name stays in the ink of every
- * other name, and the loud colour on the row is left to the state, which is what is read first.
+ * Hue is spent sparingly: a mark beside a name, not a fill around it. The dot says which one; the
+ * name stays in the ink of every other name, and the loud colour on a row is left to the light.
  */
 .dya-legend {
     display: inline-flex;
@@ -1054,21 +1084,50 @@ textarea.dya-field {
     min-width: 0;
 }
 
-/* The hue with nothing to read: beside a name in a list, a legend, a row that is one of a set. */
 .dya-dot {
     display: inline-block;
     flex: none;
     width: 8px;
     height: 8px;
     border-radius: var(--dya-radius-full);
-    background: var(--dya-hue, var(--dya-text-4));
+    background: var(--dya-hue, var(--dya-idle));
+}
+
+/*
+ * A light on its own: the state of a row, a run or a card where a whole pill would be too much.
+ * The same dot a status pill carries, the same three colours and the same glow, and grey with no
+ * glow when it has nothing to say. A light is status and nothing else; which one of several
+ * things this is, is a hue and a `.dya-dot`.
+ */
+.dya-light {
+    --dya-light: var(--dya-idle);
+    display: inline-block;
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--dya-radius-full);
+    background: var(--dya-light);
+}
+
+.dya-light--success {
+    --dya-light: var(--dya-success);
+    box-shadow: 0 0 6px var(--dya-light);
+}
+
+.dya-light--warning {
+    --dya-light: var(--dya-warning);
+    box-shadow: 0 0 6px var(--dya-light);
+}
+
+.dya-light--danger {
+    --dya-light: var(--dya-danger);
+    box-shadow: 0 0 6px var(--dya-light);
 }
 
 /*
  * The dot when the thing it marks has a face: a plugin's icon on its tab and its row in Setup, the
- * mark of the program a terminal is running, the agent a card goes to. Six dots told six plugins
- * apart only by a hue at half its chroma; a shape is read before a colour is. It wears the same
- * hue a dot would, as a graphical object: 4.22 at the least, pink in Rei on `--dya-selected`.
+ * mark of the program a terminal is running, the agent a card goes to. A shape is read before a
+ * colour is.
  */
 .dya-glyph {
     display: inline-grid;
@@ -1093,99 +1152,51 @@ textarea.dya-field {
     color: inherit;
 }
 
+/*
+ * The light: status, inside a pill. A dot in the light's colour with a glow of the same, the pill
+ * tinted toward it and bordered in it, and the words in the light's ink. With no light it is idle,
+ * a grey dot in a plain pill. There are three and only three, and a pill that is a kind rather
+ * than an outcome, a queue, a phase, a sort of event, is a plain tag: its word says which.
+ */
 .dya-badge {
-    display: inline-grid;
-    place-items: center;
-    padding: 3px 10px;
+    --dya-light: var(--dya-idle);
+    color: var(--dya-text-3);
+}
+
+.dya-badge::before {
+    content: "";
+    flex: none;
+    width: 6px;
+    height: 6px;
     border-radius: var(--dya-radius-full);
-    background: var(--dya-idle);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-label);
-    font-weight: var(--dya-weight-medium);
-    letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-on-idle);
+    background: var(--dya-light);
+    box-shadow: 0 0 6px var(--dya-light);
 }
 
 .dya-badge--success {
-    background: var(--dya-success);
-    color: var(--dya-on-status);
+    --dya-light: var(--dya-success);
+    border-color: var(--dya-success-line);
+    background: var(--dya-success-soft);
+    color: var(--dya-success-ink);
 }
 
 .dya-badge--warning {
-    background: var(--dya-warning);
-    color: var(--dya-on-status);
+    --dya-light: var(--dya-warning);
+    border-color: var(--dya-warning-line);
+    background: var(--dya-warning-soft);
+    color: var(--dya-warning-ink);
 }
 
 .dya-badge--danger {
-    background: var(--dya-danger);
-    color: var(--dya-on-status);
-}
-
-/*
- * The three accents were fills nothing could use. A badge could say success, warning or danger and
- * nothing else, so anything that is a kind rather than an outcome — a queue, a phase, a sort of
- * event — either borrowed a status hue it did not mean or wore the same grey as its neighbours.
- * Kinds that differ have to look different, and a system with six hues that lets a label reach
- * three of them has three it declared and never spends.
- *
- * `--dya-on-accent` over each fill: accent 7.02 in Gi and 8.46 in Rei, accent-2 6.12 and 9.70,
- * accent-3 4.87 and 11.37. As soft inks on `--dya-surface-1` the same three measure 6.80 / 6.12 /
- * 4.87 in Gi and 7.47 / 8.57 / 10.04 in Rei.
- */
-.dya-badge--accent {
-    background: var(--dya-accent);
-    color: var(--dya-on-accent);
-}
-
-.dya-badge--accent-2 {
-    background: var(--dya-accent-2);
-    color: var(--dya-on-accent);
-}
-
-.dya-badge--accent-3 {
-    background: var(--dya-accent-3);
-    color: var(--dya-on-accent);
-}
-
-.dya-badge--accent.dya-badge--soft {
-    background: var(--dya-accent-soft);
-    color: var(--dya-accent);
-}
-
-.dya-badge--accent-2.dya-badge--soft {
-    background: var(--dya-accent-2-soft);
-    color: var(--dya-accent-2);
-}
-
-.dya-badge--accent-3.dya-badge--soft {
-    background: var(--dya-accent-3-soft);
-    color: var(--dya-accent-3);
-}
-
-.dya-badge--soft {
-    background: var(--dya-tag-bg);
-    color: var(--dya-text-2);
-}
-
-.dya-badge--success.dya-badge--soft {
-    background: var(--dya-success-soft);
-    color: var(--dya-success);
-}
-
-.dya-badge--warning.dya-badge--soft {
-    background: var(--dya-warning-soft);
-    color: var(--dya-warning);
-}
-
-.dya-badge--danger.dya-badge--soft {
+    --dya-light: var(--dya-danger);
+    border-color: var(--dya-danger-line);
     background: var(--dya-danger-soft);
     color: var(--dya-danger-ink);
 }
 
 /*
- * A row of badges that wraps. A badge is a word, several are a line, and several at panel width
- * are two lines: the wrap is the component, and every consumer that laid badges out by hand got
- * it wrong in the same direction.
+ * A row of pills that wraps. A pill is a word, several are a line, and several at panel width are
+ * two lines: the wrap is the component.
  */
 .dya-pills {
     display: flex;
@@ -1195,16 +1206,8 @@ textarea.dya-field {
 }
 
 /*
- * One figure that is the point of a screen, its unit, and what it is called.
- *
- * The numeral is set in the serif — the family this system otherwise spends on a single word in
- * the title bar — at display size and weight 300. This is the one place a panel is allowed to be
- * loud, and it is loud by size and never by weight: `--dya-size-display` against the
- * `--dya-size-label-sm` beside it is a ratio of four, which no weight in this system can reach.
- *
- * `__value` carries `--dya-text`, 13.30 in Gi and 13.24 in Rei over `--dya-surface-2`, the
- * masthead ground it usually sits on. `__unit` and `__note` carry `--dya-text-4`, 6.37 and 7.61.
- * What the figure is called is `.dya-label`: a stat does not redeclare a class the system has.
+ * One figure that is the point of a screen, its unit, and what it is called. The numeral is set in
+ * the serif at display size and weight 300: loud by size and never by weight. At most one per view.
  */
 .dya-stat {
     display: flex;
@@ -1251,15 +1254,9 @@ textarea.dya-field {
 }
 
 /*
- * n marks, filled while what they count is busy. A capacity and not a progress bar: it does not
- * move on its own and it never animates, because a machine being busy is a fact rather than
- * something to pulse at a reader for as long as the panel is open.
- *
- * An empty mark has to be countable or the meter reports nothing, so the track is an ink rather
- * than a surface step. Over `--dya-raised`, the tile ground it usually sits on, `--dya-text-4`
- * measures 5.73 in Gi and 6.52 in Rei, where `--dya-selected` measures 1.29 and 1.40 and cannot
- * be seen at all. A filled mark is `--dya-accent`, 4.91 and 6.05 on the same ground. Neither is
- * text; both clear the 3.00 a graphical object owes.
+ * n marks, lit while what they count is busy. A capacity and not a progress bar: it does not move
+ * on its own and it never animates. An empty mark is the idle grey, a busy one is the green light
+ * of something running, with its glow.
  */
 .dya-meter {
     display: flex;
@@ -1267,40 +1264,31 @@ textarea.dya-field {
     gap: 3px;
 }
 
-
 .dya-meter__pip {
     width: 14px;
     height: 3px;
     flex: none;
     border-radius: var(--dya-radius-full);
-    background: var(--dya-text-4);
+    background: var(--dya-idle);
 }
 
 .dya-meter__pip[data-on="true"] {
-    background: var(--dya-accent);
+    background: var(--dya-success);
+    box-shadow: 0 0 6px var(--dya-success);
 }
 
 /*
- * **A row is a card.** Not a line of text with a rule under it: a surface of its own, bordered on
- * four sides and rounded at both ends, with a gap of ground between it and the row below.
- *
- * Every table in this application used to draw one horizontal rule per row, which is the shape of
- * a ledger and not of an interface — a page of them reads as ruled paper whatever the rule
- * measures, and the object the reader is actually after, one target or one plugin or one event, is
- * never an object at all. The rule is gone in favour of the object: `border-collapse: separate`
- * with `border-spacing` down the block axis, a `--dya-surface-1` ground on every cell,
- * `--dya-border` around it, and the radius applied to the first and last cell so the row carries
- * it end to end. The head loses its rule with them — column names sit above cards and need no
- * line to be a heading — and hover moves the card's ground rather than tinting a transparent row
- * nobody could see change.
+ * A table is lines, not cards. Rows sit straight on the panel's glass with a hairline between
+ * them, because the glass is already the object and a card per row inside it is a surface on a
+ * surface. The head is the one other place capitals are allowed, small and tracked, over a column
+ * of data. Hover lifts the row's ground by a breath of white.
  *
  * Digits stay `tabular-nums`, because 4102 sitting narrower than 1111 is what stops a column of
  * figures lining up.
  */
 .dya-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 6px;
+    border-collapse: collapse;
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
     font-variant-numeric: tabular-nums;
@@ -1309,58 +1297,43 @@ textarea.dya-field {
 }
 
 .dya-table th {
+    padding: var(--dya-space-2) var(--dya-space-4);
     font-family: var(--dya-font-sans);
-    padding: 0 var(--dya-space-3) var(--dya-space-1);
-    font-size: var(--dya-size-body-xs);
-    font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-ui);
+    font-size: var(--dya-size-label);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-head);
+    line-height: var(--dya-leading-tight);
     text-align: left;
+    text-transform: uppercase;
     color: var(--dya-text-4);
 }
 
 .dya-table td {
-    font-size: var(--dya-size-mono-sm);
     padding: 10px var(--dya-space-4);
-    background: var(--dya-surface-1);
-    border-block: var(--dya-border-width) solid var(--dya-border);
+    border-top: var(--dya-border-width) solid var(--dya-hairline);
+    font-size: var(--dya-size-mono-sm);
     overflow-wrap: anywhere;
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
-.dya-table td:first-child {
-    border-inline-start: var(--dya-border-width) solid var(--dya-border);
-    border-start-start-radius: var(--dya-radius-card);
-    border-end-start-radius: var(--dya-radius-card);
-}
-
-.dya-table td:last-child {
-    border-inline-end: var(--dya-border-width) solid var(--dya-border);
-    border-start-end-radius: var(--dya-radius-card);
-    border-end-end-radius: var(--dya-radius-card);
-}
-
-/* A column of figures is read down, so it is aligned down its right edge. */
 .dya-table .dya-table__num {
     text-align: right;
 }
 
-/* The cell that holds a sentence rather than a value. See `field--prose`. */
 .dya-table .dya-table__prose {
     font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
     letter-spacing: normal;
     color: var(--dya-text);
 }
 
 /*
- * Four column shapes every consumer re-invented, all of them a column as wide as its content and
- * no wider: a cell that simply fits, the two ways a row names itself, and the end of the row,
- * which is where an action sits.
+ * Four column shapes, all of them a column as wide as its content and no wider: a cell that simply
+ * fits, the two ways a row names itself, and the end of the row, which is where an action sits.
  *
- * `__key` and `__name` are the same column and not the same thing. A key is interface text — it
- * says what the value beside it is — so it is uppercase, tracked and `--dya-text-4`. A name is
- * data — a plugin, a board, a file — so it keeps its case and takes `--dya-text`, the rank the
- * subject of a row is owed. Getting that backwards is how a table of paths ends up shouting the
- * word PATH at a reader who wanted to read the path.
+ * A key is interface text, it says what the value beside it is, so it is sans and quiet. A name is
+ * data, a plugin, a board, a file, so it keeps its case and takes `--dya-text`, the rank the
+ * subject of a row is owed.
  */
 .dya-table .dya-table__fit,
 .dya-table .dya-table__key,
@@ -1385,36 +1358,25 @@ textarea.dya-field {
     text-align: right;
 }
 
-/*
- * A row that answers the pointer. The state lives on the cells, because the cells are what carry
- * the card's ground: a background on the `tr` sits behind them and is never seen.
- */
 .dya-row:hover > td {
-    background-color: var(--dya-flat-hover);
+    background-color: var(--dya-glass-hover);
 }
 
 .dya-row--selected > td {
-    background-color: var(--dya-selected);
-    border-color: var(--dya-border-strong);
+    background-color: var(--dya-glass-press);
+    color: var(--dya-text);
 }
 
 /*
- * A region that opens over the panel rather than beside it.
- *
- * A panel is one window's worth of room at most and often half of one, so an editor, a drawer or
- * a detail view that takes a column leaves two halves, each too narrow to be worth anything. A
- * sheet takes the room it needs, over what it came from, and gives it back when it closes.
- *
- * It is the one place a panel-level overlay is declared: `--dya-elev-overlay`, the chassis radius
- * and `--dya-surface-1` over whatever it covers. It is a container, so what is inside it asks the
- * sheet how wide it is rather than the panel. The parent must be positioned; the consumer owns
- * that, and owns what closes it.
+ * A region that opens over the panel rather than beside it. A panel is one window's worth of room
+ * at most and often half of one, so a sheet takes the room it needs, over what it came from, and
+ * gives it back when it closes. It is opaque, the menu's ground, because glass over content is
+ * content read through a veil.
  *
  * A sheet that covers is modal: it opens with a `.dya-scrim` and `inert` over what is under it,
  * takes the focus, gives it back to whatever raised it, and closes on Escape from anywhere in the
- * panel rather than only from inside itself. `--side` is the exception while it stays to one
- * side, because selecting the next item in the list beside it is the point of it; the moment a
- * side sheet is widened to cover, it is a covering sheet and owes all four.
+ * panel. `--side` is the exception while it stays to one side, because selecting the next item in
+ * the list beside it is the point of it.
  */
 .dya-sheet {
     position: absolute;
@@ -1425,34 +1387,23 @@ textarea.dya-field {
     gap: var(--dya-space-3);
     min-width: 0;
     padding: var(--dya-space-3);
-    border: var(--dya-border-width) solid var(--dya-border);
+    border: var(--dya-border-width) solid var(--dya-border-menu);
     border-radius: var(--dya-radius-chassis);
-    background: var(--dya-surface-1);
+    background: var(--dya-overlay);
     box-shadow: var(--dya-elev-overlay);
     container-type: inline-size;
     animation: dya-slide-up-fade var(--dya-dur-fast) var(--dya-ease-out);
 }
 
-/* Anchored to one edge instead of covering: the detail beside the list it came from. */
 .dya-sheet--side {
     inset-inline-start: auto;
     width: 50%;
 }
 
 /*
- * What a sheet leaves behind it, and the half of modality that can be seen.
- *
- * A sheet is inset from the panel and a side sheet covers half of it, so what it came from keeps
- * showing through. Without this the reader is looking at a live surface around a modal one: a row
- * that still hovers, still takes a click and answers it by replacing what is being edited, and a
- * whole region still in the tab order behind a thing that has the reader's attention. The scrim
- * says that region is out of play; `inert` on the same region makes it true. Neither is optional
- * and neither is sufficient, so a sheet raises both or it is not a sheet.
- *
- * It is the theme's own ground at 72%, which is the alpha where a raised tile behind dims 1.37 in
- * Gi and 1.49 in Rei while the sheet stands 1.16 and 1.15 clear of the ground it covers -- the
- * same separation `--dya-surface-1` has over `--dya-bg`. Below that the region still reads as
- * live; above it the panel goes to one flat black and the reader loses where they were.
+ * What a sheet leaves behind it, and the half of modality that can be seen. The scrim says the
+ * region is out of play; `inert` on the same region makes it true. Neither is optional and neither
+ * is sufficient, so a sheet raises both or it is not a sheet.
  */
 .dya-scrim {
     position: absolute;
@@ -1463,38 +1414,9 @@ textarea.dya-field {
 }
 
 /*
- * Relief is one recipe, and everything that presses wears all of it.
- *
- * A face lit from above -- `--dya-face`, a sheen over whatever ground the control has, so a
- * primary, a danger and a plain button all catch the same light -- a lit top edge and a shaded
- * bottom edge, the contour ring, a contact shadow and a short cast. Pressing takes all of it away
- * at once and sinks the control into `--dya-elev-pressed`: a well with its lip catching light
- * below. The change is instant because a transition may not name `box-shadow`; the translation
- * that carries the press is what animates.
- *
- * Every layer is static. It is painted when the control is, never per frame, so a panel of it
- * scrolls at the rate a panel without it does; the measurement is in the README.
- */
-.dya-button:not(.dya-button--bare),
-.dya-tile,
-.dya-chip,
-.dya-key:not(.dya-key--active) {
-    background-image: var(--dya-face);
-}
-
-.dya-button:not(.dya-button--bare):active,
-.dya-tile:active,
-.dya-chip:active,
-.dya-key:active {
-    background-image: none;
-    box-shadow: var(--dya-elev-pressed);
-}
-
-/*
  * The rank under a name: where a thing came from, when it was last touched, how many of it there
- * are. It is data, so it keeps its case, and it is mono at the smallest step in the scale with the
- * quietest ink that is still text — `--dya-text-4`, 6.70 on `--dya-surface-1` in Gi and 8.04 in
- * Rei. Three panels had each built this line out of a `dya-mono` and two overrides.
+ * are. It is data, so it keeps its case, and it is mono at the smallest step with the quietest ink
+ * that is still text.
  */
 .dya-meta {
     font-family: var(--dya-font-mono);
@@ -1507,11 +1429,17 @@ textarea.dya-field {
     text-overflow: ellipsis;
 }
 
+/*
+ * What opens from a key. It is darker than the key that opened it, with a hairline of its own and
+ * a long soft shadow: the one thing in the system that floats. Its rows are flat and answer the
+ * pointer with a breath of white.
+ */
 .dya-menu {
-    padding: 5px;
+    padding: var(--dya-space-1);
+    border: var(--dya-border-width) solid var(--dya-border-menu);
     border-radius: var(--dya-radius);
     background: var(--dya-overlay);
-    box-shadow: var(--dya-elev-overlay);
+    box-shadow: var(--dya-elev-popover);
 }
 
 .dya-menu__item {
@@ -1519,31 +1447,25 @@ textarea.dya-field {
     align-items: center;
     gap: var(--dya-space-2);
     width: 100%;
-    height: 26px;
+    height: 32px;
     padding: 0 var(--dya-space-2);
     border: none;
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-sm);
     background: transparent;
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-sm);
+    font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-2);
+    color: var(--dya-text-3);
     cursor: pointer;
-    transition:
-        transform var(--dya-dur-press) var(--dya-ease-press),
-        background-color var(--dya-dur-fast) var(--dya-ease);
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-menu__item:hover {
-    background-color: var(--dya-surface-2);
-}
-
-.dya-menu__item:active {
-    transform: scale(var(--dya-press-scale));
+    background-color: var(--dya-glass-press);
+    color: var(--dya-text);
 }
 
 .dya-menu__item--selected {
-    background-color: var(--dya-selected);
     color: var(--dya-text);
 }
 
@@ -1556,10 +1478,10 @@ textarea.dya-field {
     margin-block-start: var(--dya-space-1);
     max-width: 280px;
     padding: var(--dya-space-1) var(--dya-space-2);
-    border: none;
-    border-radius: var(--dya-radius);
+    border: var(--dya-border-width) solid var(--dya-border-menu);
+    border-radius: var(--dya-radius-sm);
     background: var(--dya-overlay);
-    box-shadow: var(--dya-elev-overlay);
+    box-shadow: var(--dya-elev-popover);
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-mono);
@@ -1568,6 +1490,10 @@ textarea.dya-field {
     overflow-wrap: anywhere;
 }
 
+/*
+ * Tabs are words on the glass. The open one is in the first ink with a hairline of the third under
+ * it, drawn as an inset shadow so that it sits on the strip's own rule and adds no height.
+ */
 .dya-tabs {
     display: flex;
     align-items: stretch;
@@ -1576,12 +1502,11 @@ textarea.dya-field {
 }
 
 .dya-tab {
-    padding: 0 0 var(--dya-space-2);
+    padding: 0 0 9px;
     border: none;
-    border-bottom: 2px solid transparent;
     background: transparent;
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body);
+    font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
     cursor: pointer;
@@ -1592,15 +1517,14 @@ textarea.dya-field {
 }
 
 .dya-tab[aria-selected="true"] {
-    border-bottom-color: var(--dya-pane-hue, var(--dya-accent));
     color: var(--dya-text);
+    box-shadow: inset 0 -1px 0 var(--dya-text-3);
 }
 
 /*
  * `min-width` and `overflow-wrap` are what keep this centred instead of clipped. A centred flex
- * item that cannot shrink grows past its container on both sides, so a path with no spaces in it
- * pushed the left half of the message out of the panel, along with everything beside it. A word
- * that will not fit is broken; nothing is ever read from off the left edge.
+ * item that cannot shrink grows past its container on both sides; a word that will not fit is
+ * broken, and nothing is ever read from off the left edge.
  */
 .dya-empty,
 .dya-loading {
@@ -1627,15 +1551,9 @@ textarea.dya-field {
 }
 
 /*
- * What to do about it. An empty state that only says the view is empty has described the problem
- * and left; this is where the answer goes, and it is a row so that the obvious action and the
- * secondary one sit side by side rather than stacked into a list of equals.
- */
-/*
- * The same absence, inside a list rather than instead of a screen. A region that is empty gets the
- * centred block above; a group inside a populated view gets one quiet line where its first row
- * would be, because centring 'nothing is running' in a band of its own makes the emptiest part of
- * the screen the loudest.
+ * The same absence, inside a list rather than instead of a screen: one quiet line where its first
+ * row would be, because centring 'nothing is running' in a band of its own makes the emptiest part
+ * of the screen the loudest.
  */
 .dya-empty--inline {
     align-items: flex-start;

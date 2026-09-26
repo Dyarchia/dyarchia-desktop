@@ -249,9 +249,7 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   `box-shadow`.
 - **A key that is on stays up and brightens**: `--dya-selected` under `--dya-border-strong`,
   white ink. A key whose panel is open is held down: it sits on its edge with its glyph in the
-  top ink; in the title bar it is also `key--open`, a clotted-blood face (`--dya-open` #4d1012
-  under `--dya-open-border` #7a2226) with the glyph at 12.24, the one fill that is neither a light nor
-  a surface. A key that cannot be pressed keeps its shape, loses its light and wears
+  top ink. A key that cannot be pressed keeps its shape, loses its light and wears
   `--dya-text-off` over `--dya-disabled`.
 - **Three keys are lit.** A lit key has a border in its light, an ink mixed from its light
   and `--dya-text`, and a still glow cast on the glass around it, `--dya-glow` in the light at
@@ -382,7 +380,7 @@ contrast measured and its rule written in this file, and only then uses it.
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift) card__header masthead brand
              carved splitter (--vertical) sheet (--side)
-Keys         button (--primary --success --danger --quiet --sm --bare) key (--active --open) chip
+Keys         button (--primary --success --danger --quiet --sm --bare) key (--active) chip
              tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) select checkbox form (__actions __push)
 Pills        tag (--key) badge (--success --warning --danger) pills

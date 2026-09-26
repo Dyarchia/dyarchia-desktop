@@ -61,17 +61,25 @@ const STYLES = `
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--dya-space-5);
+    padding: var(--dya-space-3);
 }
 .player-stage audio,
 .player-stage video {
     color-scheme: var(--dya-scheme);
 }
+/*
+ * The video takes the whole stage and the picture is fitted inside it: contain scales it up or
+ * down to the largest size that keeps its proportion, and whatever the panel's shape leaves over
+ * is bare glass on the two short sides rather than a stretched frame. Only a card with a radius
+ * of its own would show where the letterbox ends, so the element has none.
+ */
 .player-stage video {
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: var(--dya-radius-card);
-    background: var(--dya-sunken);
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: transparent;
     outline: none;
 }
 .player-stage audio {

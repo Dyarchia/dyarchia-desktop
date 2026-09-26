@@ -186,7 +186,7 @@ function pruneInstallers(keep) {
     if (!existsSync(releaseDir)) return []
     const gone = []
     for (const name of readdirSync(releaseDir)) {
-        if (!name.endsWith('.exe') || name.includes(keep)) continue
+        if (!/\.exe(\.blockmap)?$/.test(name) || name.includes(keep)) continue
         console.log(`  removing ${name}`)
         rmSync(join(releaseDir, name))
         gone.push(name)

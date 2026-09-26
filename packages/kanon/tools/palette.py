@@ -1,21 +1,15 @@
-"""Solve a categorical hue: the most chroma a hue can carry and still be text.
+"""Lift a reference colour until it clears a floor on every ground.
 
     py packages/kanon/tools/palette.py
-    py packages/kanon/tools/palette.py --hue 305 --text raised --graphic selected
+    py packages/kanon/tools/palette.py '#1069f6' --floor 3.00
 
-A hue is fixed in OKLCH, where equal steps of hue look like equal steps, and the lightness and
-chroma are searched together. The answer is the most saturated colour inside sRGB that measures
-at least 4.50 against every surface a row, a card or a tile sits on, and at least 3.00 against
-the surfaces where it is only ever a mark. Among equally saturated answers the darker one wins,
-because the lightest colour that passes is the one that glares.
+The six colours are quotations of a reference, not solved from nothing. Each one keeps its OKLCH
+hue and chroma and has its lightness raised in small steps, the chroma giving way only where sRGB
+cannot hold it, until the worst ratio against every ground reaches the floor. With the defaults
+it prints the three rows each colour needs: the light at 3.00, the ink at 5.50 and the bright
+terminal twin at 9.00. A colour that already clears a floor is printed as it is.
 
-`--mute 0.5` keeps each answer's lightness and hue and spends half its chroma. The
-most saturated colour that passes is the ceiling, not the choice: at full chroma the six read as a
-signal, and the system uses them as marks. Lowering chroma at a fixed OKLCH lightness moves every
-ratio up a little, never down, so a muted answer passes wherever its ceiling did.
-
-It prints hex values for tokens.css and the grid the commit body needs. contrast.py remains the
-tool that re-measures a token once it is in the file.
+contrast.py remains the tool that re-measures a token once it is in the file.
 """
 
 from __future__ import annotations
@@ -25,100 +19,105 @@ import math
 
 import contrast
 
-TEXT_ON = ['surface-1', 'surface-2', 'flat-hover', 'raised']
-MARK_ON = ['overlay', 'raised-hover', 'selected']
-
-HUES = {
-    'amber': 78,
-    'mint': 165,
-    'cyan': 215,
-    'blue': 262,
-    'violet': 303,
-    'pink': 350,
+REFERENCE = {
+    'blue': '#1069f6',
+    'purple': '#7646e6',
+    'orange': '#f07a35',
+    'green': '#4bbc6e',
+    'yellow': '#f5b031',
+    'red': '#ec4b3a',
 }
 
+FLOORS = {'light': 3.00, 'ink': 5.50, 'bright': 9.00}
 
-def oklch_to_rgb(lightness: float, chroma: float, hue: float) -> tuple[float, float, float] | None:
-    a = chroma * math.cos(math.radians(hue))
-    b = chroma * math.sin(math.radians(hue))
-    l_ = lightness + 0.3963377774 * a + 0.2158037573 * b
-    m_ = lightness - 0.1055613458 * a - 0.0638541728 * b
-    s_ = lightness - 0.0894841775 * a - 1.2914855480 * b
-    l, m, s = l_ ** 3, m_ ** 3, s_ ** 3
-    linear = (
+"""
+Degrees an ink turns away from its light before it is lifted. Lifted at its own hue, purple's
+ink lands 30 degrees from blue's at the lightness text needs, and the two read as one colour
+side by side in a code block, a keyword beside the name it declares. The light keeps the
+reference hue; only the words turn toward magenta.
+"""
+TURN = {'purple': 15.0}
+
+
+def linear(channel: float) -> float:
+    return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+
+def encode(channel: float) -> float:
+    return 12.92 * channel if channel <= 0.0031308 else 1.055 * channel ** (1 / 2.4) - 0.055
+
+
+def to_oklch(value: str) -> tuple[float, float, float]:
+    r, g, b = (linear(int(value[i:i + 2], 16) / 255) for i in (1, 3, 5))
+    l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    lightness = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+    a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+    b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+    return lightness, math.hypot(a, b), math.atan2(b, a)
+
+
+def to_hex(lightness: float, chroma: float, hue: float) -> str | None:
+    a, b = chroma * math.cos(hue), chroma * math.sin(hue)
+    l = (lightness + 0.3963377774 * a + 0.2158037573 * b) ** 3
+    m = (lightness - 0.1055613458 * a - 0.0638541728 * b) ** 3
+    s = (lightness - 0.0894841775 * a - 1.2914855480 * b) ** 3
+    rgb = (
         4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
         -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
         -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
     )
-    if any(channel < -1e-6 or channel > 1 + 1e-6 for channel in linear):
+    if any(channel < -1e-4 or channel > 1 + 1e-4 for channel in rgb):
         return None
-    return tuple(min(1.0, max(0.0, channel)) for channel in linear)
+    return '#' + ''.join(f'{round(max(0.0, min(1.0, encode(max(0.0, c)))) * 255):02x}' for c in rgb)
 
 
-def to_hex(linear: tuple[float, float, float]) -> str:
-    def encode(channel: float) -> int:
-        value = 12.92 * channel if channel <= 0.0031308 else 1.055 * channel ** (1 / 2.4) - 0.055
-        return round(max(0.0, min(1.0, value)) * 255)
-
-    return '#' + ''.join(f'{encode(channel):02x}' for channel in linear)
-
-
-def passes(ink: str, theme: dict[str, str], text_on: list[str], mark_on: list[str]) -> bool:
-    if any(contrast.ratio(ink, theme[f'--dya-{name}']) < contrast.FLOOR for name in text_on):
-        return False
-    return all(contrast.ratio(ink, theme[f'--dya-{name}']) >= contrast.GRAPHIC for name in mark_on)
+def fit(lightness: float, chroma: float, hue: float) -> str:
+    while chroma > 0:
+        value = to_hex(lightness, chroma, hue)
+        if value:
+            return value
+        chroma -= 0.002
+    return to_hex(lightness, 0, hue) or '#ffffff'
 
 
-def solve(
-    hue: float,
-    theme: dict[str, str],
-    text_on: list[str],
-    mark_on: list[str],
-    fixed: float | None = None,
-) -> tuple[str, float, float]:
-    best: tuple[float, float, str] | None = None
-    for li in ([round(fixed * 1000)] if fixed else range(400, 980, 2)):
-        lightness = li / 1000
-        for ci in range(0, 380, 2):
-            chroma = ci / 1000
-            linear = oklch_to_rgb(lightness, chroma, hue)
-            if linear is None:
-                break
-            ink = to_hex(linear)
-            if not passes(ink, theme, text_on, mark_on):
-                continue
-            key = (chroma, -lightness)
-            if best is None or key > (best[0], -best[1]):
-                best = (chroma, lightness, ink)
-    if best is None:
-        raise SystemExit(f'no colour at hue {hue} passes')
-    return best[2], best[1], best[0]
+def worst(value: str, grounds: list[str]) -> float:
+    return min(contrast.ratio(value, ground) for ground in grounds)
+
+
+def lift(value: str, floor: float, grounds: list[str]) -> str:
+    lightness, chroma, hue = to_oklch(value)
+    while worst(value, grounds) < floor and lightness < 1:
+        lightness += 0.005
+        value = fit(lightness, chroma, hue)
+    return value
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--hue', type=float, action='append')
-    parser.add_argument('--text', nargs='*', default=TEXT_ON)
-    parser.add_argument('--graphic', nargs='*', default=MARK_ON)
-    parser.add_argument('--lightness', type=float)
-    parser.add_argument('--mute', type=float, default=1.0)
+    parser.add_argument('colour', nargs='?', help='a #rrggbb to lift instead of the six references')
+    parser.add_argument('--floor', type=float, help='one floor instead of light, ink and bright')
     args = parser.parse_args()
 
-    hues = {f'h{h:g}': h for h in args.hue} if args.hue else HUES
-    grounds = [*args.text, *args.graphic]
     theme = contrast.palette()
-    if args.lightness:
-        print(f'at OKLCH L {args.lightness}')
-    header = f'{"name":<8} {"value":<8} {"L":>5} {"C":>5}  ' + ' '.join(f'{g[:9]:>9}' for g in grounds)
+    grounds = [theme[f'--dya-{name}'] for name in contrast.SURFACES + list(contrast.COMPOSITES)]
+    colours = {'colour': args.colour} if args.colour else REFERENCE
+    floors = {f'{args.floor:.2f}': args.floor} if args.floor else FLOORS
+
+    header = f'{"name":<8} {"reference":<9} ' + ' '.join(f'{name:>15}' for name in floors)
     print(header)
     print('-' * len(header))
-    for name, hue in hues.items():
-        ink, lightness, chroma = solve(hue, theme, args.text, args.graphic, args.lightness)
-        if args.mute != 1.0:
-            chroma *= args.mute
-            ink = to_hex(oklch_to_rgb(lightness, chroma, hue))
-        ratios = ' '.join(f'{contrast.ratio(ink, theme[f"--dya-{g}"]):>9.2f}' for g in grounds)
-        print(f'{name:<8} {ink:<8} {lightness:>5.3f} {chroma:>5.3f}  {ratios}')
+    for name, value in colours.items():
+        cells = []
+        for label, floor in floors.items():
+            seed = value
+            if name in TURN and label != 'light':
+                lightness, chroma, hue = to_oklch(value)
+                seed = fit(lightness, chroma, hue + math.radians(TURN[name]))
+            lifted = lift(seed, floor, grounds)
+            cells.append(f'{lifted} {worst(lifted, grounds):>5.2f}'.rjust(15))
+        print(f'{name:<8} {value:<9} ' + ' '.join(cells))
 
 
 if __name__ == '__main__':

@@ -34,7 +34,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
                 {panels.map((panel) => (
                     <button
                         key={panel.id}
-                        className={`dya-tile launcher-tile${panel.hue ? ` dya-hue--${panel.hue}` : ''}`}
+                        className="dya-tile launcher-tile"
                         onClick={() => onOpen(panel.id)}
                     >
                         {panel.icon.trim().startsWith('<svg') ? (

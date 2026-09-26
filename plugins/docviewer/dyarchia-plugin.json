@@ -2,6 +2,7 @@
     "id": "docviewer",
     "name": "Docs",
     "version": "0.1.0",
+    "toolbar": 3,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
     "description": "Read markdown with its diagrams, or edit any text file it opens, with syntax colour"

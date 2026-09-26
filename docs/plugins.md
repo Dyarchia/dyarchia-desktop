@@ -39,6 +39,9 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
   case that exists.
 - `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
   for somebody deciding whether to turn this on, not for somebody who already has.
+- `toolbar` is the plugin's place among the three keys in the title bar, 1 to 3. Leave it out
+  and the plugin is reached from the overflow menu and the launcher, which is where most
+  plugins belong: the three keys are the shell, the board and the reader.
 
 **Five more fields say what the plugin is made of, and every one of them is read rather than
 guessed.** This is what lets the installer carry a plugin correctly without knowing anything

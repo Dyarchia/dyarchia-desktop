@@ -1,7 +1,10 @@
 import { app } from 'electron'
 import { spawn } from 'node:child_process'
-import { chmod, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { createWriteStream } from 'node:fs'
+import { chmod, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { delimiter, join } from 'node:path'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 
 /*
  * What each plugin needs before it can run, and how to go and get it.
@@ -10,15 +13,17 @@ import { delimiter, join } from 'node:path'
  * something the application cannot carry: kanban wants the Claude Code CLI, which is somebody
  * else's installer, and crawlee wants a Python interpreter and about 600 MB of packages, which is
  * too much to put in front of everybody who downloads a terminal. So a manifest declares what it
- * needs, this module reports whether it is there, and for the one kind that can be acquired it
- * acquires it while saying what it is doing.
+ * needs, this module reports whether it is there, and for the kinds that can be acquired it
+ * acquires them while saying what it is doing: a Python environment, and a binary the plugin
+ * names with a download for each platform.
  *
  * Declared, never inferred. The script that installed plugins before this existed decided by
  * looking for a `dist/`, which skipped crawlee for a reason nobody chose and would have started
  * installing it the day it grew one.
  *
- * Nothing here runs on its own. Every acquisition is a button somebody pressed, because it reaches
- * the network, writes hundreds of megabytes and runs a binary this application did not ship.
+ * Nothing here runs on its own. Every acquisition is something somebody pressed, because it
+ * reaches the network, writes hundreds of megabytes and runs a binary this application did not
+ * ship: the Install button, or the tick on a plugin whose requirement says it comes with it.
  */
 
 interface Requirement {
@@ -30,6 +35,8 @@ interface Requirement {
     note?: string
     postInstall?: string[][]
     verify?: string[]
+    assets?: Record<string, string>
+    withPlugin?: boolean
 }
 
 interface Status {
@@ -90,6 +97,34 @@ async function onPath(name: string): Promise<string | null> {
             const candidate = join(directory, name + extension)
             if (await exists(candidate)) return candidate
         }
+    }
+    return null
+}
+
+/*
+ * A binary is found on PATH first, because a machine that already has it should not get a second
+ * copy, and then in the folder Setup extracted it into, where it sits however deep the archive
+ * put it.
+ */
+async function findBinary(name: string): Promise<string | null> {
+    const onMachine = await onPath(name)
+    if (onMachine) return onMachine
+    const folder = join(toolsDirectory(), name)
+    return (await exists(folder)) ? findFile(folder, executable(name), 4) : null
+}
+
+function executable(name: string): string {
+    return process.platform === 'win32' ? `${name}.exe` : name
+}
+
+async function findFile(root: string, wanted: string, depth: number): Promise<string | null> {
+    const direct = join(root, wanted)
+    if (await exists(direct)) return direct
+    if (depth === 0) return null
+    for (const entry of await readdir(root, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue
+        const nested = await findFile(join(root, entry.name), wanted, depth - 1)
+        if (nested) return nested
     }
     return null
 }
@@ -175,6 +210,23 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
         return parts
     }
 
+    if (requirement.kind === 'binary' && requirement.name) {
+        const found = await findBinary(requirement.name)
+        const asset = requirement.assets?.[platformKey()]
+        return [
+            {
+                label: requirement.label,
+                met: found !== null,
+                acquirable: found === null && asset !== undefined,
+                detail:
+                    found ??
+                    (asset
+                        ? `not on this machine, so it is downloaded from ${new URL(asset).host}`
+                        : `not on this machine, and there is no download for ${platformKey()}`)
+            }
+        ]
+    }
+
     return [
         {
             label: requirement.label,
@@ -183,6 +235,10 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
             detail: `this build does not know how to check a "${requirement.kind}" requirement`
         }
     ]
+}
+
+function platformKey(): string {
+    return `${process.platform}-${process.arch}`
 }
 
 type Say = (line: string) => void
@@ -275,12 +331,7 @@ async function ensureUv(say: Say): Promise<string> {
     await mkdir(tools, { recursive: true })
     const archive = join(tools, asset)
 
-    say(`downloading ${UV_RELEASE}/${asset}`)
-    const response = await fetch(`${UV_RELEASE}/${asset}`)
-    if (!response.ok) {
-        throw new Error(`downloading uv failed with ${response.status}`)
-    }
-    await writeFile(archive, Buffer.from(await response.arrayBuffer()))
+    await download(say, `${UV_RELEASE}/${asset}`, archive)
 
     say('extracting')
     await run(say, archiver(), ['-xf', archive, '-C', tools], {})
@@ -316,6 +367,64 @@ async function findUv(root: string): Promise<string | null> {
         if (await exists(nested)) return nested
     }
     return null
+}
+
+/*
+ * A download straight to disk, saying how far it has got every tenth of the way. Buffering the
+ * whole body in memory first held a hundred megabytes for the length of the transfer and said
+ * nothing while it did, which on a slow mirror is several silent minutes that read as a hang.
+ */
+async function download(say: Say, url: string, file: string): Promise<void> {
+    say(`downloading ${url}`)
+    const response = await fetch(url)
+    if (!response.ok || !response.body) throw new Error(`downloading ${url} failed with ${response.status}`)
+    const total = Number(response.headers.get('content-length')) || 0
+    let received = 0
+    let reported = 0
+    const body = Readable.fromWeb(response.body as import('node:stream/web').ReadableStream)
+    body.on('data', (chunk: Buffer) => {
+        received += chunk.length
+        const tenth = total ? Math.floor((received / total) * 10) : 0
+        if (tenth > reported) {
+            reported = tenth
+            say(`${tenth * 10}% of ${Math.round(total / 1048576)} MB`)
+        }
+    })
+    await pipeline(body, createWriteStream(file))
+}
+
+/*
+ * A binary from the archive the plugin names for this platform, extracted into its own folder
+ * under the tools directory with the same archiver uv goes through. It is skipped when the binary
+ * is already anywhere it would be found, which is what keeps a machine that installed it itself
+ * from downloading it again.
+ */
+async function acquireBinary(say: Say, requirement: Requirement): Promise<void> {
+    const name = requirement.name
+    if (!name) throw new Error(`the ${requirement.label} requirement names no binary`)
+    const found = await findBinary(name)
+    if (found) {
+        say(`${name}: ${found}`)
+        return
+    }
+    const asset = requirement.assets?.[platformKey()]
+    if (!asset) throw new Error(`no ${name} download for ${platformKey()}`)
+
+    const folder = join(toolsDirectory(), name)
+    await rm(folder, { recursive: true, force: true })
+    await mkdir(folder, { recursive: true })
+    const archive = join(folder, asset.slice(asset.lastIndexOf('/') + 1))
+
+    await download(say, asset, archive)
+
+    say('extracting')
+    await run(say, archiver(), ['-xf', archive, '-C', folder], {})
+    await rm(archive, { force: true })
+
+    const binary = await findFile(folder, executable(name), 4)
+    if (!binary) throw new Error(`the ${name} archive held no ${executable(name)}`)
+    if (process.platform !== 'win32') await chmod(binary, 0o755)
+    say(`${name}: ${binary}`)
 }
 
 async function acquirePython(
@@ -397,10 +506,11 @@ export async function activate(ctx: {
     })
 
     ctx.handle('acquire', async (...args: unknown[]) => {
-        const { pluginId, directory, requires } = args[0] as {
+        const { pluginId, directory, requires, withPlugin } = args[0] as {
             pluginId: string
             directory: string
             requires?: Requirement[]
+            withPlugin?: boolean
         }
 
         if (busy) throw new Error('an installation is already running')
@@ -410,8 +520,12 @@ export async function activate(ctx: {
         void (async () => {
             try {
                 for (const requirement of requires ?? []) {
-                    if (requirement.kind !== 'python') continue
-                    await acquirePython(say, pluginId, directory, requirement)
+                    if (withPlugin && !requirement.withPlugin) continue
+                    if (requirement.kind === 'python') {
+                        await acquirePython(say, pluginId, directory, requirement)
+                    } else if (requirement.kind === 'binary') {
+                        await acquireBinary(say, requirement)
+                    }
                 }
                 ctx.broadcast('done', { pluginId, ok: true })
             } catch (error) {

@@ -595,7 +595,10 @@
  */
 .dya-button:disabled,
 .dya-button:disabled:hover,
-.dya-button:disabled:active {
+.dya-button:disabled:active,
+.dya-key:disabled,
+.dya-key:disabled:hover,
+.dya-key:disabled:active {
     background-color: var(--dya-disabled);
     border-color: var(--dya-border);
     box-shadow: var(--dya-elev-key-off);

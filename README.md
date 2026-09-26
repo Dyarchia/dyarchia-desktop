@@ -13,7 +13,7 @@ several of its parts are documented as working but unproven. What that means in 
 - No release carries a promise about the next one. Layout, plugin data and the on-disk
   formats under `~/.dyarchia` may change without a migration.
 - The shell ships every plugin and loads four of them: Setup, the terminal, the reader and
-  the player. The two that need a toolchain of their own are a choice made in Setup, which
+  the player. The three that reach outside for something are a choice made in Setup, which
   also says what each one will download and where it will write.
 - The kanban plugin drives real agent CLIs, and those spend real money on your account when
   you point them at a real model. Read `plugins/kanban/README.md` before running a card.
@@ -86,6 +86,7 @@ The pieces:
             player/              audio/video player (dyarchia-media://)         [always loaded]
             kanban/              a task board that dispatches work to Claude Code
             crawlee/             a crawling toolkit and the panel that drives it (python)
+            browser/             a web browser in a panel; brings ffmpeg with it
         examples/
             plugin-sample/       the smallest plugin that registers a panel
             plugin-pyinfo/       reference plugin with a python main module
@@ -255,7 +256,8 @@ that is better without a terminal in it.
 
 **What stays a choice is the plugin that reaches outside for something.** kanban wants the
 Claude Code CLI and spends money on a real account; crawlee wants an interpreter, a package
-set and a browser. Ticking one records the choice; it loads on the next launch.
+set and a browser; the browser brings ffmpeg, downloaded the moment it is ticked unless the
+machine already has it. Ticking one records the choice; it loads on the next launch.
 
     root                              holds                             wins
     -------------------------------   -------------------------------   ------

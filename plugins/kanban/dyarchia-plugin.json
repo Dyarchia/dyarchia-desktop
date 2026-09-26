@@ -2,6 +2,7 @@
     "id": "kanban",
     "name": "Kanban",
     "version": "0.1.0",
+    "toolbar": 2,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
     "description": "A task board that dispatches work to Claude Code and lets you watch it run",

@@ -391,9 +391,10 @@
 }
 
 /*
- * A bar is a strip of the panel's own glass with a hairline under it. It has no ground of its own,
- * because the panel already has one, and a second gradient inside the first reads as a panel
- * inside a panel. It is tall enough for a key and the edge under it.
+ * A bar is a strip of the panel's own glass. It has no ground of its own, because the panel
+ * already has one, and a second gradient inside the first reads as a panel inside a panel. It has
+ * no rule under it either: nothing inside a panel is divided by a horizontal line, and space is
+ * what separates a bar from what follows it. It is tall enough for a key and the edge under it.
  */
 .dya-bar {
     display: flex;
@@ -401,7 +402,6 @@
     gap: var(--dya-space-2);
     min-height: 50px;
     padding: var(--dya-space-2) var(--dya-space-4);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }
 
 .dya-bar--flush {
@@ -411,7 +411,6 @@
 .dya-bar--inset {
     min-height: 0;
     padding: 0;
-    border-bottom: none;
 }
 
 /*
@@ -458,7 +457,6 @@
     gap: var(--dya-space-3);
     min-height: 44px;
     padding: 0 var(--dya-space-4);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }
 
 /*
@@ -793,8 +791,7 @@
 /*
  * The icon key: a panel to open, a window to act on. A square key with the glyph in the second ink.
  * A key whose panel is open is held down: it sits on its edge, its face goes to the selected step
- * and its glyph goes to the top ink. Several can be held down at once; only one is here, the key of
- * the panel the window is working in, and it wears the halo.
+ * and its glyph goes to the top ink.
  */
 .dya-key {
     display: grid;
@@ -820,10 +817,6 @@
     color: var(--dya-text);
 }
 
-.dya-key--here,
-.dya-key--here:hover {
-    box-shadow: var(--dya-elev-key-down), var(--dya-halo);
-}
 
 .dya-key > svg {
     width: 15px;
@@ -1127,6 +1120,15 @@ textarea.dya-field {
 }
 
 /*
+ * A pill as tall as a key, for the one pill that sits in a row of keys and would otherwise be the
+ * only short thing on the line: the build in the title bar. It keeps the pill's word and width.
+ */
+.dya-tag--key {
+    height: 34px;
+    padding: 0 var(--dya-space-3);
+}
+
+/*
  * Hue is the categorical axis: which of several things of one kind this is, which group of
  * corpora, which agent. It is not status, which has green, yellow and red to itself, and it is
  * not emphasis, so the three hues are the three colours of the palette that mean nothing else:
@@ -1346,10 +1348,11 @@ textarea.dya-field {
 }
 
 /*
- * A table is lines, not cards. Rows sit straight on the panel's glass with a hairline between
- * them, because the glass is already the object and a card per row inside it is a surface on a
- * surface. The head is the one other place capitals are allowed, small and tracked, over a column
- * of data. Hover lifts the row's ground by a breath of white.
+ * A table is rows, not cards and not lines. Rows sit straight on the panel's glass with nothing
+ * between them but their padding, because the glass is already the object, a card per row is a
+ * surface on a surface, and a rule per row is a ladder the eye has to climb. The head is the one
+ * other place capitals are allowed, small and tracked, over a column of data. Hover lifts the
+ * row's ground by a breath of white, which is what follows a row across a wide table.
  *
  * Digits stay `tabular-nums`, because 4102 sitting narrower than 1111 is what stops a column of
  * figures lining up.
@@ -1378,7 +1381,6 @@ textarea.dya-field {
 
 .dya-table td {
     padding: 10px var(--dya-space-4);
-    border-top: var(--dya-border-width) solid var(--dya-hairline);
     font-size: var(--dya-size-mono-sm);
     overflow-wrap: anywhere;
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
@@ -1569,15 +1571,14 @@ textarea.dya-field {
 }
 
 /*
- * Tabs are words on the glass. The open one is in the first ink, lit by the halo, with a hairline of
- * the accent under it, drawn as an inset shadow so that it sits on the strip's own rule and adds no
- * height.
+ * Tabs are words on the glass, with no rule under the strip. The open one is in the first ink, lit
+ * by the halo, with a hairline of the accent under the word alone, drawn as an inset shadow so it
+ * adds no height.
  */
 .dya-tabs {
     display: flex;
     align-items: stretch;
     gap: var(--dya-space-4);
-    border-bottom: var(--dya-border-width) solid var(--dya-hairline);
 }
 
 .dya-tab {

@@ -818,10 +818,11 @@
 }
 
 /*
- * The title bar's key while its panel is open: held down like any key that is on, with a crimson
- * face. It is the one fill in the system that is not a light and not a surface, and it is spent on
+ * The title bar's key while its panel is open: held down like any key that is on, with a face the
+ * red of clotted blood. It is the one fill in the system that is not a light and not a surface, and it is spent on
  * the title bar alone, where a row of grey keys otherwise gave no sign of which panels were up.
- * The glyph over it is the top ink at 6.66.
+ * The glyph over it is the top ink at 12.24; the face is as dark as a key, 1.07 against it, and
+ * is told apart by its hue and its border.
  */
 .dya-key--open,
 .dya-key--open:hover {

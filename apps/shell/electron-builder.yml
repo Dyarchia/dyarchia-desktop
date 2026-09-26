@@ -36,6 +36,8 @@ extraFiles:
       to: licenses/OFL.txt
     - from: ../../packages/sdk/licenses/lobe-icons.txt
       to: licenses/lobe-icons.txt
+    - from: ../../packages/sdk/licenses/highlight-js.txt
+      to: licenses/highlight-js.txt
 # Chromium ships 55 locale files, 48 MB, and they are its own strings — the menu it draws on a
 # right click. Nothing in this application is translated, so the rest cannot be reached.
 electronLanguages:

@@ -5,7 +5,9 @@ import { Svg } from './Svg'
 interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
+    activePanelId: string | null
     onToggle: (id: string) => void
+    wordmark: boolean
 }
 
 const MINIMIZE_ICON =
@@ -17,12 +19,11 @@ const OVERFLOW_ICON =
 const CLOSE_ICON =
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><line x1="2.5" y1="2.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="2.5" x2="2.5" y2="9.5"/></svg>'
 
-function PanelIcon({ icon, hue }: { icon: string; hue?: string }): React.JSX.Element {
-    const tint = hue ? ` dya-hue--${hue}` : ''
+function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
     if (icon.trim().startsWith('<svg')) {
-        return <Svg className={`topbar-icon${tint}`} svg={icon} />
+        return <Svg className="topbar-icon" svg={icon} />
     }
-    return <span className={`topbar-icon-text${tint}`}>{icon}</span>
+    return <span className="topbar-icon-text">{icon}</span>
 }
 
 /*
@@ -34,6 +35,7 @@ function PanelIcon({ icon, hue }: { icon: string; hue?: string }): React.JSX.Ele
 interface KeyProps {
     label: string
     active?: boolean
+    here?: boolean
     className?: string
     onClick: () => void
     children: React.ReactNode
@@ -43,6 +45,7 @@ interface KeyProps {
 function TipKey({
     label,
     active,
+    here,
     className,
     onClick,
     children,
@@ -52,7 +55,7 @@ function TipKey({
     return (
         <>
             <button
-                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}`}
+                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}${here ? ' dya-key--here' : ''}`}
                 aria-label={label}
                 aria-pressed={expanded === undefined ? active : undefined}
                 aria-haspopup={expanded === undefined ? undefined : 'menu'}
@@ -165,7 +168,9 @@ function windowAction(action: string): void {
 export function TopBar({
     panels,
     openPanelIds,
-    onToggle
+    activePanelId,
+    onToggle,
+    wordmark
 }: TopBarProps): React.JSX.Element {
     const [menuOpen, setMenuOpen] = useState(false)
     const overflowRef = useRef<HTMLDivElement>(null)
@@ -196,16 +201,16 @@ export function TopBar({
 
     return (
         <div className="dya-bar dya-bar--flush topbar">
-            <span className="dya-brand">Dyarchia</span>
             <Build />
+            {wordmark && <span className="dya-brand topbar-brand">Dyarchia desktop</span>}
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {visible.map((panel) => (
                         <TipKey
                             key={panel.id}
                             label={panel.title}
-                            className={panel.hue ? `dya-key dya-hue--${panel.hue}` : undefined}
                             active={openPanelIds.has(panel.id)}
+                            here={activePanelId === panel.id}
                             onClick={() => onToggle(panel.id)}
                         >
                             <PanelIcon icon={panel.icon} />
@@ -240,7 +245,7 @@ export function TopBar({
                                                 setMenuOpen(false)
                                             }}
                                         >
-                                            <PanelIcon icon={panel.icon} hue={panel.hue} />
+                                            <PanelIcon icon={panel.icon} />
                                             {panel.title}
                                         </button>
                                     ))}

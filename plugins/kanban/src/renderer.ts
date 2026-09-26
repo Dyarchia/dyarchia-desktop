@@ -2592,7 +2592,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 if (gone) withTip(pill, row.cardId)
                 kind.append(pill)
 
-                const first = el('td', 'dya-table__prose', lead)
+                const first = el('td', 'dya-table__prose dya-table__subject', lead)
                 line.append(kind, first, el('td', undefined, rest))
                 line.append(el('td', 'dya-table__end', `${row.board} \u00b7 ${when(row.at)}`))
                 logBody.appendChild(line)

@@ -59,9 +59,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     )
 
     const descriptor = getPanel(props.api.id)?.descriptor
-    const hue = descriptor?.hue
     const icon = mark ?? descriptor?.icon
-    const glyph = mark ? 'dya-glyph dya-glyph--mark' : `dya-glyph${hue ? ` dya-hue--${hue}` : ''}`
+    const glyph = mark ? 'dya-glyph dya-glyph--mark' : 'dya-glyph'
 
     /*
      * The close is on the tab it closes, shown on the one that is open and on the one under the
@@ -75,11 +74,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             role="tab"
             aria-selected={active}
         >
-            {icon ? (
-                <Svg className={glyph} svg={icon} />
-            ) : (
-                hue && <span className={`dya-dot dya-hue--${hue}`} />
-            )}
+            {icon && <Svg className={glyph} svg={icon} />}
             {title}
             <button
                 className="dya-button dya-button--bare panel-tab-close"

@@ -16,3 +16,6 @@ apps/shell/build/
 # Local notes and local harness config, not part of the repository
 .docs_ignore/
 .claude/
+
+# A terminal capture recorded on this machine for the kanban panel harness
+plugins/kanban/scripts/attach-capture.txt

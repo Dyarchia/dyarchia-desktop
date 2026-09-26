@@ -39,9 +39,9 @@ own panels — draggable, resizable, and persistent across sessions.
 - The look is not the shell's: it is kanon, the shared design system in packages/kanon,
   linked once. Plugins inherit its dya-* component classes and its tokens, and are expected
   to reference them rather than reimplement them.
-- The system carries two themes, Gi (warm near-black) and Rei (deep blue), switched from
-  the title bar. Both are dark. A theme redefines colour tokens and never rules, so no
-  plugin reads it or branches on it.
+- The system has one theme, graphite, and four materials: glass for the panel, a key for
+  every control, a pill for every piece of information, and a light for status. No plugin
+  reads a theme or branches on one.
 
 ```mermaid
 flowchart LR
@@ -185,7 +185,7 @@ The rules, in order:
 - **Commit bodies are long and evidentiary.** State the measurement or the failure that
   forced the change, what the alternative was, and what was deliberately left alone. A
   one-line body on anything but a typo is below the bar this history sets. A change under
-  `packages/kanon/css/` additionally carries its contrast ratios, in both themes — see
+  `packages/kanon/css/` additionally carries its contrast ratios, on every ground — see
   `packages/kanon/README.md`.
 - **Everything written to a file is in English**, commit messages included.
 
@@ -312,7 +312,6 @@ somebody presses the button, and every step skips what the machine already has.
     Acquired tools        <root>/tools/
     Plugin environments   <root>/environments/<id>/.venv
     Installed plugins     <root>/plugins/<id>/
-    Theme choice          renderer localStorage, key dyarchia:theme
     Zoom level            <root>/zoom.json
     Hosted kanban runs    <root>/kanban/hosted/<runId>.jsonl, .final.md, .stderr.txt
     Corpus repositories   <root>/data/crawlee/<repository>/{profiles,data,output}
@@ -326,8 +325,7 @@ instance runs against a throwaway profile.
 A workspace build (`pnpm dev`) runs beside an installed copy as a matter of course, so it keeps
 its Chromium profile and its layout in `<root>/workspace/`: the profile is locked by whichever
 instance opened it first, and each window rewrites the layout with its own panels. Its first
-launch copies the shared layout. The theme choice lives in that profile, so dev keeps its own.
-Everything else, boards, environments, offers and corpora, is shared.
+launch copies the shared layout. Everything else, boards, environments, offers and corpora, is shared.
 
 It was two roots until 0.2.0-alpha, and both were places nobody chose. Electron's default
 `userData` is `%APPDATA%/dyarchia`, where nobody navigates; and `app.getPath('documents')` is
@@ -347,10 +345,6 @@ machine state and can be deleted without losing anything that was not rebuildabl
 0.1.0-alpha.1, and the build was portable, which unpacks itself into `%TEMP%\<guid>` on
 every launch: the crawlee corpus was written into a folder Windows deletes, at a different
 address each time. That is why this ships as an installer.
-
-The theme is the one preference that does not go through the layout store. It is read
-synchronously before the first paint, and an IPC round trip would put a frame of the wrong
-theme on screen at every launch.
 
 
 ## 7. Keyboard
@@ -386,13 +380,13 @@ that was started with it rather than whichever one took 9222 first.
 That port is also how a change is photographed without touching the window:
 
 ```bash
-node scripts/screenshot.mjs out.png "document.documentElement.dataset.theme = 'rei'" 800
+node scripts/screenshot.mjs out.png "window.__dockApi.getPanel('crawlee')?.api.setActive()" 800
 ```
 
 The first argument is the PNG to write, the optional second is an expression evaluated in
 the page before the capture, and the optional third is the delay in milliseconds between
-the two. A visual change ships with one capture per theme, and the commit body says what
-the pair shows.
+the two. A visual change ships with a capture of every panel it touches, and the commit body
+says what they show.
 
 Known note: dockview 8 logs a console error about the ContextMenu module of
 dockview-enterprise. It is harmless — the free edition is warning that tab context menus

@@ -73,28 +73,10 @@ interface PluginModule {
         registerOpener(descriptor: OpenerDescriptor, open: OpenHandler): void
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
-        onThemeChange(listener: () => void): () => void
         highlight(source: string, language?: string): string
         hues(keys: Iterable<string>): Record<string, string>
         shell: ShellApi
     }): void | Promise<void>
-}
-
-const themeListeners = new Set<() => void>()
-let themeObserver: MutationObserver | null = null
-
-function onThemeChange(listener: () => void): () => void {
-    if (!themeObserver) {
-        themeObserver = new MutationObserver(() => {
-            for (const each of [...themeListeners]) each()
-        })
-        themeObserver.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-        })
-    }
-    themeListeners.add(listener)
-    return () => themeListeners.delete(listener)
 }
 
 /*
@@ -165,7 +147,6 @@ export async function loadPlugins(): Promise<void> {
                     registerOpener(id, descriptor, open),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
-                onThemeChange,
                 highlight,
                 hues,
                 shell: {

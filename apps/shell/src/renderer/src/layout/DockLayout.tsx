@@ -32,11 +32,16 @@ const CLOSE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
 
 function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
-    const [active, setActive] = useState(props.api.isActive)
+    /*
+     * A tab is selected when its panel is the one its group is showing, not when it has the focus.
+     * Following the focus left every group but one with no tab marked open, so in a split window
+     * the only way to learn which panel a group was showing was to read the panel.
+     */
+    const [active, setActive] = useState(props.api.isVisible)
     const [title, setTitle] = useState(props.api.title)
 
     useEffect(() => {
-        const activity = props.api.onDidActiveChange((event) => setActive(event.isActive))
+        const activity = props.api.onDidVisibilityChange((event) => setActive(event.isVisible))
         const naming = props.api.onDidTitleChange((event) => setTitle(event.title))
         return () => {
             activity.dispose()
@@ -66,7 +71,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
      */
     return (
         <div
-            className={`dya-tab panel-tab${hue ? ` dya-pane--${hue}` : ''}`}
+            className="dya-tab panel-tab"
             role="tab"
             aria-selected={active}
         >

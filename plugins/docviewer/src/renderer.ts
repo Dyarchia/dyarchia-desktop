@@ -323,7 +323,7 @@ export function activate(ctx: PluginContext): void {
             modes.hidden = true
 
             const unsaved = document.createElement('span')
-            unsaved.className = 'dya-badge dya-badge--soft docviewer-dirty'
+            unsaved.className = 'dya-badge dya-badge--warning docviewer-dirty'
             unsaved.textContent = 'unsaved'
             unsaved.hidden = true
 

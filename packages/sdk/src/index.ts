@@ -1,7 +1,7 @@
 export { highlight, highlightLines } from './highlight.js'
 export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
-export { HUES, hues, isHue } from './hues.js'
+export { hues } from './hues.js'
 export { brandIcon, ownIds } from './brands.js'
 export type { Hue } from './hues.js'
 
@@ -14,11 +14,6 @@ export interface PanelDescriptor {
     /* One line saying what this panel is for, shown on its tile when nothing is open. */
     note?: string
     duplicable?: boolean
-    /*
-     * Which hue identifies this panel. Leave it out: the shell fills it from the plugin's manifest,
-     * so a plugin's panels share its colour without restating it.
-     */
-    hue?: Hue
 }
 
 export type PanelDispose = () => void
@@ -56,7 +51,6 @@ export interface PluginCatalogueEntry {
         version: string
         description?: string
         data?: string
-        hue?: Hue
         requires?: PluginRequirement[]
     }
     directory: string
@@ -135,7 +129,8 @@ export interface PluginContext {
     /*
      * The same `highlight` this package exports, handed over rather than imported, because a
      * plugin the shell serves as written has no build step to import anything with. A panel
-     * showing code gets kanon's measured hues either way, and neither way carries a library.
+     * showing code gets kanon's measured inks either way, from the shell's copy of highlight.js
+     * rather than one of its own.
      */
     highlight(source: string, language?: string): string
     /*

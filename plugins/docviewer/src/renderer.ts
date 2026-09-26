@@ -269,8 +269,9 @@ function languageOf(name: string): string {
  * source, which is worth having for any of these; a format it would only mangle is not listed.
  */
 const OPENS = [
-    '.md', '.txt', '.json', '.yaml', '.yml', '.js', '.ts', '.css', '.html',
-    '.xml', '.csv', '.log', '.ps1', '.py', '.cls', '.trigger', '.apex'
+    '.md', '.txt', '.json', '.jsonc', '.yaml', '.yml', '.toml', '.js', '.mjs', '.jsx', '.ts',
+    '.tsx', '.css', '.html', '.xml', '.csv', '.log', '.ps1', '.sh', '.sql', '.py', '.cls',
+    '.trigger', '.apex'
 ]
 
 
@@ -593,6 +594,7 @@ export function activate(ctx: PluginContext): void {
                     }
                     for (const row of holder.querySelectorAll('tbody tr')) {
                         row.className = 'dya-row'
+                        row.firstElementChild?.classList.add('dya-table__subject')
                     }
                     colourBlocks(holder)
                     content.replaceChildren(...holder.childNodes)

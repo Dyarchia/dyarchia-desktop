@@ -39,11 +39,6 @@ mandate it defers to is [packages/kanon/README.md](../packages/kanon/README.md).
   case that exists.
 - `description` is one line, shown in the Setup panel beside the plugin's own name. Write it
   for somebody deciding whether to turn this on, not for somebody who already has.
-- `hue` is the plugin's colour, one of kanon's six by name: `amber`, `mint`, `cyan`, `blue`,
-  `violet` or `pink`. The shell draws the plugin's key, its launcher tile, its dock tab, its
-  row in Setup and the selected tab inside its panel in it, and fills it into every panel the
-  plugin registers, so a panel never restates it. A plugin never names a colour of its own;
-  a value the system does not carry is ignored.
 
 **Five more fields say what the plugin is made of, and every one of them is read rather than
 guessed.** This is what lets the installer carry a plugin correctly without knowing anything
@@ -134,17 +129,20 @@ plugin's style tag once. Call it at the top of the mount, not at module scope, s
 never opened never touches the document.
 
 `highlight(source, language)` and `highlightLines(source, language)` are exported the same
-way. Both colour code by emitting `dya-code__*` spans, which kanon declares and measures, so
-a plugin showing code never picks a colour of its own and never carries a highlighting
-library. `highlightLines` returns one string of HTML per line, for a panel that has to be
-able to point at line 412; a multi-line token is wrapped again on each line it crosses, so
-the count always matches the file. The language is a file extension or the word a fenced
-block declares, and one it does not know is shown uncoloured rather than guessed at.
+way. Both run highlight.js with the grammars the application meets and emit its scopes as
+`dya-code__*` spans, which kanon groups onto its measured inks, so a plugin showing code never
+picks a colour of its own and never adds a highlighter of its own. `highlightLines` returns
+one string of HTML per line, for a panel that has to be able to point at line 412; a span that
+crosses a line is closed and opened again on the next, so the count always matches the file.
+The language is a file extension or the word a fenced block declares. A declared language
+without a grammar is shown uncoloured; an undeclared block is guessed among the common ones
+and left uncoloured when no grammar is confident.
 
 `hues(keys)` is exported the same way, and handed over as `ctx.hues` for the plugin with no
 build. It gives each of a set of things a plugin shows side by side — the groups of its
-corpora, the agents on its board — one of the six hues, distinct while there are six or
-fewer. A key keeps its hue across sessions and machines with nothing stored, and moves only
+corpora, the agents on its board — one of the three hues, blue, purple or orange, distinct
+while there are three or fewer. Green, yellow and red are not hues: they are success, warning
+and error, and nothing else. A key keeps its hue across sessions and machines with nothing stored, and moves only
 when a key sorting before it arrives wanting the same one. The result is a name, used as
 `dya-hue--<name>` on a `dya-tag`, where it colours the word, or on a `dya-dot` beside a name,
 and never as a fill:
@@ -171,7 +169,7 @@ export function activate(ctx: PluginContext): void {
 ```
 
 - `icon` is the content of the top-bar toggle, the tab and the Setup row: inline SVG with
-  `stroke="currentColor"`, which takes the plugin's hue, or a mark in its own colours, or a
+  `stroke="currentColor"`, which takes the ink around it, or a mark in its own colours, or a
   one-character string as a fallback. A mark may define gradients by id; the shell gives every
   copy it draws ids of its own. A plugin that puts an svg with ids into the page itself passes it
   through `ownIds` from `@dyarchia/sdk` for the same reason.

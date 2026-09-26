@@ -1,5 +1,5 @@
 import { token } from '@dyarchia/kanon'
-import { highlight, hues, isHue } from '@dyarchia/sdk'
+import { highlight, hues } from '@dyarchia/sdk'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import { canOpen, openFile, registerOpener } from '../panels/openers'
@@ -10,7 +10,6 @@ interface PluginListEntry {
         id: string
         name: string
         version: string
-        hue?: string
     }
     rendererUrl: string
 }
@@ -47,7 +46,6 @@ export interface PluginCatalogueEntry {
         description?: string
         optional?: boolean
         data?: string
-        hue?: string
         requires?: { kind: string; label: string; [key: string]: unknown }[]
     }
     directory: string
@@ -130,7 +128,6 @@ export async function loadPlugins(): Promise<void> {
     const entries = (await bridge.invoke('shell:plugins:list')) as PluginListEntry[]
     for (const entry of entries) {
         const { id } = entry.manifest
-        const hue = isHue(entry.manifest.hue) ? entry.manifest.hue : undefined
         try {
             const mod = (await import(/* @vite-ignore */ entry.rendererUrl)) as PluginModule
             await mod.activate({
@@ -138,10 +135,7 @@ export async function loadPlugins(): Promise<void> {
                 token,
                 registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) => {
                     if (!pluginIcons.has(id)) pluginIcons.set(id, descriptor.icon)
-                    registerPanel(
-                        { ...descriptor, hue: isHue(descriptor.hue) ? descriptor.hue : hue },
-                        mount
-                    )
+                    registerPanel(descriptor, mount)
                 },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),

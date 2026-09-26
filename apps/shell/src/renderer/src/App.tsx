@@ -6,7 +6,6 @@ import { TopBar } from './components/TopBar'
 import { basePanelId, getRegisteredPanels, onRegistryChange } from './panels/registry'
 import { installOpeners } from './panels/openers'
 import { loadPlugins } from './plugins/host'
-import { applyTheme, readTheme } from './theme'
 import { installShortcuts } from './shortcuts'
 
 export function App(): React.JSX.Element {
@@ -14,7 +13,6 @@ export function App(): React.JSX.Element {
     const [pluginsReady, setPluginsReady] = useState(false)
     const [, setRevision] = useState(0)
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
-    const [theme, setTheme] = useState(readTheme)
 
     useEffect(() => {
         const unsubscribe = onRegistryChange(() => setRevision((r) => r + 1))
@@ -96,19 +94,12 @@ export function App(): React.JSX.Element {
         return installOpeners(handleOpen)
     }, [api, handleOpen])
 
-    const handleTheme = useCallback((id: string) => {
-        applyTheme(id)
-        setTheme(id)
-    }, [])
-
     return (
         <div className="shell">
             <TopBar
                 panels={getRegisteredPanels().map((panel) => panel.descriptor)}
                 openPanelIds={openPanelIds}
                 onToggle={handleToggle}
-                theme={theme}
-                onThemeChange={handleTheme}
             />
             <div className="shell-body">
                 {pluginsReady ? (

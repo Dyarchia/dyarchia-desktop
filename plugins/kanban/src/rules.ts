@@ -49,10 +49,10 @@ const TONE: Record<Status, string> = {
     triage: 'idle',
     todo: 'idle',
     scheduled: 'idle',
-    ready: 'accent-2',
-    running: 'accent',
+    ready: 'idle',
+    running: 'success',
     blocked: 'warning',
-    review: 'accent-3',
+    review: 'idle',
     done: 'success',
     archived: 'idle'
 }

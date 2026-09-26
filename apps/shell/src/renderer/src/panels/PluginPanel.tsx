@@ -4,7 +4,6 @@ import { getPanel, setTabIcon } from './registry'
 
 export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
     const containerRef = useRef<HTMLDivElement>(null)
-    const hue = getPanel(props.api.id)?.descriptor.hue
 
     useEffect(() => {
         const registered = getPanel(props.api.id)
@@ -28,7 +27,7 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
     return (
         <div
             ref={containerRef}
-            className={`dya-pane plugin-panel-container${hue ? ` dya-pane--${hue}` : ''}`}
+            className="dya-pane plugin-panel-container"
         />
     )
 }

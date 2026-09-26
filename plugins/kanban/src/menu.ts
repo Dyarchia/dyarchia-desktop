@@ -226,7 +226,7 @@ export function openMenu(options: MenuOptions): () => void {
 
             if (row.tier) {
                 const tier = document.createElement('span')
-                tier.className = 'dya-badge dya-badge--soft kanban-tier'
+                tier.className = 'dya-tag kanban-tier'
                 tier.textContent = row.tier
                 button.appendChild(tier)
             }

@@ -18,7 +18,7 @@
 }
 
 body {
-    background: var(--dya-bg);
+    background: var(--dya-ground);
     color: var(--dya-text);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body);
@@ -32,9 +32,13 @@ body {
     color: var(--dya-on-accent);
 }
 
+/*
+ * The ring is an outline and never a shadow, because a key's shadow is its edge: a focus drawn as
+ * a box-shadow replaced the edge and the key lost its depth the moment it was reached by keyboard.
+ */
 :focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px var(--dya-focus);
+    outline: 2px solid var(--dya-focus);
+    outline-offset: 3px;
 }
 
 ::-webkit-scrollbar {
@@ -48,7 +52,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
     background-color: var(--dya-border);
-    border-radius: var(--dya-radius);
+    border-radius: var(--dya-radius-full);
 }
 
 @media (prefers-reduced-motion: reduce) {

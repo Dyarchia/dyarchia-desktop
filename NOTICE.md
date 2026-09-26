@@ -74,12 +74,19 @@ PyYAML         MIT
 ## FFmpeg, fetched for the browser
 
 Turning the browser plugin on in Setup downloads **FFmpeg** when the machine does not already
-have it: on Windows x64 the essentials build by Gyan Doshi
-(https://github.com/GyanD/codexffmpeg), elsewhere a build by BtbN
-(https://github.com/BtbN/FFmpeg-Builds). Both are GPL-3.0 builds of FFmpeg
-(https://ffmpeg.org), extracted unmodified under `~/.dyarchia/tools/ffmpeg`, with their own
-licence files inside. FFmpeg is not redistributed by this project and nothing here links
-against it.
+have it. FFmpeg is the work of **the FFmpeg developers** (https://ffmpeg.org), who credit
+themselves collectively and name every contributor in the project's history
+(https://git.ffmpeg.org/ffmpeg); the binary says "Copyright (c) 2000-2026 the FFmpeg
+developers".
+
+- Windows x64: the 9.0.2 essentials build by **Gyan Doshi** (https://www.gyan.dev/ffmpeg/builds/,
+  mirrored at https://github.com/GyanD/codexffmpeg), configured `--enable-gpl --enable-version3`
+  and so licensed GPL-3.0-or-later, from FFmpeg commit 946fcce07b. Read from the build's own
+  `README.txt`, `LICENSE` and `ffmpeg -L` on 2026-09-26.
+- Windows arm64 and Linux: the GPL builds by **BtbN** (https://github.com/BtbN/FFmpeg-Builds).
+
+Each is extracted unmodified under `~/.dyarchia/tools/ffmpeg`, with its licence inside. FFmpeg
+is not redistributed by this project and nothing here links against it.
 
 ## What the kanban drives, and does not ship
 

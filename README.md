@@ -1,6 +1,6 @@
 # Dyarchia desktop
 
-**ALPHA — 0.3.4-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.3.5-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 This is an early build published so it can be installed and exercised on a second machine.
@@ -404,6 +404,14 @@ The crawling in the crawlee plugin is not this project's work: it is
 What this repository adds around it is the corpus, the profiles, the search index and the
 panel. Crawlee is not redistributed here — Setup builds a Python environment on your machine
 and installs it from PyPI, so the copy you run is the one Apify publishes.
+
+The browser plugin brings [FFmpeg](https://ffmpeg.org), by the FFmpeg developers, under
+GPL-3.0-or-later in the build it fetches. That build is Gyan Doshi's
+([gyan.dev](https://www.gyan.dev/ffmpeg/builds/), mirrored at
+[GyanD/codexffmpeg](https://github.com/GyanD/codexffmpeg)) on Windows and BtbN's
+([FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds)) elsewhere. FFmpeg is not
+redistributed here either: Setup downloads it when the browser is turned on, only if the
+machine does not already have it, and extracts it unmodified with its own licence beside it.
 
 [NOTICE.md](NOTICE.md) lists everything else: what ships inside the installer, what the Setup
 panel fetches on demand, and the agent CLIs the kanban drives without bundling any of them.

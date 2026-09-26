@@ -7,6 +7,7 @@ import { registerZoom } from './zoom'
 import { registerPluginScheme, setupPlugins } from './plugins'
 import { registerUpdates } from './updates'
 import { stopPythonPlugins } from './pythonHost'
+import { guardWebviews } from './webviews'
 
 /*
  * Before anything else, and in this order. `userData` is read when the first session is created,
@@ -16,6 +17,7 @@ import { stopPythonPlugins } from './pythonHost'
  */
 adoptUserData()
 registerPluginScheme()
+guardWebviews()
 
 const isDev = Boolean(process.env['ELECTRON_RENDERER_URL'] || process.env['DYARCHIA_DEBUG'])
 
@@ -49,7 +51,8 @@ function createWindow(): void {
             preload: join(import.meta.dirname, '../preload/index.mjs'),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: false
+            sandbox: false,
+            webviewTag: true
         }
     })
 

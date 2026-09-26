@@ -4,6 +4,7 @@
     "private": true,
     "license": "MIT",
     "type": "module",
+    "sideEffects": false,
     "types": "./src/index.ts",
     "exports": {
         ".": {

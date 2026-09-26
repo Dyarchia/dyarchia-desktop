@@ -71,6 +71,16 @@ rich           MIT
 PyYAML         MIT            
 ```
 
+## FFmpeg, fetched for the browser
+
+Turning the browser plugin on in Setup downloads **FFmpeg** when the machine does not already
+have it: on Windows x64 the essentials build by Gyan Doshi
+(https://github.com/GyanD/codexffmpeg), elsewhere a build by BtbN
+(https://github.com/BtbN/FFmpeg-Builds). Both are GPL-3.0 builds of FFmpeg
+(https://ffmpeg.org), extracted unmodified under `~/.dyarchia/tools/ffmpeg`, with their own
+licence files inside. FFmpeg is not redistributed by this project and nothing here links
+against it.
+
 ## What the kanban drives, and does not ship
 
 The kanban dispatches work to coding agents installed on the machine: the Claude, Codex, Grok

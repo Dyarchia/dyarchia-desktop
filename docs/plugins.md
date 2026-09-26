@@ -70,18 +70,27 @@ location wrote into a folder Windows deletes, at a different address each time. 
 state that can be rebuilt — an index, a cache, a scratch directory — goes under `userData`,
 which is `~/.dyarchia` itself; only what the user would miss goes in `data/` beneath it.
 
-A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Two kinds exist:
+A requirement is `{ "kind": …, "label": … }` plus what its kind needs. Three kinds exist:
 
 ```json
 "requires": [
     { "kind": "command", "name": "claude", "label": "Claude Code CLI",
       "hint": "install it from claude.com/claude-code" },
     { "kind": "python", "label": "Python toolkit", "project": ".",
-      "note": "an interpreter and about 600 MB of packages" }
+      "note": "an interpreter and about 600 MB of packages" },
+    { "kind": "binary", "name": "ffmpeg", "label": "FFmpeg", "withPlugin": true,
+      "assets": { "win32-x64": "https://github.com/.../ffmpeg-essentials_build.zip" } }
 ]
 ```
 
 `command` is checked on PATH and never installed: Setup reports it and shows the hint.
+`binary` is looked for on PATH first and then under `~/.dyarchia/tools/<name>/`, at any depth
+an archive puts it. When it is in neither, Setup downloads the archive `assets` names for
+`<platform>-<arch>`, streams it to disk saying how far it has got, and extracts it there with
+the system's own tar; a machine that already has the binary downloads nothing, and one whose
+platform has no asset is told so.
+`"withPlugin": true` on any requirement means it is fetched the moment the plugin is ticked
+in Setup, with no Install button in between, because turning the plugin on is the decision.
 `python` is acquired with uv, into `~/.dyarchia/environments/<id>/.venv`, and the
 plugin is told where through `DYARCHIA_PLUGIN_ENV`. The sync is `--frozen --no-dev
 --no-editable`: frozen because the shipped lockfile is the one to install and resolving again
@@ -178,6 +187,13 @@ export function activate(ctx: PluginContext): void {
   through `ownIds` from `@dyarchia/sdk` for the same reason.
 - `duplicable: true` allows several instances through a `+` in the group header. Each gets
   its own mount and dispose; the instance id is `<id>#<n>` and the plugin never handles it.
+- `keepAlive: true` keeps the panel in the document while another tab covers it. dockview
+  otherwise removes a hidden panel's content, and a `<webview>` taken out of the document
+  is a page thrown away and loaded again. Only for content that cannot be put back cheaply.
+- **A `<webview>` is allowed, and the shell decides what it may do.** Whatever the plugin sets,
+  the guest gets no preload, no Node, an isolated context and the sandbox, and only an http,
+  https or blank page may be attached. The browser plugin keeps its pages in a session of its
+  own (`persist:dyarchia-browser`).
 - `dispose` must release everything: observers, `on()` subscriptions, sessions opened
   through `invoke`.
 - `handle.close()` closes the panel; `handle.setTitle(title)` renames its tab while something

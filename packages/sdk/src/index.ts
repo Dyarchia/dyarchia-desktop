@@ -14,6 +14,11 @@ export interface PanelDescriptor {
     /* One line saying what this panel is for, shown on its tile when nothing is open. */
     note?: string
     duplicable?: boolean
+    /*
+     * Keep the panel in the document while another tab covers it. Only for a panel whose content
+     * cannot be put back cheaply, a live web page above all; the default frees what is hidden.
+     */
+    keepAlive?: boolean
 }
 
 export type PanelDispose = () => void
@@ -42,6 +47,10 @@ export interface PluginRequirement {
     project?: string
     postInstall?: string[][]
     verify?: string[]
+    /* For a binary: an archive to download per `<platform>-<arch>`, used only when it is missing. */
+    assets?: Record<string, string>
+    /* Fetched the moment the plugin is turned on in Setup, with no Install button in between. */
+    withPlugin?: boolean
 }
 
 export interface PluginCatalogueEntry {

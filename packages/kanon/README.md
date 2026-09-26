@@ -60,10 +60,11 @@ without a light is information with no outcome: a group, a count, a kind. Which 
 things of one kind something is, is a hue, and it is never a dot inside a pill, because a dot
 inside a pill is a light.
 
-**The glass needs a ground that is already blurred.** Nothing in the system uses
-`backdrop-filter`. The shell paints `--dya-ground`, three soft pools of light over the
-near-black, with `--dya-noise`, a static grain, over it; a panel is translucent white over
-that, so the pools show through it and it reads as frosted. A surface that covers content, a
+**The glass needs no blur.** Nothing in the system uses `backdrop-filter`. The shell paints
+`--dya-ground`, an even near-black, with `--dya-noise`, a static grain, over it; a panel is
+translucent white over that, lit along its top rim, and the grain showing through is what
+reads as frosted. The ground carries no pools of light: an uneven ground made the same panel a
+different grey in each corner of the window. A surface that covers content, a
 sheet or a menu, is opaque, because glass over content is content read through a veil.
 
 
@@ -78,13 +79,13 @@ it.
 ```text
 token                  value     relative luminance   role
 --------------------   -------   ------------------   ----------------------------------
---dya-bg               #0a0b0d              0.00333   the ground under the pools of light
+--dya-bg               #0a0b0d              0.00333   the ground under the glass
 --dya-sunken           #0c0d0e              0.00398   a log, a code block, a terminal, a field
 --dya-chassis          #0e0f11              0.00475   the glass at its foot; a board's stages
 --dya-overlay          #141518              0.00751   a menu, a tip, a sheet
 --dya-surface-1        #161719              0.00854   the glass at its head
 --dya-disabled         #1a1b1e              0.01097   the face of a key that is off
---dya-surface-2        #1c1e21              0.01285   the ground at the brightest pool
+--dya-surface-2        #1c1e21              0.01285   a raised step inside the glass
 --dya-raised           #1f2125              0.01513   the face of a key
 --dya-flat-hover       #202124              0.01522   a flat row under the pointer
 --dya-raised-hover     #23262a              0.01911   a key under the pointer
@@ -92,9 +93,11 @@ token                  value     relative luminance   role
 ```
 
 The glass and the pills are alphas of white, and two grounds exist only where those alphas
-stack: the glass over the brightest pool, `#27292c`, and a card on that glass, `#2f3033`.
-They are the lightest places text can land in a panel, so `tools/contrast.py` measures every
-ink against them as `glass-peak` and `card-peak`.
+stack. `tools/contrast.py` measures every ink against them as `glass-peak`, `#27292c`, and
+`card-peak`, `#2f3033`, a card on that glass. They were measured over the brightest pool of
+light the ground used to carry and are kept as a ceiling: the ground today is darker than
+either, so every figure in this file is the worst case, and a ground that ever brightens
+again stays inside what the inks were solved for.
 
 ```text
 token              value       bg   surf-1   raised   overlay   r-hover   selected   card-peak
@@ -359,8 +362,8 @@ nothing outside it.
 - **Pressing moves the control.** A key drops on `--dya-press-y`; a bare glyph and a menu row
   scale on `--dya-press-scale`.
 - **Performance outranks aesthetics.** No WebGL in the system, no shaders, no
-  `backdrop-filter`. The ground's pools, the grain and every glow are static images and
-  shadows, painted once. The carve filter is two static drop shadows on one word and is the
+  `backdrop-filter`. The grain and every glow are static images and shadows, painted
+  once. The carve filter is two static drop shadows on one word and is the
   only `filter` in the system.
 
 

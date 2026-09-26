@@ -34,6 +34,11 @@ export interface PluginManifest {
      * it, which is the question a packaged build had no answer to at all.
      */
     data?: string
+    /*
+     * The plugin's place among the three keys in the title bar, 1 to 3. A plugin without one is
+     * reached through the overflow menu and the launcher.
+     */
+    toolbar?: number
     requires?: PluginRequirement[]
 }
 

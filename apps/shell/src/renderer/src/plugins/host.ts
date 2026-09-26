@@ -10,6 +10,7 @@ interface PluginListEntry {
         id: string
         name: string
         version: string
+        toolbar?: number
     }
     rendererUrl: string
 }
@@ -128,6 +129,7 @@ export async function loadPlugins(): Promise<void> {
     const entries = (await bridge.invoke('shell:plugins:list')) as PluginListEntry[]
     for (const entry of entries) {
         const { id } = entry.manifest
+        const toolbar = typeof entry.manifest.toolbar === 'number' ? entry.manifest.toolbar : undefined
         try {
             const mod = (await import(/* @vite-ignore */ entry.rendererUrl)) as PluginModule
             await mod.activate({
@@ -135,7 +137,7 @@ export async function loadPlugins(): Promise<void> {
                 token,
                 registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) => {
                     if (!pluginIcons.has(id)) pluginIcons.set(id, descriptor.icon)
-                    registerPanel(descriptor, mount)
+                    registerPanel({ ...descriptor, toolbar }, mount)
                 },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),

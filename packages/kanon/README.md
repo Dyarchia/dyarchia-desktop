@@ -131,8 +131,10 @@ token                 value     on bg   on chassis   on surface-1   on raised
 
 A border is a graphical object and the 3.00 bar does not apply to it. `--dya-border` is the
 outline of a key and moves to `--dya-border-hover` under the pointer and to
-`--dya-border-strong` when the key is on. `--dya-hairline` is white at 7%: it separates regions
-inside the glass, a table's rows, a bar from what is under it, and outlines a panel and a card.
+`--dya-border-strong` when the key is on. `--dya-hairline` is white at 7%: it outlines a panel,
+a card, a field, a log and a code block. **Nothing inside a panel is divided by a horizontal
+line**: not a table's rows, not a bar from what is under it, not a tab strip, not a card's head.
+Space divides, and a row under the pointer lifts its ground.
 `--dya-pill-border` is white at 9%, the outline of a pill.
 
 
@@ -254,11 +256,11 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   6.47 on its hover step. `button--danger button--quiet` is a plain key with a red ink, for a
   destructive action offered among others: the light is for the confirmation.
 - **The halo says here.** `--dya-halo` is the primary key's silver glow, and it is spent on
-  one other thing: where the window is. The key of the panel being worked in (`key--here`),
-  the open tab in the group being worked in, the open tab inside a panel, the tile under the
-  pointer, the field being typed into. Words take it as `--dya-halo-text`. Several keys can be
-  held down at once; only one is here. A tile's halo is a pseudo-element that fades in on
-  `opacity`, because a hover never changes a key's shadow.
+  one other thing: where the window is. The open tab in the group being worked in, the open
+  tab inside a panel, the tile under the pointer, the field being typed into. Words take it as
+  `--dya-halo-text`. The title bar's keys never wear it: held down is all an open panel's key
+  says. A tile's halo is a pseudo-element that fades in on `opacity`, because a hover never
+  changes a key's shadow.
 - **A glow never breathes.** Nothing in this system animates for as long as a panel is open,
   and a light that pulsed would be the one thing on screen that did.
 - **A pill is information.** `tag` and `badge` share one shape: 22px tall, round, the mono at
@@ -269,8 +271,8 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   would be too much. The same dot a badge carries, with the same three modifiers.
 - **Only what receives input is recessed.** A `field` is set into the glass: `--dya-sunken`
   under a hairline, with `--dya-elev-sunken` falling in from the top edge, and
-  `--dya-elev-focus` adds a ring in `--dya-focus` and the halo while it is being typed into. A list to
-  choose from is a key, because nothing is typed into it.
+  `--dya-elev-focus` adds a ring in `--dya-focus` and the halo while it is being typed
+  into. A list to choose from is a key, because nothing is typed into it.
 - **`button--bare` is the one control that is not a key**: a glyph with no face, for the close
   on a tab and the icons inside a row, where a key's edge would be a stamp on every line. It
   presses by scale, because nothing that never stood up can sink.
@@ -314,7 +316,7 @@ static faces: sans at 300, 400 and 500, mono at 400 and 500, serif at 300 and 50
 --dya-size-pill       11.5px   the word inside a pill
 --dya-size-label      11px     the head of a table column, a key's shortcut
 --dya-size-label-sm   10.5px   the eyebrow
---dya-size-brand      17px     the wordmark in the title bar
+--dya-size-brand      46px     the wordmark in the title bar, capitals 30px
 ```
 
 ```text
@@ -375,10 +377,10 @@ contrast measured and its rule written in this file, and only then uses it.
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift) card__header masthead brand
              carved splitter (--vertical) sheet (--side)
-Keys         button (--primary --success --danger --quiet --sm --bare) key (--active --here) chip
+Keys         button (--primary --success --danger --quiet --sm --bare) key (--active) chip
              tile (--dense __icon __head __name __note)
 Input        field (--sm --auto --prose) select checkbox form (__actions __push)
-Pills        tag badge (--success --warning --danger) pills
+Pills        tag (--key) badge (--success --warning --danger) pills
 Lights       light (--success --warning --danger) meter (__pip)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
 Content      table (__num __fit __key __name __subject __end __prose) row (--selected)
@@ -392,9 +394,9 @@ Absence      empty (--inline __actions) loading
 Assistive    sr-only
 ```
 
-**A table is lines, not cards.** Rows sit straight on the glass with a hairline between each
-and the next, because the glass is already the object and a card per row inside it is a
-surface on a surface. The head of each column is small tracked capitals over the data. Hover
+**A table is rows, not cards and not lines.** Rows sit straight on the glass with nothing
+between them but their padding, because the glass is already the object, a card per row is a
+surface on a surface, and a rule per row is a ladder the eye has to climb. The head of each column is small tracked capitals over the data. Hover
 lifts a row's cells by `--dya-glass-hover`, white at 2%; a selected row is `--dya-glass-press`,
 white at 5%, in the first ink. Digits are `tabular-nums`.
 
@@ -493,8 +495,10 @@ Five distinctions in that list are easy to collapse and are not the same thing:
 - **`badge` is a light in a pill, `text--*` is a sentence.** A reported outcome in prose must
   not be dressed as a label.
 - **`tag` is information, `chip` is a key.** The first is round, the second square.
-- **`bar` is a strip of the glass with a hairline under it, `bar--inset` is a row of controls
-  with neither.** Neither has a ground of its own.
+- **`bar` is a strip of the glass with the padding of a bar, `bar--inset` is a row of controls
+  without it.** Neither has a ground or a rule of its own.
+- **`tag--key` is a pill as tall as a key**, for the one pill that sits in a row of keys: the
+  build in the title bar. It keeps the pill's word and its width.
 - **`tip` is a sentence, `menu` is a choice.** A tip is a `[popover="hint"]` the browser
   opens on interest, anchored to its `[interestfor]` control by the engine. A control that
   shows only an icon carries a tip and an `aria-label`, and `key` is that control.

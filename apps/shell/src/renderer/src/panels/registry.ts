@@ -9,6 +9,8 @@ export interface PanelDescriptor {
      */
     note?: string
     duplicable?: boolean
+    /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is the menu. */
+    toolbar?: number
 }
 
 export function basePanelId(instanceId: string): string {

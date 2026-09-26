@@ -22,7 +22,6 @@ const STYLES = `
     align-items: center;
     gap: var(--dya-space-3);
     padding: var(--dya-space-2) var(--dya-space-3);
-    border-bottom: var(--dya-border-width) dashed var(--dya-dashed);
 }
 .player-header[hidden] {
     display: none;

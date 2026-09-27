@@ -386,7 +386,7 @@ Keys         button (--primary --success --danger --quiet --sm) key (--active --
              tile (--dense --new __icon __head __name __note) winkey (--close)
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
-Pills        tag (--key) badge (--success --warning --danger) pills
+Pills        tag badge (--success --warning --danger) pills
 Lights       light (--success --warning --danger) meter (__pip) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
 Content      table (--stack __num __fit __key __name __subject __end __prose) row
@@ -552,8 +552,6 @@ Five distinctions in that list are easy to collapse and are not the same thing:
 - **`tag` is information, `chip` is a key.** The first is round, the second square.
 - **`bar` is a strip of the glass with the padding of a bar, `bar--inset` is a row of controls
   without it.** Neither has a ground or a rule of its own.
-- **`tag--key` is a pill as tall as a key**, for the one pill that sits in a row of keys: the
-  build in the title bar. It keeps the pill's word and its width.
 - **`tip` is a sentence, `menu` is a choice.** A tip is a `[popover="hint"]` the browser
   opens on interest, anchored to its `[interestfor]` control by the engine. A control that
   shows only an icon carries a tip and an `aria-label`, and `key` is that control.

@@ -260,7 +260,6 @@ body,
     align-items: center;
     gap: var(--dya-space-2);
     height: 100%;
-    padding: 0 var(--dya-space-2);
 }
 
 /*
@@ -278,9 +277,13 @@ body,
     margin-inline-start: var(--dya-space-1);
 }
 
+.panel-tab[aria-selected='false'] .panel-tab-actions {
+    display: none;
+}
+
 /*
- * A panel that cannot be duplicated keeps the place of the key that would, so every tab ends the
- * same distance after its name and the close key of every tab sits at the same offset.
+ * A panel that cannot be duplicated keeps the place of the key that would, so the open tab ends
+ * the same distance after its name whichever plugin it is and its close key sits at one offset.
  */
 .panel-tab-slot {
     width: 22px;

@@ -65,13 +65,6 @@ const STYLES = `
     margin: auto;
     padding: 0;
 }
-.docviewer-tile {
-    width: 100%;
-}
-.docviewer-tile .dya-tile__icon {
-    width: 22px;
-    height: 22px;
-}
 .docviewer-content--empty {
     display: flex;
     align-items: center;
@@ -322,11 +315,11 @@ export function activate(ctx: PluginContext): void {
                 invite.className = 'dya-empty docviewer-invite'
 
                 const tile = document.createElement('button')
-                tile.className = 'dya-tile docviewer-tile'
+                tile.className = 'dya-key dya-key--invite'
                 tile.type = 'button'
-                tile.innerHTML =
-                    `<span class="dya-tile__icon">${DOCS_ICON}</span>` +
-                    '<span class="dya-tile__name">Open</span>'
+                tile.innerHTML = DOCS_ICON
+                tile.title = 'Open'
+                tile.setAttribute('aria-label', 'Open')
                 tile.onclick = () => void openFile()
 
                 if (message) {

@@ -37,13 +37,6 @@ const STYLES = `
     max-width: 420px;
     padding: 0;
 }
-.player-tile {
-    width: 100%;
-}
-.player-tile .dya-tile__icon {
-    width: 22px;
-    height: 22px;
-}
 .player-stage {
     flex: 1;
     min-height: 0;
@@ -140,11 +133,11 @@ export function activate(ctx: PluginContext): void {
                 invite.className = 'dya-empty player-invite'
 
                 const tile = document.createElement('button')
-                tile.className = 'dya-tile player-tile'
+                tile.className = 'dya-key dya-key--invite'
                 tile.type = 'button'
-                tile.innerHTML =
-                    `<span class="dya-tile__icon">${PLAYER_ICON}</span>` +
-                    '<span class="dya-tile__name">Open</span>'
+                tile.innerHTML = PLAYER_ICON
+                tile.title = 'Open'
+                tile.setAttribute('aria-label', 'Open')
                 tile.onclick = () => void openMedia()
 
                 if (message) {

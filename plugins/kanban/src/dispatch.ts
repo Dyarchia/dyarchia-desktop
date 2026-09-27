@@ -290,7 +290,7 @@ export async function adopt(
         const child = await board.createCard(meta.slug, {
             title: entry.title.trim(),
             body: entry.body,
-            status: 'todo',
+            status: 'ready',
             parents: [card.id]
         })
         if (!file.cards.some((existing) => existing.id === child.id)) file.cards.push(child)
@@ -496,8 +496,8 @@ async function resolve(
             )
         } else if (declared.blockKind === 'dependency') {
             card.blockKind = null
-            card.sourcePhase = 'ready'
-            land(card, 'todo')
+            card.sourcePhase = null
+            land(card, 'triage')
         } else {
             block(meta.slug, card, declared.blockKind ?? 'needs_input', 'ready')
         }
@@ -600,7 +600,11 @@ async function reconcile(
         if (!finished && (state === 'unknown' || unlisted(state, run.startedAt, asOf))) continue
 
         if (finished || state === 'dead') {
-            if (finished && state !== 'dead') await harness.of(run).stop(run)
+            if (finished && state !== 'dead') {
+                await harness.of(run).stop(run).catch((thrown: unknown) => {
+                    run.error ??= `the session could not be stopped: ${thrown instanceof Error ? thrown.message : String(thrown)}`
+                })
+            }
             await resolve(file, meta, card, run, sink, progress)
             await letGo(run)
             changed = true

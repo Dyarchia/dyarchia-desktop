@@ -1,6 +1,5 @@
 export type Status =
     | 'triage'
-    | 'todo'
     | 'scheduled'
     | 'ready'
     | 'running'

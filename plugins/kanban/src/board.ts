@@ -29,8 +29,14 @@ function empty(): BoardFile {
     return { version: VERSION, cards: [] }
 }
 
+/*
+ * There is no todo any more. A card that waited there on its parents waits in ready, where the
+ * dispatcher already passes over a card whose parents are open; one that was simply put there was
+ * held back by hand, and triage is where a card waits for its person.
+ */
 function restore(card: Card): Card {
     const raw = card as unknown as Record<string, unknown>
+    if (raw.status === 'todo') card.status = card.parents?.length ? 'ready' : 'triage'
     card.runners = runners.restore(raw)
     delete raw.model
     delete raw.effort
@@ -148,8 +154,7 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
     const id = randomUUID()
     const now = Date.now()
     const parents = normalizeParents(file, id, draft.parents)
-    const requested = draft.status ?? 'triage'
-    const status: Status = requested === 'ready' && parents.length ? 'todo' : requested
+    const status: Status = draft.status ?? 'triage'
 
     const card: Card = {
         id,
@@ -239,10 +244,6 @@ function applyMove(file: BoardFile, id: string, rev: number, to: Status): Status
     if (card.status === to) return null
     if (!allows(card.status, to)) throw new Refusal(`a card cannot go from ${card.status} to ${to}`)
 
-    if (to === 'ready' && blockedBy(file, card).length) {
-        throw new Refusal('that card still has open dependencies')
-    }
-
     if (card.status === 'blocked') {
         card.blockKind = null
         card.sourcePhase = null
@@ -312,8 +313,7 @@ export async function unblock(slug: string, id: string, rev: number): Promise<Ca
     if (card.rev !== rev) throw new Refusal('that card changed while you were unblocking it')
     if (card.status !== 'blocked') throw new Refusal('that card is not blocked')
 
-    const open = blockedBy(file, card).length > 0
-    card.status = open ? 'todo' : (card.sourcePhase ?? 'ready')
+    card.status = card.sourcePhase ?? 'ready'
     card.blockKind = null
     card.sourcePhase = null
     touch(card)
@@ -447,13 +447,6 @@ export async function promote(slug: string, now: number): Promise<boolean> {
     let changed = false
 
     for (const card of file.cards) {
-        if (card.status === 'todo' && card.parents.length && !blockedBy(file, card).length) {
-            card.status = 'ready'
-            touch(card)
-            await events.record(slug, card.id, 'promoted', 'every parent closed')
-            changed = true
-            continue
-        }
         if (card.status === 'scheduled' && card.scheduledFor !== null && card.scheduledFor <= now) {
             card.status = 'ready'
             card.scheduledFor = null

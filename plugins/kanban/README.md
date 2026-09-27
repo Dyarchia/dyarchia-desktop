@@ -24,7 +24,8 @@ archived    (final)
 ## How a card runs
 
 - Each phase, implement and review, has a runner (harness, model, effort); blanks inherit from the board, then the CLI.
-- An implement run that completes moves the card to `review`; a review is launched by hand, never by the dispatcher.
+- Review is mandatory: a completed implement run moves the card to `review`, and the dispatcher starts
+  the reviewer under the same caps, before any ready card. `approve` and `request changes` still override it.
 - An `approved` verdict lands the card in `done`; `changes` posts the summary as a comment and returns it to `ready`.
 - A `dir` card works in a git worktree at `.claude/worktrees/<name>`, a `scratch` card in a disposable temp folder.
 - Changes left uncommitted by an implement run are committed by the board as one commit named after the card.

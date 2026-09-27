@@ -802,6 +802,24 @@ async function reconciling(): Promise<void> {
         synthetic('m9', 'Not logged in · Please run /login'),
         TURN_ENDED
     ])
+    const racedTwice = await staged('the harness lost the login race twice', [
+        synthetic('m10', 'Could not refresh your login because another Claude Code process is refreshing it · Try again in a minute'),
+        TURN_ENDED
+    ])
+    {
+        const file = await board.load('recon')
+        const live = board.find(file, racedTwice)
+        const first = { ...live.runs[0] }
+        live.runs.unshift({
+            ...first,
+            runId: randomUUID(),
+            startedAt: Date.now() - 300_000,
+            endedAt: Date.now() - 200_000,
+            outcome: 'crashed',
+            error: 'Could not refresh your login because another Claude Code process is refreshing it'
+        })
+        await board.save('recon', file)
+    }
 
     await force(sink)
 
@@ -851,7 +869,12 @@ async function reconciling(): Promise<void> {
     check('nothing is counted against it', loggedOut.protocolViolations, 0)
     check('it waits for a person', [loggedOut.status, loggedOut.blockKind], ['blocked', 'needs_input'])
 
-    check('only the finished runs were reported', outcomes.sort(), ['completed', 'crashed', 'crashed', 'violation', 'violation'])
+    const twice = await reread(racedTwice)
+    check('the same login race twice in a row is not retried again', [twice.status, twice.blockKind], ['blocked', 'needs_input'])
+    check('it is still not counted', twice.protocolViolations, 0)
+    check('and the thread says to sign in again', twice.comments.at(-1)?.text.includes('/login'), true)
+
+    check('only the finished runs were reported', outcomes.sort(), ['completed', 'crashed', 'crashed', 'crashed', 'violation', 'violation'])
     check(
         'and the paused sweep launched nothing',
         (await board.cards('recon')).filter((card) => card.status === 'running').length,

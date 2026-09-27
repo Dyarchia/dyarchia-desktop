@@ -311,8 +311,9 @@ export async function adopt(
 /*
  * A turn that ended before the model said a word, on an account error, is the harness failing to
  * reach the model, not the model breaking the protocol. A login two processes renewed at once
- * clears within a minute, so the card waits two and starts again; any other account error waits
- * for a person. Neither counts against the card.
+ * clears within a minute, so the card waits two and starts again; the same failure twice in a row
+ * means the login is not renewing, and like any other account error it waits for a person.
+ * Neither counts against the card.
  */
 function signInFailed(
     meta: BoardMeta,
@@ -326,14 +327,19 @@ function signInFailed(
     if (!CREDENTIAL.test(ending)) return false
 
     const why = (progress.error ?? progress.lastText).trim().slice(0, 400)
-    const race = SIGN_IN_RACE.test(ending)
+    const before = card.runs[card.runs.indexOf(run) - 1]
+    const again = before?.outcome === 'crashed' && SIGN_IN_RACE.test(`${before.error ?? ''}
+${before.summary ?? ''}`)
+    const race = SIGN_IN_RACE.test(ending) && !again
     close(run, 'crashed', null, why)
     card.comments.push({
         at: Date.now(),
         author: 'agent',
         text: race
             ? 'The harness could not sign in, because another process was renewing the same login. This attempt does not count, and the card starts again in two minutes.'
-            : `The harness could not use its account, so this attempt does not count and the card waits for you: ${why}`
+            : again
+              ? 'The harness could not sign in twice in a row, so the login is not being renewed on its own. Sign in again with /login in Claude Code, then unblock the card. These attempts do not count.'
+              : `The harness could not use its account, so this attempt does not count and the card waits for you: ${why}`
     })
     if (race) land(card, back)
     else block(meta.slug, card, 'needs_input', back)

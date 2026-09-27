@@ -146,7 +146,6 @@ export function openMenu(options: MenuOptions): () => void {
     search.className = 'dya-field dya-field--sm dya-menu__search'
     search.type = 'text'
     search.placeholder = options.filter ?? 'filter'
-    search.spellcheck = false
     search.hidden = !options.search && options.rows.length < FILTER_FROM
 
     const list = document.createElement('div')

@@ -1335,11 +1335,6 @@ textarea.dya-field {
  * A pill as tall as a key, for the one pill that sits in a row of keys and would otherwise be the
  * only short thing on the line: the build in the title bar. It keeps the pill's word and width.
  */
-.dya-tag--key {
-    height: var(--dya-size-control);
-    padding: 0 var(--dya-space-3);
-}
-
 /*
  * Hue is the categorical axis: which of several things of one kind this is, which group of
  * corpora, which agent. It is not status, which has green, yellow and red to itself, and it is

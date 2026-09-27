@@ -409,7 +409,6 @@ export function activate(ctx: PluginContext): void {
                 const behind = document.createElement('pre')
                 behind.className = 'dya-code'
                 const field = document.createElement('textarea')
-                field.spellcheck = false
                 field.value = current?.content ?? ''
                 field.setAttribute('aria-label', `Editing ${current?.name ?? 'document'}`)
 

@@ -85,13 +85,15 @@ interface UpdateState {
     version: string | null
     percent: number
     note: string | null
+    checkedAt: number | null
 }
 
 /*
  * The build, and what can be done about it, in one place: the version was already stated here and
- * an update is a fact about that version. The control exists only in the three states that have
- * something to press -- there is no idle Check for updates button, because a bar that offers an
- * action with no answer to give is how six of them end up along one edge saying nothing.
+ * an update is a fact about that version. The version is itself the key that asks GitHub now, so
+ * a release published while the window is open need not wait for the next scheduled check; it
+ * says `checking` while it asks and `up to date` for a moment when the answer is that. Beside it
+ * a control appears only in the three states that have something to press.
  *
  * A check that failed does not take the bar. It is a background request to a service that may
  * simply be unreachable, so it goes into the tip on the version, where somebody wondering why
@@ -112,20 +114,52 @@ function Build(): React.JSX.Element {
         void window.dyarchia?.invoke(channel)
     }, [])
 
+    const [asked, setAsked] = useState(false)
+    const [told, setTold] = useState(false)
     const phase = update?.phase ?? 'idle'
+
+    useEffect(() => {
+        if (!asked || phase === 'checking') return
+        setAsked(false)
+        if (phase !== 'current') return
+        setTold(true)
+        const timer = window.setTimeout(() => setTold(false), 4000)
+        return () => window.clearTimeout(timer)
+    }, [asked, phase])
+
+    const check = (): void => {
+        setAsked(true)
+        setTold(false)
+        act('shell:update:check')
+    }
+
     const failure = phase === 'failed' ? update?.note : null
-    const tip = failure
-        ? `Alpha build. Last check for a newer one: ${failure}.`
-        : 'Alpha build. Expect breakage, and do not keep anything here you cannot lose.'
+    const at = update?.checkedAt
+        ? new Date(update.checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : null
+    const last = failure
+        ? `The last check failed: ${failure}.`
+        : at
+          ? `Last checked at ${at}.`
+          : 'Not checked yet.'
+    const tip = `Alpha build. Press to check for a newer one now. ${last}`
 
     return (
         <div className="topbar-build">
-            <span className="dya-tag dya-tag--key topbar-alpha" interestfor={id}>
-                {__DYARCHIA_VERSION__}
-            </span>
+            <button
+                type="button"
+                className="dya-button dya-button--quiet topbar-alpha"
+                interestfor={id}
+                disabled={phase === 'checking' || phase === 'unsupported'}
+                onClick={check}
+            >
+                <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
+            </button>
             <div className="dya-tip" popover="hint" id={id}>
                 {tip}
             </div>
+            {phase === 'checking' && asked && <span className="dya-key-label">checking…</span>}
+            {told && <span className="dya-key-label">up to date</span>}
             {phase === 'available' && (
                 <button
                     className="dya-button dya-button--sm topbar-update"

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 import trafilatura
 
+from dyarchia_crawlee.extraction import frontmatter
 from dyarchia_crawlee.extraction.dom import DomAdapter, read_fields
 from dyarchia_crawlee.extraction.markup import (
     block_single_line_code,
@@ -15,6 +17,9 @@ from dyarchia_crawlee.extraction.markup import (
     restore_line_split_code,
 )
 from dyarchia_crawlee.models import ExtractionMode, RunSpec, ScrapedItem, utcnow
+
+_FRONT_TITLE = re.compile(r'''^title:\s*["']?(.*?)["']?\s*$''')
+_FENCE = re.compile(r'^(`{3,}|~{3,})')
 
 
 @dataclass(slots=True)
@@ -74,11 +79,31 @@ def _content_for(mode: ExtractionMode, page: RawPage) -> str | None:
 
 
 def markdown_title(text: str) -> str | None:
-    """First level-one heading of a markdown document, used when there is no DOM to ask."""
-    for line in text.splitlines():
+    """Title of a markdown document, used when there is no DOM to ask.
+
+    The publisher's own front matter wins: platform.claude.com opens pages with `title:` and often
+    no level-one heading at all. Failing that, the first level-one heading outside code. A fenced
+    sample is not the page: the Agent Skills overview embeds a SKILL.md whose `# PDF Processing`
+    was taken for the title of the page that shows it.
+    """
+    block, body = frontmatter.split(text)
+    for line in block.splitlines():
+        match = _FRONT_TITLE.match(line)
+        if match and match.group(1).strip():
+            return match.group(1).strip()
+
+    fence: str | None = None
+    for line in body.splitlines():
         stripped = line.strip()
-        if stripped.startswith('# '):
-            return stripped[2:].strip() or None
+        opener = _FENCE.match(stripped)
+        if fence is None:
+            if opener:
+                fence = opener.group(1)
+            elif stripped.startswith('# '):
+                return stripped[2:].strip() or None
+        elif opener and opener.group(1)[0] == fence[0] and len(opener.group(1)) >= len(fence) \
+                and not stripped[len(opener.group(1)):].strip():
+            fence = None
     return None
 
 

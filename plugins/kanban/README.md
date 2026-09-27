@@ -141,7 +141,7 @@ codex      codex      ~/.codex/models_cache.json, the     codex exec --json, a c
                       ones it would list                  app
 grok       grok       grok models                         grok -p, streaming json, a child
 kimi       kimi       [models.*] in ~/.kimi-code/         kimi -p, stream-json, a child
-                      config.toml, named by display_name
+                      config.toml, named by their model
 opencode   opencode   opencode models, every provider:    opencode run --format json, a child
                       Zen, then Go, then OpenRouter
 ```
@@ -359,9 +359,10 @@ the stage sits above the form.
 
 Every setting is a native `select`: harness, model and effort per phase, permission mode,
 workspace kind. A blank inherits: its option shows what it inherits, `Claude Code` or
-`Opus 5.5`, noted `follows the board` in the list, or `default` when the harness decides. A
-Claude alias is named by the newest model of its family in the account's recent transcripts, a
-Kimi alias by its `display_name`. The model is picked from the board's menu with its search
+`claude-opus-5-5`, noted `follows the board` in the list, or `default` when the harness decides.
+A model is always named by its API id, on the card too: a Claude alias by the newest model of its
+family in the account's recent transcripts (`latest` when none is seen), a Kimi alias by the
+`model` of its config table. The model is picked from the board's menu with its search
 field, where every word typed must appear, grouped by provider when the ids carry one. The bar carries the board
 name, then three keys for that board (new, settings, worktrees), then dispatch and watch;
 every icon-only control opens a tip on hover or focus and carries an `aria-label`. The board

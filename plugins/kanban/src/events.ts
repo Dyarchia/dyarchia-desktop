@@ -22,6 +22,7 @@ export type EventKind =
     | 'block_loop'
     | 'guarded'
     | 'commented'
+    | 'uncommented'
     | 'attached'
     | 'detached'
     | 'deleted'

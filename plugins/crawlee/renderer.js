@@ -1125,9 +1125,9 @@ function mount(ctx, container) {
 
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
-        const remove = el('button', 'dya-button dya-button--quiet dya-button--sm dya-button--danger', 'Delete')
+        const remove = el('button', 'dya-button dya-button--sm dya-button--danger', 'Delete')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
-        const save = el('button', 'dya-button dya-button--sm', 'Save')
+        const save = el('button', 'dya-button dya-button--sm dya-button--success', 'Save')
         const close = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
         bar.append(title, remove, inspect, save, close)
 
@@ -1281,7 +1281,7 @@ function mount(ctx, container) {
             if (here) counts.push(missing ? `${here} installed` : 'all installed')
             head.append(groupTag(shelf.group), el('span', 'dya-meta', counts.join(' - ')))
             if (missing) {
-                const install = el('button', 'dya-button dya-button--sm', `Install ${missing}`)
+                const install = el('button', 'dya-button dya-button--sm dya-button--success', `Install ${missing}`)
                 install.addEventListener('click', () => void put(shelf.group, install))
                 head.append(install)
             }
@@ -1415,9 +1415,9 @@ function mount(ctx, container) {
 
         function newTargetCard() {
             const card = el('button', 'dya-tile crw-new')
-            const icon = el('span', 'dya-tile__icon')
+            const icon = el('span', 'dya-tile__icon dya-text--success')
             icon.innerHTML = PLUS
-            card.append(icon, el('span', 'dya-tile__name', 'New target'), el(
+            card.append(icon, el('span', 'dya-tile__name dya-text--success', 'New target'), el(
                 'span',
                 'dya-tile__note',
                 'Point the crawler at a site or a sitemap and keep what it finds.'
@@ -1569,7 +1569,7 @@ function mount(ctx, container) {
             snapshot.type = 'checkbox'
             snapshot.checked = true
             snapshotBox.append(snapshot, el('span', 'dya-text', 'track its changes over time'))
-            const create = el('button', 'dya-button dya-button--sm', 'Draft it')
+            const create = el('button', 'dya-button dya-button--sm dya-button--success', 'Draft it')
             const actions = el('div', 'dya-form__actions')
             actions.append(create)
             node.append(el('span', 'dya-label', 'snapshot'), snapshotBox, actions)

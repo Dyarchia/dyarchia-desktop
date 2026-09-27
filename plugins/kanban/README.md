@@ -260,9 +260,9 @@ the dispatcher lease outlives a killed app for its TTL     a lease whose process
 ```
 
 Kimi Code is driven from its documentation, not from a measured run: kimi 2.1.1, 2026-09-27.
-`-p` never stops to ask and defaults to its auto policy; `--yolo` stands for acceptEdits and
-manual, `--auto` for the rest, and `--plan` for a review, which keeps it to the read-only tools by
-preference rather than by removing the others. stream-json writes `assistant` messages with
+`-p` runs under Kimi's auto policy and Kimi refuses to start when `-p` comes with `--yolo`,
+`--auto` or `--plan`, so the card's permission mode is not passed and a Kimi reviewer keeps every
+tool: only its brief keeps it from writing. stream-json writes `assistant` messages with
 `content` or `tool_calls` and `tool` messages with `tool_name` and `result`; there is no usage and
 no closing event, so the run ends when the process exits, and there is no effort flag.
 

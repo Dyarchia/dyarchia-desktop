@@ -757,6 +757,37 @@ async function reconciling(): Promise<void> {
         TURN_ENDED,
         spoke('m3', [{ type: 'text', text: 'still reading the diff' }])
     ])
+    const launch = (agent: string): unknown => ({
+        type: 'user',
+        message: {
+            content: [
+                {
+                    type: 'tool_result',
+                    content: [{ type: 'text', text: `Async agent launched successfully. (internal)\nagentId: ${agent} (internal ID)` }]
+                }
+            ]
+        }
+    })
+    const report = (agent: string): unknown => ({
+        type: 'queue-operation',
+        operation: 'enqueue',
+        content: `<task-notification>\n<task-id>${agent}</task-id>\n<status>completed</status>\n</task-notification>`
+    })
+    const waitingOn = await staged('the worker waits on its background agents', [
+        spoke('m4', [{ type: 'tool_use', name: 'Agent' }]),
+        launch('a1b2c3'),
+        launch('d4e5f6'),
+        spoke('m5', [{ type: 'text', text: 'both agents are running, I will check back' }]),
+        TURN_ENDED
+    ])
+    const heardBack = await staged('the worker heard back and still did not declare', [
+        spoke('m6', [{ type: 'tool_use', name: 'Agent' }]),
+        launch('a7b8c9'),
+        TURN_ENDED,
+        report('a7b8c9'),
+        spoke('m7', [{ type: 'text', text: 'the agent is done' }]),
+        TURN_ENDED
+    ])
 
     await force(sink)
 
@@ -785,11 +816,19 @@ async function reconciling(): Promise<void> {
     check('its run stays open', [last(ongoing).endedAt, last(ongoing).outcome], [null, null])
     check('and nothing is counted against it', ongoing.protocolViolations, 0)
 
-    check('only the finished runs were reported', outcomes.sort(), ['completed', 'violation'])
+    const patient = await reread(waitingOn)
+    check('a turn that ended with background agents still out is held', patient.status, 'running')
+    check('its run stays open', last(patient).outcome, null)
+    check('and nothing is counted against it', patient.protocolViolations, 0)
+
+    const answered = await reread(heardBack)
+    check('once every agent has reported back, an undeclared end is a violation again', last(answered).outcome, 'violation')
+
+    check('only the finished runs were reported', outcomes.sort(), ['completed', 'violation', 'violation'])
     check(
         'and the paused sweep launched nothing',
         (await board.cards('recon')).filter((card) => card.status === 'running').length,
-        1
+        2
     )
 
     for (const [name, value] of Object.entries(held)) setenv(name, value)

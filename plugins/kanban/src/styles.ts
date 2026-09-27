@@ -235,6 +235,7 @@ export const STYLES = `
     flex: none;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    gap: 0;
     padding: 0;
 }
 
@@ -249,7 +250,7 @@ export const STYLES = `
     align-self: center;
     display: flex;
     gap: var(--dya-space-2);
-    padding-inline-end: var(--dya-space-3);
+    padding-inline-end: calc(var(--dya-space-3) + 8px);
 }
 
 .kanban-drawer-title {
@@ -412,10 +413,14 @@ export const STYLES = `
     flex-direction: column;
 }
 
+/*
+ * The stage keeps the form's edges: its tabs, its head and its steps start where the form's labels
+ * do and end where its fields do, the end holding the gutter the form's scrollbar takes.
+ */
 .kanban-stage-body {
     flex: 1;
     min-height: 0;
-    padding: var(--dya-space-2) 0 0 var(--dya-space-2);
+    padding: var(--dya-space-2) calc(var(--dya-space-3) + 8px) 0 var(--dya-space-3);
 }
 
 .kanban-terminal { height: 100%; }
@@ -440,7 +445,7 @@ export const STYLES = `
 
 .kanban-tabs {
     flex: none;
-    padding: var(--dya-space-2) var(--dya-space-3) 0;
+    padding: var(--dya-space-3) calc(var(--dya-space-3) + 8px) 0 var(--dya-space-3);
 }
 
 .kanban-history {
@@ -463,6 +468,6 @@ export const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding-right: var(--dya-space-2);
+    margin-inline-start: calc(-1 * var(--dya-space-2));
 }
 `

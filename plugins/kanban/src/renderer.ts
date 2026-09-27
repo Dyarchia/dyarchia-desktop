@@ -1923,9 +1923,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return
         }
 
-        if (drawnId === card.id && drawnRev === card.rev) {
-            const label = drawer.querySelector('.kanban-drawer-state')
-            if (label) label.textContent = rules.labels[shown(card)]
+        const painted = drawer.querySelector<HTMLElement>('.kanban-drawer-state')?.dataset.status
+        if (drawnId === card.id && drawnRev === card.rev && painted === shown(card)) {
             syncTerminal(card)
             return
         }
@@ -1944,35 +1943,37 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * thread, where nobody looks for what to do with a card. The badge is pressable: this is
          * where the card is, press it to send it somewhere else.
          */
-        const heading = el('button', 'dya-button dya-button--sm kanban-drawer-state', rules.labels[shown(card)])
-        heading.type = 'button'
-        withTip(heading, 'move this card to another stage')
-        heading.addEventListener('click', () => openMoveMenu(card.id, heading))
         /*
-         * A blocked card waits for a person, so its state is lit red, and the answer is joined to
-         * it: a green check that returns the card to the phase it was blocked from. The title
-         * stands where the form's values start, so the head reads as the form's first row.
+         * The state, and the control that changes it, are one key in the label column, so the title
+         * stands where the form's values start and the head reads as the form's first row. A
+         * blocked card waits for a person: its key is lit red and reads `blocked`, and under the
+         * pointer it turns green and reads `unblock`, which is what pressing it does.
          */
-        const state = el('span', 'dya-label')
-        if (shown(card) === 'blocked') {
-            heading.classList.add('dya-button--danger')
-            const unblock = key('check', 'unblock', `unblock: the card returns to ${card.sourcePhase ?? 'ready'}`)
-            unblock.classList.add('dya-key--success')
-            unblock.addEventListener('click', () => {
+        const blocked = shown(card) === 'blocked'
+        const heading = el('button', 'dya-button dya-button--sm kanban-drawer-state')
+        heading.type = 'button'
+        heading.dataset.status = shown(card)
+        if (blocked) {
+            heading.classList.add('dya-button--resolve')
+            heading.append(el('span', 'dya-button__state', rules.labels.blocked), el('span', 'dya-button__answer', 'unblock'))
+            heading.setAttribute('aria-label', 'unblock')
+            withTip(heading, `unblock: the card returns to ${card.sourcePhase ?? 'ready'}`)
+            heading.addEventListener('click', () => {
                 void invoke<Card>('unblock', meta?.slug, card.id, card.rev)
-                    .then((next) => {
+                    .then((back) => {
                         solved(card.id)
-                        say(`${next.title} returned to ${next.status}`)
+                        say(`${back.title} returned to ${back.status}`)
                         return refresh()
                     })
                     .catch((thrown: unknown) => failOn(card.id, thrown))
             })
-            const join = el('span', 'dya-join')
-            join.append(heading, unblock)
-            state.append(join)
         } else {
-            state.append(heading)
+            heading.textContent = rules.labels[shown(card)]
+            withTip(heading, 'move this card to another stage')
+            heading.addEventListener('click', () => openMoveMenu(card.id, heading))
         }
+        const state = el('span', 'dya-label')
+        state.append(heading)
         const named = el('span', 'dya-text kanban-drawer-title', card.title)
         const lead = el('div', 'dya-pane kanban-drawer-lead')
         const row = el('div', 'dya-form')

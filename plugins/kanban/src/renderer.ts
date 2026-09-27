@@ -86,11 +86,22 @@ const ICONS = {
     eye: `${STROKE}<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
     pulse: `${STROKE}<polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg>`,
     plus: `${STROKE}<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+    minus: `${STROKE}<line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     sliders: `${STROKE}<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.5" fill="var(--dya-chassis)"/><circle cx="15" cy="17" r="2.5" fill="var(--dya-chassis)"/></svg>`,
     branch: `${STROKE}<circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 7.5v9"/><path d="M18 10.5c0 4-12 3-12 6"/></svg>`,
     expand: `${STROKE}<polyline points="15 4 20 4 20 9"/><polyline points="9 20 4 20 4 15"/><line x1="20" y1="4" x2="14" y2="10"/><line x1="4" y1="20" x2="10" y2="14"/></svg>`,
     contract: `${STROKE}<polyline points="4 10 9 10 9 5"/><polyline points="20 14 15 14 15 19"/><line x1="9" y1="10" x2="3" y2="4"/><line x1="15" y1="14" x2="21" y2="20"/></svg>`,
     close: `${STROKE}<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`
+}
+
+/*
+ * A Claude model id read the way its maker writes it: `claude-opus-5-5` is Opus 5.5, and a date
+ * on the end is dropped. Anything else is left as it came.
+ */
+function pretty(model: string): string {
+    const match = /^claude-([a-z]+)-(\d+(?:-\d{1,3})*)(?:-\d{8})?$/.exec(model)
+    if (!match) return model
+    return `${match[1][0].toUpperCase()}${match[1].slice(1)} ${match[2].replaceAll('-', '.')}`
 }
 
 const PERMISSIONS = ['acceptEdits', 'auto', 'bypassPermissions', 'manual', 'dontAsk', 'plan']
@@ -525,7 +536,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const empty = el('div', 'dya-drop-box kanban-drop')
 
         if (status === 'triage') {
-            const plus = el('button', 'dya-key dya-key--success kanban-new-key', '+')
+            const plus = el('button', 'dya-key dya-key--success kanban-new-key')
+            plus.innerHTML = ICONS.plus
             plus.type = 'button'
             plus.setAttribute('aria-label', 'new card')
             withTip(plus, 'a new card in triage')
@@ -576,7 +588,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         fold.type = 'button'
         const apply = (closed: boolean): void => {
             shell.dataset.collapsed = String(closed)
-            fold.textContent = closed ? '+' : '−'
+            fold.innerHTML = ICONS[closed ? 'plus' : 'minus']
             withTip(fold, closed ? `show ${label}` : `fold ${label}`)
             fold.setAttribute('aria-expanded', String(!closed))
         }
@@ -878,7 +890,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardForm = (): HTMLElement => {
-        const shell = el('div', 'dya-card kanban-setup-shell kanban-welcome')
+        const shell = el('div', 'dya-card dya-pane kanban-setup-shell kanban-welcome')
         const heading = el('div', 'dya-title', 'Make a board')
         const label = el('div', 'dya-lede', 'A board is a project, and its cards go to an agent working in it.')
 
@@ -951,7 +963,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         what: string,
         current: string,
         values: string[],
-        labels: Record<string, string>,
+        labels: Record<string, string | [string, string]>,
         disabled: boolean,
         apply: (value: string) => void
     ): HTMLElement => {
@@ -959,11 +971,19 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const select = el('select', 'dya-field')
         select.disabled = disabled
         select.setAttribute('aria-label', what)
+        const shown = el('button')
+        shown.type = 'button'
+        shown.appendChild(document.createElement('selectedcontent'))
+        select.appendChild(shown)
         for (const value of values) {
-            const option = el('option', undefined, labels[value] ?? value)
+            const entry = labels[value] ?? value
+            const [text, note] = typeof entry === 'string' ? [entry, ''] : entry
+            const option = el('option', undefined, text)
+            if (note) option.appendChild(el('span', 'dya-select__note', note))
             option.value = value
             option.selected = value === current
             select.appendChild(option)
+            if (value === '' && note) select.appendChild(el('hr'))
         }
         select.addEventListener('change', () => apply(select.value))
         wrap.appendChild(select)
@@ -972,9 +992,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     /*
      * One row per phase: harness, model, effort. A card inherits from its board what it
-     * leaves blank, so a blank is labelled with what it inherits rather than with nothing,
-     * and the model list is the chosen harness's own. A name the list does not carry is
-     * typed into the field that appears when the last entry is picked.
+     * leaves blank, so a blank is labelled with what it inherits, noted `from board` in the
+     * list and shown bare once chosen, since what the closed control says is what will run. The
+     * model list is the chosen harness's own, and an alias is named by the model it stands for.
+     * A name the list does not carry is typed into the field that appears when the last entry is
+     * picked.
      */
     const phaseHeads = (): HTMLElement => {
         const heads = el('div', 'dya-form__split')
@@ -994,11 +1016,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     ): HTMLElement => {
         const row = el('div', 'dya-form__split')
         const fallback = catalogue[0]?.id ?? 'claude'
-        const harnessLabels: Record<string, string> = {
-            '': above ? `board - ${above.harness ?? fallback}` : `default - ${fallback}`
+        const nameOf = (id: string): string => catalogue.find((entry) => entry.id === id)?.label ?? id
+        const harnessLabels: Record<string, string | [string, string]> = {
+            '': [nameOf(above?.harness ?? fallback), above ? 'from board' : 'default']
         }
         for (const entry of catalogue) {
-            harnessLabels[entry.id] = entry.available ? entry.label : `${entry.label}, not on PATH`
+            harnessLabels[entry.id] = entry.available ? entry.label : [entry.label, 'not on PATH']
         }
         const chosen = current.harness ?? above?.harness ?? fallback
         const info = catalogue.find((entry) => entry.id === chosen)
@@ -1010,10 +1033,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         )
 
         const models = info?.models ?? []
+        const modelName = (model: string): string => pretty(info?.resolved[model] ?? model)
         const listed = current.model === null || models.includes(current.model)
-        const modelLabels: Record<string, string> = {
-            '': above?.model ? `board - ${above.model}` : 'default',
+        const modelLabels: Record<string, string | [string, string]> = {
+            '': above?.model ? [modelName(above.model), 'from board'] : 'default',
             [OTHER]: 'another name\u2026'
+        }
+        for (const model of models) {
+            modelLabels[model] =
+                info?.id === 'claude' && !info.resolved[model]
+                    ? [`${model[0].toUpperCase()}${model.slice(1)}`, 'latest']
+                    : modelName(model)
         }
         const custom = el('input', 'dya-field dya-field--sm')
         custom.type = 'text'
@@ -1038,8 +1068,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         row.appendChild(modelCell)
 
         if (info?.efforts) {
-            const effortLabels: Record<string, string> = {
-                '': above?.effort ? `board - ${above.effort}` : 'default'
+            const effortLabels: Record<string, string | [string, string]> = {
+                '': above?.effort ? [above.effort, 'from board'] : 'default'
             }
             row.appendChild(
                 choose('effort', current.effort ?? '', ['', ...info.efforts], effortLabels, disabled, (value) =>
@@ -1064,7 +1094,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardSettings = (current: BoardMeta, across: Settings): HTMLElement => {
-        const shell = el('div', 'kanban-setup-shell')
+        const shell = el('div', 'dya-pane kanban-setup-shell')
         const heading = el('div', 'kanban-setup-head')
         heading.append(el('span', 'dya-title', current.name))
         const slug = el('span', 'dya-mono dya-text', current.slug)
@@ -1220,7 +1250,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardChooser = (open: BoardMeta[]): HTMLElement => {
-        const shell = el('div', 'kanban-setup-shell')
+        const shell = el('div', 'dya-pane kanban-setup-shell')
         shell.append(el('div', 'dya-title', 'Pick up where you left off'))
 
         const grid = el('div', 'dya-grid dya-grid--gallery')
@@ -1867,7 +1897,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     failOn(card.id, thrown)
                 )
             })
-            const drop = el('button', 'dya-key', '×')
+            const drop = el('button', 'dya-key')
+            drop.innerHTML = ICONS.close
             drop.type = 'button'
             drop.title = `remove ${file.name} from this card`
             drop.disabled = card.locked
@@ -1917,7 +1948,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             chip.title = 'open this card'
             chip.disabled = !parent
             chip.addEventListener('click', () => select(parentId))
-            const drop = el('button', 'dya-key', '×')
+            const drop = el('button', 'dya-key')
+            drop.innerHTML = ICONS.close
             drop.type = 'button'
             drop.title = 'remove this dependency'
             drop.disabled = card.locked
@@ -1936,7 +1968,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         for (const entry of card.comments) {
             const item = el('div', 'dya-entry')
             const itemHead = el('div', 'dya-entry__head')
-            const forget = el('button', 'dya-key', '×')
+            const forget = el('button', 'dya-key')
+            forget.innerHTML = ICONS.close
             forget.type = 'button'
             forget.title = 'delete this note'
             forget.addEventListener('click', () => {
@@ -1979,10 +2012,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             leave()
         })
         note.addEventListener('blur', leave)
-        const post = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add note')
+        const post = el('button', 'dya-key')
+        post.innerHTML = ICONS.plus
         post.type = 'button'
+        post.title = 'add this note'
+        post.setAttribute('aria-label', 'add this note')
+        post.addEventListener('mousedown', (event) => event.preventDefault())
         post.addEventListener('click', leave)
-        thread.append(note, post)
+        const compose = el('div', 'kanban-row kanban-row--top')
+        compose.append(note, post)
+        thread.append(compose)
 
         const runs = el('div', 'dya-form__stack')
         if (card.runs.length) {

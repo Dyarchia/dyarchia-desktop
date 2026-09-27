@@ -44,6 +44,7 @@ export interface HarnessInfo {
     label: string
     available: boolean
     models: string[]
+    resolved: Record<string, string>
     efforts: string[] | null
 }
 

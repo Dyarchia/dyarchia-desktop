@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from 'node:fs/promises'
+import { open, readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { parseTerminal } from '../closing.js'
@@ -23,6 +23,67 @@ const SETTLE_TRIES = 10
 const SETTLE_MS = 400
 const REVIEW_MODE = 'plan'
 const DENIED = ['Bash', 'PowerShell']
+
+const ALIASES = ['fable', 'opus', 'sonnet', 'haiku'] as const
+const TRANSCRIPTS_READ = 48
+const TRANSCRIPT_TAIL = 256 * 1024
+const MODEL_ID = /"model":"(claude-([a-z]+)-(\d[a-z0-9-]*))"/g
+
+/*
+ * An alias is whatever claude maps it to today, so the picker cannot know it from the alias. The
+ * account's own transcripts do: every reply names the model that wrote it. The newest version of
+ * each family seen in the latest sessions is the best reading of what the alias resolves to, and
+ * an override in the environment wins over anything read.
+ */
+async function resolved(): Promise<Record<string, string>> {
+    const found: Record<string, { id: string; rank: number[] }> = {}
+    const root = join(process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude'), 'projects')
+    try {
+        const files: { path: string; at: number }[] = []
+        for (const project of await readdir(root, { withFileTypes: true })) {
+            if (!project.isDirectory()) continue
+            const folder = join(root, project.name)
+            for (const name of await readdir(folder)) {
+                if (!name.endsWith('.jsonl')) continue
+                const path = join(folder, name)
+                files.push({ path, at: (await stat(path)).mtimeMs })
+            }
+        }
+        files.sort((a, b) => b.at - a.at)
+        for (const { path } of files.slice(0, TRANSCRIPTS_READ)) {
+            const handle = await open(path, 'r')
+            try {
+                const { size } = await handle.stat()
+                const length = Math.min(size, TRANSCRIPT_TAIL)
+                const buffer = Buffer.alloc(length)
+                await handle.read(buffer, 0, length, size - length)
+                for (const match of buffer.toString('utf-8').matchAll(MODEL_ID)) {
+                    const [, id, family, version] = match
+                    const rank = version.split('-').filter((part) => /^\d{1,3}$/.test(part)).map(Number)
+                    const held = found[family]
+                    if (!held || compare(rank, held.rank) > 0) found[family] = { id, rank }
+                }
+            } finally {
+                await handle.close()
+            }
+        }
+    } catch {}
+    const out: Record<string, string> = {}
+    for (const alias of ALIASES) {
+        const pinned = process.env[`ANTHROPIC_DEFAULT_${alias.toUpperCase()}_MODEL`]
+        const id = pinned || found[alias]?.id
+        if (id) out[alias] = id
+    }
+    return out
+}
+
+function compare(a: number[], b: number[]): number {
+    for (let index = 0; index < Math.max(a.length, b.length); index++) {
+        const difference = (a[index] ?? 0) - (b[index] ?? 0)
+        if (difference) return difference
+    }
+    return 0
+}
 
 const LIVE = new Set(['working', 'blocked'])
 const FINISHED = new Set(['done', 'stopped', 'failed'])
@@ -390,7 +451,8 @@ export const driver: Driver = {
     commits: true,
     efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
     binary: () => findBinary(BINARY),
-    models: async () => ['fable', 'opus', 'sonnet', 'haiku'],
+    models: async () => [...ALIASES],
+    resolved,
     restraint: () => [
         'You are in PLAN MODE and you have NO SHELL: Bash and PowerShell are denied to you, on',
         'purpose. You are not being trusted less than the implementer was. It is that a review',

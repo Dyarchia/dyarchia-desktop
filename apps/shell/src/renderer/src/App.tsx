@@ -109,6 +109,7 @@ export function App(): React.JSX.Element {
                 ) : (
                     <div className="dya-loading shell-loading">
                         <span className="dya-carved">Dyarchia desktop</span>
+                        <span className="dya-ring dya-ring--busy" />
                         <span>Loading plugins…</span>
                     </div>
                 )}

@@ -289,6 +289,8 @@ export const STYLES = `
     gap: var(--dya-space-2);
 }
 
+.kanban-row--top { align-items: flex-start; }
+
 .kanban-row > .dya-field { flex: 1; min-width: 0; }
 
 .kanban-row > .kanban-cap { flex: 0 0 4rem; }
@@ -365,7 +367,7 @@ export const STYLES = `
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-4);
-    width: min(560px, 100%);
+    width: min(760px, 100%);
 }
 
 .kanban-setup-head {

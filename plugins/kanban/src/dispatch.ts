@@ -120,7 +120,7 @@ function tell(
 ): void {
     sink.notify({
         title,
-        body: `${meta.name} · ${body}`.slice(0, 400),
+        body: `${meta.name} - ${body}`.slice(0, 400),
         action: { slug: meta.slug, cardId: card.id }
     })
 }

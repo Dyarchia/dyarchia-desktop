@@ -26,11 +26,11 @@ interface LauncherProps {
 
 export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
     return (
-        <div className="launcher">
+        <div className="dya-pane launcher">
             <div className="launcher-head">
                 <span className="dya-carved">Dyarchia desktop</span>
             </div>
-            <div className="launcher-grid">
+            <div className="dya-grid dya-grid--gallery launcher-grid">
                 {panels.map((panel) => (
                     <button
                         key={panel.id}

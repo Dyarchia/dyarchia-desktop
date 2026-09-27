@@ -160,15 +160,10 @@ const STYLE = `
     min-height: 0;
 }
 /*
- * The targets, as a grid that reflows from one column to as many as the window affords. A rail of
- * names 210px wide made a 1400px window 85% black, and told the reader nothing about a target
- * except that it exists.
+ * The targets, on the gallery's share of the twelve columns. A rail of names 210px wide made a
+ * 1400px window 85% black, and told the reader nothing about a target except that it exists.
  */
 .crw-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-    align-content: start;
-    gap: var(--dya-space-3);
     flex: 1;
     min-height: 0;
     overflow: auto;
@@ -279,15 +274,8 @@ const STYLE = `
     height: 120px;
 }
 .crw-form {
-    display: grid;
-    grid-template-columns: 110px 1fr;
-    align-items: center;
-    gap: var(--dya-space-2);
     max-width: 560px;
     flex: none;
-}
-.crw-form button {
-    justify-self: start;
 }
 .crw-note {
     min-height: 1.4em;
@@ -653,7 +641,7 @@ function mount(ctx, container) {
         grip.setAttribute('role', 'separator')
         grip.setAttribute('aria-orientation', 'horizontal')
         grip.tabIndex = 0
-        grip.title = 'drag to resize · double-click for the whole view'
+        grip.title = 'drag to resize - double-click for the whole view'
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
         pane.append(grip, log)
@@ -787,16 +775,16 @@ function mount(ctx, container) {
         const paintRound = () => {
             status.className = 'dya-text crw-status'
             if (!round.total) {
-                status.textContent = `Round starting  ·  ${elapsed()}`
+                status.textContent = `Round starting - ${elapsed()}`
                 return
             }
             const parts = round.current
-                ? [`Round running  ·  target ${round.index} of ${round.total}`, round.current]
-                : [`Round running  ·  ${round.done} of ${round.total} done`]
+                ? [`Round running - target ${round.index} of ${round.total}`, round.current]
+                : [`Round running - ${round.done} of ${round.total} done`]
             if (round.changed) parts.push(`${round.changed} changed`)
             if (round.failed) parts.push(`${round.failed} failed`)
             parts.push(elapsed())
-            status.textContent = parts.join('  ·  ')
+            status.textContent = parts.join(' - ')
         }
 
         const pips = () => {
@@ -976,7 +964,7 @@ function mount(ctx, container) {
                 parts.push(report.minutes ? `${report.minutes} min` : elapsed())
                 if (report.digest) parts.push(`digest at ${report.digest}`)
                 status.className = `dya-text crw-status ${failed ? 'dya-text--danger' : stopped ? '' : 'dya-text--success'}`
-                status.textContent = parts.join('  ·  ')
+                status.textContent = parts.join(' - ')
                 round.done = done
                 pips()
                 void refreshState()
@@ -1129,7 +1117,7 @@ function mount(ctx, container) {
          * leave a list too narrow to read and an editor too narrow to write in, at every width
          * this panel is ever given.
          */
-        const grid = el('div', 'crw-grid')
+        const grid = el('div', 'dya-grid dya-grid--gallery crw-grid')
         const scrim = el('div', 'dya-scrim')
         scrim.hidden = true
         const sheet = el('div', 'dya-sheet crw-sheet')
@@ -1291,7 +1279,7 @@ function mount(ctx, container) {
             const missing = shelf.profiles.length - here
             const counts = [`${shelf.profiles.length} profiles`]
             if (here) counts.push(missing ? `${here} installed` : 'all installed')
-            head.append(groupTag(shelf.group), el('span', 'dya-meta', counts.join('  ·  ')))
+            head.append(groupTag(shelf.group), el('span', 'dya-meta', counts.join(' - ')))
             if (missing) {
                 const install = el('button', 'dya-button dya-button--sm', `Install ${missing}`)
                 install.addEventListener('click', () => void put(shelf.group, install))
@@ -1421,7 +1409,7 @@ function mount(ctx, container) {
                 for (const profile of profiles) if (profile.group) groups.add(profile.group)
                 for (const profile of profiles) grid.appendChild(targetCard(profile, byName.get(profile.name)))
             } catch (error) {
-                grid.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
+                grid.replaceChildren(el('div', 'dya-empty dya-text--danger dya-col-12', reason(error)))
             }
         }
 
@@ -1472,7 +1460,7 @@ function mount(ctx, container) {
                 : [`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`]
             const line = el('div', 'crw-facts')
             if (profile.group) line.append(groupTag(profile.group))
-            line.append(el('span', 'dya-meta', facts.join('  ·  ')))
+            line.append(el('span', 'dya-meta', facts.join(' - ')))
             card.append(line)
 
             card.addEventListener('click', () => void open(profile.name, card))
@@ -1562,7 +1550,7 @@ function mount(ctx, container) {
     }
 
     function buildForm() {
-            const node = el('div', 'crw-form')
+            const node = el('div', 'dya-form crw-form')
             node.hidden = true
             const fields = {}
             for (const [key, label, placeholder] of [
@@ -1574,7 +1562,7 @@ function mount(ctx, container) {
                 const input = el('input', `dya-field${key === 'description' ? ' dya-field--prose' : ''}`)
                 input.placeholder = placeholder
                 fields[key] = input
-                node.append(el('span', 'dya-key-label', label), input)
+                node.append(el('span', 'dya-label', label), input)
             }
             const snapshotBox = el('label', 'crw-check')
             const snapshot = el('input', 'dya-checkbox')
@@ -1582,7 +1570,9 @@ function mount(ctx, container) {
             snapshot.checked = true
             snapshotBox.append(snapshot, el('span', 'dya-text', 'track its changes over time'))
             const create = el('button', 'dya-button dya-button--sm', 'Draft it')
-            node.append(el('span', 'dya-key-label', 'snapshot'), snapshotBox, el('span'), create)
+            const actions = el('div', 'dya-form__actions')
+            actions.append(create)
+            node.append(el('span', 'dya-label', 'snapshot'), snapshotBox, actions)
 
             create.addEventListener('click', () => {
                 const name = fields.name.value.trim()

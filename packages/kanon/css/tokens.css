@@ -42,6 +42,9 @@
     --dya-size-pill: 11.5px;
     --dya-size-brand: 30px;
 
+    --dya-size-control: 34px;
+    --dya-size-control-sm: 28px;
+
     --dya-tracking-ui: 0;
     --dya-tracking-key: -0.005em;
     --dya-tracking-display: -0.035em;

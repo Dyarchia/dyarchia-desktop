@@ -626,7 +626,7 @@ async function reconcile(
                 run,
                 'stopped',
                 null,
-                overrun ? `past its ${cap}s runtime cap` : 'alive but silent for an hour'
+                overrun ? `past its time limit of ${Math.round((cap ?? 0) / 60)} min` : 'alive but silent for an hour'
             )
             block(meta.slug, card, 'transient', home(run))
             void events.record(meta.slug, card.id, 'stopped', run.error ?? '', run.runId)

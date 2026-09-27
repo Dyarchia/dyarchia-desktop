@@ -1,6 +1,6 @@
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import { brandIcon, injectStyles } from '@dyarchia/sdk'
-import type { PanelHandle, PluginContext } from '@dyarchia/sdk'
+import { brandIcon, glyph, injectStyles } from '@dyarchia/sdk'
+import type { GlyphName, PanelHandle, PluginContext } from '@dyarchia/sdk'
 import { installDrag } from './drag.js'
 import type { DragColumn } from './drag.js'
 import { openMenu, openSurface } from './menu.js'
@@ -368,10 +368,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         tip.textContent = text
     }
-    const key = (icon: keyof typeof ICONS, label: string, hint = label): HTMLButtonElement => {
+    const key = (icon: keyof typeof ICONS | GlyphName, label: string, hint = label): HTMLButtonElement => {
         const button = el('button', 'dya-key')
         button.type = 'button'
-        button.innerHTML = ICONS[icon]
+        button.innerHTML = icon in ICONS ? ICONS[icon as keyof typeof ICONS] : glyph(icon as GlyphName)
         button.setAttribute('aria-label', label)
         withTip(button, hint)
         return button
@@ -618,8 +618,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const field = el('input', 'dya-field dya-field--sm dya-field--prose')
             field.type = 'text'
             field.placeholder = 'card title'
-            const confirm = el('button', 'dya-button dya-button--sm dya-button--success', 'add')
-            confirm.type = 'button'
+            const confirm = key('check', 'add the card')
+            confirm.classList.add('dya-key--success')
             draft.append(field, confirm)
             const dismiss = (): void => {
                 field.value = ''
@@ -977,8 +977,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const dir = el('input', 'dya-field')
         dir.type = 'text'
         dir.placeholder = 'absolute path'
-        const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
-        browse.type = 'button'
+        const browse = key('folder', 'choose the directory')
         dirRow.append(dir, browse)
 
         const create = el('button', 'dya-button dya-button--success', 'create board')
@@ -1242,8 +1241,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const dir = el('input', 'dya-field')
         dir.type = 'text'
         dir.value = current.workdir
-        const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
-        browse.type = 'button'
+        const browse = key('folder', 'choose the directory')
         browse.addEventListener('click', () => {
             void invoke<string | null>('pickWorkdir')
                 .then((picked) => {
@@ -1301,9 +1299,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         back.type = 'button'
         back.addEventListener('click', () => void refresh().catch(fail))
 
-        const archive = el('button', 'dya-button dya-button--quiet dya-button--sm dya-form__push', 'archive')
-        archive.type = 'button'
-        withTip(archive, 'the files are kept and the board leaves the picker')
+        const archive = key('archive', 'archive this board', 'archive this board: the files are kept and the board leaves the picker')
+        archive.classList.add('dya-form__push')
         archive.addEventListener('click', () => {
             if (!window.confirm(`Archive ${current.name}? Its cards and files are kept, and it leaves the picker.`)) {
                 return
@@ -1317,8 +1314,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        const remove = el('button', 'dya-button dya-button--danger dya-button--sm', 'delete')
-        remove.type = 'button'
+        const remove = key('delete', 'delete this board')
+        remove.classList.add('dya-key--danger')
         remove.addEventListener('click', () => {
             const warning =
                 `Delete ${current.name}? Its cards, their run history and every artifact a run left ` +
@@ -1499,12 +1496,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             : []
 
         const count = el('span', 'dya-meta', `${chosen.length} selected`)
-        const moveAll = el('button', 'dya-button dya-button--sm', 'move')
-        moveAll.type = 'button'
+        const moveAll = key(
+            'move',
+            `move ${chosen.length} cards`,
+            targets.length ? 'move them to a state every one of them may go to' : 'these cards have no state they can all go to'
+        )
         moveAll.disabled = targets.length === 0
-        moveAll.title = targets.length
-            ? 'the states every selected card may go to'
-            : 'these cards have no state they can all go to'
         moveAll.addEventListener('click', () => {
             if (!table) return
             openMenu({
@@ -1521,12 +1518,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             })
         })
 
-        const removeAll = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete')
-        removeAll.type = 'button'
+        const removeAll = key('delete', `delete ${chosen.length} cards`)
+        removeAll.classList.add('dya-key--danger')
         removeAll.addEventListener('click', () => bulkDelete())
 
-        const clear = el('button', 'dya-button dya-button--quiet dya-button--sm', 'clear')
-        clear.type = 'button'
+        const clear = key('close', 'clear the selection')
         clear.addEventListener('click', () => clearMarks())
 
         marks.append(count, el('span', 'kanban-spacer'), moveAll, removeAll, clear)
@@ -1776,8 +1772,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             head.append(el('span', 'dya-name', `Run 1 - ${run.kind}`))
         }
         head.append(el('span', 'kanban-spacer'))
-        const raw = el('button', 'dya-button dya-button--quiet dya-button--sm', 'open transcript')
-        raw.type = 'button'
+        const raw = key('file', 'open the transcript', 'open the transcript this run wrote')
         raw.addEventListener('click', () => {
             void invoke<string | null>('transcriptPath', meta?.slug, card.id, run.runId)
                 .then(async (path) => {
@@ -1949,11 +1944,40 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * thread, where nobody looks for what to do with a card. The badge is pressable: this is
          * where the card is, press it to send it somewhere else.
          */
-        const heading = el('button', 'dya-chip kanban-drawer-state', rules.labels[shown(card)])
+        const heading = el('button', 'dya-button dya-button--sm kanban-drawer-state', rules.labels[shown(card)])
         heading.type = 'button'
         withTip(heading, 'move this card to another stage')
         heading.addEventListener('click', () => openMoveMenu(card.id, heading))
+        /*
+         * A blocked card waits for a person, so its state is lit red, and the answer is joined to
+         * it: a green check that returns the card to the phase it was blocked from. The title
+         * stands where the form's values start, so the head reads as the form's first row.
+         */
+        const state = el('span', 'dya-label')
+        if (shown(card) === 'blocked') {
+            heading.classList.add('dya-button--danger')
+            const unblock = key('check', 'unblock', `unblock: the card returns to ${card.sourcePhase ?? 'ready'}`)
+            unblock.classList.add('dya-key--success')
+            unblock.addEventListener('click', () => {
+                void invoke<Card>('unblock', meta?.slug, card.id, card.rev)
+                    .then((next) => {
+                        solved(card.id)
+                        say(`${next.title} returned to ${next.status}`)
+                        return refresh()
+                    })
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
+            })
+            const join = el('span', 'dya-join')
+            join.append(heading, unblock)
+            state.append(join)
+        } else {
+            state.append(heading)
+        }
         const named = el('span', 'dya-text kanban-drawer-title', card.title)
+        const lead = el('div', 'dya-pane kanban-drawer-lead')
+        const row = el('div', 'dya-form')
+        row.append(state, named)
+        lead.append(row)
         const sizeKey = key('expand', 'take the whole panel')
         const paintSize = (): void => {
             const full = inspector === 'full'
@@ -1991,7 +2015,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const close = key('close', 'close the card')
         close.addEventListener('click', () => select(null))
-        head.append(heading, named, sizeKey, close)
+        const keys = el('div', 'kanban-drawer-keys')
+        keys.append(sizeKey, close)
+        head.append(lead, keys)
         stage.replaceChildren(tabs, stageView)
 
         const form = el('div', 'dya-pane kanban-form')
@@ -2051,8 +2077,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         override.value = card.workdir ?? ''
         override.addEventListener('change', () => patch(card.id, { workdir: override.value.trim() || null }))
 
-        const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
-        browse.type = 'button'
+        const browse = key('folder', 'choose the directory')
         browse.disabled = card.locked
         browse.addEventListener('click', () => {
             void invoke<string | null>('pickWorkdir')
@@ -2110,7 +2135,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const files = el('div', 'dya-form__value')
 
         for (const file of card.attachments ?? []) {
-            const holder = el('span', 'kanban-file')
+            const holder = el('span', 'dya-join')
             const open = el('button', 'dya-chip', `${file.name} - ${size(file.bytes)}`)
             open.type = 'button'
             open.title = 'show this file on disk'
@@ -2139,8 +2164,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             files.appendChild(holder)
         }
 
-        const addFile = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add files')
-        addFile.type = 'button'
+        const addFile = key('attach', 'add files', 'attach files the agent reads with the brief')
         addFile.disabled = card.locked
         addFile.addEventListener('click', () => {
             void invoke<{ card: Card | null; refused: string[] } | null>(
@@ -2164,7 +2188,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const parents = el('div', 'dya-form__value')
         for (const parentId of card.parents) {
             const parent = cardById(parentId)
-            const holder = el('span', 'kanban-file')
+            const holder = el('span', 'dya-join')
             const chip = el('button', 'dya-chip', parent ? parent.title : parentId)
             chip.type = 'button'
             chip.title = 'open this card'
@@ -2181,8 +2205,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             holder.append(chip, drop)
             parents.appendChild(holder)
         }
-        const addParent = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add dependency')
-        addParent.type = 'button'
+        const addParent = key('link', 'add a dependency', 'a card this one waits for')
         addParent.addEventListener('click', () => openParentMenu(card, addParent))
         parents.append(addParent)
 
@@ -2344,8 +2367,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const at = el('input', 'dya-field dya-field--sm dya-field--auto')
             at.type = 'datetime-local'
             if (card.scheduledFor) at.value = local(card.scheduledFor)
-            const park = el('button', 'dya-button dya-button--quiet dya-button--sm', 'park')
-            park.type = 'button'
+            const park = key('clock', 'park it until then')
             park.addEventListener('click', () => {
                 const at2 = at.value ? new Date(at.value).getTime() : 0
                 if (!at2 || Number.isNaN(at2)) {
@@ -2367,32 +2389,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const actions = el('div', 'kanban-row')
 
-        if (shown(card) === 'blocked') {
-            const back = el('button', 'dya-button dya-button--sm', 'unblock')
-            back.type = 'button'
-            back.title = `returns it to ${card.sourcePhase ?? 'ready'}`
-            back.addEventListener('click', () => {
-                void invoke<Card>('unblock', meta?.slug, card.id, card.rev)
-                    .then((next) => {
-                        solved(card.id)
-                        say(`${next.title} returned to ${next.status}`)
-                        return refresh()
-                    })
-                    .catch((thrown: unknown) => failOn(card.id, thrown))
-            })
-            actions.append(back)
-        }
-
         if (shown(card) === 'review') {
-            const approve = el('button', 'dya-button dya-button--sm dya-button--success', 'approve')
-            approve.type = 'button'
+            const approve = key('check', 'approve', 'approve: the card is done')
+            approve.classList.add('dya-key--success')
             approve.addEventListener('click', () => move(card.id, 'done'))
-            const changes = el('button', 'dya-button dya-button--quiet dya-button--sm', 'request changes')
-            changes.type = 'button'
+            const changes = key('undo', 'request changes', 'request changes: the card goes back to ready')
             changes.addEventListener('click', () => move(card.id, 'ready'))
-            const ask = el('button', 'dya-button dya-button--quiet dya-button--sm', 'ask a reviewer')
-            ask.type = 'button'
-            ask.title = 'starts a second session that reads the branch and judges it'
+            const ask = key('reviewer', 'ask a reviewer', 'ask a reviewer: a second session reads the branch and judges it')
             ask.addEventListener('click', () => {
                 void invoke('reviewCard', meta?.slug, card.id)
                     .then(() => {
@@ -2405,8 +2408,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
 
         if (shown(card) === 'running') {
-            const stop = el('button', 'dya-button dya-button--sm dya-button--danger', 'stop')
-            stop.type = 'button'
+            const stop = key('stop', 'stop the worker', 'stop the worker; its conversation is kept')
+            stop.classList.add('dya-key--danger')
             stop.addEventListener('click', () => {
                 if (!window.confirm(`Stop the worker on '${card.title}'? Its conversation is kept.`)) return
                 void invoke('stopCard', meta?.slug, card.id)
@@ -2423,8 +2426,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * drawer, lit red like every key that unmakes something. It says what it deletes.
          */
         const danger = el('div', 'kanban-row kanban-danger')
-        const remove = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete this card')
-        remove.type = 'button'
+        const remove = key('delete', 'delete this card', 'delete this card and its history')
+        remove.classList.add('dya-key--danger')
         remove.addEventListener('click', () => {
             if (!window.confirm(`Delete '${card.title}'? Its history goes with it.`)) return
             void invoke('deleteCard', meta?.slug, card.id)
@@ -2460,6 +2463,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (card.runs.length) fields.append(label('runs'), runs)
         fields.append(label('thread'), thread)
 
+        actions.hidden = actions.childElementCount === 0
         form.append(problemRow, actions, fields, danger)
         const body = el('div', 'kanban-drawer-body')
         body.append(stage, form)

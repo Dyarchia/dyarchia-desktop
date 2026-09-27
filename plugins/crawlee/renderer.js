@@ -22,6 +22,31 @@ const PLUS =
 const BOOK =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>'
 
+/*
+ * The shared action glyphs, drawn as packages/sdk/src/glyphs.ts draws them. This file is served
+ * unbuilt, so it carries its own copy of the few it uses.
+ */
+const REFRESH =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>'
+
+const SEARCH =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5"/></svg>'
+
+const SAVE =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg>'
+
+const INSPECT =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+
+const DELETE =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>'
+
+const FOLDER =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>'
+
+const OPEN =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="m20 4-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
+
 const STYLE = `
 .crw-root {
     display: flex;
@@ -263,6 +288,15 @@ function el(tag, className, text) {
     return node
 }
 
+function iconKey(glyph, label, tone = '') {
+    const button = el('button', tone ? `dya-key ${tone}` : 'dya-key')
+    button.type = 'button'
+    button.innerHTML = glyph
+    button.title = label
+    button.setAttribute('aria-label', label)
+    return button
+}
+
 /*
  * A line as its program coloured it. Crawlee colours its own log -- the crawler's name grey, the
  * level in its colour -- and the console printed the escapes, so every line opened with a box
@@ -387,16 +421,16 @@ function firstUrl(yaml) {
 }
 
 /*
- * A control that asks before it does the thing it says. The first press turns it red and relabels
- * it with what is about to happen; the second press is the one that acts, and the caller owns
- * both. A few seconds of nothing puts it back, because an armed button left armed is a trap the
+ * A control that asks before it does the thing it says. The first press turns it into a red key
+ * that says in words what is about to happen, since a glyph cannot; the second press is the one
+ * that acts, and the caller owns both. A few seconds of nothing puts it back, because an armed button left armed is a trap the
  * next click springs.
  *
  * Not `window.confirm`: that is an operating-system window over a panel, it stops the renderer
  * dead while it is up, and it is the one thing on screen this design system does not draw.
  */
 function arming(button, prompt) {
-    const label = button.textContent
+    const face = button.innerHTML
     const tone = button.className
     let armed = false
     let timer = 0
@@ -404,17 +438,14 @@ function arming(button, prompt) {
     const reset = () => {
         armed = false
         window.clearTimeout(timer)
-        button.textContent = label
+        button.innerHTML = face
         button.className = tone
     }
-
-    const loud = [...new Set(tone.split(/\s+/).filter((name) => name && name !== 'dya-button--quiet'))]
-    if (!loud.includes('dya-button--danger')) loud.push('dya-button--danger')
 
     const arm = () => {
         armed = true
         button.textContent = prompt
-        button.className = loud.join(' ')
+        button.className = 'dya-button dya-button--sm dya-button--danger'
         window.clearTimeout(timer)
         timer = window.setTimeout(reset, 5000)
     }
@@ -621,7 +652,7 @@ function mount(ctx, container) {
          * `9 corpora` with four more on the disk, as confidently as it would have said fourteen.
          */
         const where = el('span', 'dya-meta crw-where')
-        const refresh = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Refresh')
+        const refresh = iconKey(REFRESH, 'Read the corpora again')
         head.append(el('span', 'dya-eyebrow', 'corpus'), headline, where, refresh)
 
         const table = el('table', 'dya-table dya-table--stack')
@@ -648,12 +679,8 @@ function mount(ctx, container) {
         commit.type = 'checkbox'
         commit.checked = true
         commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = el('button', 'dya-button dya-button--success')
-        run.innerHTML = PLAY
-        run.append('Run')
-        const stop = el('button', 'dya-button dya-button--danger')
-        stop.innerHTML = STOP
-        stop.append('Stop')
+        const run = iconKey(PLAY, 'Run the round', 'dya-key--success')
+        const stop = iconKey(STOP, 'Stop the round', 'dya-key--danger')
         stop.hidden = true
         const actionGroup = el('div', 'dya-bar__group')
         actionGroup.append(commitBox, run, stop)
@@ -901,13 +928,11 @@ function mount(ctx, container) {
             actions.append(el('span', 'dya-meta', `line ${hit.line}`))
         }
         if (ctx.shell.canOpen(hit.file)) {
-            const open = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Open')
-            open.title = `Open the snapshot at line ${hit.line}`
+            const open = iconKey(OPEN, `Open the snapshot at line ${hit.line}`)
             open.onclick = () => void ctx.shell.open({ path: hit.file, line: hit.line })
             actions.append(open)
         }
-        const reveal = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Reveal')
-        reveal.title = hit.file
+        const reveal = iconKey(FOLDER, `Show ${hit.file}`)
         reveal.onclick = () => void ctx.shell.reveal(hit.file)
         actions.append(reveal)
         return actions
@@ -921,7 +946,7 @@ function mount(ctx, container) {
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
-        const go = el('button', 'dya-button dya-button--primary', 'Search')
+        const go = iconKey(SEARCH, 'Search')
         bar.append(query, scopeBox, go)
 
         /*
@@ -1030,11 +1055,13 @@ function mount(ctx, container) {
 
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
-        const remove = el('button', 'dya-button dya-button--sm dya-button--danger', 'Delete')
-        const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
-        const save = el('button', 'dya-button dya-button--sm', 'Save')
-        const close = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
-        bar.append(title, remove, inspect, save, close)
+        const remove = iconKey(DELETE, 'Delete this target', 'dya-key--danger')
+        const inspect = iconKey(INSPECT, 'Inspect the profile')
+        const save = iconKey(SAVE, 'Save')
+        const close = iconKey(CLOSE, 'Close')
+        const sheetKeys = el('div', 'dya-bar__group')
+        sheetKeys.append(remove, inspect, save, close)
+        bar.append(title, sheetKeys)
 
         const yaml = buildYaml()
         const note = el('div', 'dya-text crw-note')
@@ -1063,7 +1090,7 @@ function mount(ctx, container) {
         const library = el('div', 'dya-sheet crw-sheet')
         library.hidden = true
         const libraryBar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
-        const libraryClose = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
+        const libraryClose = iconKey(CLOSE, 'Close the library')
         libraryBar.append(el('span', 'dya-title crw-status', 'Profile library'), libraryClose)
         const shelves = el('div', 'crw-library')
         const libraryNote = el('div', 'dya-text crw-note')
@@ -1454,7 +1481,7 @@ function mount(ctx, container) {
     }
 
     function buildForm() {
-            const node = el('div', 'dya-form crw-form')
+            const node = el('div', 'dya-pane dya-form crw-form')
             node.hidden = true
             const fields = {}
             for (const [key, label, placeholder] of [

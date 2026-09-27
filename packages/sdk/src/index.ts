@@ -3,6 +3,8 @@ export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
 export { hues } from './hues.js'
 export { brandIcon, ownIds } from './brands.js'
+export { glyph } from './glyphs.js'
+export type { GlyphName } from './glyphs.js'
 export type { Hue } from './hues.js'
 
 import type { Hue } from './hues.js'

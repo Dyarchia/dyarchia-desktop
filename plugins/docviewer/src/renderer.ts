@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { highlight, highlightLines, injectStyles } from '@dyarchia/sdk'
+import { glyph, highlight, highlightLines, injectStyles } from '@dyarchia/sdk'
 import type { OpenRequest, PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
@@ -59,16 +59,6 @@ const STYLES = `
     min-width: 0;
     overflow-y: auto;
     padding: var(--dya-space-5) var(--dya-space-6);
-}
-.docviewer-open {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-}
-.docviewer-open svg {
-    display: block;
-    width: 13px;
-    height: 13px;
 }
 .docviewer-invite {
     max-width: 420px;
@@ -205,8 +195,10 @@ export function activate(ctx: PluginContext): void {
             problem.hidden = true
 
             const save = document.createElement('button')
-            save.className = 'dya-button dya-button--quiet dya-button--sm docviewer-save'
-            save.textContent = 'Save'
+            save.className = 'dya-key docviewer-save'
+            save.innerHTML = glyph('save')
+            save.title = 'Save'
+            save.setAttribute('aria-label', 'Save')
             save.hidden = true
 
             header.append(name, unsaved, problem, modes, save)
@@ -352,15 +344,15 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * A word, not a bare icon. An empty panel says nothing, which leaves its bar as the
-             * only thing on the screen telling a reader what to do with it — and a 14px glyph in
-             * the far corner of an otherwise blank rectangle tells nobody anything. The bare
-             * variant is for a control beside something that already has a name.
+             * Opening is an icon key in the bar. An empty panel already says what it is for with
+             * the tile in its middle, so the bar's key does not have to spell it out as well.
              */
             function openButton(): HTMLButtonElement {
                 const button = document.createElement('button')
-                button.className = 'dya-button dya-button--quiet dya-button--sm docviewer-open'
-                button.innerHTML = `${DOCS_ICON}<span>Open</span>`
+                button.className = 'dya-key'
+                button.innerHTML = glyph('folder')
+                button.title = 'Open a document'
+                button.setAttribute('aria-label', 'Open a document')
                 button.onclick = () => void openFile()
                 return button
             }

@@ -78,7 +78,7 @@ inside a panel is divided by a horizontal line. `--dya-halo` means here: the ope
 Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning --marked
              --pending --ghosted --carried) card__header masthead brand carved splitter sheet (--side)
              well lanes lane (--accept --refuse) drop-line drop-box
-Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--active --success --danger --invite)
+Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)

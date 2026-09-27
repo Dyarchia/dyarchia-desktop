@@ -225,16 +225,36 @@ export const STYLES = `
     width: auto;
 }
 
+/*
+ * The head is the form's first row: the state in the label column, the title where the values
+ * start. It repeats the body's columns, so beside the stage the form's half is the head's half,
+ * and its lead keeps the form's padding and the gutter the form's scrollbar takes, so every
+ * column lands where the form's does. The keys stand over the end of the title's row.
+ */
 .kanban-drawer-head {
     flex: none;
-    gap: var(--dya-space-2);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0;
 }
 
-.kanban-drawer-state { flex: none; }
+.kanban-drawer-lead {
+    grid-area: 1 / 1;
+    padding: var(--dya-space-2) calc(var(--dya-space-3) + 8px) var(--dya-space-2) var(--dya-space-3);
+}
+
+.kanban-drawer-keys {
+    grid-area: 1 / 1;
+    justify-self: end;
+    align-self: center;
+    display: flex;
+    gap: var(--dya-space-2);
+    padding-inline-end: var(--dya-space-3);
+}
 
 .kanban-drawer-title {
-    flex: 1;
     min-width: 0;
+    padding-inline-end: calc(2 * var(--dya-size-control) + var(--dya-space-2));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -251,6 +271,7 @@ export const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     padding: var(--dya-space-3);
     display: flex;
     flex-direction: column;
@@ -267,6 +288,18 @@ export const STYLES = `
     .kanban-drawer[data-stage='true'] .kanban-form {
         grid-column: 1;
         grid-row: 1;
+    }
+
+    .kanban-drawer[data-stage='true'] .kanban-drawer-head {
+        grid-template-columns: minmax(360px, 1fr) minmax(0, 1fr);
+    }
+
+    .kanban-drawer[data-stage='true'] .kanban-drawer-keys {
+        grid-area: 1 / 2;
+    }
+
+    .kanban-drawer[data-stage='true'] .kanban-drawer-title {
+        padding-inline-end: 0;
     }
 
     .kanban-drawer[data-stage='true'] .kanban-stage {
@@ -309,12 +342,6 @@ export const STYLES = `
     flex-direction: column;
     gap: var(--dya-space-1);
     min-width: 0;
-}
-
-.kanban-file {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
 }
 
 .kanban-menu {

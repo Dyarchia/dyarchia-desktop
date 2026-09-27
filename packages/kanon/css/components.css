@@ -609,7 +609,9 @@
  * making one of the few things a plugin is built around, a board, a card, a target. Danger is
  * lit red: stop, and unmaking one of those same things. What lives inside them, a note, a file,
  * a dependency, is added and removed with plain keys. An icon key takes the green light for the
- * one key that makes such a thing. Lit inks over the key face measure 11.49 for the primary,
+ * one key that makes such a thing and the red one for the key that stops or unmakes it. A key that
+ * names a state which needs a person, a blocked card, is lit red as well, because there the light
+ * is the state's own. Lit inks over the key face measure 11.49 for the primary,
  * 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover step.
  */
 .dya-button--primary {
@@ -621,14 +623,16 @@
     --dya-lit: var(--dya-success);
 }
 
-.dya-button--danger {
+.dya-button--danger,
+.dya-key--danger {
     --dya-lit: var(--dya-danger);
 }
 
 .dya-button--primary,
 .dya-button--success,
 .dya-button--danger,
-.dya-key.dya-key--success:not(:disabled) {
+.dya-key.dya-key--success:not(:disabled),
+.dya-key.dya-key--danger:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -636,7 +640,8 @@
 .dya-button--primary:hover,
 .dya-button--success:hover,
 .dya-button--danger:hover,
-.dya-key.dya-key--success:not(:disabled):hover {
+.dya-key.dya-key--success:not(:disabled):hover,
+.dya-key.dya-key--danger:not(:disabled):hover {
     border-color: color-mix(in srgb, var(--dya-lit) 70%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -644,7 +649,8 @@
 .dya-button--primary::after,
 .dya-button--success::after,
 .dya-button--danger::after,
-.dya-key.dya-key--success:not(:disabled)::after {
+.dya-key.dya-key--success:not(:disabled)::after,
+.dya-key.dya-key--danger:not(:disabled)::after {
     content: "";
     position: absolute;
     inset: -1px;
@@ -783,6 +789,42 @@
 .dya-key > svg {
     width: 15px;
     height: 15px;
+}
+
+/*
+ * Keys joined into one: a state and the key that resolves it, a value and the key that clears
+ * it. They share one edge and the small height, the corners between them go square, and each
+ * keeps its own light, so a red state beside a green check reads as one control with two answers.
+ * The small height is what lets a state and its answer stand in a form's label column.
+ */
+.dya-join {
+    display: inline-flex;
+    align-items: stretch;
+    flex: none;
+}
+
+.dya-join > * {
+    height: var(--dya-size-control-sm);
+}
+
+.dya-join > .dya-key {
+    width: var(--dya-size-control-sm);
+}
+
+.dya-join > :not(:first-child) {
+    margin-inline-start: calc(-1 * var(--dya-border-width));
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+}
+
+.dya-join > :not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.dya-join > :hover,
+.dya-join > :focus-visible {
+    z-index: 1;
 }
 
 [interestfor] {

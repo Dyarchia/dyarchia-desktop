@@ -2,12 +2,6 @@ export interface PanelDescriptor {
     id: string
     title: string
     icon: string
-    /*
-     * One line saying what this panel is for, shown on its tile when nothing is open. The shell
-     * has to offer the panels before anybody has seen them, and a grid of names alone is a menu
-     * for somebody who already knows the product.
-     */
-    note?: string
     duplicable?: boolean
     /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is the menu. */
     toolbar?: number

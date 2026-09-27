@@ -84,7 +84,6 @@ export function activate(ctx: PluginContext): void {
             id: 'player',
             title: 'Player',
             icon: PLAYER_ICON,
-            note: 'Play audio and video from this machine, without leaving the window.',
             duplicable: true
         },
         (container) => {
@@ -119,7 +118,7 @@ export function activate(ctx: PluginContext): void {
                 const button = document.createElement('button')
                 button.className = 'dya-key'
                 button.innerHTML = glyph('folder')
-                button.title = 'Open a file'
+                button.title = 'Open'
                 button.setAttribute('aria-label', 'Open a file')
                 button.onclick = () => void openMedia()
                 return button
@@ -145,9 +144,7 @@ export function activate(ctx: PluginContext): void {
                 tile.type = 'button'
                 tile.innerHTML =
                     `<span class="dya-tile__icon">${PLAYER_ICON}</span>` +
-                    '<span class="dya-tile__name">Play something</span>' +
-                    '<span class="dya-tile__note">Video or audio this machine already holds. ' +
-                    'It plays here, in the panel, and the dock keeps it where you put it.</span>'
+                    '<span class="dya-tile__name">Open</span>'
                 tile.onclick = () => void openMedia()
 
                 if (message) {

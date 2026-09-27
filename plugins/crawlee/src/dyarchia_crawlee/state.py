@@ -38,6 +38,7 @@ class CorpusState:
     generated_at: datetime | None = None
     swept_at: datetime | None = None
     stale: bool = False
+    first_run: bool = False
     changed: bool = False
     added: int = 0
     removed: int = 0
@@ -58,6 +59,7 @@ class CorpusState:
             'generated_at': self.generated_at.isoformat() if self.generated_at else None,
             'swept_at': self.swept_at.isoformat() if self.swept_at else None,
             'stale': self.stale,
+            'first_run': self.first_run,
             'changed': self.changed,
             'added': self.added,
             'removed': self.removed,
@@ -161,6 +163,7 @@ def _corpus(target: digest.DigestTarget, settings: Settings) -> CorpusState:
         generated_at=target.generated_at,
         swept_at=target.swept_at,
         stale=target.stale,
+        first_run=target.first_run,
         changed=target.changed,
         error=target.error,
         reordered=len(target.reordered),

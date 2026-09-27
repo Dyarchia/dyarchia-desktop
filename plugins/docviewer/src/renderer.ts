@@ -158,7 +158,6 @@ export function activate(ctx: PluginContext): void {
             id: 'docviewer',
             title: 'Docs',
             icon: DOCS_ICON,
-            note: 'Read markdown with its diagrams, or edit any text file, in colour.',
             duplicable: true
         },
         (container) => {
@@ -239,7 +238,7 @@ export function activate(ctx: PluginContext): void {
                     })) as WriteResult
                     if (result.stale) {
                         overwrite = true
-                        say('changed on disk since it was opened')
+                        say('changed on disk')
                         syncModes()
                         return
                     }
@@ -327,9 +326,7 @@ export function activate(ctx: PluginContext): void {
                 tile.type = 'button'
                 tile.innerHTML =
                     `<span class="dya-tile__icon">${DOCS_ICON}</span>` +
-                    '<span class="dya-tile__name">Open a document</span>' +
-                    '<span class="dya-tile__note">Markdown renders, everything else is coloured ' +
-                    'as code, and both can be edited and saved here.</span>'
+                    '<span class="dya-tile__name">Open</span>'
                 tile.onclick = () => void openFile()
 
                 if (message) {
@@ -351,8 +348,8 @@ export function activate(ctx: PluginContext): void {
                 const button = document.createElement('button')
                 button.className = 'dya-key'
                 button.innerHTML = glyph('folder')
-                button.title = 'Open a document'
-                button.setAttribute('aria-label', 'Open a document')
+                button.title = 'Open'
+                button.setAttribute('aria-label', 'Open')
                 button.onclick = () => void openFile()
                 return button
             }

@@ -213,8 +213,7 @@ export function activate(ctx: PluginContext): void {
         {
             id: 'settings',
             title: 'Setup',
-            icon: GEAR_ICON,
-            note: 'Choose what this installation loads, and see where it writes.'
+            icon: GEAR_ICON
         },
         (container) => {
         const root = el('div', 'set')
@@ -241,10 +240,9 @@ export function activate(ctx: PluginContext): void {
         log.hidden = true
 
         const foot = el('div', 'set-foot')
-        const note = el('span', 'dya-text set-foot-note')
-        const restart = el('button', 'dya-button dya-button--sm', 'Restart now') as HTMLButtonElement
+        const restart = el('button', 'dya-button dya-button--sm', 'Restart to apply') as HTMLButtonElement
         restart.hidden = true
-        foot.append(note, restart)
+        foot.append(restart)
 
         root.append(scroll, log, foot, tips)
         container.append(root)
@@ -271,11 +269,7 @@ export function activate(ctx: PluginContext): void {
         }
 
         function refreshFoot(): void {
-            const changed = pendingRestart()
-            restart.hidden = !changed
-            note.textContent = changed
-                ? 'A plugin only loads at startup, so these changes take effect on the next launch.'
-                : `${wanted.size} of ${optional.length} optional plugins enabled.`
+            restart.hidden = !pendingRestart()
         }
 
         async function persist(): Promise<void> {
@@ -292,7 +286,7 @@ export function activate(ctx: PluginContext): void {
         function acquireWith(entry: CatalogueEntry): void {
             const requires = entry.manifest.requires ?? []
             if (!requires.some((requirement) => requirement.withPlugin)) return
-            say(`${entry.manifest.name} is on, so what it comes with is installed now`)
+            say(`installing what ${entry.manifest.name} needs`)
             void ctx.invoke('acquire', {
                 pluginId: entry.manifest.id,
                 directory: entry.directory,
@@ -313,7 +307,7 @@ export function activate(ctx: PluginContext): void {
                     `dya-badge ${status.met ? 'dya-badge--success' : 'dya-badge--warning'}`,
                     status.label
                 )
-                withTip(chip, `${status.met ? 'ready' : 'needed'} — ${status.detail.replace(/\s+/g, ' ').trim()}`)
+                if (!status.met) withTip(chip, status.detail)
                 strip.append(chip)
             }
             box.append(strip)
@@ -330,15 +324,8 @@ export function activate(ctx: PluginContext): void {
             const install = el('button', 'dya-button dya-button--primary', 'Install') as HTMLButtonElement
             row.append(install)
 
-            const hint = requires.find((requirement) => requirement.note)?.note
-            /* The one number in that sentence is the part somebody decides on. The sentence is
-             * the tip. */
-            if (hint) {
-                const size = /\d+(?:\.\d+)?\s*[GMK]B/i.exec(hint)?.[0]
-                const tag = el('span', 'dya-tag', size ? size.toUpperCase() : 'what it needs')
-                withTip(tag, hint)
-                row.append(tag)
-            }
+            const size = requires.find((requirement) => requirement.note)?.note
+            if (size) row.append(el('span', 'dya-tag', size))
             install.addEventListener('click', () => {
                 install.disabled = true
                 install.textContent = 'Installing…'
@@ -384,9 +371,7 @@ export function activate(ctx: PluginContext): void {
             }
 
             if (entry.manifest.data && home) {
-                const where = el('span', 'dya-mono dya-text set-where', under(entry.manifest.data))
-                withTip(where, 'where what this plugin makes for you is kept')
-                body.append(where)
+                body.append(el('span', 'dya-mono dya-text set-where', under(entry.manifest.data)))
             }
 
             const needs = el('div', 'set-needs')
@@ -449,7 +434,7 @@ export function activate(ctx: PluginContext): void {
                     const open = el('button', 'dya-key')
                     open.innerHTML = glyph('folder')
                     open.setAttribute('aria-label', `Open ${label.toLowerCase()}`)
-                    withTip(open, 'show this folder')
+                    withTip(open, 'Open')
                     open.addEventListener('click', () => void ctx.shell.reveal(value))
                     last.append(open)
                 }
@@ -493,10 +478,7 @@ export function activate(ctx: PluginContext): void {
                 const body = el('tbody')
                 for (const entry of core) {
                     const row = el('tr', 'dya-row')
-                    row.append(
-                        named(entry, 'td', 'dya-table__name'),
-                        el('td', 'dya-table__prose', entry.manifest.description ?? '')
-                    )
+                    row.append(named(entry, 'td', 'dya-table__name'))
                     body.append(row)
                 }
                 table.append(body)

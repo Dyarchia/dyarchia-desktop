@@ -160,7 +160,6 @@ const ICONS = {
     eye: `${STROKE}<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
     pulse: `${STROKE}<polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg>`,
     plus: `${STROKE}<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
-    minus: `${STROKE}<line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     sliders: `${STROKE}<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.5" fill="var(--dya-chassis)"/><circle cx="15" cy="17" r="2.5" fill="var(--dya-chassis)"/></svg>`,
     branch: `${STROKE}<circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 7.5v9"/><path d="M18 10.5c0 4-12 3-12 6"/></svg>`,
     expand: `${STROKE}<polyline points="15 4 20 4 20 9"/><polyline points="9 20 4 20 4 15"/><line x1="20" y1="4" x2="14" y2="10"/><line x1="4" y1="20" x2="10" y2="14"/></svg>`,
@@ -659,7 +658,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         fold.type = 'button'
         const apply = (closed: boolean): void => {
             shell.dataset.collapsed = String(closed)
-            fold.innerHTML = ICONS[closed ? 'plus' : 'minus']
+            fold.innerHTML = glyph(closed ? 'unfold' : 'fold')
+            fold.setAttribute('aria-label', closed ? `show ${label}` : `fold ${label}`)
             withTip(fold, closed ? `show ${label}` : `fold ${label}`)
             fold.setAttribute('aria-expanded', String(!closed))
         }

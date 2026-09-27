@@ -316,6 +316,7 @@ export async function unblock(slug: string, id: string, rev: number): Promise<Ca
     card.status = card.sourcePhase ?? 'ready'
     card.blockKind = null
     card.sourcePhase = null
+    card.protocolViolations = 0
     touch(card)
     await save(slug, file)
     await events.record(slug, card.id, 'unblocked', `returned to ${card.status}`)

@@ -173,7 +173,7 @@ function since(from: number, now: number): string | null {
 }
 
 /* The states a card is on its way to an agent in. Everywhere else, naming one would be a guess. */
-const DISPATCHING = new Set<Status>(['todo', 'scheduled', 'ready', 'running', 'review'])
+const DISPATCHING = new Set<Status>(['scheduled', 'ready', 'running', 'review'])
 
 function size(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`
@@ -649,7 +649,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const status = shown(card)
         const tone = rules?.tone[status] ?? 'idle'
-        const blocked = card.parents.length > 0 && status === 'todo'
+        const blocked =
+            status === 'ready' &&
+            card.parents.some((id) => {
+                const parent = cards.find((entry) => entry.id === id)
+                return parent !== undefined && parent.status !== 'done' && parent.status !== 'archived'
+            })
         const live = status === 'running' ? progress.get(card.id) : undefined
 
         /*
@@ -2162,7 +2167,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (shown(card) === 'blocked') {
             const back = el('button', 'dya-button dya-button--sm', 'unblock')
             back.type = 'button'
-            back.title = `returns it to ${card.sourcePhase ?? 'ready'}, or to todo while parents are open`
+            back.title = `returns it to ${card.sourcePhase ?? 'ready'}`
             back.addEventListener('click', () => {
                 void invoke<Card>('unblock', meta?.slug, card.id, card.rev)
                     .then((next) => {
@@ -2650,7 +2655,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 [entry.counts.review, 'in review', 'dya-tag'],
                 [entry.counts.blocked, 'blocked', 'dya-badge dya-badge--warning'],
                 [
-                    entry.counts.todo + entry.counts.triage + entry.counts.scheduled,
+                    entry.counts.triage + entry.counts.scheduled,
                     'waiting',
                     'dya-tag'
                 ]

@@ -157,15 +157,15 @@ async function machine(): Promise<void> {
     check('the board is registered', meta.slug, 'probe')
 
     await refuses('a relative workdir', () => boards.create({ slug: 'x', name: 'x', workdir: 'rel' }), 'absolute')
-    await refuses('a missing workdir', () => boards.create({ slug: 'y', name: 'y', workdir: join(workdir, 'nope') }), 'existing directory')
+    check('a missing workdir is made', existsSync((await boards.create({ slug: 'y', name: 'y', workdir: join(workdir, 'nope') })).workdir), true)
+    await boards.forget('y')
 
     const parent = await board.createCard('probe', { title: 'parent', status: 'ready' })
     const child = await board.createCard('probe', { title: 'child', status: 'ready', parents: [parent.id] })
-    check('a card with open parents cannot start ready', child.status, 'todo')
+    check('a card with open parents may wait in ready', child.status, 'ready')
 
     await refuses('a cycle', () => board.updateCard('probe', parent.id, { parents: [child.id] }), 'cycle')
     await refuses('a stale rev', () => board.moveCard('probe', parent.id, 99, 'triage'), 'changed while you were')
-    await refuses('a move with open parents', () => board.moveCard('probe', child.id, child.rev, 'ready'), 'open dependencies')
     await refuses('deleting a card something depends on', () => board.deleteCard('probe', parent.id), 'depends on that card')
     await refuses('an illegal transition', () => board.moveCard('probe', parent.id, parent.rev, 'done'), 'cannot go from')
 
@@ -173,10 +173,8 @@ async function machine(): Promise<void> {
     board.find(file, parent.id).status = 'done'
     await board.save('probe', file)
 
-    check('nothing promotes before the sweep', (await board.cards('probe')).find((c) => c.id === child.id)?.status, 'todo')
-    check('the sweep promotes it', await board.promote('probe', Date.now()), true)
-    check('the child is ready', (await board.cards('probe')).find((c) => c.id === child.id)?.status, 'ready')
-    check('a second sweep changes nothing', await board.promote('probe', Date.now()), false)
+    check('its parent closed, the child is still ready', (await board.cards('probe')).find((c) => c.id === child.id)?.status, 'ready')
+    check('and the sweep has nothing to promote', await board.promote('probe', Date.now()), false)
 
     console.log('\nblocking and unblocking')
     file = await board.load('probe')
@@ -484,9 +482,9 @@ async function caps(): Promise<void> {
     await boards.saveSettings({ maxRunning: boards.GLOBAL })
 
     const counted = board.tally(await board.cards('probe'))
-    check('the tally counts every status it is given', counted.done + counted.ready + counted.todo > 0, true)
+    check('the tally counts every status it is given', counted.done + counted.ready > 0, true)
     check('a status nothing is in counts zero, not undefined', counted.archived, 0)
-    check('and the tally has a row per status', Object.keys(counted).length, 9)
+    check('and the tally has a row per status', Object.keys(counted).length, 8)
 }
 
 async function bulk(): Promise<void> {
@@ -506,11 +504,12 @@ async function bulk(): Promise<void> {
             { id: two.id, rev: two.rev },
             { id: three.id, rev: three.rev }
         ],
-        'todo'
+        'ready'
     )
-    check('the legal ones move', moved.done.length, 2)
-    check('and the illegal one says why', moved.refused[0]?.why.includes('cannot go from ready to todo'), true)
-    check('the board agrees', (await board.cards('bulk')).filter((card) => card.status === 'todo').length, 2)
+    check('the legal ones move', moved.done.length, 3)
+    check('the board agrees', (await board.cards('bulk')).filter((card) => card.status === 'ready').length, 3)
+    const back = await board.moveCards('bulk', (await board.cards('bulk')).map((card) => ({ id: card.id, rev: card.rev })), 'done')
+    check('and an illegal move says why', back.refused[0]?.why.includes('cannot go from ready to done'), true)
 
     const stale = await board.moveCards('bulk', [{ id: one.id, rev: 0 }], 'ready')
     check('a stale rev is refused in a batch too', stale.refused[0]?.why.includes('changed while'), true)
@@ -520,7 +519,7 @@ async function bulk(): Promise<void> {
     const already = same.find((card) => card.id === one.id) as Card
     check(
         'moving a card where it already is is not a refusal',
-        (await board.moveCards('bulk', [{ id: already.id, rev: already.rev }], 'todo')).done.length,
+        (await board.moveCards('bulk', [{ id: already.id, rev: already.rev }], 'ready')).done.length,
         1
     )
 

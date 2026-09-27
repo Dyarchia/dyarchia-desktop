@@ -2,7 +2,6 @@ import type { Rules, Status } from './types.js'
 
 const ORDER: Status[] = [
     'triage',
-    'todo',
     'scheduled',
     'ready',
     'running',
@@ -15,12 +14,11 @@ const ORDER: Status[] = [
 const CLOSED: Status[] = ['done', 'archived']
 
 const ALLOW: Record<Status, Status[]> = {
-    triage: ['todo', 'ready'],
-    todo: ['ready', 'triage'],
+    triage: ['ready'],
     scheduled: ['ready', 'triage'],
     ready: ['scheduled', 'triage'],
     running: [],
-    blocked: ['ready', 'review', 'todo', 'triage', 'archived'],
+    blocked: ['ready', 'review', 'triage', 'archived'],
     review: ['done', 'ready'],
     done: ['archived'],
     archived: []
@@ -35,7 +33,6 @@ const CONFIRM: Record<string, string> = {
 
 const LABELS: Record<Status, string> = {
     triage: 'triage',
-    todo: 'todo',
     scheduled: 'scheduled',
     ready: 'ready',
     running: 'running',
@@ -47,7 +44,6 @@ const LABELS: Record<Status, string> = {
 
 const TONE: Record<Status, string> = {
     triage: 'idle',
-    todo: 'idle',
     scheduled: 'idle',
     ready: 'idle',
     running: 'success',

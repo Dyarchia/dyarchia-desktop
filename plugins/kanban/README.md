@@ -67,7 +67,8 @@ opencode   opencode run --format json, child         launched via its .exe; --di
 
 - Liveness has three values, and `UNKNOWN` is treated as alive, never as dead.
 - The respawn guard holds a card for 60 s after a completed run and indefinitely after a quota or auth error.
-- A launch or sign-in failure never counts: a sign-in race retries in two minutes, anything else blocks as `needs_input`.
+- A launch or sign-in failure never counts: a sign-in race retries in two minutes, a second one in a
+  row or any other account error blocks as `needs_input` until you sign in again.
 - Three consecutive protocol violations block the card as `capability`.
 - Two consecutive failures on one card trip its circuit breaker (`maxRetries` per card).
 - A `blocked` worker waits on a person and is never reclaimed; a `working` one silent 1 h past 4 h of age is stalled.

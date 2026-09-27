@@ -136,7 +136,7 @@ export function activate(ctx: PluginContext): void {
         const terminal = new Terminal({
             fontFamily: ctx.token('font-mono'),
             fontSize: 13,
-            cursorBlink: true,
+            cursorBlink: false,
             allowProposedApi: true,
             minimumContrastRatio: 4.5,
             scrollback: 10000,

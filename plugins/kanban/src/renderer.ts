@@ -1862,7 +1862,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     failOn(card.id, thrown)
                 )
             })
-            const drop = el('button', 'dya-key dya-key--danger', '×')
+            const drop = el('button', 'dya-key', '×')
             drop.type = 'button'
             drop.title = `remove ${file.name} from this card`
             drop.disabled = card.locked
@@ -1881,7 +1881,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             files.appendChild(holder)
         }
 
-        const addFile = el('button', 'dya-button dya-button--success dya-button--sm', 'add files')
+        const addFile = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add files')
         addFile.type = 'button'
         addFile.disabled = card.locked
         addFile.addEventListener('click', () => {
@@ -1912,7 +1912,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             chip.title = 'open this card'
             chip.disabled = !parent
             chip.addEventListener('click', () => select(parentId))
-            const drop = el('button', 'dya-key dya-key--danger', '×')
+            const drop = el('button', 'dya-key', '×')
             drop.type = 'button'
             drop.title = 'remove this dependency'
             drop.disabled = card.locked
@@ -1922,7 +1922,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             holder.append(chip, drop)
             parents.appendChild(holder)
         }
-        const addParent = el('button', 'dya-button dya-button--success dya-button--sm', 'add dependency')
+        const addParent = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add dependency')
         addParent.type = 'button'
         addParent.addEventListener('click', () => openParentMenu(card, addParent))
         parents.append(addParent)
@@ -1931,7 +1931,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         for (const entry of card.comments) {
             const item = el('div', 'kanban-comment')
             const itemHead = el('div', 'kanban-comment-head')
-            const forget = el('button', 'dya-key dya-key--danger', '×')
+            const forget = el('button', 'dya-key', '×')
             forget.type = 'button'
             forget.title = 'delete this note'
             forget.addEventListener('click', () => {
@@ -1974,7 +1974,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             leave()
         })
         note.addEventListener('blur', leave)
-        const post = el('button', 'dya-button dya-button--success dya-button--sm', 'add note')
+        const post = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add note')
         post.type = 'button'
         post.addEventListener('click', leave)
         thread.append(note, post)

@@ -104,6 +104,13 @@ function pretty(model: string): string {
     return `${match[1][0].toUpperCase()}${match[1].slice(1)} ${match[2].replaceAll('-', '.')}`
 }
 
+const PROVIDERS: Record<string, string> = {
+    opencode: 'OpenCode Zen',
+    'opencode-go': 'OpenCode Go',
+    openrouter: 'OpenRouter',
+    'kimi-code': 'Kimi Code'
+}
+
 const PERMISSIONS = ['acceptEdits', 'auto', 'bypassPermissions', 'manual', 'dontAsk', 'plan']
 const OTHER = '\u2026'
 const WORKSPACES: [string, string][] = [
@@ -975,13 +982,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shown.type = 'button'
         shown.appendChild(document.createElement('selectedcontent'))
         select.appendChild(shown)
-        let family: string | null = null
         for (const value of values) {
             const entry = labels[value] ?? value
             const [text, note] = typeof entry === 'string' ? [entry, ''] : entry
-            const prefix = value.includes('/') ? value.slice(0, value.indexOf('/')) : null
-            if (prefix && family && prefix !== family) select.appendChild(el('hr'))
-            if (prefix) family = prefix
             const option = el('option', undefined, text)
             if (note) option.appendChild(el('span', 'dya-select__note', note))
             option.value = value
@@ -991,6 +994,63 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         select.addEventListener('change', () => apply(select.value))
         wrap.appendChild(select)
+        return wrap
+    }
+
+    /*
+     * A choice from a list long enough to want searching: a key drawn as a select that opens the
+     * menu with its filter field, where every word typed must appear in the entry. A value with a
+     * provider in front of it is grouped under that provider and shown without it.
+     */
+    const pick = (
+        what: string,
+        current: string,
+        values: string[],
+        labels: Record<string, string | [string, string]>,
+        disabled: boolean,
+        apply: (value: string) => void
+    ): HTMLElement => {
+        const wrap = el('span', 'dya-select kanban-select')
+        const key = el('button', 'dya-field')
+        key.type = 'button'
+        key.disabled = disabled
+        key.setAttribute('aria-label', what)
+        key.setAttribute('aria-haspopup', 'menu')
+        const text = (value: string): [string, string] => {
+            const entry = labels[value] ?? value
+            return typeof entry === 'string' ? [entry, ''] : entry
+        }
+        const shown = (value: string): string => {
+            const slash = value.indexOf('/')
+            const label = text(value)[0]
+            return slash > 0 && label === value ? value.slice(slash + 1) : label
+        }
+        key.textContent = shown(current)
+        key.title = text(current)[0]
+        key.addEventListener('click', () => {
+            const rows: MenuRow[] = values.map((value) => {
+                const slash = value.indexOf('/')
+                const provider = slash > 0 ? value.slice(0, slash) : ''
+                const note = text(value)[1]
+                return {
+                    key: value,
+                    label: shown(value),
+                    note: note || undefined,
+                    group: provider ? (PROVIDERS[provider] ?? provider) : '',
+                    direct: true,
+                    selected: value === current,
+                    leaves: [{ label: shown(value), value }]
+                }
+            })
+            openMenu({
+                anchor: key,
+                rows,
+                search: true,
+                filter: `search ${what}s`,
+                onPick: (row) => apply(row.key)
+            })
+        })
+        wrap.appendChild(key)
         return wrap
     }
 
@@ -1059,7 +1119,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         custom.addEventListener('change', () => apply({ model: custom.value.trim() || null }))
         const modelCell = el('div', 'kanban-model')
         modelCell.appendChild(
-            choose('model', listed ? (current.model ?? '') : OTHER, ['', ...models, OTHER], modelLabels, disabled, (value) => {
+            pick('model', listed ? (current.model ?? '') : OTHER, ['', ...models, OTHER], modelLabels, disabled, (value) => {
                 if (value === OTHER) {
                     custom.hidden = false
                     custom.focus()

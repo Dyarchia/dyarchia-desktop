@@ -361,7 +361,8 @@ Every setting is a native `select`: harness, model and effort per phase, permiss
 workspace kind. A blank inherits: its option shows what it inherits, `Claude Code` or
 `Opus 5.5`, noted `follows the board` in the list, or `default` when the harness decides. A
 Claude alias is named by the newest model of its family in the account's recent transcripts, a
-Kimi alias by its `display_name`, and a list that spans providers is divided by provider. The bar carries the board
+Kimi alias by its `display_name`. The model is picked from the board's menu with its search
+field, where every word typed must appear, grouped by provider when the ids carry one. The bar carries the board
 name, then three keys for that board (new, settings, worktrees), then dispatch and watch;
 every icon-only control opens a tip on hover or focus and carries an `aria-label`. The board
 picker lists boards and nothing else.

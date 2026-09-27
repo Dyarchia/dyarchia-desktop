@@ -622,13 +622,13 @@
  * glow cast on the glass around the key. The glow is still: nothing in this system animates for as
  * long as a panel is open, and a light that breathed would be the one thing on screen that did.
  *
- * Three lights for keys. The primary is lit in the accent, the one action a view is about, at
- * most one per view. Success is lit green and is every key that makes something: run, approve,
- * create, add, install, save. Danger is lit red and is every key that unmakes it: stop, delete,
- * remove. Whatever can be made can be unmade, so a green key has a red one somewhere for the
- * same thing. An icon key takes the same two lights. Lit inks over the key face measure 11.49
- * for the primary, 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover
- * step.
+ * Three lights for keys, and they are spent sparingly. The primary is lit in the accent, the one
+ * action a view is about, at most one per view. Success is lit green: go, run, approve, and
+ * making one of the few things a plugin is built around, a board, a card, a target. Danger is
+ * lit red: stop, and unmaking one of those same things. What lives inside them, a note, a file,
+ * a dependency, is added and removed with plain keys. An icon key takes the green light for the
+ * one key that makes such a thing. Lit inks over the key face measure 11.49 for the primary,
+ * 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover step.
  */
 .dya-button--primary {
     --dya-lit: var(--dya-accent);
@@ -639,16 +639,14 @@
     --dya-lit: var(--dya-success);
 }
 
-.dya-button--danger,
-.dya-key--danger {
+.dya-button--danger {
     --dya-lit: var(--dya-danger);
 }
 
 .dya-button--primary,
 .dya-button--success,
 .dya-button--danger,
-.dya-key.dya-key--success:not(:disabled),
-.dya-key.dya-key--danger:not(:disabled) {
+.dya-key.dya-key--success:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -656,8 +654,7 @@
 .dya-button--primary:hover,
 .dya-button--success:hover,
 .dya-button--danger:hover,
-.dya-key.dya-key--success:not(:disabled):hover,
-.dya-key.dya-key--danger:not(:disabled):hover {
+.dya-key.dya-key--success:not(:disabled):hover {
     border-color: color-mix(in srgb, var(--dya-lit) 70%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -665,8 +662,7 @@
 .dya-button--primary::after,
 .dya-button--success::after,
 .dya-button--danger::after,
-.dya-key.dya-key--success:not(:disabled)::after,
-.dya-key.dya-key--danger:not(:disabled)::after {
+.dya-key.dya-key--success:not(:disabled)::after {
     content: "";
     position: absolute;
     inset: -1px;

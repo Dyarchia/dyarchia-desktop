@@ -95,7 +95,7 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
     const clearIndicators = (): void => {
         for (const entry of measured) {
             entry.column.indicator.hidden = true
-            delete entry.column.root.dataset.drop
+            entry.column.root.classList.remove('dya-lane--accept', 'dya-lane--refuse')
         }
     }
 
@@ -109,7 +109,8 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
         }
 
         if (target) {
-            target.column.root.dataset.drop = target.legal ? 'accept' : 'refuse'
+            target.column.root.classList.remove('dya-lane--accept', 'dya-lane--refuse')
+            target.column.root.classList.add(target.legal ? 'dya-lane--accept' : 'dya-lane--refuse')
             if (target.legal) placeIndicator(target)
             else target.column.indicator.hidden = true
         }
@@ -138,14 +139,14 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
 
         const box = (source as HTMLElement).getBoundingClientRect()
         const copy = (source as HTMLElement).cloneNode(true) as HTMLElement
-        copy.classList.add('kanban-ghost')
+        copy.classList.add('dya-card--carried', 'kanban-ghost')
         copy.style.width = `${box.width}px`
         copy.style.marginLeft = `${box.left - pointerX}px`
         copy.style.marginTop = `${box.top - pointerY}px`
         document.body.appendChild(copy)
         ghost = copy
 
-        ;(source as HTMLElement).dataset.dragging = 'true'
+        ;(source as HTMLElement).classList.add('dya-card--ghosted')
         root.dataset.dragging = 'true'
         frame = requestAnimationFrame(tick)
         paint()
@@ -160,7 +161,7 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
         ghost?.remove()
         ghost = null
 
-        if (source) delete source.dataset.dragging
+        if (source) source.classList.remove('dya-card--ghosted')
         delete root.dataset.dragging
 
         if (started) host.gesture(false)

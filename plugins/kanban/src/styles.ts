@@ -4,9 +4,6 @@ export const STYLES = `
     flex-direction: column;
     height: 100%;
     min-height: 0;
-    color: var(--dya-text);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body);
 }
 
 .kanban-bar {
@@ -14,22 +11,13 @@ export const STYLES = `
     gap: var(--dya-space-2);
 }
 
-.kanban-bar-sep {
-    flex: none;
-    width: var(--dya-border-width);
-    height: 16px;
-    margin: 0 var(--dya-space-1);
-    background: var(--dya-hairline);
-}
-
-.kanban-health-button {
+.kanban-health-mark {
     display: inline-flex;
     align-items: center;
     gap: var(--dya-space-1);
-    color: var(--dya-warning);
 }
 
-.kanban-health-button > svg {
+.kanban-health-mark > svg {
     width: 14px;
     height: 14px;
 }
@@ -51,19 +39,10 @@ export const STYLES = `
     align-items: stretch;
 }
 
-/*
- * The stages are strips of one board, not cards on it: flush, darker than the glass, with a
- * hairline between each and the next. The hairline is the board's own ground showing through a
- * one-pixel gap, so there is no border to double up where two stages meet.
- */
 .kanban-board {
     flex: 1;
     min-width: 0;
     min-height: 0;
-    display: flex;
-    align-items: stretch;
-    gap: var(--dya-border-width);
-    background: var(--dya-hairline);
     overflow-x: auto;
     overflow-y: hidden;
 }
@@ -71,10 +50,6 @@ export const STYLES = `
 .kanban-column {
     flex: 1 1 168px;
     min-width: 168px;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--dya-chassis);
 }
 
 .kanban-column[data-collapsed='true'] {
@@ -143,13 +118,7 @@ export const STYLES = `
 
 .kanban-column-title { flex: 1; min-width: 0; }
 
-.kanban-count {
-    flex: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-4);
-}
+.kanban-count { flex: none; }
 
 .kanban-scroll {
     position: relative;
@@ -158,9 +127,6 @@ export const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-2) var(--dya-space-3) var(--dya-space-3);
 }
-
-.kanban-column[data-drop='accept'] .kanban-scroll { background: var(--dya-accent-soft); }
-.kanban-column[data-drop='refuse'] .kanban-scroll { background: var(--dya-danger-soft); }
 
 .kanban-list {
     display: flex;
@@ -173,9 +139,6 @@ export const STYLES = `
     left: var(--dya-space-2);
     right: var(--dya-space-2);
     top: var(--dya-space-2);
-    height: 2px;
-    background: var(--dya-accent);
-    pointer-events: none;
     transition: transform var(--dya-dur-fast) var(--dya-ease);
 }
 
@@ -186,9 +149,6 @@ export const STYLES = `
  */
 .kanban-drop {
     display: none;
-    min-height: var(--dya-space-12);
-    border: var(--dya-border-width) dashed var(--dya-dashed);
-    border-radius: var(--dya-radius);
 }
 
 .kanban-board[data-dragging='true'] .kanban-drop {
@@ -203,55 +163,24 @@ export const STYLES = `
     cursor: grab;
     touch-action: none;
     user-select: none;
-    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
-.kanban-card:hover { background-color: var(--dya-flat-hover); }
-.kanban-card[data-selected='true'] { border-color: var(--dya-accent); }
-.kanban-card[data-dragging='true'] { opacity: 0.35; }
-.kanban-card[data-pending='true'] { opacity: 0.6; cursor: progress; }
 .kanban-card[data-locked='true'] { cursor: default; }
-.kanban-card[data-problem='true'] { border-color: var(--dya-danger); }
-.kanban-card[data-marked='true'] { background-color: var(--dya-accent-soft); }
 
 .kanban-marks {
     flex: 0 0 auto;
     gap: var(--dya-space-2);
 }
 
-/*
- * The one thing a reader scans a column for, so it is a step above everything under it: 13px
- * against the 10px of the two lines below, which is the separation a card had none of when its
- * title, its runner and its note were all 12px grey.
- *
- * And it is sans, because a card title is a sentence a person wrote. It was mono, at a tracking
- * meant for identifiers, which turned a column of tasks into a column of ransom notes — every
- * word the same width, every letter held off the next, the eye reading characters instead of
- * words. Mono is for the two lines under it, which are data: a harness, a model, a count, an age.
- */
-.kanban-card-title {
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-sm);
-    line-height: var(--dya-leading-body);
-    color: var(--dya-text);
-    overflow-wrap: anywhere;
-}
-
 .kanban-card-who {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     gap: var(--dya-space-2);
     min-width: 0;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
 }
 
 .kanban-card-who[hidden] { display: none; }
-
-.kanban-card-harness { color: var(--dya-text-4); }
-
-.kanban-card-model { color: var(--dya-text-2); }
 
 .kanban-card-foot {
     display: flex;
@@ -267,7 +196,6 @@ export const STYLES = `
     margin-top: var(--dya-space-2);
 }
 
-
 .kanban-card-note {
     flex: 1;
     min-width: 0;
@@ -275,13 +203,6 @@ export const STYLES = `
     align-items: baseline;
     flex-wrap: wrap;
     gap: 3px var(--dya-space-2);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-4);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .kanban-ghost {
@@ -290,8 +211,6 @@ export const STYLES = `
     top: 0;
     z-index: 9000;
     pointer-events: none;
-    opacity: 0.92;
-    box-shadow: var(--dya-elev-overlay);
 }
 
 /* The shape is kanon's sheet; what belongs here is how wide this one opens. */
@@ -355,7 +274,6 @@ export const STYLES = `
         grid-row: 1;
         height: auto;
         min-height: 0;
-        border-left: var(--dya-border-width) solid var(--dya-hairline);
     }
 }
 
@@ -397,46 +315,6 @@ export const STYLES = `
     gap: 2px;
 }
 
-.kanban-comment {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: var(--dya-space-2);
-    background: var(--dya-surface-1);
-    border-radius: var(--dya-radius);
-}
-
-.kanban-comment-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-}
-
-.kanban-comment-text {
-    line-height: var(--dya-leading-body);
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
-}
-
-.kanban-error {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-danger-ink);
-}
-
-.kanban-problem {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    line-height: var(--dya-leading-body);
-    color: var(--dya-danger-ink);
-    padding: var(--dya-space-2);
-    border-radius: var(--dya-radius);
-    background: var(--dya-sunken);
-    overflow-wrap: anywhere;
-}
-
 .kanban-menu {
     position: fixed;
     z-index: 9000;
@@ -448,86 +326,10 @@ export const STYLES = `
 }
 
 .kanban-submenu { min-width: 150px; }
-.kanban-menu-search { flex: none; margin-bottom: var(--dya-space-1); }
-.kanban-menu-list { overflow-y: auto; }
-.kanban-menu-group { padding: var(--dya-space-2) var(--dya-space-2) var(--dya-space-1); }
-.kanban-menu-item { height: auto; min-height: 26px; padding: var(--dya-space-1) var(--dya-space-2); }
-.kanban-menu-item[data-active='true'] { background-color: var(--dya-surface-2); }
-.kanban-menu-item:disabled { color: var(--dya-text-4); cursor: default; }
-
-.kanban-menu-text {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    text-align: left;
-}
-
-.kanban-menu-label {
-    letter-spacing: var(--dya-tracking-mono);
-    line-height: var(--dya-leading-body);
-    overflow-wrap: anywhere;
-}
-
-.kanban-menu-note {
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-    line-height: var(--dya-leading-body);
-    text-transform: none;
-    color: var(--dya-text-4);
-    overflow-wrap: anywhere;
-}
-
-.kanban-menu-arrow { flex: none; color: var(--dya-text-3); }
-.kanban-menu-empty { padding: var(--dya-space-3); }
 
 .kanban-health {
     min-width: 280px;
     overflow-y: auto;
-}
-
-.kanban-health-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--dya-space-1);
-    width: 100%;
-    padding: var(--dya-space-2);
-    border: none;
-    border-radius: var(--dya-radius);
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-}
-
-button.kanban-health-row {
-    cursor: pointer;
-    transition: background-color var(--dya-dur-fast) var(--dya-ease);
-}
-
-button.kanban-health-row:hover,
-button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2); }
-
-.kanban-health-where {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-    min-width: 0;
-}
-
-.kanban-health-where > .dya-text {
-    overflow-wrap: anywhere;
-}
-
-.kanban-health-problem {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    line-height: var(--dya-leading-body);
-    color: var(--dya-text-3);
-    overflow-wrap: anywhere;
 }
 
 /*
@@ -559,13 +361,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     padding: var(--dya-space-5);
 }
 
-.kanban-chooser-path {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    overflow-wrap: anywhere;
-}
-
 .kanban-setup-shell {
     display: flex;
     flex-direction: column;
@@ -586,7 +381,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     min-height: 160px;
     display: flex;
     flex-direction: column;
-    background: var(--dya-surface-1);
 }
 
 .kanban-stage-body {
@@ -596,23 +390,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
 }
 
 .kanban-terminal { height: 100%; }
-
-.kanban-run {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--dya-space-2);
-    padding: var(--dya-space-2);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
-    background: var(--dya-surface-1);
-}
-
-.kanban-run > .kanban-comment-text {
-    flex: 1 0 100%;
-    font-size: var(--dya-size-body-sm);
-    color: var(--dya-text-3);
-}
 
 .kanban-watch {
     flex: 1;
@@ -632,35 +409,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     max-width: 96rem;
 }
 
-.kanban-watch-run {
-    width: 100%;
-    text-align: left;
-    background: var(--dya-surface-1);
-    border: var(--dya-border-width) solid var(--dya-border);
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--dya-space-2);
-    padding: var(--dya-space-2);
-    border-radius: var(--dya-radius);
-}
-
-.kanban-watch-run:hover { background: var(--dya-flat-hover); }
-.kanban-watch-run:focus-visible { box-shadow: var(--dya-elev-focus); }
-
-.kanban-card[data-waiting='true'] { border-color: var(--dya-warning); }
-
-.xterm .xterm-viewport { background-color: transparent !important; }
-.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }
-.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
-.xterm .xterm-viewport::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: var(--dya-radius);
-}
-.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb { background-color: var(--dya-border); }
 .kanban-tabs {
     flex: none;
     padding: var(--dya-space-2) var(--dya-space-3) 0;
@@ -673,47 +421,5 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-1);
-}
-
-.kanban-row-entry {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: var(--dya-space-2);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
-    background: var(--dya-surface-1);
-}
-
-.kanban-row-entry[data-kind='text'] { padding: var(--dya-space-2); }
-.kanban-row-entry[data-error='true'] .dya-badge { background: var(--dya-danger-soft); color: var(--dya-danger-ink); }
-
-.kanban-row-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-    min-width: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-
-.kanban-row-body {
-    margin: 0;
-    padding: var(--dya-space-2);
-    background: var(--dya-sunken);
-    border-radius: var(--dya-radius);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-3);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    max-height: 320px;
-    overflow-y: auto;
 }
 `

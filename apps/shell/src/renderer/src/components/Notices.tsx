@@ -54,16 +54,16 @@ export function Notices(): React.JSX.Element {
     return (
         <div className="notices">
             {shown.map((notice) => (
-                <div className="dya-card notice" key={notice.key}>
+                <div className="dya-card dya-notice" key={notice.key}>
                     <button
                         type="button"
-                        className="notice-body"
+                        className="dya-notice__body"
                         onClick={() => activate(notice)}
                         title="open the plugin that sent this"
                     >
                         <span className="dya-label">{notice.pluginId}</span>
-                        <span className="notice-title">{notice.title}</span>
-                        {notice.body ? <span className="notice-text">{notice.body}</span> : null}
+                        <span className="dya-notice__title">{notice.title}</span>
+                        {notice.body ? <span className="dya-notice__text">{notice.body}</span> : null}
                     </button>
                     <button
                         type="button"

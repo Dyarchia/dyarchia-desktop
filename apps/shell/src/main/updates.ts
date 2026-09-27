@@ -31,6 +31,7 @@ export interface UpdateState {
     version: string | null
     percent: number
     note: string | null
+    checkedAt: number | null
 }
 
 const CHANNEL = 'shell:update'
@@ -49,7 +50,8 @@ let state: UpdateState = {
     running: app.getVersion(),
     version: null,
     percent: 0,
-    note: null
+    note: null,
+    checkedAt: null
 }
 
 function publish(next: Partial<UpdateState>): void {
@@ -92,18 +94,19 @@ export function registerUpdates(): void {
 
     autoUpdater.on('checking-for-update', () => publish({ phase: 'checking', note: null }))
     autoUpdater.on('update-available', (info) =>
-        publish({ phase: 'available', version: info.version, percent: 0, note: null })
+        publish({ phase: 'available', version: info.version, percent: 0, note: null, checkedAt: Date.now() })
     )
-    autoUpdater.on('update-not-available', () => publish({ phase: 'current', note: null }))
+    autoUpdater.on('update-not-available', () => publish({ phase: 'current', note: null, checkedAt: Date.now() }))
     autoUpdater.on('download-progress', (progress) =>
         publish({ phase: 'downloading', percent: Math.round(progress.percent) })
     )
     autoUpdater.on('update-downloaded', (info) =>
         publish({ phase: 'ready', version: info.version, percent: 100, note: null })
     )
-    autoUpdater.on('error', (error) => publish({ phase: 'failed', note: describe(error) }))
+    autoUpdater.on('error', (error) => publish({ phase: 'failed', note: describe(error), checkedAt: Date.now() }))
 
     ipcMain.handle('shell:update:check', async () => {
+        if (!['idle', 'current', 'failed'].includes(state.phase)) return state
         try {
             await autoUpdater.checkForUpdates()
         } catch (error) {

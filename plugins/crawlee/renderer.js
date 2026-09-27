@@ -918,7 +918,6 @@ function mount(ctx, container) {
         const query = el('input', 'dya-field dya-field--prose crw-query')
         query.type = 'search'
         query.placeholder = 'ask it in words, enter to search'
-        query.spellcheck = false
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
@@ -1428,7 +1427,6 @@ function mount(ctx, container) {
         const node = el('div', 'dya-field dya-editor crw-yaml')
         const behind = el('pre', 'dya-code')
         const field = el('textarea')
-        field.spellcheck = false
 
         const repaint = () => {
             behind.innerHTML = ctx.highlight(`${field.value}\n`, 'yaml')

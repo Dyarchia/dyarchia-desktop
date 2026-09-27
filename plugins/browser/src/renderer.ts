@@ -148,7 +148,6 @@ export function activate(ctx: PluginContext): void {
             const home = key(HOME_ICON, 'Home', () => go(HOME))
             const address = el('input', 'dya-field brw-address')
             address.type = 'text'
-            address.spellcheck = false
             address.setAttribute('aria-label', 'Address')
             address.placeholder = 'Search Google or type an address'
             const star = key(STAR_ICON, 'Bookmark this page', () => void toggleBookmark())

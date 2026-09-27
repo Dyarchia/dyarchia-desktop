@@ -65,6 +65,7 @@ body,
 .topbar-alpha {
     flex: none;
     white-space: nowrap;
+    -webkit-app-region: no-drag;
 }
 
 .topbar-update {

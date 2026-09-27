@@ -553,7 +553,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const field = el('input', 'dya-field dya-field--sm dya-field--prose')
             field.type = 'text'
             field.placeholder = 'card title'
-            field.spellcheck = false
             const confirm = el('button', 'dya-button dya-button--sm dya-button--success', 'add')
             confirm.type = 'button'
             draft.append(field, confirm)
@@ -911,7 +910,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const dir = el('input', 'dya-field')
         dir.type = 'text'
         dir.placeholder = 'absolute path'
-        dir.spellcheck = false
         const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
         browse.type = 'button'
         dirRow.append(dir, browse)
@@ -1111,7 +1109,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         const custom = el('input', 'dya-field dya-field--sm')
         custom.type = 'text'
-        custom.spellcheck = false
         custom.placeholder = 'full model name'
         custom.disabled = disabled
         custom.hidden = listed
@@ -1171,7 +1168,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const dirRow = el('div', 'kanban-row')
         const dir = el('input', 'dya-field')
         dir.type = 'text'
-        dir.spellcheck = false
         dir.value = current.workdir
         const browse = el('button', 'dya-button dya-button--quiet dya-button--sm', 'browse')
         browse.type = 'button'
@@ -1898,7 +1894,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const override = el('input', 'dya-field')
         override.type = 'text'
-        override.spellcheck = false
         override.placeholder = meta?.workdir ?? 'the board directory'
         override.disabled = card.locked
         override.value = card.workdir ?? ''

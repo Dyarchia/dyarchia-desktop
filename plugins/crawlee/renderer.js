@@ -13,6 +13,9 @@ const PLAY =
 const STOP =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>'
 
+const CLOSE =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
+
 const PLUS =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
 
@@ -81,10 +84,6 @@ const STYLE = `
     gap: var(--dya-space-2);
     flex: none;
 }
-.crw-meter {
-    flex-wrap: wrap;
-    max-width: 40%;
-}
 .crw-status {
     flex: 1;
     min-width: 120px;
@@ -105,6 +104,22 @@ const STYLE = `
 }
 .crw-out:has(> .dya-log[hidden]) {
     display: none;
+}
+.crw-out-head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+.crw-out-head > .dya-splitter {
+    flex: 1;
+    margin-inline-start: var(--dya-size-control-sm);
+}
+.crw-out-head > .dya-key {
+    width: var(--dya-size-control-sm);
+    height: var(--dya-size-control-sm);
+}
+.crw-out:has(> .dya-log[data-running]) .crw-out-head > .dya-key {
+    visibility: hidden;
 }
 .crw-log {
     flex: 1;
@@ -493,6 +508,7 @@ function mount(ctx, container) {
 
     const unsubscribeDone = ctx.on('done', (report) => {
         busy = false
+        if (sink) delete sink.dataset.running
         if (report.kind === 'run') roundsView.finished(report)
         else targetsView.finished(report)
     })
@@ -526,7 +542,17 @@ function mount(ctx, container) {
         grip.title = 'drag to resize - double-click for the whole view'
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
-        pane.append(grip, log)
+        const close = el('button', 'dya-key')
+        close.type = 'button'
+        close.innerHTML = CLOSE
+        close.title = 'close the output'
+        close.setAttribute('aria-label', 'close the output')
+        close.addEventListener('click', () => {
+            log.hidden = true
+        })
+        const head = el('div', 'crw-out-head')
+        head.append(grip, close)
+        pane.append(head, log)
 
         let stored = Number(localStorage.getItem(key)) || 0
         let folded = 0
@@ -633,17 +659,17 @@ function mount(ctx, container) {
         actionGroup.append(commitBox, run, stop)
 
         const status = el('span', 'dya-text crw-status', '')
-        const meter = el('div', 'dya-meter crw-meter')
-        meter.hidden = true
-        bar.append(scopeGroup, actionGroup, meter, status)
+        const ring = el('span', 'dya-ring')
+        ring.hidden = true
+        bar.append(scopeGroup, actionGroup, ring, status)
 
         /*
          * Where a round is, said in the footer while it runs. A round of fourteen targets takes most
          * of an hour, and all this said for that hour was the command it had started -- the reader
          * could not tell a round on its last target from one on its first, or from one that had
-         * quietly finished while they were looking at another window. One pip per target, lit as
-         * each one ends; the target underway by its place in the round and by name; the time it has
-         * been running. Until the command has said how many targets it holds, the line says the round
+         * quietly finished while they were looking at another window. A ring of one segment per
+         * target, silver as each one ends and brightest on the one underway; the target by its
+         * place in the round and by name; the time it has been running. Until the command has said how many targets it holds, the line says the round
          * is starting and nothing else: `0 of …` read as a position nobody can be at, over a count
          * nobody had given.
          */
@@ -670,13 +696,11 @@ function mount(ctx, container) {
         }
 
         const pips = () => {
-            meter.replaceChildren()
-            for (let index = 0; index < round.total; index++) {
-                const pip = el('span', 'dya-meter__pip')
-                pip.dataset.on = String(index < round.done)
-                meter.appendChild(pip)
-            }
-            meter.hidden = round.total === 0
+            const steps = Math.min(round.total, 24)
+            ring.style.setProperty('--dya-ring-n', String(steps || 1))
+            ring.style.setProperty('--dya-ring-done', String(Math.floor((round.done / (round.total || 1)) * steps)))
+            ring.classList.toggle('dya-ring--current', round.done < round.total && Boolean(round.current))
+            ring.hidden = round.total === 0
         }
 
         const heard = (event) => {
@@ -1509,6 +1533,7 @@ function mount(ctx, container) {
         ansi = plainAnsi()
         into.textContent = ''
         into.hidden = false
+        into.dataset.running = 'true'
         /*
          * Something that can be stopped trades its start button for the stop: a RUN left beside
          * STOP for the whole round was a control that could not be pressed, drawn as one that could.
@@ -1522,6 +1547,7 @@ function mount(ctx, container) {
             status.textContent = `running ${String(await ctx.invoke('start', kind, payload))}`
         } catch (error) {
             busy = false
+            delete into.dataset.running
             controls.run.disabled = false
             controls.run.hidden = false
             if (controls.stop) controls.stop.hidden = true

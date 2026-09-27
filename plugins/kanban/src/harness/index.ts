@@ -35,6 +35,7 @@ export async function catalogue(): Promise<HarnessInfo[]> {
                 label: held.label,
                 available,
                 models: available ? await held.models() : [],
+                resolved: available && held.resolved ? await held.resolved() : {},
                 efforts: held.efforts ? [...held.efforts] : null
             }
         })

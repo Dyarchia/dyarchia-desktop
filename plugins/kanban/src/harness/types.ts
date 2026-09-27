@@ -83,6 +83,7 @@ export interface Driver {
     efforts: string[] | null
     binary(): Promise<string | null>
     models(): Promise<string[]>
+    resolved?(): Promise<Record<string, string>>
     restraint(): string[]
     launch(spec: LaunchSpec): Promise<Launched>
     worktreePath(workspace: string, isolate: string): string

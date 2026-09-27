@@ -165,7 +165,9 @@ export function activate(ctx: PluginContext): void {
         connecting.className = 'dya-loading dyarchia-terminal-connecting'
         const connectingText = document.createElement('span')
         connectingText.textContent = 'attaching to a shell'
-        connecting.appendChild(connectingText)
+        const connectingRing = document.createElement('span')
+        connectingRing.className = 'dya-ring dya-ring--busy'
+        connecting.append(connectingRing, connectingText)
         container.appendChild(connecting)
 
         let port: MessagePort | null = null

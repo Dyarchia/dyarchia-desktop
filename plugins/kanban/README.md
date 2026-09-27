@@ -17,7 +17,8 @@ done        archived
 archived    (final)
 ```
 
-- The dispatcher claims the top `ready` card whose parents are done, within per-board (1) and global (2) caps.
+- The dispatcher claims the top `ready` card whose parents are done, within per-board (1) and global (2)
+  caps. It sweeps on a timer and at once after any change a person makes, so nothing waits for a tick.
 - A blocked card's state key reads `unblock` under the pointer; pressing it returns the card to the
   phase it was blocked from and resets its protocol violations to zero.
 

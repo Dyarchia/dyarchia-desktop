@@ -156,7 +156,6 @@ const STROKE =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
 
 const ICONS = {
-    play: `${STROKE}<polygon points="6 4 20 12 6 20 6 4"/></svg>`,
     eye: `${STROKE}<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
     pulse: `${STROKE}<polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg>`,
     plus: `${STROKE}<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
@@ -386,7 +385,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     settingsKey.hidden = true
     const treesKey = key('branch', 'worktrees', 'what every run left behind in this project')
     treesKey.hidden = true
-    const tickButton = key('play', 'dispatch', 'look for ready cards on every board now; it looks on its own every 30 s, every 5 s while a card runs')
     const WATCH_TIP = 'every board at once: what is running, what is queued, what was decided'
     const watchButton = key('eye', 'watch', WATCH_TIP)
     watchButton.setAttribute('aria-pressed', 'false')
@@ -395,6 +393,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     healthButton.type = 'button'
     healthButton.hidden = true
     const healthMark = el('span', 'dya-text--warning kanban-health-mark')
+    const notice = el('span', 'dya-meta kanban-notice')
+    notice.setAttribute('aria-live', 'polite')
     healthMark.innerHTML = ICONS.pulse
     const healthCount = el('span', undefined, '0')
     healthMark.appendChild(healthCount)
@@ -406,10 +406,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         newBoardKey,
         settingsKey,
         treesKey,
-        el('span', 'dya-bar__sep'),
-        tickButton,
         watchButton,
         spacer,
+        notice,
         healthButton,
         meter
     )
@@ -465,18 +464,25 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const watch = el('div', 'kanban-watch')
     watch.hidden = true
 
-    const live = el('div', 'dya-sr-only')
-    live.setAttribute('aria-live', 'polite')
-
     const error = el('div', 'dya-problem')
     error.hidden = true
 
     main.append(board, scrim, drawer)
-    root.append(bar, marks, main, setup, watch, error, live, tips)
+    root.append(bar, marks, main, setup, watch, error, tips)
     container.appendChild(root)
 
+    /*
+     * What just happened, said in the bar where it can be seen, for a few seconds. It used to go
+     * only to a region only a screen reader reads, so a key whose whole answer was a sentence,
+     * worktrees on a board with none, looked like a key that did nothing.
+     */
+    let noticeTimer = 0
     const say = (text: string): void => {
-        live.textContent = text
+        notice.textContent = text
+        window.clearTimeout(noticeTimer)
+        noticeTimer = window.setTimeout(() => {
+            notice.textContent = ''
+        }, 6000)
     }
 
     /*
@@ -503,6 +509,26 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
     }
 
+    /*
+     * Worktrees are only there when a run left one, which a board working in its project directory
+     * never does, so the key shows only when the project holds any. Asked at most every half minute.
+     */
+    let treesHere = false
+    let treesAt = 0
+    let treesFor = ''
+    const syncTrees = (): void => {
+        const slug = meta?.slug
+        if (!slug || (slug === treesFor && Date.now() - treesAt < 30_000)) return
+        treesFor = slug
+        treesAt = Date.now()
+        void invoke<Worktree[]>('worktrees', slug)
+            .then((trees) => {
+                treesHere = trees.length > 0
+                treesKey.hidden = !treesHere || meta?.slug !== slug || !watch.hidden
+            })
+            .catch(() => undefined)
+    }
+
     const show = (next: View): void => {
         if (next !== 'watch' && watching) stopWatching()
         main.hidden = next !== 'board'
@@ -510,9 +536,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         setup.hidden = next !== 'form'
         marks.hidden = next !== 'board' || marked.size === 0
 
-        const onBoard = next === 'board' && meta !== null
-        settingsKey.hidden = !onBoard
-        treesKey.hidden = !onBoard
+        const onBoard = next !== 'watch' && meta !== null
+        const configuring = next === 'form' && setup.dataset.mode === 'settings'
+        settingsKey.hidden = !onBoard || (next === 'form' && !configuring)
+        settingsKey.classList.toggle('dya-key--active', configuring)
+        settingsKey.setAttribute('aria-pressed', String(configuring))
+        treesKey.hidden = !onBoard || !treesHere
+        if (onBoard) syncTrees()
         boardButton.textContent = meta?.name ?? 'board'
         watchButton.classList.toggle('dya-key--active', next === 'watch')
         watchButton.setAttribute('aria-pressed', String(next === 'watch'))
@@ -921,8 +951,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (marked.size) clearMarks()
         meta = null
         bar.hidden = registry.length === 0
-        show('form')
         setup.dataset.mode = 'welcome'
+        show('form')
         setup.replaceChildren()
 
         const open = registry.filter((entry) => !entry.archived)
@@ -1016,8 +1046,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const current = meta
         void invoke<Settings>('settings')
             .then((across) => {
-                show('form')
                 setup.dataset.mode = 'settings'
+                show('form')
                 setup.replaceChildren(buildBoardSettings(current, across))
             })
             .catch(fail)
@@ -1228,9 +1258,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const buildBoardSettings = (current: BoardMeta, across: Settings): HTMLElement => {
         const shell = el('div', 'dya-pane kanban-setup-shell')
-        const heading = el('div', 'kanban-setup-head')
-        heading.append(el('span', 'dya-title', current.name))
-
         const form = el('div', 'dya-form')
 
         const name = el('input', 'dya-field')
@@ -1276,8 +1303,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return row
         }
 
-        const save = el('button', 'dya-button dya-button--primary', 'save')
-        save.type = 'button'
+        const save = key('save', 'save these settings')
         save.addEventListener('click', () => {
             void invoke('updateSettings', { maxRunning: Number(globalCap.value) })
                 .then(() =>
@@ -1295,12 +1321,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        const back = el('button', 'dya-button dya-button--quiet', 'cancel')
-        back.type = 'button'
+        const back = key('close', 'close without saving')
         back.addEventListener('click', () => void refresh().catch(fail))
 
         const archive = key('archive', 'archive this board', 'archive this board: the files are kept and the board leaves the picker')
-        archive.classList.add('dya-form__push')
         archive.addEventListener('click', () => {
             if (!window.confirm(`Archive ${current.name}? Its cards and files are kept, and it leaves the picker.`)) {
                 return
@@ -1331,7 +1355,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        const actions = el('div', 'dya-form__actions')
+        /*
+         * What to do with the settings is one row of keys where the values start, so the keys
+         * stand on the form's grid rather than splitting to its two edges.
+         */
+        const actions = el('div', 'dya-form__value')
         actions.append(save, back, archive, remove)
 
         field(form, 'name', name)
@@ -1346,9 +1374,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         )
         field(form, 'implement', phaseRow('implement'), 'who writes the change')
         field(form, 'review', phaseRow('review'), 'who judges it afterwards')
-        form.append(actions)
+        form.append(el('span', 'dya-label'), actions)
 
-        shell.append(heading, form)
+        shell.append(form)
         return shell
     }
 
@@ -1413,8 +1441,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         columns.clear()
         nodes.clear()
         board.replaceChildren()
-        show('form')
         setup.dataset.mode = 'welcome'
+        show('form')
         setup.replaceChildren(buildBoardForm())
     }
 
@@ -2689,7 +2717,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     boardButton.addEventListener('click', () => openBoardMenu(boardButton))
     newBoardKey.addEventListener('click', () => newBoard())
-    settingsKey.addEventListener('click', () => showBoardSettings())
+    settingsKey.addEventListener('click', () => {
+        if (setup.dataset.mode === 'settings' && !setup.hidden) void refresh().catch(fail)
+        else showBoardSettings()
+    })
     treesKey.addEventListener('click', () => openWorktreeMenu(treesKey))
     watchButton.addEventListener('click', () => {
         if (watching) {
@@ -2700,11 +2731,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         openWatch()
     })
     healthButton.addEventListener('click', () => showHealth())
-    tickButton.addEventListener('click', () => {
-        void invoke('dispatchNow')
-            .then(() => refresh())
-            .catch(fail)
-    })
     board.addEventListener('keydown', onBoardKey)
     board.addEventListener('click', (event) => {
         if (!selected || gesturing) return

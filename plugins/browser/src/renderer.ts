@@ -7,7 +7,7 @@ interface Bookmark {
     title: string
 }
 
-const PARTITION = 'persist:dyarchia-browser'
+const PARTITION = 'dyarchia-browser'
 const HOME = 'https://www.google.com/'
 const SEARCH = 'https://www.google.com/search?q='
 
@@ -160,15 +160,13 @@ export function activate(ctx: PluginContext): void {
             marks.hidden = true
 
             const stage = el('div', 'brw-view')
-            const remembered = `dyarchia-browser:${handle.instanceId}`
-            let start = HOME
             try {
-                start = localStorage.getItem(remembered) ?? HOME
+                localStorage.removeItem(`dyarchia-browser:${handle.instanceId}`)
             } catch {}
             const view = document.createElement('webview') as WebviewTag
             view.setAttribute('partition', PARTITION)
             view.setAttribute('allowpopups', '')
-            view.src = start
+            view.src = HOME
 
             const fail = el('div', 'dya-empty brw-fail')
             fail.hidden = true
@@ -200,9 +198,6 @@ export function activate(ctx: PluginContext): void {
                 star.classList.toggle('dya-key--active', marked)
                 star.setAttribute('aria-label', marked ? 'Remove this bookmark' : 'Bookmark this page')
                 handle.setTitle(hostOf(url) || null)
-                try {
-                    localStorage.setItem(remembered, url)
-                } catch {}
             }
 
             function setLoading(next: boolean): void {
@@ -303,7 +298,7 @@ export function activate(ctx: PluginContext): void {
 
             back.disabled = true
             forward.disabled = true
-            address.value = start
+            address.value = HOME
 
             return () => {
                 offMarks()

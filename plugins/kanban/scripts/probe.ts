@@ -184,6 +184,7 @@ async function machine(): Promise<void> {
     stuck.sourcePhase = 'ready'
     stuck.lastBlockKind = 'needs_input'
     stuck.blockRecurrences = 1
+    stuck.protocolViolations = 3
     await board.save('probe', file)
 
     const back = await board.unblock('probe', child.id, stuck.rev)
@@ -191,6 +192,7 @@ async function machine(): Promise<void> {
     check('the block kind is cleared', back.blockKind, null)
     check('the recurrence count survives', back.blockRecurrences, 1)
     check('so does the kind that caused it', back.lastBlockKind, 'needs_input')
+    check('the violations are forgiven, so the next attempt has its full budget', back.protocolViolations, 0)
 
     await refuses('unblocking a card that is not blocked', () => board.unblock('probe', child.id, back.rev), 'not blocked')
 

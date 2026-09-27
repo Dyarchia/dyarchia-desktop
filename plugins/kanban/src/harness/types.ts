@@ -49,12 +49,20 @@ export interface Progress {
     permissionMode: string | null
 }
 
+/*
+ * One step of a run as the drawer tells it. A tool step's `body` is what it was about, in the
+ * words the agent gave it when it gave any; `detail` is the whole input and `output` what came
+ * back, for a driver that can pair them. A driver that cannot sends the output as a `result` row
+ * after its tool, and the drawer pairs them.
+ */
 export interface HistoryRow {
     at: number
     kind: 'text' | 'thinking' | 'tool' | 'result' | 'end'
     label: string
     body: string
     error: boolean
+    detail?: string
+    output?: string
 }
 
 export interface Invocation {

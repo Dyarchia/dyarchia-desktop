@@ -2247,6 +2247,124 @@ button.dya-entry__head {
 }
 
 /*
+ * Steps: what an agent or a process did, one line a step, in the order it did it. Three columns,
+ * when, what kind of thing, and on what: the time in the quietest mono, the verb in the sans, the
+ * subject in the mono because it is a command, a path or a name. A subject that has more behind it
+ * is a button that opens `__detail` under the line, where the full input and what came back sit
+ * on the sunken ground. What the agent said is `--said`: prose across the verb and subject columns,
+ * because a sentence is not a subject. `--error` puts the verb in red's ink and `--warning` in
+ * yellow's; `--quiet` is a step that only marks time, such as the end of a turn. Below 400px the
+ * time goes and the verb stands before the subject.
+ */
+.dya-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dya-step {
+    display: grid;
+    grid-template-columns: 8ch 13ch minmax(0, 1fr);
+    column-gap: var(--dya-space-3);
+    align-items: baseline;
+    padding: 5px var(--dya-space-2);
+    border-radius: var(--dya-radius-sm);
+}
+
+.dya-step:has(> .dya-step__subject:hover) {
+    background: var(--dya-glass-hover);
+}
+
+.dya-step__time {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--dya-text-4);
+}
+
+.dya-step__verb {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    color: var(--dya-text-3);
+    white-space: nowrap;
+}
+
+.dya-step__subject {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    text-align: left;
+    color: var(--dya-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+button.dya-step__subject {
+    cursor: pointer;
+}
+
+.dya-step__said {
+    grid-column: 2 / -1;
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.dya-step__detail {
+    grid-column: 2 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    margin-top: var(--dya-space-2);
+}
+
+.dya-step__detail[hidden] {
+    display: none;
+}
+
+.dya-step--error .dya-step__verb {
+    color: var(--dya-danger-ink);
+}
+
+.dya-step--warning .dya-step__verb {
+    color: var(--dya-warning-ink);
+}
+
+.dya-step--quiet .dya-step__verb,
+.dya-step--quiet .dya-step__subject {
+    color: var(--dya-text-4);
+}
+
+@container pane (max-width: 399.98px) {
+    .dya-step {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .dya-step__time {
+        display: none;
+    }
+
+    .dya-step__said,
+    .dya-step__detail {
+        grid-column: 1 / -1;
+    }
+}
+
+/*
  * A problem: why something could not be done, said where it happened. Mono, in red's ink, and
  * broken anywhere, because the end of an error is usually the part that says what went wrong.
  * `--box` sets it on the sunken ground when it stands alone at the head of a view.

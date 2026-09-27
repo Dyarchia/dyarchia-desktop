@@ -147,9 +147,9 @@ opencode   opencode   opencode models, every provider:    opencode run --format 
 ```
 
 **A hosted run is a child of this app.** Its stdout is the event stream and goes to
-`<userData>/kanban/hosted/<runId>.jsonl`, which is what progress and the history tab read;
-its exit is the liveness answer; the terminal tab tails that file, because there is no
-session to talk to. When this app closes, the run closes with it: the board marks it crashed
+`<userData>/kanban/hosted/<runId>.jsonl`, which is what progress and the activity tab read;
+its exit is the liveness answer; the session tab tails that file while it runs, because there
+is no session to talk to. When this app closes, the run closes with it: the board marks it crashed
 with that reason, sends the card back to its phase, and does not count the attempt. That is
 the trade the plan accepted on 2026-09-15 rather than a second supervisor of our own.
 
@@ -353,9 +353,16 @@ columns, half the panel wide, with the board still in place underneath. The key 
 gives it the whole panel, the choice is remembered per panel, and it closes on Escape, on
 its key, or on a click on the board around it. Without a run it is one column and the brief
 grows to the height. With a run and 720 px of width it is two columns, the form on the left
-and the stage on the right at full height: the terminal while a worker is on the card, the
-transcript once it is gone, and the board's own events on the third tab. Under that width
-the stage sits above the form.
+and the stage on the right at full height. Under that width the stage sits above the form. The
+form is its own pane, so its label column answers to its own width and not the drawer's.
+
+The stage has up to three tabs. `session` is the terminal attached to the worker, and exists only
+while a worker is on the card. `activity` is what a run did, as kanon's `steps`: the time, a verb
+a person would use (`ran`, `read`, `wrote`, `started agent`) and its subject, which for claude is
+the description the agent gave the call; the call's input and what came back open under it, a
+failed call's verb is red, and what the agent said is prose. A picker chooses the run, and `open
+transcript` hands the raw JSONL to whichever panel reads text. `log` is what happened to the card,
+one sentence per event, with a run of edits folded into one line.
 
 Every setting is a native `select`: harness, model and effort per phase, permission mode,
 workspace kind. A blank inherits: its option shows what it inherits, `Claude Code` or

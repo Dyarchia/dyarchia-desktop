@@ -365,7 +365,27 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
     return result
 }
 
-const TELLING = ['file_path', 'command', 'pattern', 'path', 'url', 'query', 'prompt']
+const TELLING = ['description', 'file_path', 'command', 'pattern', 'path', 'url', 'query', 'skill', 'reason', 'prompt']
+
+function detailOf(input: unknown): string {
+    const record = (input ?? {}) as Record<string, unknown>
+    for (const key of ['command', 'prompt']) {
+        if (typeof record[key] === 'string') return (record[key] as string).slice(0, MAX_BODY)
+    }
+    return Object.keys(record).length ? (JSON.stringify(record, null, 2) ?? '').slice(0, MAX_BODY) : ''
+}
+
+function resultText(content: unknown): string {
+    if (typeof content === 'string') return content
+    if (!Array.isArray(content)) return JSON.stringify(content) ?? ''
+    return content
+        .map((part) => {
+            const block = part as Record<string, unknown>
+            return block.type === 'text' && typeof block.text === 'string' ? block.text : ''
+        })
+        .filter(Boolean)
+        .join('\n')
+}
 const MAX_ROWS = 400
 const MAX_BODY = 4_000
 
@@ -375,7 +395,7 @@ function summarise(input: unknown): string {
         const value = record[key]
         if (typeof value === 'string' && value.trim()) return value.replace(/\s+/g, ' ').slice(0, 200)
     }
-    const rendered = JSON.stringify(record) ?? ''
+    const rendered = Object.keys(record).length ? (JSON.stringify(record) ?? '') : ''
     return rendered.length > 200 ? `${rendered.slice(0, 200)}...` : rendered
 }
 
@@ -398,6 +418,7 @@ async function history(place: string, run: Run): Promise<HistoryRow[]> {
     }
 
     const rows: HistoryRow[] = []
+    const calls = new Map<string, HistoryRow>()
 
     for (const line of raw.split('\n')) {
         if (!line.trim()) continue
@@ -423,16 +444,19 @@ async function history(place: string, run: Run): Promise<HistoryRow[]> {
             continue
         }
 
-        if (entry.type === 'user' && entry.toolUseResult !== undefined) {
-            const value = entry.toolUseResult
-            const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '')
-            rows.push({
-                at,
-                kind: 'result',
-                label: '',
-                body: text.slice(0, MAX_BODY),
-                error: /^error\b|"is_error":\s*true/i.test(text)
-            })
+        if (entry.type === 'user') {
+            const content = (entry.message as Record<string, unknown> | undefined)?.content
+            for (const block of Array.isArray(content) ? (content as Record<string, unknown>[]) : []) {
+                if (block.type !== 'tool_result') continue
+                const text = resultText(block.content).slice(0, MAX_BODY)
+                const call = typeof block.tool_use_id === 'string' ? calls.get(block.tool_use_id) : undefined
+                if (call) {
+                    call.output = text
+                    call.error = block.is_error === true
+                } else {
+                    rows.push({ at, kind: 'result', label: '', body: text, error: block.is_error === true })
+                }
+            }
             continue
         }
 
@@ -452,7 +476,16 @@ async function history(place: string, run: Run): Promise<HistoryRow[]> {
                 })
             }
             if (block.type === 'tool_use' && typeof block.name === 'string') {
-                rows.push({ at, kind: 'tool', label: block.name, body: summarise(block.input), error: false })
+                const call: HistoryRow = {
+                    at,
+                    kind: 'tool',
+                    label: block.name,
+                    body: summarise(block.input),
+                    error: false,
+                    detail: detailOf(block.input)
+                }
+                if (typeof block.id === 'string') calls.set(block.id, call)
+                rows.push(call)
             }
         }
     }

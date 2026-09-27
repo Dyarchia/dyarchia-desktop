@@ -394,6 +394,7 @@ Content      table (--stack __num __fit __key __name __subject __end __prose) ro
              title lede text (--success --warning --danger) label eyebrow value name
              meta (--sm --lift --wrap) mono key-label problem (--box)
              entry (--row __head __text __body) notice (__body __title __text)
+             steps step (--said --error --warning --quiet __time __verb __subject __said __detail)
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor
              terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected
@@ -411,9 +412,16 @@ first, measured, and then used, and a look two plugins had drawn separately is t
 to come here: the editor behind docviewer and crawlee, the xterm viewport behind the CLI and the
 kanban stage.
 
-**An entry is one record in a running list**: a note in a thread, a run, a step of a history, a
-search hit. A box on the first surface; a head of small things on one line; its text in the
+**An entry is one record in a running list**: a note in a thread, a run, a search hit. A box on the first surface; a head of small things on one line; its text in the
 second ink, which measures 10.69 on the first surface; its verbatim body sunken and mono.
+
+**`steps` is what something did, one line a step, in order**: the history of an agent's run, the
+log of a card. Three columns, when, what kind and on what: the time in `text-4` mono, the verb in
+`text-3` sans, the subject in the top ink and mono, one line and cut with an ellipsis, since the
+whole of it is one press away in `__detail` under the line, sunken. What was said is `--said`,
+prose across the verb and subject columns. `--error` is the verb in red's ink and `--warning` in
+yellow's, both text on every ground; `--quiet` is a step that only marks time. A step is never a
+box: a history is read down a column, and a border per line is a ladder. Below 400px the time goes.
 
 **A tab can act on itself.** `tab__action` is a glyph with no face on the open tab and on the one
 under the pointer: another like it, for a panel that can have more than one, and close. Close

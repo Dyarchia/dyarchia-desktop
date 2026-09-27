@@ -85,6 +85,13 @@ function compare(a: number[], b: number[]): number {
     return 0
 }
 
+/*
+ * How claude records background work in a transcript: a launch answers with the id it will report
+ * under, and the report arrives later as a task notification carrying that id.
+ */
+const LAUNCHED = /(?:Async agent launched successfully[^"]*?agentId: |running in background with ID: )([A-Za-z0-9]+)/g
+const SETTLED = /<task-notification>(?:\\n|\s)*<task-id>([A-Za-z0-9]+)<\/task-id>/g
+
 const LIVE = new Set(['working', 'blocked'])
 const FINISHED = new Set(['done', 'stopped', 'failed'])
 
@@ -283,6 +290,8 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
     }
 
     const texts: string[] = []
+    const launched = new Set<string>()
+    const settled = new Set<string>()
 
     for (const line of raw.split('\n')) {
         if (!line.trim()) continue
@@ -291,6 +300,11 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
             entry = JSON.parse(line) as Record<string, unknown>
         } catch {
             continue
+        }
+
+        if (entry.type !== 'assistant') {
+            for (const match of line.matchAll(LAUNCHED)) launched.add(match[1])
+            for (const match of line.matchAll(SETTLED)) settled.add(match[1])
         }
 
         if (entry.type === 'system') {
@@ -335,6 +349,19 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
     }
 
     result.terminal = parseTerminal(texts.join('\n'))
+
+    /*
+     * A turn that ends with background work still out is not the end of the run. The worker
+     * started agents or commands that report back into this session when they finish, and the
+     * session takes its next turn then; reading the pause as the end made the board count a
+     * working run as a failed one, stop it and start the card over while the first run's agents
+     * were still writing. Measured on 2026-09-27: three runs of one card, four agents each.
+     */
+    const outstanding = [...launched].filter((id) => !settled.has(id)).length
+    if (outstanding && result.ended && !result.terminal) {
+        result.ended = false
+        result.tool = `waiting on ${outstanding} background ${outstanding === 1 ? 'task' : 'tasks'}`
+    }
     return result
 }
 

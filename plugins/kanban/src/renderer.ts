@@ -2396,16 +2396,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             approve.addEventListener('click', () => move(card.id, 'done'))
             const changes = key('undo', 'request changes', 'request changes: the card goes back to ready')
             changes.addEventListener('click', () => move(card.id, 'ready'))
-            const ask = key('reviewer', 'ask a reviewer', 'ask a reviewer: a second session reads the branch and judges it')
-            ask.addEventListener('click', () => {
-                void invoke('reviewCard', meta?.slug, card.id)
-                    .then(() => {
-                        say(`a reviewer is reading ${card.title}`)
-                        return refresh()
-                    })
-                    .catch((thrown: unknown) => failOn(card.id, thrown))
-            })
-            actions.append(approve, changes, ask)
+            actions.append(approve, changes)
         }
 
         if (shown(card) === 'running') {

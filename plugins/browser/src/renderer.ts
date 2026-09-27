@@ -198,8 +198,7 @@ export function activate(ctx: PluginContext): void {
                 back.disabled = !view.canGoBack()
                 forward.disabled = !view.canGoForward()
                 const marked = bookmarks.some((entry) => entry.url === url)
-                star.classList.toggle('dya-key--success', !marked)
-                star.classList.toggle('dya-key--danger', marked)
+                star.classList.toggle('dya-key--active', marked)
                 star.setAttribute('aria-label', marked ? 'Remove this bookmark' : 'Bookmark this page')
                 handle.setTitle(hostOf(url) || null)
                 try {

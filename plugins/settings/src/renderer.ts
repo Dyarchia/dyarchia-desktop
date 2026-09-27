@@ -327,7 +327,7 @@ export function activate(ctx: PluginContext): void {
             }
 
             const row = el('div', 'set-install')
-            const install = el('button', 'dya-button dya-button--success', 'Install') as HTMLButtonElement
+            const install = el('button', 'dya-button dya-button--primary', 'Install') as HTMLButtonElement
             row.append(install)
 
             const hint = requires.find((requirement) => requirement.note)?.note

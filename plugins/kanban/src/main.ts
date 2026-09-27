@@ -222,6 +222,13 @@ export function activate(ctx: PluginMainContext): void {
         return card
     })
 
+    ctx.handle('uncomment', async (slug, id, at) => {
+        const target = await open(String(slug))
+        const card = await board.uncomment(target, String(id), Number(at))
+        changed(target)
+        return card
+    })
+
     ctx.handle('dispatchNow', async () => {
         await dispatch.force(sink)
         return true

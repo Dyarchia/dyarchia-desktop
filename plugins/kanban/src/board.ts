@@ -430,6 +430,18 @@ export async function comment(
     return card
 }
 
+export async function uncomment(slug: string, id: string, at: number): Promise<Card> {
+    const file = await load(slug)
+    const card = find(file, id)
+    const index = card.comments.findIndex((entry) => entry.at === at)
+    if (index < 0) throw new Refusal('that note is already gone')
+    const [gone] = card.comments.splice(index, 1)
+    touch(card)
+    await save(slug, file)
+    await events.record(slug, id, 'uncommented', `${gone.author}: ${gone.text.slice(0, 120)}`)
+    return card
+}
+
 export async function promote(slug: string, now: number): Promise<boolean> {
     const file = await load(slug)
     let changed = false

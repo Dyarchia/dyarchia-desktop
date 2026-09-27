@@ -25,6 +25,7 @@ export interface MenuOptions {
     anchor: HTMLElement
     rows: MenuRow[]
     filter?: string
+    search?: boolean
     onPick(row: MenuRow, leaf: MenuLeaf): void
 }
 
@@ -146,7 +147,7 @@ export function openMenu(options: MenuOptions): () => void {
     search.type = 'text'
     search.placeholder = options.filter ?? 'filter'
     search.spellcheck = false
-    search.hidden = options.rows.length < FILTER_FROM
+    search.hidden = !options.search && options.rows.length < FILTER_FROM
 
     const list = document.createElement('div')
     list.className = 'dya-menu__list'

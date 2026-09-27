@@ -92,7 +92,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             {icon && <Svg className={glyph} svg={icon} />}
             {title}
             <span className="panel-tab-actions">
-                {descriptor?.duplicable && (
+                {descriptor?.duplicable ? (
                     <button
                         className="dya-tab__action"
                         title={`Another ${descriptor.title}`}
@@ -104,6 +104,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                         }}
                         dangerouslySetInnerHTML={{ __html: ANOTHER_ICON }}
                     />
+                ) : (
+                    <span className="panel-tab-slot" aria-hidden="true" />
                 )}
                 <button
                     className="dya-tab__action dya-tab__action--close"

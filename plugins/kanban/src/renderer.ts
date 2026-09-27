@@ -94,16 +94,6 @@ const ICONS = {
     close: `${STROKE}<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`
 }
 
-/*
- * A Claude model id read the way its maker writes it: `claude-opus-5-5` is Opus 5.5, and a date
- * on the end is dropped. Anything else is left as it came.
- */
-function pretty(model: string): string {
-    const match = /^claude-([a-z]+)-(\d+(?:-\d{1,3})*)(?:-\d{8})?$/.exec(model)
-    if (!match) return model
-    return `${match[1][0].toUpperCase()}${match[1].slice(1)} ${match[2].replaceAll('-', '.')}`
-}
-
 const PROVIDERS: Record<string, string> = {
     opencode: 'OpenCode Zen',
     'opencode-go': 'OpenCode Go',
@@ -706,18 +696,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         node.who.hidden = !dispatching
         if (dispatching && meta) {
             const runner = resolveRunner(meta.runners, card.runners, status === 'review' ? 'review' : 'implement')
-            node.who.replaceChildren(
-                (() => {
-                    const harness = el('span', 'dya-legend')
-                    const hue = `dya-hue--${harnessHues[runner.harness]}`
-                    const mark = brandIcon(runner.harness)
-                    const glyph = el('span', mark ? 'dya-glyph dya-glyph--mark' : `dya-dot ${hue}`)
-                    if (mark) glyph.innerHTML = mark
-                    harness.append(glyph, runner.harness)
-                    return harness
-                })(),
-                el('span', 'dya-meta--lift', runner.model ?? 'default model')
-            )
+            const harness = el('span', 'dya-legend')
+            const hue = `dya-hue--${harnessHues[runner.harness]}`
+            const mark = brandIcon(runner.harness)
+            const glyph = el('span', mark ? 'dya-glyph dya-glyph--mark' : `dya-dot ${hue}`)
+            if (mark) glyph.innerHTML = mark
+            const model = runner.model ? apiName(runner.harness, runner.model) : null
+            harness.append(glyph, el('span', model ? 'dya-meta--lift' : '', model ?? runner.harness))
+            harness.title = model ? `${runner.harness} - ${model}` : `${runner.harness} - its default model`
+            node.who.replaceChildren(harness)
         }
 
         node.title.textContent = card.title
@@ -961,8 +948,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     void invoke<HarnessInfo[]>('harnesses')
         .then((list) => {
             catalogue = list
+            if (meta) void refresh()
         })
         .catch(fail)
+
+    /*
+     * A model is named by the id its API takes, never by an alias or a marketing name: `sonnet` is
+     * whatever claude maps it to today, and `claude-sonnet-5` is what actually runs.
+     */
+    const apiName = (harness: string, model: string): string =>
+        catalogue.find((entry) => entry.id === harness)?.resolved[model] ?? model
 
     const choose = (
         what: string,
@@ -1056,7 +1051,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
      * One row per phase: harness, model, effort. A card inherits from its board what it
      * leaves blank, so a blank is labelled with what it inherits, noted `follows the board` in the
      * list and shown bare once chosen, since what the closed control says is what will run. The
-     * model list is the chosen harness's own, and an alias is named by the model it stands for.
+     * model list is the chosen harness's own, and a model is named by its API id.
      * A name the list does not carry is typed into the field that appears when the last entry is
      * picked.
      */
@@ -1095,7 +1090,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         )
 
         const models = info?.models ?? []
-        const modelName = (model: string): string => pretty(info?.resolved[model] ?? model)
+        const modelName = (model: string): string => apiName(chosen, model)
         const listed = current.model === null || models.includes(current.model)
         const modelLabels: Record<string, string | [string, string]> = {
             '': above ? [above.model ? modelName(above.model) : 'default', 'follows the board'] : 'default',
@@ -1103,9 +1098,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         for (const model of models) {
             modelLabels[model] =
-                info?.id === 'claude' && !info.resolved[model]
-                    ? [`${model[0].toUpperCase()}${model.slice(1)}`, 'latest']
-                    : modelName(model)
+                info?.id === 'claude' && !info.resolved[model] ? [model, 'latest'] : modelName(model)
         }
         const custom = el('input', 'dya-field dya-field--sm')
         custom.type = 'text'

@@ -18,6 +18,7 @@ import type {
     KanbanEvent,
     Overview,
     Rules,
+    Run,
     Runner,
     Runners,
     RunnersPatch,
@@ -2091,48 +2092,97 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         compose.append(note, post)
         thread.append(compose)
 
+        /*
+         * Each run told as what happened and what the board did about it, newest first: its
+         * number, phase, start, length and cost on the head line; then one sentence for how it
+         * ended and one for what followed, because `violation - 1.01M tok - 4m` three times over
+         * said that something failed and nothing about what, or why the card kept starting again.
+         */
         const runs = el('div', 'dya-form__stack')
-        if (card.runs.length) {
-            for (const run of [...card.runs].reverse().slice(0, 6)) {
-                const row = el('div', 'dya-entry dya-entry--row')
-                const dot = el(
-                    'span',
-                    light(
-                        run.outcome === 'completed' || run.outcome === null
-                            ? 'success'
-                            : run.outcome === 'blocked'
-                              ? 'warning'
-                              : 'idle'
-                    )
+        const numbered = card.runs.map((run, index) => ({ run, number: index + 1 }))
+        for (const { run, number } of numbered.reverse().slice(0, 6)) {
+            const row = el('div', 'dya-entry')
+            const head = el('div', 'dya-entry__head')
+            const dot = el(
+                'span',
+                light(
+                    run.outcome === 'completed' || run.outcome === null
+                        ? 'success'
+                        : run.outcome === 'blocked'
+                          ? 'warning'
+                          : run.outcome === 'violation' || run.outcome === 'crashed'
+                            ? 'danger'
+                            : 'idle'
                 )
-                const kind = run.kind === 'review' ? 'review - ' : ''
-                const label = el(
-                    'span',
-                    'dya-meta',
-                    `${kind}${run.outcome ?? 'running'} - ${tokens(run.inputTokens + run.outputTokens)} tok - ${ago(run.startedAt, clock)}`
-                )
-                row.append(dot, label)
-                if (run.branch) {
-                    const branch = el('span', 'dya-tag', run.branch)
-                    branch.title = run.worktree ?? ''
-                    row.append(branch)
-                }
-                for (const name of [...(run.kept ?? []), ...(run.handoff ?? [])]) {
-                    const file = el('button', 'dya-chip', name)
-                    file.type = 'button'
-                    file.title = (run.handoff ?? []).includes(name)
-                        ? 'handed to the next worker on this card; show it on disk'
-                        : 'show this artifact on disk'
-                    file.addEventListener('click', () => {
-                        void invoke('reveal', meta?.slug, card.id, name).catch((thrown: unknown) =>
-                            failOn(card.id, thrown)
-                        )
-                    })
-                    row.append(file)
-                }
-                if (run.summary) row.append(el('div', 'dya-entry__text', run.summary))
-                runs.appendChild(row)
+            )
+            const took = run.endedAt ? since(run.startedAt, run.endedAt) : null
+            const facts = [
+                local(run.startedAt).replace('T', ' '),
+                run.endedAt ? (took ?? 'under a minute') : `${ago(run.startedAt, clock)} so far`,
+                `${tokens(run.inputTokens + run.outputTokens)} tokens`,
+                run.harness
+            ]
+            head.append(
+                dot,
+                el('span', 'dya-name', `Run ${number} - ${run.kind}`),
+                el('span', 'dya-meta', facts.join(' - '))
+            )
+            row.append(head, el('div', 'dya-entry__text', told(card, run, number)))
+            const files = el('div', 'dya-form__value')
+            if (run.branch) {
+                const branch = el('span', 'dya-tag', run.branch)
+                branch.title = run.worktree ?? ''
+                files.append(branch)
             }
+            for (const name of [...(run.kept ?? []), ...(run.handoff ?? [])]) {
+                const file = el('button', 'dya-chip', name)
+                file.type = 'button'
+                file.title = (run.handoff ?? []).includes(name)
+                    ? 'handed to the next worker on this card; show it on disk'
+                    : 'show this artifact on disk'
+                file.addEventListener('click', () => {
+                    void invoke('reveal', meta?.slug, card.id, name).catch((thrown: unknown) =>
+                        failOn(card.id, thrown)
+                    )
+                })
+                files.append(file)
+            }
+            if (files.childElementCount) row.append(files)
+            if (run.summary) row.append(el('div', 'dya-entry__text dya-meta--wrap', `Its last words: ${run.summary}`))
+            runs.appendChild(row)
+        }
+
+        function told(card: Card, run: Run, number: number): string {
+            const how = ((): string => {
+                if (run.outcome === null) return 'Working now.'
+                if (run.outcome === 'completed') {
+                    return run.kind === 'review' ? 'Judged the work and reported.' : 'Finished and reported.'
+                }
+                if (run.outcome === 'blocked') return 'Stopped and asked for help.'
+                if (run.outcome === 'stopped') return `Stopped before it finished${run.error ? `: ${run.error}` : ''}.`
+                if (run.outcome === 'crashed') return `Its session went away${run.error ? `: ${run.error}` : ''}.`
+                if (run.error?.startsWith('declared but missing')) {
+                    return `Reported files that are not there (${run.error.slice('declared but missing: '.length)}).`
+                }
+                if (run.error === 'a review that declared no verdict') return 'Reviewed, but gave no verdict.'
+                return 'Ended its turn without the closing report the board needs.'
+            })()
+            if (run.outcome === null) return how
+            const next = card.runs[number]
+            if (next) {
+                if (run.outcome === 'completed' && next.kind === 'review' && run.kind === 'implement') {
+                    return `${how} The board sent it to review as run ${number + 1}.`
+                }
+                return `${how} The board started it again as run ${number + 1}.`
+            }
+            const status = shown(card)
+            if (status === 'blocked') {
+                return `${how} The card is blocked${card.blockKind ? ` (${card.blockKind.replace('_', ' ')})` : ''} and waits for you.`
+            }
+            if (status === 'ready') return `${how} The card is back in ready and will start again.`
+            if (status === 'review') return `${how} The card waits for its review.`
+            if (status === 'done') return `${how} The card is done.`
+            return how
         }
 
         const schedule = el('div', 'dya-form__value')

@@ -186,7 +186,12 @@ export function brief(
 
     lines.push('## How to finish', '')
     lines.push(
-        'Write everything in English, whatever the machine you are running on prefers.',
+        'Write your messages and this closing block in English, whatever the machine you are',
+        'running on prefers. What the card asks you to produce is in the language it asks for.',
+        '',
+        'This run ends when the block below is written, and only then. If you start background',
+        'agents or background commands, stay in this session: wait until every one has reported',
+        'back, then write the block. Do not schedule a wakeup to wait for them.',
         '',
         'End your last message with a block in exactly this shape, on its own lines, and nothing',
         'after it:',
@@ -315,7 +320,12 @@ export function reviewBrief(
 
     lines.push('## How to finish', '')
     lines.push(
-        'Write everything in English, whatever the machine you are running on prefers.',
+        'Write your messages and this closing block in English, whatever the machine you are',
+        'running on prefers. What the card asks you to produce is in the language it asks for.',
+        '',
+        'This run ends when the block below is written, and only then. If you start background',
+        'agents or background commands, stay in this session: wait until every one has reported',
+        'back, then write the block. Do not schedule a wakeup to wait for them.',
         '',
         'End your last message with a block in exactly this shape, on its own lines, and nothing',
         'after it:',

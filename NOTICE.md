@@ -42,7 +42,14 @@ highlight.js                       BSD-3-Clause   the colour of code everywhere 
 IBM Plex Sans, IBM Plex Mono       OFL 1.1        the interface and data faces
 Spectral                           OFL 1.1        the brand face
 Lobe Icons, by LobeHub             MIT            the marks of the agent CLIs
+@ghostery/adblocker, by Ghostery,  MPL-2.0        blocks ads and trackers in the browser
+and its @remusao helpers
+tldts, by Rémi Berson              MIT            the domain parsing that engine uses
 ```
+
+The browser plugin bundles the Ghostery engine unmodified into `plugins/browser/dist/main.js`;
+its source is at https://github.com/ghostery/adblocker. The filter lists it runs are fetched from
+Ghostery's CDN on the user's machine and are not redistributed by this project.
 
 `LICENSE.electron.txt` and `LICENSES.chromium.html` are installed beside the executable, as
 Electron and Chromium require. `licenses/OFL.txt` carries the font licence, with both copyright

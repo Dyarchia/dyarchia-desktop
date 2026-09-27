@@ -70,5 +70,5 @@ def test_the_crawlee_line_is_replaced_by_one_that_says_the_attempt(
         asyncio.run(crawler.handler(context, _raised(httpx.ReadError(''), ConnectionResetError())))
 
     assert [record.getMessage() for record in caplog.records] == [
-        'retry 1 of 3 · the connection closed mid-response · https://example.com/a'
+        'retry 1 of 3 - the connection closed mid-response - https://example.com/a'
     ]

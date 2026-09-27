@@ -121,12 +121,17 @@ export function slugify(name: string): string {
     return RESERVED.has(base) ? `${base}-board` : base
 }
 
-export async function assertWorkdir(workdir: string): Promise<string> {
+/*
+ * A directory that is not there yet is made, because naming a project that does not exist yet is
+ * how one starts. Only a path that is taken by something other than a directory is refused.
+ */
+export async function ensureWorkdir(workdir: string): Promise<string> {
     const value = String(workdir ?? '').trim()
     if (!value) throw new Refusal('the board needs a project directory')
     if (!isAbsolute(value)) throw new Refusal(`'${value}' is not an absolute path`)
     const info = await stat(value).catch(() => null)
-    if (!info?.isDirectory()) throw new Refusal(`'${value}' is not an existing directory`)
+    if (info && !info.isDirectory()) throw new Refusal(`'${value}' is a file, not a directory`)
+    if (!info) await mkdir(value, { recursive: true })
     return value
 }
 
@@ -191,7 +196,7 @@ export async function create(draft: BoardDraft): Promise<BoardMeta> {
     if (!name) throw new Refusal('the board needs a name')
 
     const slug = assertSlug(draft.slug?.trim() ? draft.slug.trim() : slugify(name))
-    const workdir = await assertWorkdir(draft.workdir)
+    const workdir = await ensureWorkdir(draft.workdir)
 
     const boards = await list()
     if (boards.some((entry) => entry.slug === slug)) throw new Refusal(`board '${slug}' already exists`)
@@ -221,7 +226,7 @@ export async function update(slug: string, patch: Partial<BoardDraft>): Promise<
     if (!name) throw new Refusal('the board needs a name')
 
     const workdir =
-        patch.workdir === undefined ? boards[index].workdir : await assertWorkdir(patch.workdir)
+        patch.workdir === undefined ? boards[index].workdir : await ensureWorkdir(patch.workdir)
 
     const maxRunning =
         patch.maxRunning === undefined

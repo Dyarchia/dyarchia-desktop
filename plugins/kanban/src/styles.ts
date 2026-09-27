@@ -117,7 +117,19 @@ export const STYLES = `
 }
 
 .kanban-new {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
     margin-bottom: var(--dya-space-2);
+}
+
+.kanban-new[hidden] {
+    display: none;
+}
+
+.kanban-new > .dya-field {
+    flex: 1;
+    min-width: 0;
 }
 
 .kanban-column-head {
@@ -326,13 +338,6 @@ export const STYLES = `
     gap: var(--dya-space-3);
 }
 
-.kanban-grow { flex: 1 0 auto; }
-
-.kanban-grow > .kanban-body-field {
-    flex: 1 1 auto;
-    min-height: 96px;
-}
-
 @container (min-width: 720px) {
     .kanban-drawer[data-stage='true'] .kanban-drawer-body {
         display: grid;
@@ -360,22 +365,6 @@ export const STYLES = `
     gap: var(--dya-space-1);
 }
 
-/*
- * A group's name and the one control that acts on the group, on one line. Three sections spent a
- * whole line on a label with a single button under it — three labels, three buttons, six lines
- * for six words.
- */
-.kanban-group-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
-    flex-wrap: wrap;
-}
-
-.kanban-group-head > .dya-label { flex: none; }
-
-.kanban-group > .dya-button { align-self: flex-start; }
-
 .kanban-row {
     display: flex;
     align-items: center;
@@ -386,50 +375,20 @@ export const STYLES = `
 
 .kanban-row > .kanban-cap { flex: 0 0 4rem; }
 
-.kanban-runner { flex-wrap: wrap; }
-
-.kanban-runner > .dya-field { flex: 1 1 12rem; }
-
 .kanban-select { display: flex; min-width: 0; }
 
 .kanban-select > .dya-field { width: 100%; }
 
-.kanban-runner > .kanban-select { flex: 1 1 6.5rem; }
-
 .kanban-body-field {
-    min-height: 96px;
+    min-height: 160px;
     resize: vertical;
 }
-
-.kanban-settings {
-    display: grid;
-    grid-template-columns: 7.5rem minmax(0, 1fr);
-    align-items: center;
-    gap: var(--dya-space-2);
-}
-
-.kanban-runners {
-    display: grid;
-    grid-template-columns: 7.5rem repeat(3, minmax(0, 1fr));
-    align-items: center;
-    gap: var(--dya-space-2);
-    margin-top: var(--dya-space-2);
-}
-
-.kanban-runners > .kanban-runner { display: contents; }
 
 .kanban-model {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-1);
     min-width: 0;
-}
-
-.kanban-settings > .kanban-select { justify-self: stretch; }
-
-/* A cell in the settings grid. What it looks like is dya-label; this is only where it sits. */
-.kanban-setting {
-    justify-self: start;
 }
 
 .kanban-file {
@@ -600,12 +559,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     padding: var(--dya-space-5);
 }
 
-.kanban-chooser-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--dya-space-3);
-}
-
 .kanban-chooser-path {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-xs);
@@ -669,13 +622,6 @@ button.kanban-health-row:focus-visible { background-color: var(--dya-surface-2);
     flex-direction: column;
     gap: var(--dya-space-4);
     padding: var(--dya-space-4);
-}
-
-/* The boards, as many across as the panel affords. */
-.kanban-board-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
-    gap: var(--dya-space-3);
 }
 
 .kanban-watch-body {

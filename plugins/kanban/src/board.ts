@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
+import { join } from 'node:path'
 import { reclaim } from './artifacts.js'
 import * as events from './events.js'
 import { DEFAULT_HARNESS, isHarness } from './harness/index.js'
 import * as hosted from './harness/hosted.js'
-import { attachmentsRoot, boardPath, boardRoot, workspacesRoot, writeAtomic } from './boards.js'
+import { attachmentsRoot, boardPath, boardRoot, ensureWorkdir, workspacesRoot, writeAtomic } from './boards.js'
 import { allows, isClosed, rules } from './rules.js'
 import * as runners from './runners.js'
 import type {
@@ -119,10 +119,9 @@ function normalizeParents(file: BoardFile, id: string, parents: string[] | undef
     return unique
 }
 
-function assertWorkdir(workdir: string | null | undefined): string | null {
+async function cardWorkdir(workdir: string | null | undefined): Promise<string | null> {
     if (workdir === undefined || workdir === null || workdir === '') return null
-    if (!isAbsolute(workdir)) throw new Refusal(`'${workdir}' is not an absolute path`)
-    return workdir
+    return ensureWorkdir(workdir)
 }
 
 export function tally(cards: Card[]): Record<Status, number> {
@@ -160,7 +159,7 @@ export async function createCard(slug: string, draft: CardDraft): Promise<Card> 
         status,
         priority: Number.isFinite(draft.priority) ? Number(draft.priority) : 0,
         assignee: 'claude',
-        workdir: assertWorkdir(draft.workdir),
+        workdir: await cardWorkdir(draft.workdir),
         workspaceKind: draft.workspaceKind ?? 'dir',
         runners: runners.merge(runners.blank(), draft.runners),
         maxRuntimeSeconds: draft.maxRuntimeSeconds ?? null,
@@ -217,7 +216,7 @@ export async function updateCard(slug: string, id: string, patch: CardPatch): Pr
     }
     if (patch.body !== undefined) card.body = String(patch.body)
     if (patch.priority !== undefined) card.priority = Number(patch.priority) || 0
-    if (patch.workdir !== undefined) card.workdir = assertWorkdir(patch.workdir)
+    if (patch.workdir !== undefined) card.workdir = await cardWorkdir(patch.workdir)
     if (patch.workspaceKind !== undefined) card.workspaceKind = patch.workspaceKind
     if (patch.runners !== undefined) card.runners = runners.merge(card.runners, patch.runners)
     if (patch.maxRuntimeSeconds !== undefined) card.maxRuntimeSeconds = patch.maxRuntimeSeconds

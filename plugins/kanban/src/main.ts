@@ -106,7 +106,7 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('pickWorkdir', async () => {
         const picked = await dialog.showOpenDialog({
             title: 'Choose the project directory',
-            properties: ['openDirectory']
+            properties: ['openDirectory', 'createDirectory', 'promptToCreate']
         })
         return picked.canceled ? null : picked.filePaths[0]
     })

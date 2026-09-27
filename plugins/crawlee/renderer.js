@@ -26,9 +26,6 @@ const BOOK =
  * The shared action glyphs, drawn as packages/sdk/src/glyphs.ts draws them. This file is served
  * unbuilt, so it carries its own copy of the few it uses.
  */
-const REFRESH =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>'
-
 const SEARCH =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5"/></svg>'
 
@@ -68,25 +65,17 @@ const STYLE = `
     min-height: 0;
 }
 /*
- * The head and the footer sit on the table's left edge, not on the panel's. A cell carries its own
- * padding, so a bar flush with the panel starts a whole cell inset to the left of every value
- * under it and nothing in the view lines up with anything.
+ * The problem line and the footer sit on the table's left edge, not on the panel's. A cell carries
+ * its own padding, so a line flush with the panel starts a whole cell inset to the left of every
+ * value under it and nothing in the view lines up with anything.
  */
-.crw-head {
-    display: flex;
-    align-items: baseline;
-    gap: var(--dya-space-3);
-    flex: none;
-    padding-inline: var(--dya-space-3);
-}
 .crw-headline {
     flex: none;
-    min-width: 0;
+    padding-inline: var(--dya-space-3);
     overflow-wrap: anywhere;
 }
-.crw-where {
-    flex: 1;
-    min-width: 60px;
+.crw-headline:empty {
+    display: none;
 }
 .crw-corpora {
     flex: 1 1 auto;
@@ -365,21 +354,20 @@ function stateBadge(corpus) {
         return badge
     }
 
-    if (!corpus.changed) {
-        const [text, tone] = corpus.stale ? ['stale', 'warning'] : ['fresh', 'success']
-        const badge = el('span', `dya-badge dya-badge--${tone}`, text)
-        if (corpus.stale) badge.title = 'not swept since it last moved'
-        return badge
-    }
+    /*
+     * A sweep that found nothing writes no change report, so the one on disk is older than the
+     * sweep. That is the quiet outcome, not a warning: it wore the yellow light as `stale` and
+     * twelve of fourteen corpora looked like trouble. Only a change asks to be looked at.
+     */
+    if (!corpus.changed) return el('span', 'dya-tag', corpus.first_run ? 'new' : 'unchanged')
 
     const pills = el('span', 'dya-pills')
     const counts = [
-        [corpus.added, '+', 'added'],
-        [corpus.modified, '~', 'changed'],
-        [corpus.removed, '−', 'removed']
+        [corpus.added, '+'],
+        [corpus.modified, '~'],
+        [corpus.removed, '−']
     ].filter(([count]) => count)
     const delta = el('span', 'dya-tag', counts.map(([count, sign]) => `${sign}${count}`).join(' '))
-    delta.title = counts.map(([count, , what]) => `${count} ${what}`).join(', ')
     pills.append(el('span', 'dya-badge dya-badge--warning', 'changed'), delta)
     return pills
 }
@@ -465,8 +453,7 @@ export function activate(ctx) {
         {
             id: 'crawlee',
             title: 'Crawlee',
-            icon: ICON,
-            note: 'Snapshot a site and search everything it has kept.'
+            icon: ICON
         },
         (container) =>
         mount(ctx, container)
@@ -570,13 +557,13 @@ function mount(ctx, container) {
         grip.setAttribute('role', 'separator')
         grip.setAttribute('aria-orientation', 'horizontal')
         grip.tabIndex = 0
-        grip.title = 'drag to resize - double-click for the whole view'
+        grip.title = 'Resize'
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
         const close = el('button', 'dya-key')
         close.type = 'button'
         close.innerHTML = CLOSE
-        close.title = 'close the output'
+        close.title = 'Close'
         close.setAttribute('aria-label', 'close the output')
         close.addEventListener('click', () => {
             log.hidden = true
@@ -643,17 +630,13 @@ function mount(ctx, container) {
     }
 
     function buildRounds() {
-        const head = el('div', 'crw-head')
-        const headline = el('span', 'dya-value crw-headline', 'reading the corpus…')
         /*
-         * Where the corpora are read from, said on the screen that reports them. It is the one
-         * fact a reader cannot deduce from anything else here, and a stale repositories directory
-         * in one shell is enough to hide every corpus but the fallback — this panel once said
-         * `9 corpora` with four more on the disk, as confidently as it would have said fourteen.
+         * Nothing above the table but a problem when there is one. The counts are the table's
+         * footer, the folder is Setup's, and the state is read again whenever it can have moved:
+         * on open, after a round, after a target is saved. A key that read it once more did
+         * nothing anybody could see.
          */
-        const where = el('span', 'dya-meta crw-where')
-        const refresh = iconKey(REFRESH, 'Read the corpora again')
-        head.append(el('span', 'dya-eyebrow', 'corpus'), headline, where, refresh)
+        const headline = el('span', 'dya-value crw-headline')
 
         const table = el('table', 'dya-table dya-table--stack')
         const wrap = el('div', 'crw-corpora')
@@ -674,16 +657,11 @@ function mount(ctx, container) {
         const scopeGroup = el('div', 'dya-bar__group')
         scopeGroup.append(el('span', 'dya-eyebrow', 'round'), scopeBox)
 
-        const commitBox = el('label', 'crw-check')
-        const commit = el('input', 'dya-checkbox')
-        commit.type = 'checkbox'
-        commit.checked = true
-        commitBox.append(commit, el('span', 'dya-key-label', 'commit'))
-        const run = iconKey(PLAY, 'Run the round', 'dya-key--success')
-        const stop = iconKey(STOP, 'Stop the round', 'dya-key--danger')
+        const run = iconKey(PLAY, 'Run', 'dya-key--success')
+        const stop = iconKey(STOP, 'Stop', 'dya-key--danger')
         stop.hidden = true
         const actionGroup = el('div', 'dya-bar__group')
-        actionGroup.append(commitBox, run, stop)
+        actionGroup.append(run, stop)
 
         const status = el('span', 'dya-text crw-status', '')
         const ring = el('span', 'dya-ring')
@@ -710,12 +688,12 @@ function mount(ctx, container) {
         const paintRound = () => {
             status.className = 'dya-text crw-status'
             if (!round.total) {
-                status.textContent = `Round starting - ${elapsed()}`
+                status.textContent = elapsed()
                 return
             }
             const parts = round.current
-                ? [`Round running - target ${round.index} of ${round.total}`, round.current]
-                : [`Round running - ${round.done} of ${round.total} done`]
+                ? [`${round.index}/${round.total}`, round.current]
+                : [`${round.done}/${round.total}`]
             if (round.changed) parts.push(`${round.changed} changed`)
             if (round.failed) parts.push(`${round.failed} failed`)
             parts.push(elapsed())
@@ -754,14 +732,12 @@ function mount(ctx, container) {
          */
         const output = buildConsole('crawlee.console.rounds')
         const log = output.log
-        rounds.append(head, wrap, bar, output.node)
+        rounds.append(headline, wrap, bar, output.node)
 
-        refresh.addEventListener('click', () => void refreshState())
         run.addEventListener('click', () => void startRound())
         stop.addEventListener('click', () => void ctx.invoke('stop'))
 
         async function refreshState() {
-            headline.textContent = 'reading the corpus…'
             try {
                 const state = await ctx.invoke('state')
                 render(state)
@@ -780,15 +756,12 @@ function mount(ctx, container) {
              * the panel's own voice, without the interpreter paths that used to come with it.
              */
             if (state.needsEnvironment) {
-                headline.textContent = 'needs its Python environment — turn this plugin on in Setup'
-                where.textContent = ''
+                headline.textContent = 'needs its Python environment - turn this plugin on in Setup'
                 table.replaceChildren()
                 return
             }
 
-            headline.textContent = state.headline || 'no corpora'
-            where.textContent = state.folder ?? ''
-            where.title = state.folder ? `every corpus repository under ${state.folder}` : ''
+            headline.textContent = ''
 
             const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
             for (const corpus of corpora) if (corpus.group) groups.add(corpus.group)
@@ -824,7 +797,22 @@ function mount(ctx, container) {
                 })
                 body.appendChild(row)
             }
-            table.append(thead, body)
+            const total = (key) => corpora.reduce((sum, corpus) => sum + (Number(corpus[key]) || 0), 0)
+            const foot = el('tfoot')
+            const sums = el('tr')
+            sums.append(
+                el('td', 'dya-table__name', String(corpora.length)),
+                el('td'),
+                el('td', 'dya-table__num', total('pages').toLocaleString('en')),
+                el('td', 'dya-table__num', bytes(total('bytes'))),
+                el('td'),
+                el('td')
+            )
+            sums.querySelectorAll('td').forEach((cell, column) => {
+                cell.dataset.label = labels[column] ?? ''
+            })
+            foot.appendChild(sums)
+            table.append(thead, body, foot)
 
             const sweptGroups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
             scope.replaceChildren()
@@ -856,7 +844,7 @@ function mount(ctx, container) {
             window.clearInterval(round.timer)
             round.timer = window.setInterval(paintRound, 1000)
             const [kind, value] = scope.value.split(':')
-            const payload = { commit: commit.checked }
+            const payload = { commit: true }
             if (kind === 'group') payload.group = value
             if (kind === 'name') payload.names = [value]
             await begin('run', payload, log, status, { run, stop })
@@ -880,7 +868,7 @@ function mount(ctx, container) {
                 const stopped = total > 0 && done < total
                 const failed = (report.failed ?? round.failed) > 0 || (report.code === 1 && !stopped)
                 const at = new Date().toTimeString().slice(0, 5)
-                const head = failed ? 'Round finished with failures' : stopped ? 'Round stopped' : 'Round finished'
+                const head = failed ? 'Finished with failures' : stopped ? 'Stopped' : 'Finished'
                 const parts = [`${head} at ${at}`]
                 /*
                  * The counts come from the progress lines the command prints. A command that
@@ -928,11 +916,11 @@ function mount(ctx, container) {
             actions.append(el('span', 'dya-meta', `line ${hit.line}`))
         }
         if (ctx.shell.canOpen(hit.file)) {
-            const open = iconKey(OPEN, `Open the snapshot at line ${hit.line}`)
+            const open = iconKey(OPEN, 'Open')
             open.onclick = () => void ctx.shell.open({ path: hit.file, line: hit.line })
             actions.append(open)
         }
-        const reveal = iconKey(FOLDER, `Show ${hit.file}`)
+        const reveal = iconKey(FOLDER, 'Show')
         reveal.onclick = () => void ctx.shell.reveal(hit.file)
         actions.append(reveal)
         return actions
@@ -942,7 +930,7 @@ function mount(ctx, container) {
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar')
         const query = el('input', 'dya-field dya-field--prose crw-query')
         query.type = 'search'
-        query.placeholder = 'ask it in words, enter to search'
+        query.placeholder = 'Search'
         const scope = el('select', 'dya-field dya-field--auto crw-scope')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
@@ -996,7 +984,7 @@ function mount(ctx, container) {
         function render(found) {
             hits.replaceChildren()
             if (!found.length) {
-                hits.appendChild(el('div', 'dya-empty', 'Nothing in the corpus holds those words.'))
+                hits.appendChild(el('div', 'dya-empty', 'No results'))
                 return
             }
             for (const hit of found) {
@@ -1055,8 +1043,8 @@ function mount(ctx, container) {
 
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
-        const remove = iconKey(DELETE, 'Delete this target', 'dya-key--danger')
-        const inspect = iconKey(INSPECT, 'Inspect the profile')
+        const remove = iconKey(DELETE, 'Delete', 'dya-key--danger')
+        const inspect = iconKey(INSPECT, 'Inspect')
         const save = iconKey(SAVE, 'Save')
         const close = iconKey(CLOSE, 'Close')
         const sheetKeys = el('div', 'dya-bar__group')
@@ -1090,7 +1078,7 @@ function mount(ctx, container) {
         const library = el('div', 'dya-sheet crw-sheet')
         library.hidden = true
         const libraryBar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
-        const libraryClose = iconKey(CLOSE, 'Close the library')
+        const libraryClose = iconKey(CLOSE, 'Close')
         libraryBar.append(el('span', 'dya-title crw-status', 'Profile library'), libraryClose)
         const shelves = el('div', 'crw-library')
         const libraryNote = el('div', 'dya-text crw-note')
@@ -1164,7 +1152,7 @@ function mount(ctx, container) {
                 return
             }
             confirmClose.arm()
-            say('unsaved changes to this profile', false)
+            say('unsaved', false)
         }
 
         close.addEventListener('click', leave)
@@ -1247,7 +1235,7 @@ function mount(ctx, container) {
                 const count = done.installed.length
                 const noun = count === 1 ? 'profile' : 'profiles'
                 libraryNote.className = 'dya-text crw-note dya-text--success'
-                libraryNote.textContent = `${count} ${noun} of ${group} installed in ${done.repository}`
+                libraryNote.textContent = `${count} ${noun} installed`
                 await Promise.all([shelve(), refreshList(), roundsView.refresh()])
             } catch (error) {
                 button.disabled = false
@@ -1271,9 +1259,7 @@ function mount(ctx, container) {
             const corpus = corpora.get(current)
             confirmDelete.arm()
             say(
-                corpus
-                    ? `${current}, its ${corpus.pages} pages and its exports come off the disk`
-                    : `${current} comes off the disk`,
+                corpus ? `press again to delete ${current} and its ${corpus.pages} pages` : `press again to delete ${current}`,
                 false
             )
         })
@@ -1349,11 +1335,7 @@ function mount(ctx, container) {
             const card = el('button', 'dya-tile dya-tile--new crw-new')
             const icon = el('span', 'dya-tile__icon')
             icon.innerHTML = PLUS
-            card.append(icon, el('span', 'dya-tile__name', 'New target'), el(
-                'span',
-                'dya-tile__note',
-                'Point the crawler at a site or a sitemap and keep what it finds.'
-            ))
+            card.append(icon, el('span', 'dya-tile__name', 'New target'))
             card.addEventListener('click', () => {
                 raise(null, card)
                 form.open()
@@ -1365,11 +1347,7 @@ function mount(ctx, container) {
             const card = el('button', 'dya-tile crw-new')
             const icon = el('span', 'dya-tile__icon')
             icon.innerHTML = BOOK
-            card.append(icon, el('span', 'dya-tile__name', 'Profile library'), el(
-                'span',
-                'dya-tile__note',
-                'Ready-made targets for the AI labs and Salesforce documentation.'
-            ))
+            card.append(icon, el('span', 'dya-tile__name', 'Profile library'))
             card.addEventListener('click', () => browse(card))
             return card
         }
@@ -1427,7 +1405,7 @@ function mount(ctx, container) {
         async function probe() {
             const url = firstUrl(yaml.value)
             if (!url) {
-                say('no URL in this profile to probe', false)
+                say('no URL', false)
                 return
             }
             log.textContent = ''
@@ -1499,7 +1477,7 @@ function mount(ctx, container) {
             const snapshot = el('input', 'dya-checkbox')
             snapshot.type = 'checkbox'
             snapshot.checked = true
-            snapshotBox.append(snapshot, el('span', 'dya-text', 'track its changes over time'))
+            snapshotBox.append(snapshot, el('span', 'dya-text', 'track changes'))
             const create = el('button', 'dya-button dya-button--sm', 'Draft it')
             const actions = el('div', 'dya-form__actions')
             actions.append(create)
@@ -1509,7 +1487,7 @@ function mount(ctx, container) {
                 const name = fields.name.value.trim()
                 const url = fields.url.value.trim()
                 if (!name || !url) {
-                    say('a target needs a name and a URL', false)
+                    say('name and URL required', false)
                     return
                 }
                 yaml.value = draft({
@@ -1521,7 +1499,7 @@ function mount(ctx, container) {
                 })
                 raise(name)
                 node.hidden = true
-                say('drafted, not saved. Read it, probe it, then save it.')
+                say('draft, not saved')
             })
 
             return {
@@ -1550,7 +1528,7 @@ function mount(ctx, container) {
 
     async function begin(kind, payload, into, status, controls) {
         if (busy) {
-            status.textContent = 'something is already running in this panel'
+            status.textContent = 'busy'
             return
         }
         busy = true

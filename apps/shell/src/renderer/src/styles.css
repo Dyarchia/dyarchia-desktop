@@ -247,10 +247,6 @@ body,
     max-width: 728px;
 }
 
-.launcher-tile {
-    min-height: 124px;
-}
-
 .dv-shell.dockview-theme-abyss-spaced .dv-resize-container .dv-groupview {
     box-shadow: var(--dya-elev-overlay);
 }

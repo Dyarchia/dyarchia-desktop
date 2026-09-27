@@ -114,7 +114,6 @@ export function activate(ctx: PluginContext): void {
             id: 'browser',
             title: 'Browser',
             icon: GLOBE_ICON,
-            note: 'Browse the web in a panel, with bookmarks and a way out to your own browser.',
             duplicable: true,
             keepAlive: true
         },
@@ -149,9 +148,9 @@ export function activate(ctx: PluginContext): void {
             const address = el('input', 'dya-field brw-address')
             address.type = 'text'
             address.setAttribute('aria-label', 'Address')
-            address.placeholder = 'Search DuckDuckGo or type an address'
-            const star = key(STAR_ICON, 'Bookmark this page', () => void toggleBookmark())
-            const external = key(EXTERNAL_ICON, 'Open in your browser', () => {
+            address.placeholder = 'Search or address'
+            const star = key(STAR_ICON, 'Bookmark', () => void toggleBookmark())
+            const external = key(EXTERNAL_ICON, 'Open outside', () => {
                 if (ready) void ctx.invoke('external', view.getURL())
             })
             bar.append(back, forward, reload, home, address, star, external)
@@ -196,7 +195,7 @@ export function activate(ctx: PluginContext): void {
                 forward.disabled = !view.canGoForward()
                 const marked = bookmarks.some((entry) => entry.url === url)
                 star.classList.toggle('dya-key--active', marked)
-                star.setAttribute('aria-label', marked ? 'Remove this bookmark' : 'Bookmark this page')
+                star.setAttribute('aria-label', marked ? 'Remove bookmark' : 'Bookmark')
                 handle.setTitle(hostOf(url) || null)
             }
 

@@ -83,16 +83,16 @@ Keys         button (--primary --success --danger --resolve --quiet --sm __state
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
 Pills        tag badge (--success --warning --danger) pills
-Lights       light (--success --warning --danger) meter (__pip) ring (--current --busy)
+Lights       light (--success --warning --danger) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
 Content      table (--stack __num __fit __key __name __subject __end __prose) row
-             stat (__figure __value __unit __text __note) title lede text (--success --warning --danger)
+             stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label problem (--box)
              entry (--row __head __text __body) notice (__body __title __text)
              steps step (--said --error --warning --quiet __time __verb __subject __said __detail)
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
 Navigation   tabs tab (--dock __action --close)
-Absence      empty (--inline __actions) loading
+Absence      empty (__actions) loading
 Assistive    sr-only
 ```

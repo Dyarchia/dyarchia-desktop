@@ -5,13 +5,13 @@
     "toolbar": 2,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
-    "description": "A task board that dispatches work to Claude Code and lets you watch it run",
+    "description": "Task board for coding agents",
     "requires": [
         {
             "kind": "command",
             "name": "claude",
             "label": "Claude Code CLI",
-            "hint": "install it from claude.com/claude-code, then reopen this panel"
+            "hint": "claude.com/claude-code"
         }
     ],
     "nativeDeps": [

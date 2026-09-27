@@ -155,7 +155,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: requirement.label,
                 met: found !== null,
                 acquirable: false,
-                detail: found ?? (requirement.hint ?? `${requirement.name} is not on PATH`)
+                detail: requirement.hint ?? 'not on PATH'
             }
         ]
     }
@@ -172,13 +172,13 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: 'uv',
                 met: uv !== null,
                 acquirable: true,
-                detail: uv ?? 'not here, so it is downloaded from its own release first'
+                detail: 'downloaded first'
             },
             {
                 label: requirement.label,
                 met: done,
                 acquirable: true,
-                detail: built ? python : `to be built in ${python}`
+                detail: 'not built'
             }
         ]
 
@@ -190,9 +190,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: step[step.length - 1] ?? step.join(' '),
                 met: done,
                 acquirable: true,
-                detail: built
-                    ? 'ran with the environment'
-                    : 'runs after the packages, and skips whatever is already on this machine'
+                detail: 'after the packages'
             })
         }
 
@@ -202,9 +200,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: 'verified',
                 met: done,
                 acquirable: true,
-                detail: verdict
-                    ? `${command} exited ${verdict.code}`
-                    : `${command} runs once the environment is built`
+                detail: verdict ? `${command} exited ${verdict.code}` : 'after the build'
             })
         }
         return parts
@@ -218,11 +214,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: requirement.label,
                 met: found !== null,
                 acquirable: found === null && asset !== undefined,
-                detail:
-                    found ??
-                    (asset
-                        ? `not on this machine, so it is downloaded from ${new URL(asset).host}`
-                        : `not on this machine, and there is no download for ${platformKey()}`)
+                detail: asset ? `from ${new URL(asset).host}` : `no download for ${platformKey()}`
             }
         ]
     }
@@ -232,7 +224,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
             label: requirement.label,
             met: false,
             acquirable: false,
-            detail: `this build does not know how to check a "${requirement.kind}" requirement`
+            detail: `unknown kind ${requirement.kind}`
         }
     ]
 }
@@ -438,7 +430,6 @@ async function acquirePython(
     await mkdir(environmentDirectory(pluginId), { recursive: true })
 
     say(`building the environment in ${environment}`)
-    say('this downloads an interpreter and every dependency, so it takes a while')
 
     /*
      * `--frozen` because the plugin directory is read-only when the application is packaged: the

@@ -356,6 +356,12 @@ grows to the height. With a run and 720 px of width it is two columns, the form 
 and the stage on the right at full height. Under that width the stage sits above the form. The
 form is its own pane, so its label column answers to its own width and not the drawer's.
 
+The head is the form's first row: the state key in the label column, the title where the values
+start. The state key opens the move menu. A blocked card's state is lit red and joined to a
+green check that unblocks it, which returns the card to the phase it was blocked from and forgives
+its protocol violations, so the next attempt has its full budget. What to do with the card, from
+approving to deleting it, is icon keys with tips.
+
 The stage has up to three tabs. `session` is the terminal attached to the worker, and exists only
 while a worker is on the card. `activity` is what a run did, as kanon's `steps`: the time, a verb
 a person would use (`ran`, `read`, `wrote`, `started agent`) and its subject, which for claude is

@@ -1,4 +1,4 @@
-import { injectStyles, ownIds } from '@dyarchia/sdk'
+import { glyph, injectStyles, ownIds } from '@dyarchia/sdk'
 import type { PluginCatalogueEntry, PluginContext } from '@dyarchia/sdk'
 
 /*
@@ -446,7 +446,10 @@ export function activate(ctx: PluginContext): void {
                 row.append(el('td', 'dya-table__key', label), el('td', 'dya-table__subject', value))
                 const last = el('td', 'dya-table__end')
                 if (openable) {
-                    const open = el('button', 'dya-button dya-button--sm', 'Open')
+                    const open = el('button', 'dya-key')
+                    open.innerHTML = glyph('folder')
+                    open.setAttribute('aria-label', `Open ${label.toLowerCase()}`)
+                    withTip(open, 'show this folder')
                     open.addEventListener('click', () => void ctx.shell.reveal(value))
                     last.append(open)
                 }

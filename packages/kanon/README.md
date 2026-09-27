@@ -256,8 +256,17 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   70%. `button--primary` is lit in the silver accent, the one action a view is about, at most
   one per view. `button--success` is lit green: go, run, approve, and making one of the few
   things a plugin is built around. `button--danger` is lit red: stop, and unmaking one of those.
-  `key--success` lights the icon key that makes one. Lit inks measure 11.49, 9.05 and 6.87 on
-  the key's face and 10.83, 8.53 and 6.47 on its hover step. A destroying key is never quiet.
+  `key--success` lights the icon key that makes one and `key--danger` the one that stops or
+  unmakes it. A key naming a state that waits for a person, a blocked card, is lit red too: there
+  the light is the state's. Lit inks measure 11.49, 9.05 and 6.87 on the key's face and 10.83,
+  8.53 and 6.47 on its hover step. A destroying key is never quiet.
+- **An action with a glyph everybody knows is an icon key.** Add, browse, open, reveal, refresh,
+  search, save, inspect, close, delete, stop, approve, send back: a `key` with the glyph and a tip that says
+  what it does, never a `button` spelling the verb. Words stay on a key only where no glyph says
+  the decision: create board, install, restart now, try again.
+- **Keys that answer one thing are joined.** `join` sets a state and the key that resolves it,
+  or a value and the key that clears it, edge to edge at one height with square inner corners;
+  each keeps its own light.
 - **Green and red are for the structures, and only those.** A board, a card, a crawl target:
   what makes one is green and what deletes one is red, and every one that can be made can be
   deleted. What lives inside them, a note, a file, a dependency, a bookmark, is added and removed
@@ -382,8 +391,8 @@ contrast measured and its rule written in this file, and only then uses it.
 Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning
              --marked --pending --ghosted --carried) card__header masthead brand carved splitter
              sheet (--side) well lanes lane (--accept --refuse) drop-line drop-box
-Keys         button (--primary --success --danger --quiet --sm) key (--active --success) chip
-             tile (--dense --new __icon __head __name __note) winkey (--close)
+Keys         button (--primary --success --danger --quiet --sm) key (--active --success --danger)
+             chip join tile (--dense --new __icon __head __name __note) winkey (--close)
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
 Pills        tag badge (--success --warning --danger) pills

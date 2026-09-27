@@ -274,9 +274,6 @@ body,
 }
 
 .launcher-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
-    gap: var(--dya-space-3);
     width: 100%;
     max-width: 728px;
 }

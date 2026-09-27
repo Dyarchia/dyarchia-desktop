@@ -350,7 +350,7 @@ scale with it. `.dya-math--block` is the display form.
 --dya-radius-full     999px    a pill, a light, a dot, a meter's pip, a scrollbar thumb
 ```
 
-A key is 34px tall and a small key 28px; a field matches the key beside it. Something asking
+A key is 34px tall and a small key 28px (`--dya-size-control`, `--dya-size-control-sm`); a field matches the key beside it. Something asking
 for 10px gets 8px or 12px. Spacing is the `--dya-space-1` to `--dya-space-24` ladder and
 nothing outside it.
 
@@ -382,7 +382,8 @@ Structure    pane bar (--flush --inset __group) card (--lift) card__header masth
              carved splitter (--vertical) sheet (--side)
 Keys         button (--primary --success --danger --quiet --sm --bare) key (--active) chip
              tile (--dense __icon __head __name __note)
-Input        field (--sm --auto --prose) select checkbox form (__actions __push)
+Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
+Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
 Pills        tag (--key) badge (--success --warning --danger) pills
 Lights       light (--success --warning --danger) meter (__pip)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
@@ -474,10 +475,30 @@ three lines.
 count is busy, idle grey otherwise. It never animates. Draw one only above two marks: a single
 pip is a stray dash.
 
-**`form` is a two-column grid: what the field is called, and the field.** The sentence behind
+**Everything is laid out on twelve columns, and the columns are the container's.** `grid` is the
+twelve, a child takes all of them unless it says otherwise, and `col-<n>` takes n. The tiers are
+the width of the nearest pane, never the window's: `col-sm-<n>` from 400px, `col-md-<n>` from
+700px, `col-lg-<n>` from 1200px, each overriding the one below. A sheet or a drawer that is its own
+width declares itself a `pane`, and what is inside it answers to it. A grid inside a grid is
+`subgrid` and keeps the columns it sits on, so nested cells line up with the view's. `--gallery`
+shares the twelve evenly among things of one kind: one to a row, two from 400px, three from 700px,
+four from 1200px. `auto-fit` and `auto-fill` are not used: they size columns by their content, and
+a layout sized by its content has no grid.
+
+**`form` is the twelve columns with one rule: what the field is called, and the field.** A label
+takes three columns and its value nine, and below 400px the label stands over its value and both
+take twelve. The sentence behind
 the name is a tip on the label, which is where an explanation that is not always needed
 belongs. `__actions` is the row at the end, spanning both columns, and `__push` sends what
 carries it and everything after it to the far end, which is where a destructive action goes.
+**A view has one grid.** Every labelled row of it is a row of the one `form`, so every value
+starts on the same line: a key that adds a file, the pills it added and a thread with the field
+under it are values, never words set after their label. `__value` holds things side by side and
+wraps, `__stack` holds them one under another, and `__split` divides a value into equal columns,
+so a row of headings stands column for column over the rows it names. A label stands against the
+first line of its value, `--dya-size-control` tall, however tall the value is. A form nested in
+a form is a second label column, and the system does not have one. `__split` is a subgrid of
+the value's nine columns, three to a cell.
 
 **`pane` declares an element a query container named `pane` and carries no look.** A panel's
 width is its own, so a viewport query answers the wrong question. A consumer writes

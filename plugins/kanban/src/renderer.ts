@@ -341,7 +341,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
      */
     const harnessHues = ctx.hues(HARNESS_IDS)
 
-    const drawer = el('aside', 'dya-sheet dya-sheet--side kanban-drawer')
+    const drawer = el('aside', 'dya-sheet dya-sheet--side dya-pane kanban-drawer')
     drawer.hidden = true
 
     const scrim = el('div', 'dya-scrim')
@@ -530,24 +530,41 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             draft.hidden = true
             const field = el('input', 'dya-field dya-field--sm dya-field--prose')
             field.type = 'text'
-            field.placeholder = 'card title, enter to add'
+            field.placeholder = 'card title'
             field.spellcheck = false
-            draft.appendChild(field)
+            const confirm = el('button', 'dya-button dya-button--sm', 'add')
+            confirm.type = 'button'
+            draft.append(field, confirm)
             const dismiss = (): void => {
-                draft.hidden = true
                 field.value = ''
+                draft.hidden = true
             }
-            plus.addEventListener('click', () => {
+            const open = (value = ''): void => {
                 draft.hidden = false
+                field.value = value
                 field.focus()
-            })
+            }
+            /*
+             * Enter, the add key and leaving the field all mean the same thing: a title that was
+             * typed is a card. The draft is emptied before the card is asked for, so the blur that
+             * follows Enter or a press of the key finds nothing left to add, and a refusal puts
+             * the title back rather than losing it.
+             */
+            const commit = (): void => {
+                const title = field.value.trim()
+                dismiss()
+                if (!title) return
+                void add(title).then((added) => {
+                    if (!added) open(title)
+                })
+            }
+            plus.addEventListener('click', () => open())
             field.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') dismiss()
-                if (event.key === 'Enter') void add(field.value).then(dismiss)
+                if (event.key === 'Enter') commit()
             })
-            field.addEventListener('blur', () => {
-                if (!field.value.trim()) dismiss()
-            })
+            field.addEventListener('blur', commit)
+            confirm.addEventListener('click', commit)
             head.appendChild(plus)
             scroller.appendChild(draft)
         }
@@ -756,7 +773,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         meter.hidden = meta === null || cards.length === 0
         meter.textContent = `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`
-        meter.title = meta ? `${meta.name} · ${meta.workdir}` : ''
+        meter.title = meta ? `${meta.name} - ${meta.workdir}` : ''
         paintMarks()
         paintDrawer()
     }
@@ -936,7 +953,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         apply: (value: string) => void
     ): HTMLElement => {
         const wrap = el('span', 'dya-select kanban-select')
-        const select = el('select', 'dya-field dya-field--sm')
+        const select = el('select', 'dya-field')
         select.disabled = disabled
         select.setAttribute('aria-label', what)
         for (const value of values) {
@@ -956,16 +973,26 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
      * and the model list is the chosen harness's own. A name the list does not carry is
      * typed into the field that appears when the last entry is picked.
      */
+    const phaseHeads = (): HTMLElement => {
+        const heads = el('div', 'dya-form__split')
+        heads.append(
+            el('span', 'dya-label', 'harness'),
+            el('span', 'dya-label', 'model'),
+            el('span', 'dya-label', 'effort')
+        )
+        return heads
+    }
+
     const runnerRow = (
         current: Runner,
         above: Runner | null,
         disabled: boolean,
         apply: (next: Partial<Runner>) => void
     ): HTMLElement => {
-        const row = el('div', 'kanban-row kanban-runner')
+        const row = el('div', 'dya-form__split')
         const fallback = catalogue[0]?.id ?? 'claude'
         const harnessLabels: Record<string, string> = {
-            '': above ? `board · ${above.harness ?? fallback}` : `default · ${fallback}`
+            '': above ? `board - ${above.harness ?? fallback}` : `default - ${fallback}`
         }
         for (const entry of catalogue) {
             harnessLabels[entry.id] = entry.available ? entry.label : `${entry.label}, not on PATH`
@@ -982,7 +1009,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const models = info?.models ?? []
         const listed = current.model === null || models.includes(current.model)
         const modelLabels: Record<string, string> = {
-            '': above?.model ? `board · ${above.model}` : 'default',
+            '': above?.model ? `board - ${above.model}` : 'default',
             [OTHER]: 'another name\u2026'
         }
         const custom = el('input', 'dya-field dya-field--sm')
@@ -1009,7 +1036,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         if (info?.efforts) {
             const effortLabels: Record<string, string> = {
-                '': above?.effort ? `board · ${above.effort}` : 'default'
+                '': above?.effort ? `board - ${above.effort}` : 'default'
             }
             row.appendChild(
                 choose('effort', current.effort ?? '', ['', ...info.efforts], effortLabels, disabled, (value) =>
@@ -1071,26 +1098,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const globalCap = capField(across.maxRunning, 'across every board')
         capsRow.append(boardCap, el('span', 'dya-label', 'everywhere'), globalCap)
 
-        const runnersGrid = el('div', 'kanban-settings')
         const draft: Runners = {
             implement: { ...current.runners.implement },
             review: { ...current.runners.review }
         }
-        const renderRunners = (): void => {
-            runnersGrid.replaceChildren(
-                el('span', 'dya-label kanban-setting', 'implement'),
-                runnerRow(draft.implement, null, false, (next) => {
-                    Object.assign(draft.implement, next)
-                    renderRunners()
-                }),
-                el('span', 'dya-label kanban-setting', 'review'),
-                runnerRow(draft.review, null, false, (next) => {
-                    Object.assign(draft.review, next)
-                    renderRunners()
-                })
-            )
+        const phaseRow = (kind: keyof Runners): HTMLElement => {
+            const row = runnerRow(draft[kind], null, false, (next) => {
+                Object.assign(draft[kind], next)
+                row.replaceWith(phaseRow(kind))
+            })
+            return row
         }
-        renderRunners()
 
         const save = el('button', 'dya-button dya-button--primary', 'save')
         save.type = 'button'
@@ -1157,10 +1175,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         field(
             form,
             'phases',
-            runnersGrid,
+            phaseHeads(),
             'which harness, model and effort run each phase, unless a card says otherwise. A ' +
                 'reviewer on a different model than the implementer is a better judge of it.'
         )
+        field(form, 'implement', phaseRow('implement'), 'who writes the change')
+        field(form, 'review', phaseRow('review'), 'who judges it afterwards')
         form.append(actions)
 
         shell.append(heading, form)
@@ -1200,7 +1220,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const shell = el('div', 'kanban-setup-shell kanban-chooser')
         shell.append(el('div', 'dya-title', 'Pick up where you left off'))
 
-        const grid = el('div', 'kanban-chooser-grid')
+        const grid = el('div', 'dya-grid dya-grid--gallery')
         for (const entry of open) {
             const tile = el('button', 'dya-tile')
             tile.type = 'button'
@@ -1561,7 +1581,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const head = el('div', 'kanban-row-head')
         head.append(
             el('span', 'dya-tag', row.kind.replace('_', ' ')),
-            el('span', 'kanban-card-note', `${when(row.at)}${row.detail ? ` · ${row.detail}` : ''}`)
+            el('span', 'kanban-card-note', `${when(row.at)}${row.detail ? ` - ${row.detail}` : ''}`)
         )
         node.append(head)
         return node
@@ -1731,29 +1751,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         problemRow.hidden = problem === undefined
         if (problem) problemRow.textContent = problem
 
-        const titleGroup = el('div', 'kanban-group')
-        titleGroup.append(el('span', 'dya-label', 'title'))
         const title = el('input', 'dya-field dya-field--prose')
         title.type = 'text'
         title.value = card.title
         title.addEventListener('change', () => patch(card.id, { title: title.value }))
-        titleGroup.appendChild(title)
 
-        const bodyGroup = el('div', 'kanban-group kanban-grow')
-        bodyGroup.append(el('span', 'dya-label', 'brief'))
         const text = el('textarea', 'dya-field dya-field--prose kanban-body-field')
         text.value = card.body
         text.addEventListener('change', () => patch(card.id, { body: text.value }))
-        bodyGroup.appendChild(text)
 
         const priority = el('input', 'dya-field')
         priority.type = 'number'
         priority.value = String(card.priority)
         priority.addEventListener('change', () => patch(card.id, { priority: Number(priority.value) }))
 
-        const settingsGroup = el('div', 'kanban-group')
-        settingsGroup.append(el('span', 'dya-label', 'settings'))
-        const settings = el('div', 'kanban-settings')
 
         const number = (value: number | null, unit: string, apply: (next: number | null) => void): HTMLInputElement => {
             const input = el('input', 'dya-field')
@@ -1801,12 +1812,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * value goes, which the first keystroke deletes. The placeholder is the unit now.
          */
         const setting = (text: string, tip: string): HTMLElement => {
-            const node = el('span', 'dya-label kanban-setting', text)
+            const node = el('span', 'dya-label', text)
             withTip(node, tip)
             return node
         }
 
-        settings.append(
+        const settingRows = [
             setting('priority', 'higher goes first when the dispatcher picks from ready'),
             priority,
             setting('permission', 'what the agent may do without stopping to ask'),
@@ -1827,31 +1838,22 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             number(card.maxRetries, '2', (next) =>
                 patch(card.id, { maxRetries: next })
             )
-        )
-        settingsGroup.appendChild(settings)
+        ]
 
-        const runnersGrid = el('div', 'kanban-runners')
-        runnersGrid.append(
-            el('span', 'kanban-setting'),
-            el('span', 'dya-label', 'harness'),
-            el('span', 'dya-label', 'model'),
-            el('span', 'dya-label', 'effort'),
+        const runnerRows = [
+            setting('phase', 'which harness, model and effort run each phase of this card'),
+            phaseHeads(),
             setting('implement', 'who writes the change'),
             phase('implement'),
             setting('review', 'who judges it afterwards'),
             phase('review')
-        )
-        settingsGroup.appendChild(runnersGrid)
+        ]
 
-        const filesGroup = el('div', 'kanban-group')
-        const filesHead = el('div', 'kanban-group-head')
-        filesHead.append(el('span', 'dya-label', 'files'))
-        filesGroup.append(filesHead)
-        const files = el('div', 'dya-pills')
+        const files = el('div', 'dya-form__value')
 
         for (const file of card.attachments ?? []) {
             const holder = el('span', 'kanban-file')
-            const open = el('button', 'dya-chip', `${file.name} · ${size(file.bytes)}`)
+            const open = el('button', 'dya-chip', `${file.name} - ${size(file.bytes)}`)
             open.type = 'button'
             open.title = 'show this file on disk'
             open.addEventListener('click', () => {
@@ -1898,14 +1900,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 })
                 .catch((thrown: unknown) => failOn(card.id, thrown))
         })
-        filesHead.append(addFile)
-        filesGroup.append(files)
+        files.append(addFile)
 
-        const depsGroup = el('div', 'kanban-group')
-        const depsHead = el('div', 'kanban-group-head')
-        depsHead.append(el('span', 'dya-label', 'depends on'))
-        depsGroup.append(depsHead)
-        const parents = el('div', 'dya-pills')
+        const parents = el('div', 'dya-form__value')
         for (const parentId of card.parents) {
             const parent = cardById(parentId)
             const chip = el('button', 'dya-chip', parent ? parent.title : parentId)
@@ -1919,11 +1916,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const addParent = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add dependency')
         addParent.type = 'button'
         addParent.addEventListener('click', () => openParentMenu(card, addParent))
-        depsHead.append(addParent)
-        depsGroup.append(parents)
+        parents.append(addParent)
 
-        const notesGroup = el('div', 'kanban-group')
-        notesGroup.append(el('span', 'dya-label', 'thread'))
+        const thread = el('div', 'dya-form__stack')
         for (const entry of card.comments) {
             const item = el('div', 'kanban-comment')
             const itemHead = el('div', 'kanban-comment-head')
@@ -1932,28 +1927,38 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 el('span', 'kanban-card-note', ago(entry.at, clock))
             )
             item.append(itemHead, el('div', 'kanban-comment-text', entry.text))
-            notesGroup.appendChild(item)
+            thread.appendChild(item)
         }
 
         const note = el('textarea', 'dya-field dya-field--prose')
         note.placeholder = 'leave a note for the next run'
-        note.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
-            event.preventDefault()
+        const leave = (): void => {
             const value = note.value.trim()
             if (!value) return
+            note.value = ''
             void invoke('comment', meta?.slug, card.id, value)
                 .then(() => {
                     solved(card.id)
                     return refresh()
                 })
-                .catch((thrown: unknown) => failOn(card.id, thrown))
+                .catch((thrown: unknown) => {
+                    note.value = value
+                    failOn(card.id, thrown)
+                })
+        }
+        note.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
+            event.preventDefault()
+            leave()
         })
-        notesGroup.appendChild(note)
+        note.addEventListener('blur', leave)
+        const post = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add note')
+        post.type = 'button'
+        post.addEventListener('click', leave)
+        thread.append(note, post)
 
-        const runsGroup = el('div', 'kanban-group')
+        const runs = el('div', 'dya-form__stack')
         if (card.runs.length) {
-            runsGroup.append(el('span', 'dya-label', 'runs'))
             for (const run of [...card.runs].reverse().slice(0, 6)) {
                 const row = el('div', 'kanban-run')
                 const dot = el(
@@ -1966,11 +1971,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                               : 'idle'
                     )
                 )
-                const kind = run.kind === 'review' ? 'review · ' : ''
+                const kind = run.kind === 'review' ? 'review - ' : ''
                 const label = el(
                     'span',
                     'kanban-card-note',
-                    `${kind}${run.outcome ?? 'running'} · ${tokens(run.inputTokens + run.outputTokens)} tok · ${ago(run.startedAt, clock)}`
+                    `${kind}${run.outcome ?? 'running'} - ${tokens(run.inputTokens + run.outputTokens)} tok - ${ago(run.startedAt, clock)}`
                 )
                 row.append(dot, label)
                 if (run.branch) {
@@ -1992,15 +1997,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     row.append(file)
                 }
                 if (run.summary) row.append(el('div', 'kanban-comment-text', run.summary))
-                runsGroup.appendChild(row)
+                runs.appendChild(row)
             }
         }
 
-        const scheduleGroup = el('div', 'kanban-group')
-        if (shown(card) === 'ready' || shown(card) === 'scheduled') {
-            const scheduleHead = el('div', 'kanban-group-head')
-            scheduleHead.append(el('span', 'dya-label', 'park until'))
-            scheduleGroup.append(scheduleHead)
+        const schedule = el('div', 'dya-form__value')
+        const parkable = shown(card) === 'ready' || shown(card) === 'scheduled'
+        if (parkable) {
             const at = el('input', 'dya-field dya-field--sm dya-field--auto')
             at.type = 'datetime-local'
             if (card.scheduledFor) at.value = local(card.scheduledFor)
@@ -2022,7 +2025,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     })
                     .catch((thrown: unknown) => failOn(card.id, thrown))
             })
-            scheduleHead.append(at, park)
+            schedule.append(at, park)
         }
 
         const actions = el('div', 'kanban-row')
@@ -2106,19 +2109,25 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * the reason a reader opened the drawer, and they were below the dependencies, above the
          * thread, in the one band of a scrolling form nobody reaches on purpose.
          */
-        form.append(
-            problemRow,
-            actions,
-            titleGroup,
-            bodyGroup,
-            filesGroup,
-            settingsGroup,
-            depsGroup,
-            scheduleGroup,
-            runsGroup,
-            notesGroup,
-            danger
+        const label = (name: string): HTMLElement => el('span', 'dya-label', name)
+        const fields = el('div', 'dya-form')
+        fields.append(
+            label('title'),
+            title,
+            label('brief'),
+            text,
+            label('files'),
+            files,
+            ...settingRows,
+            ...runnerRows,
+            label('depends on'),
+            parents
         )
+        if (parkable) fields.append(label('park until'), schedule)
+        if (card.runs.length) fields.append(label('runs'), runs)
+        fields.append(label('thread'), thread)
+
+        form.append(problemRow, actions, fields, danger)
         const body = el('div', 'kanban-drawer-body')
         body.append(stage, form)
         drawer.append(head, body)
@@ -2158,15 +2167,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .catch((thrown: unknown) => failOn(id, thrown))
     }
 
-    const add = async (raw: string): Promise<void> => {
+    const add = async (raw: string): Promise<boolean> => {
         const title = raw.trim()
-        if (!title || !meta) return
+        if (!title || !meta) return false
         try {
             const card = await invoke<Card>('createCard', meta.slug, { title })
             say(`${card.title} added to triage`)
             await refresh()
+            return true
         } catch (thrown) {
             fail(thrown)
+            return false
         }
     }
 
@@ -2403,7 +2414,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             `${tokens(run.inputTokens + run.outputTokens)} tok`
         ]
             .filter(Boolean)
-            .join(' · ')
+            .join(' - ')
 
         row.append(dot, el('span', 'dya-text', run.title), el('span', 'kanban-card-note', said))
         if (run.waiting) row.append(el('span', 'dya-tag', 'waiting on you'))
@@ -2489,7 +2500,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          */
         const boardsGroup = el('div', 'kanban-group')
         boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
-        const grid = el('div', 'kanban-board-grid')
+        const grid = el('div', 'dya-grid dya-grid--gallery')
         for (const entry of shape.boards) {
             const card = el('button', 'dya-tile dya-tile--dense')
             card.type = 'button'
@@ -2594,7 +2605,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
                 const first = el('td', 'dya-table__prose dya-table__subject', lead)
                 line.append(kind, first, el('td', undefined, rest))
-                line.append(el('td', 'dya-table__end', `${row.board} \u00b7 ${when(row.at)}`))
+                line.append(el('td', 'dya-table__end', `${row.board} - ${when(row.at)}`))
                 logBody.appendChild(line)
             }
             logTable.append(logBody)

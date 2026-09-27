@@ -57,7 +57,7 @@ class _QuietRetries(logging.Filter):
 
 
 def install(crawler: Any, retries: int) -> None:
-    """Say each retry once, as `retry 1 of 3 · reason · url`.
+    """Say each retry once, as `retry 1 of 3 - reason - url`.
 
     A session error is left alone: Crawlee reports a session rotation in its own words, and the
     error handler also runs once rotations are exhausted, where there is no retry to announce.
@@ -70,6 +70,6 @@ def install(crawler: Any, retries: int) -> None:
         if isinstance(error, SessionError):
             return
         request = context.request
-        log.warning(f'retry {request.retry_count} of {retries} · {reason(error)} · {request.url}')
+        log.warning(f'retry {request.retry_count} of {retries} - {reason(error)} - {request.url}')
 
     crawler.error_handler(announce)

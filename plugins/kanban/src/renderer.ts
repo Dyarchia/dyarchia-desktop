@@ -315,7 +315,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     settingsKey.hidden = true
     const treesKey = key('branch', 'worktrees', 'what every run left behind in this project')
     treesKey.hidden = true
-    const tickButton = key('play', 'dispatch', 'sweep every board now instead of waiting for the tick')
+    const tickButton = key('play', 'dispatch', 'look for ready cards on every board now; it looks on its own every 30 s, every 5 s while a card runs')
     const WATCH_TIP = 'every board at once: what is running, what is queued, what was decided'
     const watchButton = key('eye', 'watch', WATCH_TIP)
     watchButton.setAttribute('aria-pressed', 'false')
@@ -1097,9 +1097,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const shell = el('div', 'dya-pane kanban-setup-shell')
         const heading = el('div', 'kanban-setup-head')
         heading.append(el('span', 'dya-title', current.name))
-        const slug = el('span', 'dya-mono dya-text', current.slug)
-        withTip(slug, 'names this board\u2019s storage on disk, and never changes')
-        heading.append(slug)
 
         const form = el('div', 'dya-form')
 
@@ -1124,12 +1121,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         dirRow.append(dir, browse)
 
         const CAP_HINT =
-            '0 pauses it: nothing new is claimed and what is running finishes. A reviewer you ask ' +
-            'for by hand starts regardless.'
+            'How many cards run at the same time. The lower of the two numbers wins; 0 pauses: ' +
+            'nothing new starts and what is running finishes. A review you ask for by hand starts regardless.'
         const capsRow = el('div', 'kanban-row')
         const boardCap = capField(current.maxRunning ?? 1, 'on this board')
-        const globalCap = capField(across.maxRunning, 'across every board')
-        capsRow.append(boardCap, el('span', 'dya-label', 'everywhere'), globalCap)
+        const globalCap = capField(across.maxRunning, 'on all boards together')
+        capsRow.append(
+            boardCap,
+            el('span', 'dya-key-label', 'on this board'),
+            globalCap,
+            el('span', 'dya-key-label', 'on all boards together')
+        )
 
         const draft: Runners = {
             implement: { ...current.runners.implement },
@@ -1204,7 +1206,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         field(form, 'name', name)
         field(form, 'directory', dirRow, 'where the agent works: the project this board is about')
-        field(form, 'workers', capsRow, CAP_HINT)
+        field(form, 'at once', capsRow, CAP_HINT)
         field(
             form,
             'phases',
@@ -1796,24 +1798,33 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         text.value = card.body
         text.addEventListener('change', () => patch(card.id, { body: text.value }))
 
-        const priority = el('input', 'dya-field')
-        priority.type = 'number'
-        priority.value = String(card.priority)
-        priority.addEventListener('change', () => patch(card.id, { priority: Number(priority.value) }))
+        const priorityField = el('input', 'dya-field kanban-cap')
+        priorityField.type = 'number'
+        priorityField.value = String(card.priority)
+        priorityField.addEventListener('change', () => patch(card.id, { priority: Number(priorityField.value) }))
+        const priority = el('div', 'kanban-row')
+        priority.append(priorityField, el('span', 'dya-key-label', 'higher starts first among ready cards'))
 
-
-        const number = (value: number | null, unit: string, apply: (next: number | null) => void): HTMLInputElement => {
-            const input = el('input', 'dya-field')
+        const number = (
+            value: number | null,
+            placeholder: string,
+            unit: string,
+            scale: number,
+            apply: (next: number | null) => void
+        ): HTMLElement => {
+            const input = el('input', 'dya-field kanban-cap')
             input.type = 'number'
             input.min = '1'
-            input.placeholder = unit
+            input.placeholder = placeholder
             input.disabled = card.locked
-            if (value !== null) input.value = String(value)
+            if (value !== null) input.value = String(Math.round(value / scale))
             input.addEventListener('change', () => {
                 const parsed = Number(input.value)
-                apply(input.value.trim() && parsed > 0 ? Math.round(parsed) : null)
+                apply(input.value.trim() && parsed > 0 ? Math.round(parsed) * scale : null)
             })
-            return input
+            const row = el('div', 'kanban-row')
+            row.append(input, el('span', 'dya-key-label', unit))
+            return row
         }
 
         const phase = (kind: keyof Runners): HTMLElement =>
@@ -1866,12 +1877,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             ),
             setting('directory', 'where this card runs, when it is not where the board runs'),
             overrideRow,
-            setting('runtime cap', 'how long a run may take before the board stops it; blank is no cap'),
-            number(card.maxRuntimeSeconds, 'seconds', (next) =>
+            setting('time limit', 'a run still going after this long is stopped and counts as failed'),
+            number(card.maxRuntimeSeconds, '-', 'minutes a run - blank for no limit', 60, (next) =>
                 patch(card.id, { maxRuntimeSeconds: next })
             ),
-            setting('retries', 'how many times a failed run is tried again before the card blocks; blank is 2'),
-            number(card.maxRetries, '2', (next) =>
+            setting('on failure', 'a failed run is started again this many times; then the card goes to blocked'),
+            number(card.maxRetries, '2', 'retries, then the card is blocked', 1, (next) =>
                 patch(card.id, { maxRetries: next })
             )
         ]

@@ -87,7 +87,14 @@ export function activate(ctx: PluginMainContext): void {
         notify: (notice) => ctx.notify(notice)
     }
 
-    const changed = (slug: string): void => sink.boardChanged(slug)
+    /*
+     * A change a person makes to a board can make a card claimable, so it wakes the dispatcher
+     * rather than leaving the card for the next tick. A sweep already under way lets it pass.
+     */
+    const changed = (slug: string): void => {
+        sink.boardChanged(slug)
+        void dispatch.force(sink).catch(() => undefined)
+    }
     const registryChanged = (): void => ctx.broadcast('event', { type: 'boards:changed' })
 
     const stopDispatcher = dispatch.begin(sink)
@@ -228,11 +235,6 @@ export function activate(ctx: PluginMainContext): void {
         const card = await board.uncomment(target, String(id), Number(at))
         changed(target)
         return card
-    })
-
-    ctx.handle('dispatchNow', async () => {
-        await dispatch.force(sink)
-        return true
     })
 
     ctx.handle('stopCard', async (slug, id) => {

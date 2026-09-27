@@ -10,6 +10,7 @@ import * as dispatch from './dispatch.js'
 import * as events from './events.js'
 import * as harness from './harness/index.js'
 import * as hosted from './harness/hosted.js'
+import { transcript } from './harness/claude.js'
 import { rules } from './rules.js'
 import * as worktrees from './worktrees.js'
 import type {
@@ -249,6 +250,25 @@ export function activate(ctx: PluginMainContext): void {
         await harness.of(run).stop(run)
         await dispatch.force(sink)
         return true
+    })
+
+    /*
+     * Where a run's own record lives, for the reader who wants every line of it: claude's
+     * transcript, or the event stream the board kept for a hosted run.
+     */
+    ctx.handle('transcriptPath', async (slug, id, runId) => {
+        const target = String(slug)
+        const { meta, card } = await liveRun(target, String(id))
+        const run = card.runs.find((entry) => entry.runId === String(runId)) ?? card.runs[card.runs.length - 1]
+        if (!run) return null
+        if (run.harness !== 'claude') return hosted.eventsPath(run)
+        if (!run.sessionId) return null
+        const place =
+            run.worktree ??
+            (card.workspaceKind === 'scratch'
+                ? join(boards.workspacesRoot(meta.slug), card.id)
+                : (card.workdir ?? meta.workdir))
+        return transcript(place, run.sessionId)
     })
 
     ctx.handle('runEvents', async (slug, id, runId) => {

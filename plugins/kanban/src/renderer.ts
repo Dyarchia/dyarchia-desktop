@@ -33,6 +33,79 @@ interface HistoryRow {
     label: string
     body: string
     error: boolean
+    detail?: string
+    output?: string
+}
+
+/*
+ * The verb a step is told with. A tool's own name is the harness's vocabulary and reads as a
+ * wall of capitalised identifiers; the verb is what a person would say it did.
+ */
+const VERBS: Record<string, string> = {
+    Bash: 'ran',
+    PowerShell: 'ran',
+    Read: 'read',
+    Write: 'wrote',
+    Edit: 'edited',
+    MultiEdit: 'edited',
+    NotebookEdit: 'edited',
+    Grep: 'searched',
+    Glob: 'listed',
+    WebFetch: 'fetched',
+    WebSearch: 'searched the web',
+    Agent: 'started agent',
+    Task: 'started agent',
+    Skill: 'used skill',
+    ToolSearch: 'loaded tool',
+    ScheduleWakeup: 'set a wake-up',
+    TodoWrite: 'updated plan',
+    ListAgents: 'listed agents',
+    SendMessage: 'messaged agent',
+    Monitor: 'watched',
+    run_terminal_command: 'ran',
+    command_execution: 'ran',
+    search_replace: 'edited',
+    write: 'wrote',
+    read: 'read',
+    bash: 'ran'
+}
+
+function verbOf(tool: string): string {
+    if (VERBS[tool]) return VERBS[tool]
+    if (tool.includes('search_corpus')) return 'searched corpus'
+    return tool.replace(/^mcp__[^_]+__/, '').replace(/[_-]+/g, ' ').toLowerCase()
+}
+
+function clock24(at: number): string {
+    return at ? new Date(at).toTimeString().slice(0, 8) : ''
+}
+
+/*
+ * What the board did to a card, said as a sentence rather than as its event name. Every kind the
+ * board records has one; a kind added later without one still reads, as its own name.
+ */
+const LOGGED: Record<string, [string, (detail: string) => string, string?]> = {
+    created: ['created', () => 'the card'],
+    edited: ['edited', (detail) => detail || 'the card'],
+    moved: ['moved', (detail) => detail],
+    promoted: ['promoted', (detail) => `to ready: ${detail}`],
+    claimed: ['started', (detail) => detail.replace('attempt', 'attempt')],
+    completed: ['finished', (detail) => detail || 'and reported'],
+    reviewed: ['reviewed', (detail) => detail],
+    blocked: ['blocked', (detail) => detail.replace('_', ' '), 'warning'],
+    unblocked: ['unblocked', (detail) => detail],
+    violation: ['no report', (detail) => (detail.includes('terminal block') ? 'the attempt ended without its closing report' : detail), 'error'],
+    crashed: ['lost', (detail) => detail || 'the session went away', 'error'],
+    stopped: ['stopped', (detail) => detail],
+    gave_up: ['gave up', (detail) => detail, 'error'],
+    block_loop: ['blocked again', (detail) => detail, 'warning'],
+    guarded: ['held back', (detail) => detail],
+    commented: ['noted', (detail) => detail],
+    uncommented: ['removed a note', (detail) => detail],
+    attached: ['added a file', (detail) => detail],
+    detached: ['removed a file', (detail) => detail],
+    deleted: ['deleted', (detail) => detail],
+    landed: ['landed', (detail) => detail]
 }
 
 interface Worktree {
@@ -262,7 +335,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     let terminal: Attached | null = null
     let terminalFor = ''
-    let tab: 'terminal' | 'history' | 'board' = 'terminal'
+    let tab: 'session' | 'activity' | 'log' = 'activity'
+    let runShown: string | null = null
     let drawnId: string | null = null
     let drawnRev = -1
     const marked = new Set<string>()
@@ -1642,85 +1716,161 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         drawer.dataset.stage = 'false'
     }
 
-    const paintHistory = (card: Card, into: HTMLElement): void => {
-        void invoke<HistoryRow[]>('runEvents', meta?.slug, card.id)
+    const stepRow = (
+        at: number,
+        verb: string,
+        subject: string,
+        tone: string | null,
+        detail: [string, string][] = []
+    ): HTMLElement => {
+        const node = el('li', `dya-step${tone ? ` dya-step--${tone}` : ''}`)
+        node.append(el('span', 'dya-step__time', clock24(at)), el('span', 'dya-step__verb', verb))
+        const shown = detail.filter(([, text]) => text.trim())
+        if (!shown.length) {
+            node.append(el('span', 'dya-step__subject', subject))
+            return node
+        }
+        const open = el('button', 'dya-step__subject', subject)
+        open.type = 'button'
+        open.setAttribute('aria-expanded', 'false')
+        const more = el('div', 'dya-step__detail')
+        more.hidden = true
+        for (const [name, text] of shown) more.append(el('span', 'dya-label', name), el('pre', 'dya-entry__body', text))
+        open.addEventListener('click', () => {
+            more.hidden = !more.hidden
+            open.setAttribute('aria-expanded', String(!more.hidden))
+        })
+        node.append(open, more)
+        return node
+    }
+
+    const said = (at: number, text: string): HTMLElement => {
+        const node = el('li', 'dya-step dya-step--said')
+        node.append(el('span', 'dya-step__time', clock24(at)), el('div', 'dya-step__said', text.trim()))
+        return node
+    }
+
+    /*
+     * What the agent did, told as steps. A result belongs to the call it answers, so it is folded
+     * into that step and read by opening it; a failed call turns its verb red. What the agent said
+     * between calls is prose. The transcript itself is one press away, in whatever panel reads
+     * text, for the reader who needs every line of it.
+     */
+    const paintActivity = (card: Card, into: HTMLElement): void => {
+        const run = card.runs.find((entry) => entry.runId === runShown) ?? card.runs[card.runs.length - 1]
+        if (!run) return
+        const head = el('div', 'dya-bar dya-bar--inset kanban-activity-head')
+        if (card.runs.length > 1) {
+            const labels: Record<string, string> = {}
+            card.runs.forEach((entry, index) => {
+                labels[entry.runId] = `Run ${index + 1} - ${entry.kind} - ${local(entry.startedAt).slice(11)}`
+            })
+            head.append(
+                choose('run', run.runId, [...card.runs].reverse().map((entry) => entry.runId), labels, false, (value) => {
+                    runShown = value
+                    terminalFor = ''
+                    syncTerminal(card)
+                })
+            )
+        } else {
+            head.append(el('span', 'dya-name', `Run 1 - ${run.kind}`))
+        }
+        head.append(el('span', 'kanban-spacer'))
+        const raw = el('button', 'dya-button dya-button--quiet dya-button--sm', 'open transcript')
+        raw.type = 'button'
+        raw.addEventListener('click', () => {
+            void invoke<string | null>('transcriptPath', meta?.slug, card.id, run.runId)
+                .then(async (path) => {
+                    if (!path) return say('this run left no transcript')
+                    if (!(ctx.shell.canOpen(path) && (await ctx.shell.open({ path })))) await ctx.shell.reveal(path)
+                })
+                .catch((thrown: unknown) => failOn(card.id, thrown))
+        })
+        head.append(raw)
+        const list = el('ol', 'dya-steps kanban-steps')
+        into.replaceChildren(head, list)
+
+        void invoke<HistoryRow[]>('runEvents', meta?.slug, card.id, run.runId)
             .then((rows) => {
                 if (!into.isConnected) return
-                into.replaceChildren()
                 if (!rows.length) {
-                    into.appendChild(el('div', 'dya-empty', 'no transcript for this run: the CLI keeps that file, and it is gone'))
+                    list.appendChild(stepRow(run.startedAt, 'nothing', 'this run left no transcript to read', 'quiet'))
                     return
                 }
-                const stick = into.scrollTop + into.clientHeight >= into.scrollHeight - 8
-                for (const row of rows) into.appendChild(historyRow(row))
-                if (stick) into.scrollTop = into.scrollHeight
+                const stick = list.scrollTop + list.clientHeight >= list.scrollHeight - 8
+                let last: { row: HistoryRow; node: HTMLElement } | null = null
+                for (const row of rows) {
+                    if (row.kind === 'result' && last && last.row.kind === 'tool' && last.row.output === undefined) {
+                        const merged: HistoryRow = { ...last.row, output: row.body, error: row.error }
+                        const node = stepRow(merged.at, verbOf(merged.label), merged.body, merged.error ? 'error' : null, [
+                            ['input', merged.detail ?? ''],
+                            ['output', merged.output ?? '']
+                        ])
+                        last.node.replaceWith(node)
+                        last = { row: merged, node }
+                        continue
+                    }
+                    let node: HTMLElement
+                    if (row.kind === 'text') node = said(row.at, row.body)
+                    else if (row.kind === 'thinking') node = stepRow(row.at, 'thought', row.body.split('\n')[0], 'quiet', [['thinking', row.body]])
+                    else if (row.kind === 'end') node = stepRow(row.at, row.error ? 'stopped' : 'turn ended', row.body, row.error ? 'error' : 'quiet')
+                    else if (row.kind === 'result') node = stepRow(row.at, row.error ? 'failed' : 'got', row.body.split('\n')[0], row.error ? 'error' : 'quiet', [['output', row.body]])
+                    else {
+                        node = stepRow(row.at, verbOf(row.label), row.body, row.error ? 'error' : null, [
+                            ['input', row.detail ?? ''],
+                            ['output', row.output ?? '']
+                        ])
+                    }
+                    list.appendChild(node)
+                    last = { row, node }
+                }
+                if (stick) list.scrollTop = list.scrollHeight
             })
             .catch((thrown: unknown) => failOn(card.id, thrown))
     }
 
-    const paintEvents = (card: Card, into: HTMLElement): void => {
+    /*
+     * What happened to the card, as sentences. A run of edits one after another is one line with
+     * how many and which fields, because eight lines reading `edited - runners` say one thing.
+     */
+    const paintLog = (card: Card, into: HTMLElement): void => {
+        const list = el('ol', 'dya-steps kanban-steps')
+        into.replaceChildren(list)
         void invoke<BoardEvent[]>('events', meta?.slug, card.id)
             .then((rows) => {
                 if (!into.isConnected) return
-                into.replaceChildren()
-                if (!rows.length) {
-                    into.appendChild(
-                        el('div', 'dya-empty', 'the board has decided nothing about this card yet')
-                    )
-                    return
+                const merged: { at: number; kind: string; detail: string; times: number; until: number }[] = []
+                for (const row of rows) {
+                    const previous = merged[merged.length - 1]
+                    if (previous && row.kind === 'edited' && previous.kind === 'edited') {
+                        const fields = new Set([...previous.detail.split(', '), ...row.detail.split(', ')].filter(Boolean))
+                        previous.detail = [...fields].join(', ')
+                        previous.times += 1
+                        previous.until = row.at
+                        continue
+                    }
+                    merged.push({ at: row.at, kind: row.kind, detail: row.detail, times: 1, until: row.at })
                 }
-                for (const row of rows) into.appendChild(eventRow(row))
-                into.scrollTop = into.scrollHeight
+                for (const entry of merged) {
+                    const [verb, tell, tone] = LOGGED[entry.kind] ?? [entry.kind.replace('_', ' '), (detail: string) => detail]
+                    const times = entry.times > 1 ? ` (${entry.times} times, until ${clock24(entry.until).slice(0, 5)})` : ''
+                    list.appendChild(stepRow(entry.at, verb, `${tell(entry.detail)}${times}`, tone ?? null))
+                }
+                list.scrollTop = list.scrollHeight
             })
             .catch((thrown: unknown) => failOn(card.id, thrown))
-    }
-
-    const eventRow = (row: BoardEvent): HTMLElement => {
-        const node = el('div', 'dya-entry')
-        const head = el('div', 'dya-entry__head')
-        head.append(
-            el('span', 'dya-tag', row.kind.replace('_', ' ')),
-            el('span', 'dya-meta', `${when(row.at)}${row.detail ? ` - ${row.detail}` : ''}`)
-        )
-        node.append(head)
-        return node
-    }
-
-    const historyRow = (row: HistoryRow): HTMLElement => {
-        const node = el('div', 'dya-entry')
-
-        if (row.kind === 'text') {
-            node.appendChild(el('div', 'dya-entry__text', row.body))
-            return node
-        }
-
-        const head = el('button', 'dya-entry__head')
-        head.type = 'button'
-        const label =
-            row.kind === 'tool'
-                ? row.label
-                : row.kind === 'result'
-                  ? (row.error ? 'error' : 'result')
-                  : row.kind
-        head.append(
-            el('span', row.error ? 'dya-badge dya-badge--danger' : 'dya-tag', label),
-            el('span', 'dya-meta', row.kind === 'tool' ? row.body : row.body.slice(0, 90))
-        )
-
-        const body = el('pre', 'dya-entry__body', row.body)
-        body.hidden = true
-        head.addEventListener('click', () => {
-            body.hidden = !body.hidden
-        })
-
-        node.append(head, body)
-        return node
     }
 
     const syncTerminal = (card: Card): void => {
         const run = card.runs[card.runs.length - 1]
         const live = shown(card) === 'running' && run !== undefined
-        const wanted = tab === 'board' ? `board:${card.id}:${card.rev}` : run ? `${tab}:${card.id}:${run.runId}` : ''
+        const view: typeof tab = tab === 'session' && !live ? 'activity' : tab
+        const wanted =
+            view === 'log'
+                ? `log:${card.id}:${card.rev}`
+                : run
+                  ? `${view}:${card.id}:${runShown ?? run.runId}:${view === 'activity' ? card.rev : ''}`
+                  : ''
 
         if (wanted === terminalFor) return
         closeTerminal()
@@ -1730,22 +1880,22 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         stage.hidden = false
         drawer.dataset.stage = 'true'
 
-        if (tab === 'board') {
-            const list = el('div', 'kanban-history')
-            stageView.replaceChildren(list)
-            paintEvents(card, list)
+        if (view === 'log') {
+            const holder = el('div', 'kanban-history')
+            stageView.replaceChildren(holder)
+            paintLog(card, holder)
             return
         }
 
-        if (tab === 'history' || !live) {
-            const list = el('div', 'kanban-history')
-            stageView.replaceChildren(list)
-            paintHistory(card, list)
+        if (view === 'activity') {
+            const holder = el('div', 'kanban-history')
+            stageView.replaceChildren(holder)
+            paintActivity(card, holder)
             return
         }
 
-        const view = el('div', 'dya-terminal kanban-terminal')
-        stageView.replaceChildren(view)
+        const pane = el('div', 'dya-terminal kanban-terminal')
+        stageView.replaceChildren(pane)
         /*
          * A run that ends takes its session with it, and the terminal attached to it fails on the
          * next reattach. That is the run finishing, not the card failing: a card that completed
@@ -1753,13 +1903,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * of its own drawer. The view falls back to the transcript, which is what a finished run
          * has to show.
          */
-        terminal = openTerminal(ctx, view, meta?.slug ?? '', card.id, (thrown) => {
+        terminal = openTerminal(ctx, pane, meta?.slug ?? '', card.id, (thrown) => {
             closeTerminal()
             if (reason(thrown).includes('no session to attach to')) {
+                tab = 'activity'
                 terminalFor = ''
-                const list = el('div', 'kanban-history')
-                stageView.replaceChildren(list)
-                paintHistory(card, list)
+                drawnRev = -1
+                paintDrawer()
                 return
             }
             failOn(card.id, thrown)
@@ -1822,7 +1972,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const tabs = el('div', 'dya-tabs kanban-tabs')
         tabs.setAttribute('role', 'tablist')
-        for (const name of ['terminal', 'history', 'board'] as const) {
+        const liveNow = shown(card) === 'running' && card.runs.length > 0
+        if (tab === 'session' && !liveNow) tab = 'activity'
+        if (runShown && !card.runs.some((entry) => entry.runId === runShown)) runShown = null
+        for (const name of liveNow ? (['session', 'activity', 'log'] as const) : (['activity', 'log'] as const)) {
             const button = el('button', 'dya-tab', name)
             button.type = 'button'
             button.setAttribute('role', 'tab')
@@ -1841,7 +1994,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         head.append(heading, named, sizeKey, close)
         stage.replaceChildren(tabs, stageView)
 
-        const form = el('div', 'kanban-form')
+        const form = el('div', 'dya-pane kanban-form')
 
         const problem = problems.get(card.id)
         const problemRow = el('div', 'dya-problem dya-problem--box')

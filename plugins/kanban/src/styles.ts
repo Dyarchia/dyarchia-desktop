@@ -418,10 +418,24 @@ export const STYLES = `
 
 .kanban-history {
     height: 100%;
-    overflow-y: auto;
-    padding-right: var(--dya-space-2);
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-1);
+    gap: var(--dya-space-2);
+}
+
+.kanban-activity-head {
+    flex: none;
+}
+
+.kanban-activity-head > .dya-select {
+    min-width: 0;
+}
+
+.kanban-steps {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--dya-space-2);
 }
 `

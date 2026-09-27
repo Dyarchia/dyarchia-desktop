@@ -3,8 +3,7 @@
 **ALPHA — 0.4.0-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
-This is an early build published so it can be installed and exercised on a second machine.
-It has never been run on a computer other than the one that built it, it is unsigned, and
+This is an early build published so it can be installed and exercised. It is unsigned, and
 several of its parts are documented as working but unproven. What that means in practice:
 
 - Windows SmartScreen will warn about an unknown publisher, because the executable carries
@@ -208,18 +207,13 @@ Then it tags, pushes the tag, **opens the prerelease before building anything**,
 workspace, packages with `--publish always` so the artifacts upload into the release that is
 already there, and only then prunes.
 
-Two of those are the scars of the 0.2.6 cut.
+The release is opened first because electron-builder otherwise creates it at upload time,
+once per publisher context, and splits the artifacts across duplicates. A release that
+already exists is found by tag and uploaded into, however many contexts there are.
 
-The release is opened first because, left to electron-builder, it is created at upload time:
-two publisher contexts both asked whether it existed, both were told no, and both made one.
-The installer and `latest.yml` landed in one, the blockmap in the other, and neither was a
-complete release. A release that already exists is found by tag and uploaded into, by
-however many contexts there turn out to be.
-
-And nothing is pruned until GitHub has been asked what the release actually contains --
-published rather than draft, marked prerelease, carrying an installer and a `latest.yml`,
-and alone on its tag. The 0.2.6 cut deleted the previous release while the new one was two
-broken drafts, which is an upgrade path removed in favour of one that did not work yet.
+Nothing is pruned until GitHub confirms what the release contains: published rather than
+draft, marked prerelease, carrying an installer and a `latest.yml`, and alone on its tag.
+Pruning before that would remove the working upgrade path in favour of a broken one.
 
 Pruning keeps only the newest release; **the tags stay**, because they are the history and
 deleting one rewrites what a commit meant. `--keep-old` leaves the older releases alone.
@@ -265,10 +259,9 @@ machine already has it. Ticking one records the choice; it loads on the next lau
     plugins/ (development)            the same set, from the workspace  first
     ~/.dyarchia/plugins/              anything dropped in by hand       second
 
-The bundled root wins, which is the rule this project has always had for development: an
-installed copy must never shadow the one being worked on. It holds once packaged for the
-same reason — a copy left behind by an older version is stale, and letting it win reads a
-plugin from a manifest it no longer ships. A plugin nobody ships still loads from
+The bundled root wins: an installed copy must never shadow the one being worked on, and
+once packaged, a copy left behind by an older version is stale, so letting it win would read
+a plugin from a manifest the application no longer ships. A plugin nobody ships still loads from
 `~/.dyarchia`, which is what that root is for.
 
 The restart is Electron's, not a decision. A plugin serving its own scheme needs
@@ -287,9 +280,8 @@ purpose, which is how the panel itself gets worked on.
 **A manifest declares what a plugin is made of, and nothing is inferred.** `renderer`, `main`
 and `python` are the entry points; `files` is whatever else it needs at runtime; `nativeDeps`
 are packages that must travel with their prebuilt binaries; `requires` is what has to be true
-before it can run. `scripts/stage-plugins.mjs` reads exactly those, which is why crawlee ships
-like everything else — the script it replaced decided by looking for a `dist/` and left crawlee
-out of every build for a reason nobody had chosen.
+before it can run. `scripts/stage-plugins.mjs` reads exactly those and nothing else, so a
+plugin without a `dist/`, such as crawlee, ships like every other.
 
     requirement kind   means                            Setup can acquire it
     ----------------   ------------------------------   --------------------
@@ -299,8 +291,7 @@ out of every build for a reason nobody had chosen.
 Acquiring a Python environment downloads uv from its own release when it is not already
 there, then builds the environment in `~/.dyarchia/environments/<id>/.venv` and tells
 the plugin about it through `DYARCHIA_PLUGIN_ENV`. The plugin directory is read-only in a
-packaged build, and a portable one unpacks it somewhere new on every launch, so the
-environment lives elsewhere and holds no path back to it. Nothing is downloaded until
+packaged build, so the environment lives elsewhere and holds no path back to it. Nothing is downloaded until
 somebody presses the button, and every step skips what the machine already has.
 
 
@@ -329,13 +320,12 @@ its Chromium profile and its layout in `<root>/workspace/`: the profile is locke
 instance opened it first, and each window rewrites the layout with its own panels. Its first
 launch copies the shared layout. Everything else, boards, environments, offers and corpora, is shared.
 
-It was two roots until 0.2.0-alpha, and both were places nobody chose. Electron's default
-`userData` is `%APPDATA%/dyarchia`, where nobody navigates; and `app.getPath('documents')` is
-the one path a machine redirects — on any Windows with OneDrive signed in it answers
-`…/OneDrive/Documentos`, which points a sync client at a git checkout that every crawl
-rewrites. **The shell moves an older installation's `%APPDATA%/dyarchia` into the new root on
-first launch**, once, as a rename: the layout, the enabled list, the Python environments and
-the kanban boards travel with it, and nothing is copied or left behind to go stale.
+The root is never Electron's default `userData` (`%APPDATA%/dyarchia`, where nobody
+navigates) and never `app.getPath('documents')`, which OneDrive redirects and would point a
+sync client at a git checkout that every crawl rewrites. **An older installation's
+`%APPDATA%/dyarchia` is moved into the root on first launch**, once, as a rename: the layout,
+the enabled list, the Python environments and the kanban boards travel with it, and nothing
+is copied or left behind to go stale.
 
 `<root>/data/` is the half a user is expected to open: a corpus repository is their own
 material, cloned and committed on its own, and a plugin that writes it somewhere unnamed has
@@ -343,10 +333,9 @@ hidden their work from them. A plugin declares the folder it wants there with `d
 manifest, and Setup prints the path before anything is installed. Everything above `data/` is
 machine state and can be deleted without losing anything that was not rebuildable.
 
-**Nothing resolves a path against the plugin's own directory any more.** It did until
-0.1.0-alpha.1, and the build was portable, which unpacks itself into `%TEMP%\<guid>` on
-every launch: the crawlee corpus was written into a folder Windows deletes, at a different
-address each time. That is why this ships as an installer.
+**Nothing resolves a path against the plugin's own directory.** The application ships as an
+installer, not a portable build, because a portable build unpacks itself into
+`%TEMP%\<guid>` on every launch, a folder Windows deletes, at a different address each time.
 
 
 ## 7. Keyboard
@@ -417,4 +406,4 @@ machine does not already have it, and extracts it unmodified with its own licenc
 panel fetches on demand, and the agent CLIs the kanban drives without bundling any of them.
 An installed copy carries `LICENSE.txt`, `NOTICE.md`, `licenses/OFL.txt`,
 `licenses/lobe-icons.txt` and `licenses/highlight-js.txt` beside the executable, next to the
-Electron and Chromium notices that were already there.
+Electron and Chromium notices.

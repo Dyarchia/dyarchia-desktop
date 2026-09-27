@@ -64,9 +64,8 @@ folder inside it. Setup prints that path on the plugin's card, before anything i
 so what a plugin will do to the machine is visible while it is still a question.
 
 **Nothing durable goes beside the plugin's own code.** A packaged plugin directory is
-read-only, and the build that shipped as 0.1.0-alpha.1 was portable, which unpacks itself
-into `%TEMP%\<guid>` on every launch: a plugin resolving its storage against its own
-location wrote into a folder Windows deletes, at a different address each time. Derived
+read-only and the installer may move it, so storage resolved against the plugin's own
+location is storage the plugin cannot count on. Derived
 state that can be rebuilt — an index, a cache, a scratch directory — goes under `userData`,
 which is `~/.dyarchia` itself; only what the user would miss goes in `data/` beneath it.
 
@@ -95,11 +94,9 @@ in Setup, with no Install button in between, because turning the plugin on is th
 plugin is told where through `DYARCHIA_PLUGIN_ENV`. The sync is `--frozen --no-dev
 --no-editable`: frozen because the shipped lockfile is the one to install and resolving again
 would try to rewrite a read-only directory, and **non-editable because an editable install
-records the absolute path of the project** — which the installer may move, and which the
-portable build this replaced moved on every single launch, breaking the environment by the
-second start. Verified by deleting the plugin
-directory and importing the package anyway. Its optional `postInstall` is a list of
-uv argument lists run after the packages land, for whatever the project needs beyond them —
+records the absolute path of the project**, which the installer may move; a non-editable
+environment still imports the package with the plugin directory deleted. Its optional
+`postInstall` is a list of uv argument lists run after the packages land, for whatever the project needs beyond them —
 crawlee's is `playwright install chromium`, and leaving it out is an installation that looks
 finished and fails on the first profile asking for a browser. **The steps belong to the
 plugin, so Setup knows nothing about any particular one.** **A packaged plugin directory is
@@ -214,8 +211,8 @@ A plugin may bundle a framework anyway, and for a genuinely stateful panel that 
 right. The cost is the plugin's: a second copy in the bundle, its own build complexity, and
 unmounting it inside the `dispose` it returns. Note first what the plain path gives — every
 `dya-*` class is already in the document, so the work a component library would do for a
-button, a field, a table or a menu is done. Four of the six plugins here render real UI with
-`document.createElement` and no framework, and the largest is a terminal.
+button, a field, a table or a menu is done. Every plugin here renders with
+`document.createElement` and no framework, the terminal included.
 
 
 ## 3. The main module
@@ -339,14 +336,13 @@ The order to work in:
 1. **A `dya-*` class exists.** Use it, with a plugin class alongside for layout only —
    `class="dya-field myplugin-input"` where `.myplugin-input` sets `flex: 1` and nothing
    else.
-2. **No class exists.** Write a plugin-prefixed rule built entirely from tokens, say so in
-   the plugin's README, and propose it upstream.
+2. **No class exists.** Declare it in `packages/kanon` first, with its contrast measured on
+   every ground and its rule written in kanon's README, and only then use it.
 3. **A class exists but is nearly right.** Do not patch it locally. A product that
    restyles `.dya-button` has forked the system. Propose the modifier upstream.
 
-The system declares only what something consumes, so the list above is short on purpose and
-a gap in it is normal rather than an oversight. Building your own and proposing it is the
-route every class added in the last week took.
+The system declares only what something consumes, so a gap in it is normal rather than an
+oversight, and declaring the missing class upstream is how it closes.
 
 The full list, with what each one is for, is in `packages/kanon/README.md`. The four
 materials decide which to reach for: **every control is a key** (`dya-button`, `dya-key`,
@@ -360,7 +356,7 @@ Four carry a trap worth knowing before the first render: **`dya-field` is full w
 wraps instead of scrolling sideways, and sets no height; **`dya-text--*` is a sentence and
 `dya-badge--*` is a pill with a light**.
 
-The mandate is in kanon's README and holds here unchanged. Three rules are specific to
+The mandate is in kanon's README and holds here unchanged. Two rules are specific to
 being a panel rather than the system:
 
 - **Panel interiors are transparent.** The dock group paints the glass, and the ground's
@@ -370,10 +366,9 @@ being a panel rather than the system:
 - **Nothing inside a panel is glass.** A card is `dya-card`, a region that holds text a
   program wrote is `--dya-sunken`, and a surface that covers content is a `dya-sheet`.
 
-The `--dya-` namespace belongs upstream. A plugin needing a colour the system lacks
-declares it under its own prefix and says so in its README, or proposes it upstream — the
-`[hidden]` rule, `dya-log`, the status modifiers, `dya-bar--inset` and `dya-field--auto`
-all arrived that way. The shell declares one exception of its own, written down: caption
+The `--dya-` namespace belongs upstream, and a plugin's own prefixed CSS is layout inside its
+panel and nothing else: no colour, component, elevation or type step of its own. The shell
+declares one exception of its own, written down: caption
 buttons are flat, because relief on a full-height caption button reads as a mistake.
 
 **Programs choose their own colours.** The terminal ships a 16-colour ANSI palette, but a
@@ -438,8 +433,8 @@ start it over stdio; each tool has the name the server exposes and one sentence 
 brief. The reader skips a file whose `command` no longer exists, which is what an uninstalled
 plugin leaves behind, so an offer never outlives what serves it. The condition for writing the
 file is the offering plugin's own business: crawlee publishes only when a corpus repository
-holds pages, and withdraws after a round that leaves none. The kanban is the one reader today;
-it merges every offer into one `--mcp-config`, allows the listed tools by name, and ends the
+holds pages, and withdraws after a round that leaves none. The kanban is the one reader; it
+merges every offer into one `--mcp-config`, allows the listed tools by name, and ends the
 brief with a Tools section made of the notes.
 
 

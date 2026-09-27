@@ -137,12 +137,7 @@ function Build(): React.JSX.Element {
     const at = update?.checkedAt
         ? new Date(update.checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : null
-    const last = failure
-        ? `The last check failed: ${failure}.`
-        : at
-          ? `Last checked at ${at}.`
-          : 'Not checked yet.'
-    const tip = `Alpha build. Press to check for a newer one now. ${last}`
+    const tip = failure ? `Check failed: ${failure}` : at ? `Checked ${at}` : 'Check for updates'
 
     return (
         <div className="topbar-build">

@@ -5,7 +5,7 @@
     "toolbar": 1,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
-    "description": "A terminal, with sessions that survive the panel being closed",
+    "description": "Terminal",
     "nativeDeps": [
         "node-pty"
     ]

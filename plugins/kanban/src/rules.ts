@@ -25,10 +25,10 @@ const ALLOW: Record<Status, Status[]> = {
 }
 
 const CONFIRM: Record<string, string> = {
-    'review>ready': 'Send this back to the implementer? The review is discarded and the card returns to ready.',
-    'blocked>triage': 'Send this back to triage? The phase it was blocked from is forgotten.',
-    'done>archived': 'Archive this card? Completed cards are immutable history and archiving is one way.',
-    'blocked>archived': 'Archive this card without resolving what blocked it?'
+    'review>ready': 'Discard the review and send it back?',
+    'blocked>triage': 'Back to triage?',
+    'done>archived': 'Archive? It cannot come back.',
+    'blocked>archived': 'Archive while blocked?'
 }
 
 const LABELS: Record<Status, string> = {

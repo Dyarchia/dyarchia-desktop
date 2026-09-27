@@ -34,7 +34,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
                 {panels.map((panel) => (
                     <button
                         key={panel.id}
-                        className="dya-tile launcher-tile"
+                        className="dya-tile"
                         onClick={() => onOpen(panel.id)}
                     >
                         {panel.icon.trim().startsWith('<svg') ? (
@@ -43,7 +43,6 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
                             <span className="dya-tile__name">{panel.icon}</span>
                         )}
                         <span className="dya-tile__name">{panel.title}</span>
-                        {panel.note && <span className="dya-tile__note">{panel.note}</span>}
                     </button>
                 ))}
             </div>

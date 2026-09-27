@@ -58,14 +58,6 @@
     color: var(--dya-text);
 }
 
-.dya-lede {
-    max-width: 68ch;
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body);
-    line-height: var(--dya-leading-body);
-    color: var(--dya-text-3);
-}
-
 /*
  * A label names a control. It is sentence case in the sans, because an interface that shouts every
  * word of itself in capitals reads as a terminal wearing a costume.
@@ -839,8 +831,7 @@
  * tip keeps its own cursor: it is pressable and the tip is extra.
  */
 .dya-badge[interestfor],
-.dya-tag[interestfor],
-.dya-meter[interestfor] {
+.dya-tag[interestfor] {
     cursor: help;
 }
 
@@ -1602,37 +1593,6 @@ textarea.dya-field {
     min-width: 0;
 }
 
-.dya-stat__note {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-4);
-}
-
-/*
- * n marks, lit while what they count is busy. A capacity and not a progress bar: it does not move
- * on its own and it never animates. An empty mark is the idle grey, a busy one is the green light
- * of something running, with its glow.
- */
-.dya-meter {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.dya-meter__pip {
-    width: 14px;
-    height: 3px;
-    flex: none;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-idle);
-}
-
-.dya-meter__pip[data-on="true"] {
-    background: var(--dya-success);
-    box-shadow: 0 0 6px var(--dya-success);
-}
-
 /*
  * A ring is progress through a known number of steps: one segment a step, round, with a gap
  * between each. Done is silver, the step underway is the brightest, what is left is the track. The
@@ -2080,19 +2040,6 @@ textarea.dya-field {
     max-width: 44ch;
 }
 
-/*
- * The same absence, inside a list rather than instead of a screen: one quiet line where its first
- * row would be, because centring 'nothing is running' in a band of its own makes the emptiest part
- * of the screen the loudest.
- */
-.dya-empty--inline {
-    align-items: flex-start;
-    padding: var(--dya-space-2) 0;
-    text-align: left;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
-}
 
 .dya-empty__actions {
     display: flex;

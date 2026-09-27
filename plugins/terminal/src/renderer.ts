@@ -115,7 +115,6 @@ export function activate(ctx: PluginContext): void {
             id: 'terminal',
             title: 'CLI',
             icon: TERMINAL_ICON,
-            note: 'A shell whose session survives the panel being closed and reopened.',
             duplicable: true
         },
         (container, handle) => {
@@ -164,7 +163,7 @@ export function activate(ctx: PluginContext): void {
         const connecting = document.createElement('div')
         connecting.className = 'dya-loading dyarchia-terminal-connecting'
         const connectingText = document.createElement('span')
-        connectingText.textContent = 'attaching to a shell'
+        connectingText.textContent = 'attaching'
         const connectingRing = document.createElement('span')
         connectingRing.className = 'dya-ring dya-ring--busy'
         connecting.append(connectingRing, connectingText)

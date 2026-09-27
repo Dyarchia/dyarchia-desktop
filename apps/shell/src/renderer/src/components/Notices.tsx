@@ -59,7 +59,6 @@ export function Notices(): React.JSX.Element {
                         type="button"
                         className="dya-notice__body"
                         onClick={() => activate(notice)}
-                        title="open the plugin that sent this"
                     >
                         <span className="dya-label">{notice.pluginId}</span>
                         <span className="dya-notice__title">{notice.title}</span>

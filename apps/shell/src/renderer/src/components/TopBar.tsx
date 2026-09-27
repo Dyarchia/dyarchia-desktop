@@ -22,7 +22,7 @@ function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
     if (icon.trim().startsWith('<svg')) {
         return <Svg className="topbar-icon" svg={icon} />
     }
-    return <span className="topbar-icon-text">{icon}</span>
+    return <span>{icon}</span>
 }
 
 /*
@@ -257,19 +257,19 @@ export function TopBar({
                 </div>
                 <div className="topbar-window-controls">
                     <button
-                        className="topbar-winbtn"
+                        className="dya-winkey"
                         aria-label="Minimize"
                         onClick={() => windowAction('minimize')}
                         dangerouslySetInnerHTML={{ __html: MINIMIZE_ICON }}
                     />
                     <button
-                        className="topbar-winbtn"
+                        className="dya-winkey"
                         aria-label="Maximize"
                         onClick={() => windowAction('toggle-maximize')}
                         dangerouslySetInnerHTML={{ __html: MAXIMIZE_ICON }}
                     />
                     <button
-                        className="topbar-winbtn topbar-winbtn-close"
+                        className="dya-winkey dya-winkey--close"
                         aria-label="Close"
                         onClick={() => windowAction('close')}
                         dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}

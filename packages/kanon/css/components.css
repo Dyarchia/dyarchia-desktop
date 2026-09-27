@@ -58,11 +58,6 @@
     color: var(--dya-text);
 }
 
-.dya-title--lg {
-    font-size: var(--dya-size-h2);
-    letter-spacing: var(--dya-tracking-h2);
-}
-
 .dya-lede {
     max-width: 68ch;
     font-family: var(--dya-font-sans);
@@ -378,19 +373,6 @@
     background: var(--dya-accent);
 }
 
-.dya-splitter--vertical {
-    height: auto;
-    width: 11px;
-    margin-block: 0;
-    margin-inline: -4px;
-    cursor: ew-resize;
-}
-
-.dya-splitter--vertical::after {
-    width: 3px;
-    height: 46px;
-}
-
 /*
  * A bar is a strip of the panel's own glass. It has no ground of its own, because the panel
  * already has one, and a second gradient inside the first reads as a panel inside a panel. It has
@@ -669,30 +651,6 @@
     border-radius: inherit;
     box-shadow: var(--dya-glow) color-mix(in srgb, var(--dya-lit) 70%, transparent);
     pointer-events: none;
-}
-
-/*
- * The one control that is not a key: a glyph with no face, for the close on a tab and the icons
- * inside a row, where a key's edge would be a row of stamps along every line.
- */
-.dya-button--bare,
-.dya-button--bare:hover,
-.dya-button--bare:active {
-    height: auto;
-    padding: 0;
-    border: none;
-    background: none;
-    box-shadow: none;
-    color: var(--dya-text-4);
-    transition: transform var(--dya-dur-press) var(--dya-ease-press);
-}
-
-.dya-button--bare:hover {
-    color: var(--dya-text);
-}
-
-.dya-button--bare:active {
-    transform: scale(var(--dya-press-scale));
 }
 
 .dya-button--sm {
@@ -1627,11 +1585,6 @@ textarea.dya-field {
     background-color: var(--dya-glass-hover);
 }
 
-.dya-row--selected > td {
-    background-color: var(--dya-glass-press);
-    color: var(--dya-text);
-}
-
 /*
  * A region that opens over the panel rather than beside it. A panel is one window's worth of room
  * at most and often half of one, so a sheet takes the room it needs, over what it came from, and
@@ -1734,6 +1687,69 @@ textarea.dya-field {
     color: var(--dya-text);
 }
 
+/*
+ * A menu that is searched and grouped. The field sits on top, the rows scroll under it, a group is
+ * named by a label, and a row can carry a second line: what the choice is, then a note on it in
+ * the mono. The row the keyboard is on is lit like the row under the pointer, and a row that
+ * cannot be chosen goes to the quietest ink.
+ */
+.dya-menu__search {
+    flex: none;
+    margin-bottom: var(--dya-space-1);
+}
+
+.dya-menu__list {
+    overflow-y: auto;
+}
+
+.dya-menu__group {
+    padding: var(--dya-space-2) var(--dya-space-2) var(--dya-space-1);
+}
+
+.dya-menu__item--tall {
+    height: auto;
+    min-height: 26px;
+    padding: var(--dya-space-1) var(--dya-space-2);
+}
+
+.dya-menu__item--active {
+    background-color: var(--dya-glass-press);
+    color: var(--dya-text);
+}
+
+.dya-menu__item:disabled {
+    background-color: transparent;
+    color: var(--dya-text-4);
+    cursor: default;
+}
+
+.dya-menu__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+    line-height: var(--dya-leading-body);
+    overflow-wrap: anywhere;
+}
+
+.dya-menu__note {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-label-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-4);
+}
+
+.dya-menu__arrow {
+    flex: none;
+    color: var(--dya-text-3);
+}
+
+.dya-menu__empty {
+    padding: var(--dya-space-3);
+}
+
 .dya-tip {
     position: fixed;
     inset: auto;
@@ -1785,6 +1801,63 @@ textarea.dya-field {
     color: var(--dya-text);
     box-shadow: inset 0 -1px 0 var(--dya-accent);
     text-shadow: var(--dya-halo-text);
+}
+
+/*
+ * What a tab can do to itself: another like it, and close. Two glyphs with no face, on the open tab
+ * and on the one under the pointer and nowhere else, big enough to hit without aiming. They look
+ * alike at rest, so the close says what it is when the pointer reaches it: its glyph goes to the
+ * red ink and a red glow comes up around it. The other stays quiet, because making another of a
+ * view destroys nothing.
+ */
+.dya-tab__action {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: var(--dya-radius-sm);
+    background: transparent;
+    color: var(--dya-text-4);
+    cursor: pointer;
+    visibility: hidden;
+    transition: background-color var(--dya-dur-press) linear;
+}
+
+.dya-tab__action > svg {
+    width: 13px;
+    height: 13px;
+}
+
+.dya-tab:hover .dya-tab__action,
+.dya-tab[aria-selected="true"] .dya-tab__action {
+    visibility: visible;
+}
+
+.dya-tab__action:hover {
+    background-color: var(--dya-flat-hover);
+    color: var(--dya-text);
+}
+
+.dya-tab__action--close::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--dya-glow) color-mix(in srgb, var(--dya-danger) 70%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dya-dur-press) linear;
+}
+
+.dya-tab__action--close:hover {
+    color: var(--dya-danger-ink);
+}
+
+.dya-tab__action--close:hover::after {
+    opacity: 1;
 }
 
 /*
@@ -1848,4 +1921,597 @@ textarea.dya-field {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+}
+
+/*
+ * A name: the words a person gave a thing, where a list of such things is read by them. Sans, one
+ * step under body, in the top ink, and broken anywhere rather than cut, because a name that is cut
+ * is a different name.
+ */
+.dya-name {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text);
+    overflow-wrap: anywhere;
+}
+
+/*
+ * The meta rank has two more steps. `--sm` is the line under a name on a card, where the mono at
+ * its smallest keeps two lines of data under one line of words. `--lift` raises one word of it to
+ * the second ink, the one fact on the line that decides something. `--wrap` lets it break, for a
+ * path or a problem that must be read whole.
+ */
+.dya-meta--sm {
+    font-size: var(--dya-size-label-sm);
+}
+
+.dya-meta--lift {
+    color: var(--dya-text-2);
+}
+
+.dya-meta--wrap {
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+}
+
+.dya-text--warning {
+    color: var(--dya-warning-ink);
+}
+
+/*
+ * A card's states, all on its border and its ground so its contents never move. Selected is the
+ * accent on the border, trouble is red, waiting on a person is yellow, marked for a bulk action is
+ * the accent's soft ground. Pending and ghosted fade it: a request in flight, and the place a card
+ * is being dragged from.
+ */
+.dya-card--selected {
+    border-color: var(--dya-accent);
+}
+
+.dya-card--danger {
+    border-color: var(--dya-danger);
+}
+
+.dya-card--warning {
+    border-color: var(--dya-warning);
+}
+
+.dya-card--marked {
+    background-color: var(--dya-accent-soft);
+}
+
+.dya-card--pending {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.dya-card--ghosted {
+    opacity: 0.35;
+}
+
+/* The copy that follows the pointer while a card is carried: it floats, so it takes the overlay's shadow. */
+.dya-card--carried {
+    opacity: 0.92;
+    box-shadow: var(--dya-elev-overlay);
+}
+
+/*
+ * Lanes: the stages of one board, as strips of it rather than cards on it. Flush, on the chassis,
+ * with a hairline between each and the next that is the board's own ground showing through a
+ * one-pixel gap, so no border doubles where two lanes meet. A lane answers a drag with its ground:
+ * the accent's soft ground where a card may land, red's where it may not. The line is where it
+ * lands, and the drop box is the place to drop into an empty lane, drawn only while dragging.
+ */
+.dya-lanes {
+    display: flex;
+    align-items: stretch;
+    gap: var(--dya-border-width);
+    background: var(--dya-hairline);
+}
+
+.dya-lane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--dya-chassis);
+}
+
+.dya-lane--accept {
+    background: var(--dya-accent-soft);
+}
+
+.dya-lane--refuse {
+    background: var(--dya-danger-soft);
+}
+
+.dya-drop-line {
+    height: 2px;
+    background: var(--dya-accent);
+    pointer-events: none;
+}
+
+.dya-drop-box {
+    min-height: var(--dya-space-12);
+    border: var(--dya-border-width) dashed var(--dya-dashed);
+    border-radius: var(--dya-radius);
+}
+
+/*
+ * A separator between groups of keys in a bar: a hairline standing up, as tall as a glyph.
+ */
+.dya-bar__sep {
+    flex: none;
+    width: var(--dya-border-width);
+    height: 16px;
+    margin: 0 var(--dya-space-1);
+    background: var(--dya-hairline);
+}
+
+/*
+ * An entry: one record in a running list, a note in a thread, a run, a step of a history. A box on
+ * the first surface with a hairline, a head of small things on one line, and the text under it.
+ * `--row` lays the head's things and the text on one wrapping line. A pressable entry is a button
+ * with the same box that answers the pointer with its ground. `__body` is what an entry holds
+ * verbatim, a command's output or a tool's input: sunken, mono, kept to 320px and scrolled.
+ */
+.dya-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--dya-space-2);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-1);
+    color: var(--dya-text);
+    font: inherit;
+    text-align: left;
+}
+
+.dya-entry--row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+
+button.dya-entry {
+    width: 100%;
+    cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+button.dya-entry:hover {
+    background-color: var(--dya-flat-hover);
+}
+
+.dya-entry__head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+button.dya-entry__head {
+    cursor: pointer;
+}
+
+.dya-entry__text {
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.dya-entry--row > .dya-entry__text {
+    flex: 1 0 100%;
+    color: var(--dya-text-3);
+}
+
+.dya-entry__body {
+    margin: 0;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: var(--dya-space-2);
+    border-radius: var(--dya-radius);
+    background: var(--dya-sunken);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-3);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/*
+ * A problem: why something could not be done, said where it happened. Mono, in red's ink, and
+ * broken anywhere, because the end of an error is usually the part that says what went wrong.
+ * `--box` sets it on the sunken ground when it stands alone at the head of a view.
+ */
+.dya-problem {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-danger-ink);
+    overflow-wrap: anywhere;
+}
+
+.dya-problem--box {
+    padding: var(--dya-space-2);
+    border-radius: var(--dya-radius);
+    background: var(--dya-sunken);
+}
+
+/*
+ * A well: a region of a panel set on the first surface with no border, for a view held inside
+ * another, such as a terminal under a form.
+ */
+.dya-well {
+    background: var(--dya-surface-1);
+}
+
+/*
+ * A terminal drawn by xterm, on the glass: its viewport is transparent so the panel shows through,
+ * and its scrollbar is a thin thumb that appears under the pointer and nowhere else.
+ */
+.dya-terminal .xterm .xterm-viewport {
+    background-color: transparent !important;
+}
+
+.dya-terminal .xterm .xterm-viewport::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dya-terminal .xterm .xterm-viewport::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dya-terminal .xterm .xterm-viewport::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: var(--dya-radius);
+}
+
+.dya-terminal .xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {
+    background-color: var(--dya-border);
+}
+
+.dya-terminal .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
+    background-color: var(--dya-border-strong);
+}
+
+/*
+ * Prose: a document somebody wrote, rendered, such as a markdown file. Headings step down the
+ * type scale in the top ink, paragraphs and lists keep the reading measure, a code block and a
+ * figure sit on the second surface with a hairline, a link is the top ink underlined in the accent,
+ * and a quote steps back to the quietest ink behind a rule on its left.
+ */
+.dya-prose h1,
+.dya-prose h2,
+.dya-prose h3 {
+    margin: var(--dya-space-5) 0 var(--dya-space-2);
+    font-family: var(--dya-font-sans);
+    line-height: var(--dya-leading-heading);
+    color: var(--dya-text);
+}
+
+.dya-prose h1 {
+    font-size: var(--dya-size-h2);
+    font-weight: var(--dya-weight-light);
+    letter-spacing: var(--dya-tracking-h2);
+}
+
+.dya-prose h2 {
+    font-size: var(--dya-size-h3);
+    font-weight: var(--dya-weight);
+    letter-spacing: var(--dya-tracking-h3);
+}
+
+.dya-prose h3 {
+    font-size: var(--dya-size-h4);
+    font-weight: var(--dya-weight-medium);
+}
+
+.dya-prose p {
+    margin: var(--dya-space-2) 0;
+}
+
+.dya-prose ul,
+.dya-prose ol {
+    margin: var(--dya-space-2) 0;
+    padding-left: var(--dya-space-5);
+}
+
+.dya-prose pre,
+.dya-prose__figure {
+    margin: var(--dya-space-3) 0;
+    padding: var(--dya-space-3);
+    border: var(--dya-border-width) solid var(--dya-border);
+    border-radius: var(--dya-radius);
+    background: var(--dya-surface-2);
+    overflow-x: auto;
+}
+
+.dya-prose pre {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
+.dya-prose__figure {
+    text-align: center;
+}
+
+.dya-prose__figure svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.dya-prose code {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
+.dya-prose a {
+    color: var(--dya-text);
+    text-decoration: underline;
+    text-decoration-color: var(--dya-accent);
+    text-underline-offset: 3px;
+}
+
+.dya-prose blockquote {
+    margin: var(--dya-space-3) 0;
+    padding-left: var(--dya-space-3);
+    border-left: 2px solid var(--dya-border);
+    color: var(--dya-text-4);
+}
+
+.dya-prose hr {
+    margin: var(--dya-space-5) 0;
+    border: none;
+    border-top: var(--dya-border-width) solid var(--dya-border);
+}
+
+/*
+ * A line of code that can be pointed at. The one pointed at is on the selected ground with a bar
+ * of the accent at its left edge, drawn as a shadow so the text does not move.
+ */
+.dya-code__line {
+    display: block;
+    min-height: 1lh;
+}
+
+.dya-code__line--at {
+    background: var(--dya-selected);
+    box-shadow: -3px 0 0 var(--dya-accent);
+}
+
+/*
+ * An editor for code: a textarea with no colour of its own lying exactly on the same text,
+ * highlighted, in a `pre` behind it. Every metric that decides where a glyph lands is set once
+ * here for both, so the two cannot drift. The textarea is as tall as its text and never scrolls;
+ * the frame scrolls, and the caret stays in view because it is inside the frame.
+ */
+.dya-editor {
+    position: relative;
+    overflow: auto;
+}
+
+.dya-editor > pre,
+.dya-editor > textarea {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    line-height: var(--dya-leading-body);
+    letter-spacing: var(--dya-tracking-mono);
+    tab-size: 4;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.dya-editor > pre {
+    min-height: 100%;
+    background: transparent;
+    box-shadow: none;
+    overflow-x: visible;
+    pointer-events: none;
+}
+
+.dya-editor > textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    resize: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--dya-accent);
+    outline: none;
+    overflow: hidden;
+}
+
+.dya-editor > textarea::selection {
+    background: var(--dya-selected);
+    color: transparent;
+}
+
+/*
+ * A table that stacks. Below 700px of pane each row becomes a card on the first surface, the head
+ * row goes, and every cell carries its column's name in front of it, from its `data-label`, so a
+ * wide table never scrolls sideways in a split pane.
+ */
+@container pane (max-width: 699.98px) {
+    .dya-table--stack,
+    .dya-table--stack tbody,
+    .dya-table--stack tr,
+    .dya-table--stack td {
+        display: block;
+    }
+
+    .dya-table--stack tr:has(th) {
+        display: none;
+    }
+
+    .dya-table--stack tr {
+        margin-bottom: var(--dya-space-1);
+        padding: var(--dya-space-2) 0;
+        border: var(--dya-border-width) solid var(--dya-border);
+        border-radius: var(--dya-radius);
+        background: var(--dya-surface-1);
+    }
+
+    .dya-table.dya-table--stack td {
+        display: grid;
+        grid-template-columns: 8ch minmax(0, 1fr);
+        align-items: baseline;
+        justify-items: start;
+        gap: var(--dya-space-3);
+        padding: 1px var(--dya-space-3);
+        border: 0;
+        border-radius: 0;
+        background: none;
+        text-align: left;
+    }
+
+    .dya-table.dya-table--stack td::before {
+        content: attr(data-label);
+        font-family: var(--dya-font-sans);
+        font-size: var(--dya-size-body-xs);
+        letter-spacing: var(--dya-tracking-ui);
+        color: var(--dya-text-4);
+    }
+}
+
+/*
+ * The tile that makes one more of what the tiles beside it are: an outline where a tile would be,
+ * dashed, with no face of its own until the pointer reaches it. Making one of a plugin's structures
+ * is green, so its glyph and its name are in the green ink: 7.61 on the first surface, 6.83 on the
+ * hover ground.
+ */
+.dya-tile--new {
+    border: var(--dya-border-width) dashed var(--dya-dashed);
+    background: transparent;
+    box-shadow: none;
+}
+
+.dya-tile--new:hover {
+    background-color: var(--dya-flat-hover);
+}
+
+.dya-tile--new .dya-tile__icon,
+.dya-tile--new .dya-tile__name {
+    color: var(--dya-success-ink);
+}
+
+/* A match inside an entry's text: the words a search found, on the accent's soft ground. */
+.dya-entry__text mark {
+    background: var(--dya-accent-soft);
+    color: var(--dya-text);
+}
+
+/*
+ * The tabs of the dock are the panels themselves, so they read a step larger than a tab inside a
+ * panel, and the open one takes the medium weight: across a dock of several groups, weight is what
+ * says which tab each group is showing, and the halo is kept for the group being worked in.
+ */
+.dya-tab--dock {
+    font-size: var(--dya-size-body-sm);
+    white-space: nowrap;
+}
+
+.dya-tab--dock[aria-selected="true"] {
+    font-weight: var(--dya-weight-medium);
+    text-shadow: none;
+}
+
+/*
+ * The window's own keys: minimise, maximise, close. Flat, the height of the title bar, answering
+ * the pointer with a breath of white; close answers in red, which is what every operating system
+ * has taught a hand to expect of that corner.
+ */
+.dya-winkey {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--dya-text-4);
+    cursor: default;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-winkey > svg {
+    width: 12px;
+    height: 12px;
+}
+
+.dya-winkey:hover {
+    background-color: var(--dya-flat-hover);
+    color: var(--dya-text);
+}
+
+.dya-winkey--close:hover {
+    background-color: var(--dya-danger);
+    color: var(--dya-on-status);
+}
+
+/*
+ * A notice: something a plugin says while its panel is not the one being looked at. A card that
+ * floats, with who said it, what, and a line more; the whole of it opens the plugin that said it.
+ */
+.dya-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--dya-space-1);
+    padding: var(--dya-space-2);
+    box-shadow: var(--dya-elev-overlay);
+}
+
+.dya-notice__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dya-notice__title,
+.dya-notice__text {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    line-height: var(--dya-leading-body);
+    overflow-wrap: anywhere;
+}
+
+.dya-notice__title {
+    color: var(--dya-text);
+}
+
+.dya-notice__text {
+    color: var(--dya-text-3);
 }

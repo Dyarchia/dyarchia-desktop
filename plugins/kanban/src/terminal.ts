@@ -54,7 +54,7 @@ export function openTerminal(
     const terminal = new Terminal({
         fontFamily: ctx.token('font-mono'),
         fontSize: 12,
-        cursorBlink: true,
+        cursorBlink: false,
         allowProposedApi: true,
         minimumContrastRatio: 4.5,
         scrollback: 10_000,

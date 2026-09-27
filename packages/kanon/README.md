@@ -280,9 +280,6 @@ its value with `--dya-text-4` and is the most recessive of the eight.
   under a hairline, with `--dya-elev-sunken` falling in from the top edge, and
   `--dya-elev-focus` adds a ring in `--dya-focus` and the halo while it is being typed
   into. A list to choose from is a key, because nothing is typed into it.
-- **`button--bare` is the one control that is not a key**: a glyph with no face, for the close
-  on a tab and the icons inside a row, where a key's edge would be a stamp on every line. It
-  presses by scale, because nothing that never stood up can sink.
 - **Carving is relief for a word.** The wordmark is cut into the metal: a gradient of
   `--dya-carve-a` to `--dya-carve-b` clipped to the letters and cut by `--dya-carve-filter`, a
   dark lip above and a light one below. It is not text and says so: the window's title carries
@@ -382,31 +379,51 @@ goes. A plugin that needs what the system does not declare proposes it here firs
 contrast measured and its rule written in this file, and only then uses it.
 
 ```text
-Structure    pane bar (--flush --inset __group) card (--lift) card__header masthead brand
-             carved splitter (--vertical) sheet (--side)
-Keys         button (--primary --success --danger --quiet --sm --bare) key (--active --success) chip
-             tile (--dense __icon __head __name __note)
+Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning
+             --marked --pending --ghosted --carried) card__header masthead brand carved splitter
+             sheet (--side) well lanes lane (--accept --refuse) drop-line drop-box
+Keys         button (--primary --success --danger --quiet --sm) key (--active --success) chip
+             tile (--dense --new __icon __head __name __note) winkey (--close)
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
 Pills        tag (--key) badge (--success --warning --danger) pills
 Lights       light (--success --warning --danger) meter (__pip)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
-Content      table (__num __fit __key __name __subject __end __prose) row (--selected)
+Content      table (--stack __num __fit __key __name __subject __end __prose) row
              stat (__figure __value __unit __text __note)
-             title (--lg) lede text (--success --danger) label eyebrow value meta mono
-             key-label
-Documents    prose__scroll code (__<highlight.js scope>) log math (--block)
-Layers       menu menu__item (--selected) tip scrim
-Navigation   tabs tab
+             title lede text (--success --warning --danger) label eyebrow value name
+             meta (--sm --lift --wrap) mono key-label problem (--box)
+             entry (--row __head __text __body) notice (__body __title __text)
+Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor
+             terminal log math (--block)
+Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected
+             --active --tall) tip scrim
+Navigation   tabs tab (--dock __action --close)
 Absence      empty (--inline __actions) loading
 Assistive    sr-only
 ```
 
+**A plugin's own CSS is layout and nothing else.** Where a thing sits, how wide it is, what
+scrolls, what is hidden until something happens: that is the plugin's. What anything looks like,
+a colour, a ground, a border, a type step, a shadow, is declared here and only here, and a
+plugin reaches it by class. A look a plugin needs and this file does not have is added here
+first, measured, and then used, and a look two plugins had drawn separately is the first thing
+to come here: the editor behind docviewer and crawlee, the xterm viewport behind the CLI and the
+kanban stage.
+
+**An entry is one record in a running list**: a note in a thread, a run, a step of a history, a
+search hit. A box on the first surface; a head of small things on one line; its text in the
+second ink, which measures 10.69 on the first surface; its verbatim body sunken and mono.
+
+**A tab can act on itself.** `tab__action` is a glyph with no face on the open tab and on the one
+under the pointer: another like it, for a panel that can have more than one, and close. Close
+turns to red's ink, 6.74 on its hover ground, and a red glow rises around it, so the two are told
+apart where the hand is.
+
 **A table is rows, not cards and not lines.** Rows sit straight on the glass with nothing
 between them but their padding, because the glass is already the object, a card per row is a
 surface on a surface, and a rule per row is a ladder the eye has to climb. The head of each column is small tracked capitals over the data. Hover
-lifts a row's cells by `--dya-glass-hover`, white at 2%; a selected row is `--dya-glass-press`,
-white at 5%, in the first ink. Digits are `tabular-nums`.
+lifts a row's cells by `--dya-glass-hover`, white at 2%. Digits are `tabular-nums`.
 
 **A row has one cell in the top ink, and only one: what the row is about.** Everything else,
 the description, the figures, the dates, the group, is in `--dya-text-3`, the table's own ink.

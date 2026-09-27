@@ -4,7 +4,6 @@ import type {
     DockviewApi,
     DockviewReadyEvent,
     DockviewTheme,
-    IDockviewHeaderActionsProps,
     IDockviewPanelHeaderProps,
     SerializedDockview
 } from 'dockview-react'
@@ -27,7 +26,7 @@ const dyarchiaTheme: DockviewTheme = {
     tabGroupIndicator: 'none'
 }
 
-const DUPLICATE_ICON =
+const ANOTHER_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>'
 const CLOSE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
@@ -64,63 +63,60 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     const glyph = mark ? 'dya-glyph dya-glyph--mark' : 'dya-glyph'
 
     /*
-     * The close is on the tab it closes, shown on the one that is open and on the one under the
-     * pointer, as every browser does. It sat at the far end of the header, a whole window away
-     * from the tab it acted on and acting on whichever tab happened to be open. The press is kept
-     * from the tab so it does not start a drag or select the tab on its way out.
+     * What a tab can do to itself sits on the tab: another like it, for a panel that can have more
+     * than one, and close. Both were a window apart once, at the far end of the header, acting on
+     * whichever tab happened to be open. Another is a fresh instance under the plugin's own name,
+     * never a copy of what this one is showing: a CLI tab running claude makes another plain CLI.
+     * A press on either is kept from the tab so it does not start a drag or select the tab.
      */
-    return (
-        <div
-            className="dya-tab panel-tab"
-            role="tab"
-            aria-selected={active}
-        >
-            {icon && <Svg className={glyph} svg={icon} />}
-            {title}
-            <button
-                className="dya-button dya-button--bare panel-tab-close"
-                title={`Close ${title}`}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                    event.stopPropagation()
-                    props.api.close()
-                }}
-                dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
-            />
-        </div>
-    )
-}
-
-/*
- * A new instance of the open panel, at the far end of the header where the reader expects it;
- * the close moved onto the tab it closes and this stayed. Only a duplicable panel offers one.
- */
-function GroupActions(props: IDockviewHeaderActionsProps): React.JSX.Element | null {
-    const active = props.activePanel
-    const descriptor = active ? getPanel(active.id)?.descriptor : undefined
-    if (!active || !descriptor?.duplicable) return null
-
-    const duplicate = (): void => {
-        const base = basePanelId(active.id)
+    const another = (): void => {
+        if (!descriptor) return
+        const base = basePanelId(props.api.id)
         let n = 2
         while (props.containerApi.getPanel(`${base}#${n}`)) n++
         props.containerApi.addPanel({
             id: `${base}#${n}`,
             component: 'plugin-panel',
             title: descriptor.title,
-            position: { referencePanel: active.id, direction: 'within' },
+            position: { referencePanel: props.api.id, direction: 'within' },
             ...panelRenderer(descriptor)
         })
     }
 
     return (
-        <div className="group-actions">
-            <button
-                className="dya-key"
-                title={`New ${descriptor.title}`}
-                onClick={duplicate}
-                dangerouslySetInnerHTML={{ __html: DUPLICATE_ICON }}
-            />
+        <div
+            className="dya-tab dya-tab--dock panel-tab"
+            role="tab"
+            aria-selected={active}
+        >
+            {icon && <Svg className={glyph} svg={icon} />}
+            {title}
+            <span className="panel-tab-actions">
+                {descriptor?.duplicable && (
+                    <button
+                        className="dya-tab__action"
+                        title={`Another ${descriptor.title}`}
+                        aria-label={`Another ${descriptor.title}`}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation()
+                            another()
+                        }}
+                        dangerouslySetInnerHTML={{ __html: ANOTHER_ICON }}
+                    />
+                )}
+                <button
+                    className="dya-tab__action dya-tab__action--close"
+                    title={`Close ${title}`}
+                    aria-label={`Close ${title}`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                        event.stopPropagation()
+                        props.api.close()
+                    }}
+                    dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
+                />
+            </span>
         </div>
     )
 }
@@ -178,7 +174,6 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
             watermarkComponent={watermark}
-            rightHeaderActionsComponent={GroupActions}
             onReady={handleReady}
         />
     )

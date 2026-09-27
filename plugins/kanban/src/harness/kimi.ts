@@ -50,16 +50,14 @@ async function config(): Promise<{ models: string[]; names: Record<string, strin
 }
 
 /*
- * -p runs one prompt and exits, and in that mode Kimi never stops to ask: it defaults to its
- * auto policy. `--yolo` is the closest it has to accepting edits, and `--plan` keeps a reviewer
- * on the read-only tools, which Kimi prefers rather than enforces. The working directory is the
- * process's own, since Kimi has no flag for it. From the Kimi Code docs, 2026-09, kimi 2.1.1.
+ * -p runs one prompt and exits under Kimi's auto policy, and Kimi refuses to start when -p is
+ * given with --yolo, --auto or --plan, since the mode is already decided. So the card's
+ * permission mode has nothing to pass through, and a reviewer is kept from writing by its brief
+ * alone. The working directory is the process's own, since Kimi has no flag for it. From the
+ * Kimi Code docs, 2026-09, kimi 2.1.1.
  */
 export function launchArgv(spec: LaunchSpec): string[] {
     const args = ['-p', spec.prompt, '--output-format', 'stream-json']
-    if (spec.kind === 'review' || spec.permissionMode === 'plan') args.push('--plan')
-    else if (spec.permissionMode === 'acceptEdits' || spec.permissionMode === 'manual') args.push('--yolo')
-    else args.push('--auto')
     if (spec.model) args.push('-m', spec.model)
     return args
 }
@@ -161,10 +159,10 @@ export const driver: Driver = {
     models: async () => (await config()).models,
     resolved: async () => (await config()).names,
     restraint: () => [
-        'You are in PLAN MODE, which keeps you to the tools that read, on purpose. You are not',
-        'being trusted less than the implementer was. It is that a review which changes things',
-        'is not a review. Do not edit files and do not run commands that change anything, and do',
-        'not end by proposing a plan. The judgement below IS your output.'
+        'You still have every tool the implementer had, because this harness cannot take any',
+        'away from you when it runs unattended. You are not being trusted less for that. It is',
+        'that a review which changes things is not a review. Read and run only what reads: do',
+        'not edit, create or delete files, and do not commit. The judgement below IS your output.'
     ],
     launch,
     worktreePath,

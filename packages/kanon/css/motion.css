@@ -34,3 +34,9 @@
         opacity: 0;
     }
 }
+
+@keyframes dya-turn {
+    to {
+        transform: rotate(1turn);
+    }
+}

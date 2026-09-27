@@ -11,7 +11,7 @@ css/dyarchia.css     the only entry point; imports the five below, in this order
 css/fonts.css        the eight @font-face declarations
 css/tokens.css       the one theme
 css/reset.css        normalisation, [hidden], the ground, focus ring, scrollbars, reduced motion
-css/motion.css       four keyframes, all prefixed dya-
+css/motion.css       five keyframes, all prefixed dya-
 css/components.css   the dya-* classes
 fonts/               eight static woff2, 536 KB
 tools/contrast.py    the measurement Verification requires
@@ -387,7 +387,7 @@ Keys         button (--primary --success --danger --quiet --sm) key (--active --
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
 Pills        tag (--key) badge (--success --warning --danger) pills
-Lights       light (--success --warning --danger) meter (__pip)
+Lights       light (--success --warning --danger) meter (__pip) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
 Content      table (--stack __num __fit __key __name __subject __end __prose) row
              stat (__figure __value __unit __text __note)
@@ -496,6 +496,14 @@ three lines.
 count is busy, idle grey otherwise. It never animates. Draw one only above two marks: a single
 pip is a stray dash.
 
+**`ring` is progress through a known number of steps**, one segment a step: done in silver, the
+step underway (`--current`) in the top ink, what is left in the track. The consumer sets
+`--dya-ring-n` and `--dya-ring-done` and nothing else. `--busy` is the ring with no count while
+something loads: a trail that turns one segment at a time and exists only for as long as the load
+does, so it is the one animation that repeats, and it stops when it is removed. On the lightest panel
+ground done is 6.11 and the step underway 11.89; done against the track is 3.90, and the step
+underway against done 1.95, which is why the step underway is also the one next to the track.
+
 **Everything is laid out on twelve columns, and the columns are the container's.** `grid` is the
 twelve, a child takes all of them unless it says otherwise, and `col-<n>` takes n. The tiers are
 the width of the nearest pane, never the window's: `col-sm-<n>` from 400px, `col-md-<n>` from
@@ -507,8 +515,9 @@ four from 1200px. `auto-fit` and `auto-fill` are not used: they size columns by 
 a layout sized by its content has no grid.
 
 **`form` is the twelve columns with one rule: what the field is called, and the field.** A label
-takes three columns and its value nine, and below 400px the label stands over its value and both
-take twelve. The sentence behind
+takes three columns and its value nine, two and ten from 700px, one and eleven from 1200px, so the
+label column stays about as wide as its longest word; below 400px the label stands over its value
+and both take twelve. The sentence behind
 the name is a tip on the label, which is where an explanation that is not always needed
 belongs. `__actions` is the row at the end, spanning both columns, and `__push` sends what
 carries it and everything after it to the far end, which is where a destructive action goes.
@@ -519,7 +528,8 @@ wraps, `__stack` holds them one under another, and `__split` divides a value int
 so a row of headings stands column for column over the rows it names. A label stands against the
 first line of its value, `--dya-size-control` tall, however tall the value is. A form nested in
 a form is a second label column, and the system does not have one. `__split` is a subgrid of
-the value's nine columns, three to a cell.
+the value's columns, and three cells fill it at every width: 3 3 3 of nine, 3 3 4 of ten, 4 4 3
+of eleven.
 
 **`pane` declares an element a query container named `pane` and carries no look.** A panel's
 width is its own, so a viewport query answers the wrong question. A consumer writes

@@ -254,10 +254,14 @@ its value with `--dya-text-4` and is the most recessive of the eight.
 - **Three keys are lit.** A lit key has a border in its light, an ink mixed from its light
   and `--dya-text`, and a still glow cast on the glass around it, `--dya-glow` in the light at
   70%. `button--primary` is lit in the silver accent, the one action a view is about, at most
-  one per view. `button--success` is lit green: go, run, approve. `button--danger` is lit red:
-  stop, delete. Lit inks measure 11.49, 9.05 and 6.87 on the key's face and 10.83, 8.53 and
-  6.47 on its hover step. `button--danger button--quiet` is a plain key with a red ink, for a
-  destructive action offered among others: the light is for the confirmation.
+  one per view. `button--success` is lit green and is every key that makes something: run,
+  approve, create, add, install, save. `button--danger` is lit red and is every key that unmakes
+  it: stop, delete, remove. `key--success` and `key--danger` light an icon key the same way.
+  Lit inks measure 11.49, 9.05 and 6.87 on the key's face and 10.83, 8.53 and 6.47 on its hover
+  step. A destroying key is never quiet.
+- **What can be made can be unmade.** Every green key has a red one somewhere for the same
+  thing: a board and its delete, a card and its delete, a file, a dependency or a note and the
+  red × beside it.
 - **The halo says here.** `--dya-halo` is the primary key's silver glow, and it is spent on
   one other thing: where the window is. The open tab in the group being worked in, the open
   tab inside a panel, the tile under the pointer, the field being typed into. Words take it as
@@ -380,7 +384,8 @@ contrast measured and its rule written in this file, and only then uses it.
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift) card__header masthead brand
              carved splitter (--vertical) sheet (--side)
-Keys         button (--primary --success --danger --quiet --sm --bare) key (--active) chip
+Keys         button (--primary --success --danger --quiet --sm --bare) key (--active --success
+             --danger) chip
              tile (--dense __icon __head __name __note)
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
@@ -456,8 +461,8 @@ prohibitions produce a screen where nothing is wrong and nothing is first. `titl
 - **`lede` is one sentence under a title**, sans, capped at 68ch, `--dya-text-3`.
 - **`button--primary` is the one action a screen is about**, lit in silver. At most one per
   view, because a second first is none.
-- **`button--success` is go, and it is not a second primary.** A success key is a meaning, and
-  a view may hold one beside the lit red that is its opposite.
+- **`button--success` is make, and it is not a second primary.** A success key is a meaning,
+  and a view may hold several, each beside the lit red that is its opposite.
 - **`tile` is a pressable card**: an icon, a name and one line. It is how a region with
   nothing in it yet offers what to do next; the shell's launcher is built from nothing else,
   and the reader and the player each carry one.

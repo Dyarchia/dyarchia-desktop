@@ -608,7 +608,8 @@
     transform: none;
 }
 
-.dya-button:disabled::after {
+.dya-button:disabled::after,
+.dya-key:disabled::after {
     display: none;
 }
 
@@ -621,54 +622,57 @@
  * glow cast on the glass around the key. The glow is still: nothing in this system animates for as
  * long as a panel is open, and a light that breathed would be the one thing on screen that did.
  *
- * Three keys are lit. The primary is lit in the accent, the one action a view is about, at most
- * one per view. Success is lit green: go, run, approve, the affirmative half of a pair. Danger is
- * lit red: stop, delete, the other half. Lit inks over the key face measure 11.49 for the
- * primary, 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover step.
+ * Three lights for keys. The primary is lit in the accent, the one action a view is about, at
+ * most one per view. Success is lit green and is every key that makes something: run, approve,
+ * create, add, install, save. Danger is lit red and is every key that unmakes it: stop, delete,
+ * remove. Whatever can be made can be unmade, so a green key has a red one somewhere for the
+ * same thing. An icon key takes the same two lights. Lit inks over the key face measure 11.49
+ * for the primary, 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover
+ * step.
  */
 .dya-button--primary {
     --dya-lit: var(--dya-accent);
 }
 
-.dya-button--success {
+.dya-button--success,
+.dya-key--success {
     --dya-lit: var(--dya-success);
 }
 
-.dya-button--danger {
+.dya-button--danger,
+.dya-key--danger {
     --dya-lit: var(--dya-danger);
 }
 
 .dya-button--primary,
 .dya-button--success,
-.dya-button--danger:not(.dya-button--quiet) {
+.dya-button--danger,
+.dya-key.dya-key--success:not(:disabled),
+.dya-key.dya-key--danger:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
 
 .dya-button--primary:hover,
 .dya-button--success:hover,
-.dya-button--danger:not(.dya-button--quiet):hover {
+.dya-button--danger:hover,
+.dya-key.dya-key--success:not(:disabled):hover,
+.dya-key.dya-key--danger:not(:disabled):hover {
     border-color: color-mix(in srgb, var(--dya-lit) 70%, transparent);
+    color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
 
 .dya-button--primary::after,
 .dya-button--success::after,
-.dya-button--danger:not(.dya-button--quiet)::after {
+.dya-button--danger::after,
+.dya-key.dya-key--success:not(:disabled)::after,
+.dya-key.dya-key--danger:not(:disabled)::after {
     content: "";
     position: absolute;
     inset: -1px;
     border-radius: inherit;
     box-shadow: var(--dya-glow) color-mix(in srgb, var(--dya-lit) 70%, transparent);
     pointer-events: none;
-}
-
-/*
- * A destructive action offered among others is not lit. It is a plain key with a red ink, so the
- * most destructive control is never the first thing the eye lands on; the light is for the
- * confirmation, where destroying is the thing being asked for.
- */
-.dya-button--danger.dya-button--quiet {
-    color: var(--dya-danger-ink);
 }
 
 /*

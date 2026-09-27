@@ -299,6 +299,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     boardButton.type = 'button'
     withTip(boardButton, 'switch to another board')
     const newBoardKey = key('plus', 'new board', 'a board on another project')
+    newBoardKey.classList.add('dya-key--success')
     const settingsKey = key('sliders', 'board settings', 'rename this board, point it at another directory, archive or delete it')
     settingsKey.hidden = true
     const treesKey = key('branch', 'worktrees', 'what every run left behind in this project')
@@ -522,7 +523,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const empty = el('div', 'kanban-drop')
 
         if (status === 'triage') {
-            const plus = el('button', 'dya-key kanban-new-key', '+')
+            const plus = el('button', 'dya-key dya-key--success kanban-new-key', '+')
             plus.type = 'button'
             plus.setAttribute('aria-label', 'new card')
             withTip(plus, 'a new card in triage')
@@ -532,7 +533,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             field.type = 'text'
             field.placeholder = 'card title'
             field.spellcheck = false
-            const confirm = el('button', 'dya-button dya-button--sm', 'add')
+            const confirm = el('button', 'dya-button dya-button--sm dya-button--success', 'add')
             confirm.type = 'button'
             draft.append(field, confirm)
             const dismiss = (): void => {
@@ -894,7 +895,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         browse.type = 'button'
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button dya-button--primary', 'create board')
+        const create = el('button', 'dya-button dya-button--success', 'create board')
         create.type = 'button'
 
         browse.addEventListener('click', () => {
@@ -1149,7 +1150,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch(fail)
         })
 
-        const remove = el('button', 'dya-button dya-button--danger dya-button--quiet dya-button--sm', 'delete')
+        const remove = el('button', 'dya-button dya-button--danger dya-button--sm', 'delete')
         remove.type = 'button'
         remove.addEventListener('click', () => {
             const warning =
@@ -1235,7 +1236,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.append(grid)
 
         const actions = el('div', 'dya-form__actions')
-        const make = el('button', 'dya-button dya-button--quiet', 'new board')
+        const make = el('button', 'dya-button dya-button--success', 'new board')
         make.type = 'button'
         make.addEventListener('click', () => newBoard())
         actions.append(make)
@@ -1353,7 +1354,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             })
         })
 
-        const removeAll = el('button', 'dya-button dya-button--sm dya-button--danger dya-button--quiet', 'delete')
+        const removeAll = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete')
         removeAll.type = 'button'
         removeAll.addEventListener('click', () => bulkDelete())
 
@@ -1861,7 +1862,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     failOn(card.id, thrown)
                 )
             })
-            const drop = el('button', 'dya-key', '×')
+            const drop = el('button', 'dya-key dya-key--danger', '×')
             drop.type = 'button'
             drop.title = `remove ${file.name} from this card`
             drop.disabled = card.locked
@@ -1880,7 +1881,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             files.appendChild(holder)
         }
 
-        const addFile = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add files')
+        const addFile = el('button', 'dya-button dya-button--success dya-button--sm', 'add files')
         addFile.type = 'button'
         addFile.disabled = card.locked
         addFile.addEventListener('click', () => {
@@ -1905,15 +1906,23 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const parents = el('div', 'dya-form__value')
         for (const parentId of card.parents) {
             const parent = cardById(parentId)
+            const holder = el('span', 'kanban-file')
             const chip = el('button', 'dya-chip', parent ? parent.title : parentId)
             chip.type = 'button'
-            chip.title = 'remove this dependency'
-            chip.addEventListener('click', () =>
+            chip.title = 'open this card'
+            chip.disabled = !parent
+            chip.addEventListener('click', () => select(parentId))
+            const drop = el('button', 'dya-key dya-key--danger', '×')
+            drop.type = 'button'
+            drop.title = 'remove this dependency'
+            drop.disabled = card.locked
+            drop.addEventListener('click', () =>
                 patch(card.id, { parents: card.parents.filter((entry) => entry !== parentId) })
             )
-            parents.appendChild(chip)
+            holder.append(chip, drop)
+            parents.appendChild(holder)
         }
-        const addParent = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add dependency')
+        const addParent = el('button', 'dya-button dya-button--success dya-button--sm', 'add dependency')
         addParent.type = 'button'
         addParent.addEventListener('click', () => openParentMenu(card, addParent))
         parents.append(addParent)
@@ -1922,9 +1931,22 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         for (const entry of card.comments) {
             const item = el('div', 'kanban-comment')
             const itemHead = el('div', 'kanban-comment-head')
+            const forget = el('button', 'dya-key dya-key--danger', '×')
+            forget.type = 'button'
+            forget.title = 'delete this note'
+            forget.addEventListener('click', () => {
+                void invoke('uncomment', meta?.slug, card.id, entry.at)
+                    .then(() => {
+                        solved(card.id)
+                        return refresh()
+                    })
+                    .catch((thrown: unknown) => failOn(card.id, thrown))
+            })
             itemHead.append(
                 el('span', 'dya-tag', entry.author),
-                el('span', 'kanban-card-note', ago(entry.at, clock))
+                el('span', 'kanban-card-note', ago(entry.at, clock)),
+                el('span', 'kanban-spacer'),
+                forget
             )
             item.append(itemHead, el('div', 'kanban-comment-text', entry.text))
             thread.appendChild(item)
@@ -1952,7 +1974,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             leave()
         })
         note.addEventListener('blur', leave)
-        const post = el('button', 'dya-button dya-button--quiet dya-button--sm', 'add note')
+        const post = el('button', 'dya-button dya-button--success dya-button--sm', 'add note')
         post.type = 'button'
         post.addEventListener('click', leave)
         thread.append(note, post)
@@ -2083,14 +2105,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         }
         /*
          * Deleting a card is rare, deliberate and the end of it, so it is the last thing in the
-         * drawer and not a red button in the middle of one. It says what it deletes.
+         * drawer, lit red like every key that unmakes something. It says what it deletes.
          */
         const danger = el('div', 'kanban-row kanban-danger')
-        const remove = el(
-            'button',
-            'dya-button dya-button--sm dya-button--danger dya-button--quiet',
-            'delete this card'
-        )
+        const remove = el('button', 'dya-button dya-button--sm dya-button--danger', 'delete this card')
         remove.type = 'button'
         remove.addEventListener('click', () => {
             if (!window.confirm(`Delete '${card.title}'? Its history goes with it.`)) return

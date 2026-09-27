@@ -7,9 +7,9 @@ leaves it silently.
 
 A worker under Claude Code is **a real interactive session, not a batch run**: `claude --bg` in a
 git worktree, with a pty the operator can attach to. Print mode exists and this design does not
-use it, because a session you cannot talk to cannot be unblocked. The three other harnesses the
-board can run, Codex CLI, Grok CLI and OpenCode, have no detached mode, so under them a worker
-is a child process of this app whose event stream the board keeps; see *Who runs a card*.
+use it, because a session you cannot talk to cannot be unblocked. The four other harnesses the
+board can run, Codex CLI, Grok CLI, Kimi Code and OpenCode, have no detached mode, so under them a
+worker is a child process of this app whose event stream the board keeps; see *Who runs a card*.
 
 
 ## Build and verify
@@ -140,7 +140,10 @@ claude     claude     four aliases                        claude --bg, detached,
 codex      codex      ~/.codex/models_cache.json, the     codex exec --json, a child of this
                       ones it would list                  app
 grok       grok       grok models                         grok -p, streaming json, a child
-opencode   opencode   opencode models openrouter          opencode run --format json, a child
+kimi       kimi       [models.*] in ~/.kimi-code/         kimi -p, stream-json, a child
+                      config.toml, named by display_name
+opencode   opencode   opencode models, every provider:    opencode run --format json, a child
+                      Zen, then Go, then OpenRouter
 ```
 
 **A hosted run is a child of this app.** Its stdout is the event stream and goes to
@@ -247,13 +250,21 @@ of the brief
 opencode -f attaches a file the model never opened         the brief goes as the message
 opencode run without --dir searched and wrote in the       --dir is always passed
 directory this app started in, three attempts in a row
-opencode models openrouter lists 367 ids in -m form        the drawer offers them
+opencode models openrouter lists 367 ids in -m form        the drawer offers them, and since
+                                                           2026-09-27 every provider's
 opencode over OpenRouter completed a card, commit and       the cycle works end to end
 closing block included, and codex approved it
 the dispatcher lease outlives a killed app for its TTL     a lease whose process is gone is
                                                            taken at once; the 90 s TTL covers
                                                            a holder that hangs
 ```
+
+Kimi Code is driven from its documentation, not from a measured run: kimi 2.1.1, 2026-09-27.
+`-p` never stops to ask and defaults to its auto policy; `--yolo` stands for acceptEdits and
+manual, `--auto` for the rest, and `--plan` for a review, which keeps it to the read-only tools by
+preference rather than by removing the others. stream-json writes `assistant` messages with
+`content` or `tool_calls` and `tool` messages with `tool_name` and `result`; there is no usage and
+no closing event, so the run ends when the process exits, and there is no effort flag.
 
 A launch that fails before any work is done, because the binary is not on PATH, the model is
 one the harness does not know, or a login lapsed, blocks the card as `needs_input` with the
@@ -347,8 +358,10 @@ transcript once it is gone, and the board's own events on the third tab. Under t
 the stage sits above the form.
 
 Every setting is a native `select`: harness, model and effort per phase, permission mode,
-workspace kind. A blank inherits, and the option says what it inherits, `board · claude`
-when the board sets it and `default` when the harness decides. The bar carries the board
+workspace kind. A blank inherits: its option shows what it inherits, `Claude Code` or
+`Opus 5.5`, noted `follows the board` in the list, or `default` when the harness decides. A
+Claude alias is named by the newest model of its family in the account's recent transcripts, a
+Kimi alias by its `display_name`, and a list that spans providers is divided by provider. The bar carries the board
 name, then three keys for that board (new, settings, worktrees), then dispatch and watch;
 every icon-only control opens a tip on hover or focus and carries an `aria-label`. The board
 picker lists boards and nothing else.

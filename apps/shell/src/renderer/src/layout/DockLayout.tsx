@@ -67,7 +67,9 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
      * than one, and close. Both were a window apart once, at the far end of the header, acting on
      * whichever tab happened to be open. Another is a fresh instance under the plugin's own name,
      * never a copy of what this one is showing: a CLI tab running claude makes another plain CLI.
-     * A press on either is kept from the tab so it does not start a drag or select the tab.
+     * A press on either is kept from the tab so it does not start a drag or select the tab. Only
+     * the open tab carries them; any tab closes with the middle button, whose press is kept from
+     * starting Chromium's autoscroll.
      */
     const another = (): void => {
         if (!descriptor) return
@@ -88,6 +90,14 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             className="dya-tab dya-tab--dock panel-tab"
             role="tab"
             aria-selected={active}
+            onPointerDown={(event) => {
+                if (event.button === 1) event.preventDefault()
+            }}
+            onAuxClick={(event) => {
+                if (event.button !== 1) return
+                event.stopPropagation()
+                props.api.close()
+            }}
         >
             {icon && <Svg className={glyph} svg={icon} />}
             {title}

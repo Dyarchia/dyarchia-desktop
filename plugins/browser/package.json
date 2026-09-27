@@ -15,5 +15,8 @@
         "electron": "^43.3.0",
         "esbuild": "^0.28.2",
         "typescript": "^5.9.0"
+    },
+    "dependencies": {
+        "@ghostery/adblocker": "^2.18.2"
     }
 }

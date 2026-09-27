@@ -8,8 +8,8 @@ interface Bookmark {
 }
 
 const PARTITION = 'dyarchia-browser'
-const HOME = 'https://www.google.com/'
-const SEARCH = 'https://www.google.com/search?q='
+const HOME = 'https://duckduckgo.com/'
+const SEARCH = 'https://duckduckgo.com/?q='
 
 const svg = (body: string): string =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
@@ -149,7 +149,7 @@ export function activate(ctx: PluginContext): void {
             const address = el('input', 'dya-field brw-address')
             address.type = 'text'
             address.setAttribute('aria-label', 'Address')
-            address.placeholder = 'Search Google or type an address'
+            address.placeholder = 'Search DuckDuckGo or type an address'
             const star = key(STAR_ICON, 'Bookmark this page', () => void toggleBookmark())
             const external = key(EXTERNAL_ICON, 'Open in your browser', () => {
                 if (ready) void ctx.invoke('external', view.getURL())

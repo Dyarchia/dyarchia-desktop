@@ -1,6 +1,9 @@
 import { app, session, shell } from 'electron'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import type { Session } from 'electron'
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { FiltersEngine, Request } from '@ghostery/adblocker'
+import type { ElectronRequestType } from '@ghostery/adblocker'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 /*
@@ -19,6 +22,8 @@ const RETIRED = join('Partitions', 'dyarchia-browser')
  * are the whole list.
  */
 const GRANTED = new Set(['clipboard-sanitized-write', 'fullscreen'])
+
+const WEEK = 7 * 24 * 60 * 60 * 1000
 
 interface Bookmark {
     url: string
@@ -48,6 +53,46 @@ async function save(bookmarks: Bookmark[]): Promise<void> {
     await writeFile(store(), JSON.stringify(bookmarks, null, 4))
 }
 
+/*
+ * Ads and trackers are stopped on the network by Ghostery's engine over its prebuilt ads and
+ * tracking lists, before a request leaves the machine. The engine is wired here rather than
+ * through Ghostery's Electron package, which registers a preload on the session for its cosmetic
+ * half and turns off Electron's security warnings for the whole process: a guest runs no code
+ * but the page's own. A page itself always loads; what it asks for is what gets matched. The
+ * compiled lists are kept beside the bookmarks and fetched again once they are a week old; they
+ * describe the web, not the person. When the refetch fails, the old lists are better than none.
+ */
+async function block(browsing: Session): Promise<void> {
+    const path = join(app.getPath('userData'), 'browser', 'adblock.bin')
+    await mkdir(dirname(path), { recursive: true })
+    const fresh = await stat(path).then(
+        (found) => Date.now() - found.mtimeMs < WEEK,
+        () => false
+    )
+    const cached = {
+        path,
+        read: (file: string) => readFile(file),
+        write: (file: string, data: Uint8Array) => writeFile(file, data)
+    }
+    const refetch = { ...cached, read: () => Promise.reject(new Error('stale')) }
+    const engine = await FiltersEngine.fromPrebuiltAdsAndTracking(
+        fetch,
+        fresh ? cached : refetch
+    ).catch(() => FiltersEngine.fromPrebuiltAdsAndTracking(fetch, cached))
+
+    browsing.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, callback) => {
+        if (details.resourceType === 'mainFrame') return callback({})
+        const { match, redirect } = engine.match(
+            Request.fromRawDetails({
+                url: details.url,
+                sourceUrl: details.referrer,
+                type: details.resourceType as ElectronRequestType
+            })
+        )
+        callback(redirect ? { redirectURL: redirect.dataUrl } : { cancel: match })
+    })
+}
+
 function isWeb(url: unknown): url is string {
     return typeof url === 'string' && /^https?:\/\//i.test(url)
 }
@@ -66,6 +111,9 @@ export function activate(ctx: PluginMainContext): void {
     )
     browsing.setPermissionCheckHandler((_contents, permission) => GRANTED.has(permission))
     browsing.setDevicePermissionHandler(() => false)
+    block(browsing).catch((error: unknown) =>
+        console.error('[browser] ad blocking is off this session: its lists could not be loaded', error)
+    )
 
     /*
      * The browser says it is the Chrome it is. Electron's default names the application and

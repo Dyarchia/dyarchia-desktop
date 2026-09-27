@@ -58,8 +58,8 @@ sites they did not choose.
     every repository under the folder, plus      one repository, the one data_dir,
     the one the other three name                 profiles_dir and output_dir name
 
-Leaving it unset is the whole of the second column, which is what every command did before the
-variable existed. Nothing about a single repository changes either way.
+Leaving it unset is the whole of the second column. Nothing about a single repository changes
+either way.
 
 What each command does with more than one:
 
@@ -229,23 +229,20 @@ The header and footer nearly every page of a run shares are removed once the run
 per page: **a single page cannot tell its banner from its content; the corpus can.**
 `--keep-boilerplate` opts out.
 
-Three repairs exist because their absence was measured, and each refuses to act unless it
-demonstrably works. A document fetched as markdown from its publisher is never touched by any of
-them — that one is stored as published.
+Three repairs run on extracted markdown, and each refuses to act unless it demonstrably works. A
+document fetched as markdown from its publisher is never touched by any of them; that one is
+stored as published.
 
 - **A renderer emitting one bare `div` per line of a sample** offers no `pre` for extraction to
-  recognise, so the sample is dropped as layout. Five recipe pages carried 1,411 lines of code and
-  extraction kept 134; rewriting such a run as the one `pre` it was meant to be brought the same
-  five to 1,305.
+  recognise, so the sample would be dropped as layout. Such a run is rewritten as the one `pre` it
+  was meant to be.
 - **A one-line `pre` renders as inline code** and glues the next opening fence onto the end of that
-  line. 26 pages of one corpus were inverted from that point on, with 444 lines of prose fenced
-  between them. The second newline goes inside the innermost `code`, since one outside it stops the
-  glue and leaves the sample inline.
+  line, inverting every fence after it. The repair puts a second newline inside the innermost
+  `code`, since one outside it stops the glue and leaves the sample inline.
 - **Extraction can close a paragraph and open a code block on one line**, leaving a delimiter no
   parser sees and inverting every fence after it. The repair attempts every document rather than
   only those ending mid-fence, because a page where it happened twice is inverted and balanced at
-  once: 50 such lines sat in the corpora reading as healthy. 49 are repaired; the one that is not
-  sits on a page broken for another reason, where a guess is worth less than the break.
+  once. A page broken for another reason is left alone, where a guess is worth less than the break.
 
 MDX pages that define their component ahead of the prose have that definition removed outright and
 the invocation kept — where a widget stood is worth knowing, the four hundred lines that built it
@@ -286,8 +283,7 @@ that exist.
 **The page itself is always the last candidate**, because a publisher that mirrors most of its
 pages does not mirror all of them, and a page with no twin is still content. Asking for it is also
 what tells the two failures apart: a 404 there means the site serves nothing at that URL, so the
-sitemap entry is stale, and that is the only one of the two worth reporting. One sweep of
-learn.chatgpt.com had both: two pages that publish no twin, and one URL the site had dropped.
+sitemap entry is stale, and that is the only one of the two worth reporting.
 
 A group is a folder and a round in one: snapshots go under `data/<group>/<name>/`, output to
 `output/<group>/<name>.jsonl`, and the target joins `watch --group <group>`. **Changing the group of
@@ -384,14 +380,14 @@ it changed and any error). The desktop panel sets the variable and turns the lin
 per target, the target underway and the time running, and says how the round ended as the
 first words of its status: finished, finished with failures, or stopped part way. When it
 ends out of sight it says so as a system notification. Without the variable nothing is
-printed, so a terminal or a scheduler reads exactly what it always has.
+printed, so a terminal or a scheduler reads only the plain report.
 
 - **A first snapshot is not a change.** There is nothing yet for it to differ from, and a monitor
   that cries on its own first run teaches you to ignore it.
 - **Neither is a reordering.** A page whose lines are the same in a different order is classified
   `reordered`, listed everywhere it would have been listed, and left out of the verdict. It rewrites
   the stored page, because the page did change; it does not raise the exit code, because nothing it
-  says did. Three of them woke a notification on one real sweep and told nobody anything.
+  says did.
 - **A round is started by a person and nothing starts one by itself.** `watch` takes a lock on the
   group before crawling and exits 30 without crawling if another round holds it, so a second window
   or a second button costs nothing but the message saying who got there first.
@@ -478,8 +474,7 @@ shell after changing `main.py`: main modules are imported once, at startup.
 
 Every command runs with this package's `src/` first on `PYTHONPATH`. An installed environment
 holds a copy of the package made when Setup built it, and an application update does not touch
-it, so without that the panel of a new release drove the CLI of whichever release built the
-environment. The environment is kept for the dependencies; the code is the code that shipped.
+it. The environment is kept for the dependencies; the code is the code that shipped.
 
 Two things to know before using it. A round is one process, so stopping it kills the crawl where it
 stands, which is safe — the lock is released by the kernel and Crawlee's working directory is
@@ -507,9 +502,7 @@ finishes, and it is the table worth reading.
 `empty link` is accurate and unactionable. Trafilatura warns once per anchor whose own text is
 empty, which on a documentation index is every card in the grid, and what the extraction drops is
 the card's href alone: the card's text is kept, and every destination is a sitemap entry the same
-run fetches on its own. Measured on `ai.google.dev/gemini-api/docs`, nine warnings for nine cards
-and no prose lost. One sweep of the AI corpora emitted forty-five of them at eight lines each,
-which was four fifths of everything it printed.
+run fetches on its own.
 
 Silencing is not the general answer to a noisy line, and the two filters this toolkit installs are
 opposite cases. Crawlee's crawl-delay warning is *wrong* on the seeded path and is dropped there
@@ -517,7 +510,7 @@ only. This one is right, and is dropped because being right about an anchor nobo
 not worth burying the round in.
 
 **A retry is rewritten, not dropped.** Crawlee's own line, `Retrying request to <url> due to:
-<message>`, printed `due to: .` whenever the error carried no text, which is what a connection the
+<message>`, prints `due to: .` whenever the error carries no text, which is what a connection the
 server drops mid-response raises, followed by a fragment of asyncio's event loop. It is replaced by
 one line per attempt:
 
@@ -569,12 +562,9 @@ since the crawler takes no request loader beside its manager. So the check fails
 handed over, and every seeded profile crawls at full speed no matter what robots.txt asks. 429
 backoff is unaffected, because the throttler records that itself. `apply_robots_crawl_delay` reads
 the directive with crawlee's parser and sets it on the throttler before the tandem hides it, and the
-warning is filtered off that one path, because a line saying the opposite of what the run does
-outlives everyone's memory of why it was wrong. It survives everywhere it is true: with no
-throttler built — a URL with no hostname is enough — nothing enforces the directive and the
-warning is the only notice you get. None of the nine profiles on this machine declares a
-`Crawl-delay`, so this changed no observed behaviour and exists for the target that eventually
-does.
+warning is filtered off that one path, because there it says the opposite of what the run does. It
+survives everywhere it is true: with no throttler built (a URL with no hostname is enough), nothing
+enforces the directive and the warning is the only notice you get.
 
 Nothing here costs money. The whole stack is open source and runs locally; Apify Cloud, paid proxies
 and LLM-assisted extraction are deliberately out of scope, and no model is consulted at any point
@@ -592,23 +582,17 @@ uv run pytest -m "not browser"
 ```
 
 The suite runs offline: tests that need a website get a fixture site served on localhost, and the
-only mark is `browser`, for the tests needing Chromium. 363 tests in about a minute.
+only mark is `browser`, for the tests needing Chromium.
 
 The fixture server generates its sitemaps rather than serving them from disk, because crawlee
 refuses a relative `<loc>` and a static file cannot name the port the server picked at startup.
-`/sitemap-live.xml` lists two pages that are there and `/sitemap-stale.xml` lists one that is not,
-which is the shape both learn.chatgpt.com and docs.mistral.ai arrive in.
+`/sitemap-live.xml` lists two pages that are there and `/sitemap-stale.xml` lists one that is not.
 
 **Nothing the panel calls may import the crawler stack at module scope.** `crawlee.crawlers` costs
-three seconds to import: it brings Playwright, and through the adaptive crawler's rendering-type
-predictor it brings scikit-learn. The panel spawns a fresh process for every click, so a stray
-import makes listing profiles pay for a browser and a machine-learning library — `state` measured
-2.99s for reading files off disk, because it reached `digest` for a filename, which reached `watch`
-for a constant, which imported `engine`. `execute` is now imported inside `sweep` and inside the two
-commands that crawl, and the read paths cost 0.33s. Measure with `python -X importtime -c "import
-dyarchia_crawlee.cli"` before adding an import near the top of `cli.py`, `state.py`, `digest.py` or
-`watch.py`.
-
-This was a repository of its own until 2026-09-11, when Dyarchia desktop absorbed it with its
-history. Its history carries a target inventory that was taken out of the README; the repository is
-private, so it is contained, and opening it is the moment to rewrite that history.
+about three seconds to import: it brings Playwright, and through the adaptive crawler's
+rendering-type predictor it brings scikit-learn. The panel spawns a fresh process for every click,
+so a stray import makes listing profiles pay for a browser and a machine-learning library.
+`execute` is imported inside `sweep` and inside the commands that crawl, never at the top of a
+module, and an import reached only for a type sits under `TYPE_CHECKING`. Measure with
+`python -X importtime -c "import dyarchia_crawlee.cli"` before adding an import near the top of
+`cli.py`, `state.py`, `digest.py` or `watch.py`.

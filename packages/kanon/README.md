@@ -63,9 +63,9 @@ inside a pill is a light.
 **The glass needs no blur.** Nothing in the system uses `backdrop-filter`. The shell paints
 `--dya-ground`, an even near-black, with `--dya-noise`, a static grain, over it; a panel is
 translucent white over that, lit along its top rim, and the grain showing through is what
-reads as frosted. The ground carries no pools of light: an uneven ground made the same panel a
-different grey in each corner of the window. A surface that covers content, a
-sheet or a menu, is opaque, because glass over content is content read through a veil.
+reads as frosted. The ground carries no pools of light, because an uneven ground makes the same
+panel a different grey in each corner of the window. A surface that covers content, a sheet or a
+menu, is opaque, because glass over content is content read through a veil.
 
 
 ## One theme
@@ -94,10 +94,8 @@ token                  value     relative luminance   role
 
 The glass and the pills are alphas of white, and two grounds exist only where those alphas
 stack. `tools/contrast.py` measures every ink against them as `glass-peak`, `#27292c`, and
-`card-peak`, `#2f3033`, a card on that glass. They were measured over the brightest pool of
-light the ground used to carry and are kept as a ceiling: the ground today is darker than
-either, so every figure in this file is the worst case, and a ground that ever brightens
-again stays inside what the inks were solved for.
+`card-peak`, `#2f3033`, a card on that glass. Both are a ceiling above any ground the shell
+paints, so every figure in this file is the worst case.
 
 ```text
 token              value       bg   surf-1   raised   overlay   r-hover   selected   card-peak
@@ -417,9 +415,8 @@ Assistive    sr-only
 scrolls, what is hidden until something happens: that is the plugin's. What anything looks like,
 a colour, a ground, a border, a type step, a shadow, is declared here and only here, and a
 plugin reaches it by class. A look a plugin needs and this file does not have is added here
-first, measured, and then used, and a look two plugins had drawn separately is the first thing
-to come here: the editor behind docviewer and crawlee, the xterm viewport behind the CLI and the
-kanban stage.
+first, measured, and then used, and a look two plugins share lives here: the editor behind
+docviewer and crawlee, the xterm viewport behind the terminal and the kanban stage.
 
 **An entry is one record in a running list**: a note in a thread, a run, a search hit. A box on the first surface; a head of small things on one line; its text in the
 second ink, which measures 10.69 on the first surface; its verbatim body sunken and mono.
@@ -592,15 +589,9 @@ There is nothing to build, lint or test. What replaces those commands:
 
 ## Open questions
 
-- `pane` has been measured against all six panels at 400, 700 and 1900. The terminal cannot
-  be measured that way, because xterm refits from a `ResizeObserver` and a background window
-  is given no frames to deliver one in.
-- The two thresholds in use are properties of their content, not of the system: 640 for a
-  corpus row and 900 for the cost panel's ten columns, both measured against the data on one
-  machine.
+- The terminal cannot be measured at the three widths from a background window, because xterm
+  refits from a `ResizeObserver` and a background window is given no frames to deliver one in.
 - The SDK's markdown renderer emits `code`, `math` and `prose__scroll`. docviewer styles the
   elements between them with its own prefixed rules; a second consumer is what would move
   those rules upstream.
-- `text--warning` is absent and its two siblings are present, because nothing reports a
-  warning in prose yet. The triad returns whole the day something does.
 - The IBM Plex stylistic sets are undetermined.

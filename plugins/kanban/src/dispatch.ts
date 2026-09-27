@@ -532,7 +532,7 @@ async function resolve(
                 const gone = await reclaim(workspace(meta, card), boards.workspacesRoot(meta.slug))
                 if (!gone) run.error = 'the scratch workspace could not be removed'
             }
-            land(card, run.worktree ? 'review' : 'done')
+            land(card, 'review')
             void events.record(
                 meta.slug,
                 card.id,
@@ -758,11 +758,22 @@ export function guarded(card: Card, now: number): boolean {
     return CREDENTIAL.test(said)
 }
 
-function claimable(file: BoardFile, now: number): Card[] {
+/*
+ * Every finished card is reviewed before it is done, and the dispatcher starts the reviewer as it
+ * starts an implementer, under the same caps. A card waiting for its review goes first, because
+ * finishing work outranks starting more.
+ */
+export function claimable(file: BoardFile, now: number): Card[] {
+    const waiting = (card: Card): boolean =>
+        card.status === 'review' ? reviewed(card) !== null : card.status === 'ready' && !board.blockedBy(file, card).length
     return file.cards
-        .filter((card) => card.status === 'ready' && !card.locked && !guarded(card, now))
-        .filter((card) => !board.blockedBy(file, card).length)
-        .sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
+        .filter((card) => !card.locked && waiting(card) && !guarded(card, now))
+        .sort(
+            (a, b) =>
+                Number(b.status === 'review') - Number(a.status === 'review') ||
+                b.priority - a.priority ||
+                a.createdAt - b.createdAt
+        )
 }
 
 async function launch(
@@ -854,6 +865,10 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
 
     const card = claimable(file, Date.now())[0]
     if (!card) return false
+    if (card.status === 'review') {
+        await startReview(file, meta, card, sink)
+        return true
+    }
 
     const run = take(meta, card, 'implement')
     await board.save(meta.slug, file)
@@ -865,11 +880,7 @@ async function claim(meta: BoardMeta, sink: Sink): Promise<boolean> {
     return true
 }
 
-export async function review(meta: BoardMeta, cardId: string, sink: Sink): Promise<void> {
-    const file = await board.load(meta.slug)
-    const card = board.find(file, cardId)
-    if (card.status !== 'review') throw new Error('that card is not waiting for a review')
-
+async function startReview(file: BoardFile, meta: BoardMeta, card: Card, sink: Sink): Promise<void> {
     const judged = reviewed(card)
     if (!judged) throw new Error('that card has no finished run for a reviewer to read')
 

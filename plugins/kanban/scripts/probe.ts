@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as board from '../src/board.js'
 import * as boards from '../src/boards.js'
-import { adopt, carried, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
+import { adopt, carried, claimable, force, guarded, home, overran, PATIENCE, stalled, unlisted } from '../src/dispatch.js'
 import { liveness, parseLaunch, snapshot } from '../src/harness/claude.js'
 import * as codex from '../src/harness/codex.js'
 import * as grok from '../src/harness/grok.js'
@@ -604,6 +604,15 @@ async function guards(): Promise<void> {
         false
     )
 
+    const waiting = { ...card, id: 'w', status: 'review' as const, locked: false, priority: 0, createdAt: 2, runs: [{ ...base, outcome: 'completed' as const, endedAt: now - 120_000 }] }
+    const fresh = { ...waiting, id: 'f', runs: [{ ...base, outcome: 'completed' as const, endedAt: now - 1_000 }] }
+    const idle = { ...card, id: 'i', status: 'review' as const, locked: false, runs: [] }
+    const queued = { ...card, id: 'q', status: 'ready' as const, locked: false, priority: 9, createdAt: 1, parents: [], runs: [] }
+    const order = claimable({ version: 1, cards: [queued, idle, fresh, waiting] } as never, now).map((entry) => entry.id)
+    check('a card waiting for its review is claimed, ahead of a ready card of higher priority', order, ['w', 'q'])
+    check('a review is not claimed in the minute after its implement run finished', order.includes('f'), false)
+    check('and a card in review with no finished implement run is not claimed', order.includes('i'), false)
+
     check('a session listed as alive is not unlisted', unlisted('alive', now - 1_000, now), false)
     check('an unreadable snapshot is not either', unlisted('unknown', now - 1_000, now), false)
     check('a newborn session missing from the list is', unlisted('dead', now - 2_000, now), true)
@@ -838,7 +847,7 @@ async function reconciling(): Promise<void> {
     check('and the operator is told', notices.includes('the operator denied a tool use broke the protocol'), true)
 
     const finished = await reread(told)
-    check('a finished turn that declared is resolved as it always was', finished.status, 'done')
+    check('a finished turn goes to review, with or without a worktree', finished.status, 'review')
     check('with the outcome it declared', last(finished).outcome, 'completed')
     check('and the summary it wrote', last(finished).summary, 'did the work')
 

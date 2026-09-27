@@ -24,8 +24,7 @@ const PATHS = {
     link: '<path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/>',
     undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="1"/>',
-    move: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
-    reviewer: '<circle cx="9" cy="8" r="4"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="m16 11 2 2 4-4"/>'
+    move: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>'
 }
 
 export type GlyphName = keyof typeof PATHS

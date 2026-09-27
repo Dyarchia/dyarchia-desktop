@@ -112,17 +112,16 @@ export function openSurface(anchor: HTMLElement, className: string, within?: (ta
 function item(label: string, note?: string): { button: HTMLButtonElement; text: HTMLElement } {
     const button = document.createElement('button')
     button.type = 'button'
-    button.className = 'dya-menu__item kanban-menu-item'
+    button.className = 'dya-menu__item dya-menu__item--tall'
 
     const text = document.createElement('span')
-    text.className = 'kanban-menu-text'
+    text.className = 'dya-menu__text'
     const name = document.createElement('span')
-    name.className = 'kanban-menu-label'
-    name.textContent = label
+        name.textContent = label
     text.appendChild(name)
     if (note) {
         const hint = document.createElement('span')
-        hint.className = 'kanban-menu-note'
+        hint.className = 'dya-menu__note'
         hint.textContent = note
         text.appendChild(hint)
     }
@@ -143,14 +142,14 @@ export function openMenu(options: MenuOptions): () => void {
     root.tabIndex = -1
 
     const search = document.createElement('input')
-    search.className = 'dya-field dya-field--sm kanban-menu-search'
+    search.className = 'dya-field dya-field--sm dya-menu__search'
     search.type = 'text'
     search.placeholder = options.filter ?? 'filter'
     search.spellcheck = false
     search.hidden = options.rows.length < FILTER_FROM
 
     const list = document.createElement('div')
-    list.className = 'kanban-menu-list'
+    list.className = 'dya-menu__list'
 
     root.append(search, list)
 
@@ -197,7 +196,7 @@ export function openMenu(options: MenuOptions): () => void {
     const focus = (index: number): void => {
         active = index
         for (const [position, entry] of rendered.entries()) {
-            entry.element.dataset.active = String(position === index)
+            entry.element.classList.toggle('dya-menu__item--active', position === index)
         }
         rendered[index]?.element.scrollIntoView({ block: 'nearest' })
     }
@@ -215,7 +214,7 @@ export function openMenu(options: MenuOptions): () => void {
                 group = row.group
                 if (group) {
                     const heading = document.createElement('div')
-                    heading.className = 'dya-label kanban-menu-group'
+                    heading.className = 'dya-label dya-menu__group'
                     heading.textContent = group
                     list.appendChild(heading)
                 }
@@ -226,14 +225,14 @@ export function openMenu(options: MenuOptions): () => void {
 
             if (row.tier) {
                 const tier = document.createElement('span')
-                tier.className = 'dya-tag kanban-tier'
+                tier.className = 'dya-tag'
                 tier.textContent = row.tier
                 button.appendChild(tier)
             }
 
             if (!row.direct) {
                 const arrow = document.createElement('span')
-                arrow.className = 'kanban-menu-arrow'
+                arrow.className = 'dya-menu__arrow'
                 arrow.textContent = '›'
                 button.appendChild(arrow)
             }
@@ -257,7 +256,7 @@ export function openMenu(options: MenuOptions): () => void {
 
         if (!rendered.length) {
             const empty = document.createElement('div')
-            empty.className = 'dya-empty kanban-menu-empty'
+            empty.className = 'dya-empty dya-menu__empty'
             empty.textContent = 'no match'
             list.appendChild(empty)
         }
@@ -287,7 +286,7 @@ export function openMenu(options: MenuOptions): () => void {
                 return
             }
             if (active >= 0) openSubmenu(active)
-            submenu?.querySelector<HTMLButtonElement>('.kanban-menu-item:not([disabled])')?.focus()
+            submenu?.querySelector<HTMLButtonElement>('.dya-menu__item:not([disabled])')?.focus()
             return
         }
         if (event.key === 'ArrowLeft') {

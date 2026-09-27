@@ -13,16 +13,7 @@ const STYLES =
     '\n.dyarchia-terminal {' +
     ' position: relative;' +
     ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
-    '\n.dyarchia-terminal-connecting { position: absolute; inset: 0; }' +
-    '\n.xterm .xterm-viewport { background-color: transparent !important; }' +
-    '\n.xterm .xterm-viewport::-webkit-scrollbar { width: 8px; }' +
-    '\n.xterm .xterm-viewport::-webkit-scrollbar-track { background: transparent; }' +
-    '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb {' +
-    ' background-color: transparent; border-radius: var(--dya-radius); }' +
-    '\n.xterm .xterm-viewport:hover::-webkit-scrollbar-thumb {' +
-    ' background-color: var(--dya-border); }' +
-    '\n.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {' +
-    ' background-color: var(--dya-border-strong); }'
+    '\n.dyarchia-terminal-connecting { position: absolute; inset: 0; }'
 
 /*
  * The sixteen colours a program asks for by number, taken from kanon rather than written here. They
@@ -129,7 +120,7 @@ export function activate(ctx: PluginContext): void {
         },
         (container, handle) => {
         injectStyles(ctx.pluginId, STYLES)
-        container.classList.add('dyarchia-terminal')
+        container.classList.add('dya-terminal', 'dyarchia-terminal')
 
         const terminalTheme = (): ITheme => ({
             ...Object.fromEntries(
@@ -319,7 +310,7 @@ export function activate(ctx: PluginContext): void {
                 port = null
             }
             terminal.dispose()
-            container.classList.remove('dyarchia-terminal')
+            container.classList.remove('dya-terminal', 'dyarchia-terminal')
         }
     })
 }

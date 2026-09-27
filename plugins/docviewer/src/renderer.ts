@@ -88,141 +88,8 @@ const STYLES = `
     justify-content: center;
     padding: 0;
 }
-.docviewer-content h1 {
-    margin: var(--dya-space-5) 0 var(--dya-space-2);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-h2);
-    font-weight: var(--dya-weight-light);
-    letter-spacing: var(--dya-tracking-h2);
-    line-height: var(--dya-leading-heading);
-    color: var(--dya-text);
-}
-.docviewer-content h2,
-.docviewer-content h3 {
-    margin: var(--dya-space-5) 0 var(--dya-space-2);
-    font-family: var(--dya-font-sans);
-    line-height: var(--dya-leading-heading);
-    color: var(--dya-text);
-}
-.docviewer-content h2 {
-    font-size: var(--dya-size-h3);
-    font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-h3);
-}
-.docviewer-content h3 {
-    font-size: var(--dya-size-h4);
-    font-weight: var(--dya-weight-medium);
-}
-.docviewer-content p {
-    margin: var(--dya-space-2) 0;
-}
-.docviewer-content pre {
-    margin: var(--dya-space-3) 0;
-    padding: var(--dya-space-3);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    background: var(--dya-surface-2);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
-    overflow-x: auto;
-}
-.docviewer-diagram {
-    margin: var(--dya-space-3) 0;
-    padding: var(--dya-space-3);
-    background: var(--dya-surface-2);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
-    overflow-x: auto;
-    text-align: center;
-}
-.docviewer-diagram svg {
-    max-width: 100%;
-    height: auto;
-}
-.docviewer-content code {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-}
-.docviewer-content ul,
-.docviewer-content ol {
-    margin: var(--dya-space-2) 0;
-    padding-left: var(--dya-space-5);
-}
-.docviewer-content a {
-    color: var(--dya-text);
-    text-decoration: underline;
-    text-decoration-color: var(--dya-accent);
-    text-underline-offset: 3px;
-}
-.docviewer-content blockquote {
-    margin: var(--dya-space-3) 0;
-    padding-left: var(--dya-space-3);
-    border-left: 2px solid var(--dya-border);
-    color: var(--dya-text-4);
-}
-.docviewer-content hr {
-    margin: var(--dya-space-5) 0;
-    border: none;
-    border-top: var(--dya-border-width) solid var(--dya-border);
-}
-.docviewer-line {
-    display: block;
-    min-height: 1lh;
-}
-.docviewer-line--at {
-    background: var(--dya-selected);
-    box-shadow: -3px 0 0 var(--dya-accent);
-}
-/*
- * The editor is a textarea with no colour of its own lying exactly on top of the same text,
- * highlighted, in a pre behind it. Both have to agree on every metric that decides where a
- * glyph lands, so the two rules below are one rule written twice and neither may drift.
- */
 .docviewer-editor {
-    position: relative;
     height: 100%;
-    overflow: auto;
-}
-.docviewer-editor > pre,
-.docviewer-editor > textarea {
-    margin: 0;
-    padding: 0;
-    border: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    line-height: var(--dya-leading-body);
-    letter-spacing: var(--dya-tracking-mono);
-    tab-size: 4;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-    word-break: break-word;
-}
-.docviewer-editor > pre {
-    min-height: 100%;
-    pointer-events: none;
-}
-/*
- * The textarea is as tall as the text it holds, never a window onto it, so it never scrolls on
- * its own and there are not two scroll positions to keep in step. The frame scrolls, and the
- * browser keeps the caret in view because the caret is inside it.
- */
-.docviewer-editor > textarea {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    resize: none;
-    background: transparent;
-    color: transparent;
-    caret-color: var(--dya-accent);
-    outline: none;
-    overflow: hidden;
-}
-.docviewer-editor > textarea::selection {
-    background: var(--dya-selected);
-    color: transparent;
 }
 .docviewer-save[hidden],
 .docviewer-dirty[hidden] {
@@ -526,9 +393,9 @@ export function activate(ctx: PluginContext): void {
                 const lines = highlightLines(current?.content ?? '', language)
                 for (const [index, line] of lines.entries()) {
                     const row = document.createElement('span')
-                    row.className = 'docviewer-line'
+                    row.className = 'dya-code__line'
                     row.dataset.line = String(index + 1)
-                    if (index + 1 === target) row.classList.add('docviewer-line--at')
+                    if (index + 1 === target) row.classList.add('dya-code__line--at')
                     row.innerHTML = line
                     pre.append(row)
                 }
@@ -538,7 +405,7 @@ export function activate(ctx: PluginContext): void {
             function editor(): HTMLElement {
                 const language = languageOf(current?.name ?? '')
                 const frame = document.createElement('div')
-                frame.className = 'docviewer-editor'
+                frame.className = 'dya-editor docviewer-editor'
                 const behind = document.createElement('pre')
                 behind.className = 'dya-code'
                 const field = document.createElement('textarea')
@@ -603,6 +470,7 @@ export function activate(ctx: PluginContext): void {
                         row.firstElementChild?.classList.add('dya-table__subject')
                     }
                     colourBlocks(holder)
+                    content.classList.add('dya-prose')
                     content.replaceChildren(...holder.childNodes)
                     await renderDiagrams(content)
                 } else {
@@ -610,7 +478,7 @@ export function activate(ctx: PluginContext): void {
                 }
                 content.scrollTop = 0
                 if (target !== null) {
-                    const at = content.querySelector('.docviewer-line--at')
+                    const at = content.querySelector('.dya-code__line--at')
                     at?.scrollIntoView({ block: 'center' })
                 }
             }
@@ -694,7 +562,7 @@ export function activate(ctx: PluginContext): void {
                             block.textContent ?? ''
                         )
                         const figure = document.createElement('div')
-                        figure.className = 'docviewer-diagram'
+                        figure.className = 'dya-prose__figure'
                         figure.innerHTML = svg
                         pre.replaceWith(figure)
                     } catch {

@@ -66,55 +66,6 @@ const STYLE = `
     overflow: auto;
 }
 
-/*
- * Six columns and a state badge stop fitting well before the pane runs out of uses. Below 640px a
- * corpus becomes a card carrying the labels the header row was holding, so the table never scrolls
- * sideways in a split pane.
- */
-@container pane (max-width: 640px) {
-    .crw-corpora {
-        overflow-x: hidden;
-    }
-
-    .crw-corpora table,
-    .crw-corpora tbody,
-    .crw-corpora tr,
-    .crw-corpora td {
-        display: block;
-    }
-
-    .crw-corpora tr:has(th) {
-        display: none;
-    }
-
-    .crw-corpora tr {
-        margin-bottom: var(--dya-space-1);
-        padding: var(--dya-space-2) 0;
-        border: var(--dya-border-width) solid var(--dya-border);
-        border-radius: var(--dya-radius);
-        background: var(--dya-surface-1);
-    }
-
-    .crw-corpora td {
-        display: grid;
-        grid-template-columns: 8ch 1fr;
-        align-items: baseline;
-        gap: var(--dya-space-3);
-        border: 0;
-        border-radius: 0;
-        padding: 1px var(--dya-space-3);
-        background: none;
-        text-align: left;
-    }
-
-    .crw-corpora td::before {
-        content: attr(data-label);
-        font-family: var(--dya-font-sans);
-        font-size: var(--dya-size-body-xs);
-        letter-spacing: var(--dya-tracking-ui);
-        color: var(--dya-text-4);
-    }
-}
 .crw-bar {
     flex: none;
     flex-wrap: wrap;
@@ -189,14 +140,6 @@ const STYLE = `
 .crw-new {
     min-width: 0;
 }
-.crw-new {
-    border: var(--dya-border-width) dashed var(--dya-dashed);
-    background: transparent;
-    box-shadow: none;
-}
-.crw-new:hover {
-    background-color: var(--dya-flat-hover);
-}
 .crw-sheet-bar {
     padding-inline: 0;
 }
@@ -224,49 +167,11 @@ const STYLE = `
  * is set on both, and neither may drift from the other.
  */
 .crw-yaml {
-    position: relative;
     flex: 1;
     min-height: 140px;
-    overflow: auto;
 }
 .crw-yaml[hidden] {
     display: none;
-}
-.crw-yaml > pre,
-.crw-yaml > textarea {
-    margin: 0;
-    padding: 0;
-    border: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    line-height: var(--dya-leading-body);
-    letter-spacing: var(--dya-tracking-mono);
-    tab-size: 2;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-}
-.crw-yaml > pre {
-    min-height: 100%;
-    background: transparent;
-    border-radius: 0;
-    overflow-x: visible;
-    pointer-events: none;
-}
-.crw-yaml > textarea {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    resize: none;
-    background: transparent;
-    color: transparent;
-    caret-color: var(--dya-accent);
-    outline: none;
-    overflow: hidden;
-}
-.crw-yaml > textarea::selection {
-    background: var(--dya-selected);
-    color: transparent;
 }
 /* Inside the sheet the console starts shorter: the subject there is the target being written, and
    the output of a probe is a footnote to it. It resizes like the other one. */
@@ -296,13 +201,7 @@ const STYLE = `
     flex: 1;
 }
 .crw-hit {
-    display: flex;
-    flex-direction: column;
     gap: var(--dya-space-1);
-    padding: var(--dya-space-3);
-    border: var(--dya-border-width) solid var(--dya-border);
-    border-radius: var(--dya-radius);
-    background: var(--dya-surface-1);
 }
 .crw-hit-head {
     display: flex;
@@ -310,28 +209,11 @@ const STYLE = `
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }
-/*
- * The title is the one thing a reader scans down, so it carries the top ink rank. Everything else
- * in the head is where the passage came from, and sits a rank below in mono at label size.
- */
-.crw-hit-title {
-    color: var(--dya-text);
-    overflow-wrap: anywhere;
-}
 .crw-hit-where {
     margin-left: auto;
 }
 .crw-hit-url {
-    color: var(--dya-text-4);
     user-select: all;
-    overflow-wrap: anywhere;
-}
-.crw-hit-snippet {
-    color: var(--dya-text-3);
-}
-.crw-hit-snippet mark {
-    background: var(--dya-accent-soft);
-    color: var(--dya-text);
 }
 .crw-hit-actions {
     display: flex;
@@ -716,7 +598,7 @@ function mount(ctx, container) {
         const refresh = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Refresh')
         head.append(el('span', 'dya-eyebrow', 'corpus'), headline, where, refresh)
 
-        const table = el('table', 'dya-table')
+        const table = el('table', 'dya-table dya-table--stack')
         const wrap = el('div', 'crw-corpora')
         wrap.appendChild(table)
 
@@ -992,7 +874,7 @@ function mount(ctx, container) {
         if (!hit.file) return null
         const actions = el('div', 'crw-hit-actions')
         if (hit.line > 1) {
-            actions.append(el('span', 'dya-meta crw-hit-at', `line ${hit.line}`))
+            actions.append(el('span', 'dya-meta', `line ${hit.line}`))
         }
         if (ctx.shell.canOpen(hit.file)) {
             const open = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Open')
@@ -1079,18 +961,18 @@ function mount(ctx, container) {
                  * A page whose title is its own address says its address twice, once as a title
                  * it does not have and once as the line under it. It gets the line.
                  */
-                const row = el('div', 'crw-hit')
+                const row = el('div', 'dya-entry crw-hit')
                 const head = el('div', 'crw-hit-head')
                 const titled = hit.title && hit.title !== hit.url
                 head.append(
                     titled
-                        ? el('span', 'dya-text crw-hit-title', hit.title)
-                        : el('span', 'dya-mono crw-hit-title', hit.url)
+                        ? el('span', 'dya-name', hit.title)
+                        : el('span', 'dya-name', hit.url)
                 )
-                if (hit.heading) head.append(el('span', 'dya-meta crw-hit-in', hit.heading))
+                if (hit.heading) head.append(el('span', 'dya-meta', hit.heading))
                 head.append(el('span', 'dya-meta crw-hit-where', `${hit.repository} / ${hit.target}`))
-                const url = el('div', 'dya-mono crw-hit-url', hit.url)
-                const snippet = el('div', 'dya-text crw-hit-snippet')
+                const url = el('div', 'dya-meta dya-meta--wrap crw-hit-url', hit.url)
+                const snippet = el('div', 'dya-entry__text')
                 for (const [index, part] of String(hit.snippet).split(/[\[\]]/).entries()) {
                     snippet.append(index % 2 ? el('mark', undefined, part) : part)
                 }
@@ -1125,7 +1007,7 @@ function mount(ctx, container) {
 
         const bar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const title = el('span', 'dya-mono crw-status')
-        const remove = el('button', 'dya-button dya-button--quiet dya-button--sm dya-button--danger', 'Delete')
+        const remove = el('button', 'dya-button dya-button--sm dya-button--danger', 'Delete')
         const inspect = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Inspect')
         const save = el('button', 'dya-button dya-button--sm', 'Save')
         const close = el('button', 'dya-button dya-button--quiet dya-button--sm', 'Close')
@@ -1414,7 +1296,7 @@ function mount(ctx, container) {
         }
 
         function newTargetCard() {
-            const card = el('button', 'dya-tile crw-new')
+            const card = el('button', 'dya-tile dya-tile--new crw-new')
             const icon = el('span', 'dya-tile__icon')
             icon.innerHTML = PLUS
             card.append(icon, el('span', 'dya-tile__name', 'New target'), el(
@@ -1519,7 +1401,7 @@ function mount(ctx, container) {
      * scrolls, and the caret stays in view because it is inside the frame.
      */
     function buildYaml() {
-        const node = el('div', 'dya-field crw-yaml')
+        const node = el('div', 'dya-field dya-editor crw-yaml')
         const behind = el('pre', 'dya-code')
         const field = el('textarea')
         field.spellcheck = false

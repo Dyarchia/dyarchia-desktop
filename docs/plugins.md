@@ -185,7 +185,7 @@ export function activate(ctx: PluginContext): void {
   one-character string as a fallback. A mark may define gradients by id; the shell gives every
   copy it draws ids of its own. A plugin that puts an svg with ids into the page itself passes it
   through `ownIds` from `@dyarchia/sdk` for the same reason.
-- `duplicable: true` allows several instances through a `+` in the group header. Each gets
+- `duplicable: true` puts a `+` on the panel's tab that opens another, fresh instance. Each gets
   its own mount and dispose; the instance id is `<id>#<n>` and the plugin never handles it.
 - `keepAlive: true` keeps the panel in the document while another tab covers it. dockview
   otherwise removes a hidden panel's content, and a `<webview>` taken out of the document

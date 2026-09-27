@@ -1214,7 +1214,7 @@ textarea.dya-field {
 }
 
 /*
- * Where a choice comes from, when it is not made here: `from board` on the entry that inherits.
+ * Where a choice comes from, when it is not made here: `follows the board` on the entry that inherits.
  * It is said in the list, beside the value, and not in the closed control, which shows only what
  * will be used. The closed control is the select's own button holding a `selectedcontent`.
  */

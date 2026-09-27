@@ -2,6 +2,7 @@ import type { HarnessId, HarnessInfo, Run } from '../types.js'
 import * as claude from './claude.js'
 import * as codex from './codex.js'
 import * as grok from './grok.js'
+import * as kimi from './kimi.js'
 import * as opencode from './opencode.js'
 import { HARNESS_IDS } from './ids.js'
 import type { Driver, Fleet } from './types.js'
@@ -10,6 +11,7 @@ const DRIVERS: Record<HarnessId, Driver> = {
     claude: claude.driver,
     codex: codex.driver,
     grok: grok.driver,
+    kimi: kimi.driver,
     opencode: opencode.driver
 }
 

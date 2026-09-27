@@ -4,7 +4,7 @@
  * bundled for the renderer. The board's runner resolution has to be one function shared by the
  * dispatcher and the card that shows what the dispatcher will do, which puts the names here.
  */
-export const HARNESS_IDS = ['claude', 'codex', 'grok', 'opencode'] as const
+export const HARNESS_IDS = ['claude', 'codex', 'grok', 'kimi', 'opencode'] as const
 
 export type HarnessId = (typeof HARNESS_IDS)[number]
 

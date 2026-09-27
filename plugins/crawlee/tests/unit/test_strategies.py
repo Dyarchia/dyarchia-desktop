@@ -86,6 +86,12 @@ def test_a_body_without_a_dom_is_used_verbatim() -> None:
         ('## Only a subheading', None),
         ('no headings at all', None),
         ('#', None),
+        ('---\ntitle: Agent Skills\nurl: https://x.example\n---\n\nIntro.', 'Agent Skills'),
+        ('---\ntitle: "Quoted"\n---\n\n# Heading', 'Quoted'),
+        ('---\nmeta:\n   title: Nested\n---\n\n# Heading', 'Heading'),
+        ('Intro.\n\n````markdown\n# PDF Processing\n```python\nx\n```\n````\n\n# Real', 'Real'),
+        ('~~~\n# Not a title\n~~~', None),
+        ('```\n# Unclosed fence', None),
     ],
 )
 def test_markdown_titles(text: str, expected: str | None) -> None:

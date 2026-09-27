@@ -1,14 +1,24 @@
 import { app, session, shell } from 'electron'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 /*
- * The browser's own session. Its cookies, logins and cache live under this partition and nowhere
- * else, so a page signed in here is not signed in anywhere in the shell, and clearing it touches
- * nothing but the browser.
+ * The browser's own session, held in memory and never written to disk. Cookies, logins, cache and
+ * site storage last as long as the application does and are gone when it closes, so no page can
+ * recognise the next launch as the same person. The folder a persistent session once wrote is
+ * removed on the way in.
  */
-const PARTITION = 'persist:dyarchia-browser'
+const PARTITION = 'dyarchia-browser'
+const RETIRED = join('Partitions', 'dyarchia-browser')
+
+/*
+ * A page is granted nothing that says anything about the person or the machine: no location, no
+ * camera or microphone, no notifications, no devices, no idle or sensor readings. Writing to the
+ * clipboard after a click and filling the panel with a video tell a page nothing, so those two
+ * are the whole list.
+ */
+const GRANTED = new Set(['clipboard-sanitized-write', 'fullscreen'])
 
 interface Bookmark {
     url: string
@@ -49,6 +59,13 @@ export function activate(ctx: PluginMainContext): void {
      * application's controls on it, and a link that says `target=_blank` is still a link.
      */
     const browsing = session.fromPartition(PARTITION)
+    void rm(join(app.getPath('sessionData'), RETIRED), { recursive: true, force: true })
+
+    browsing.setPermissionRequestHandler((_contents, permission, callback) =>
+        callback(GRANTED.has(permission))
+    )
+    browsing.setPermissionCheckHandler((_contents, permission) => GRANTED.has(permission))
+    browsing.setDevicePermissionHandler(() => false)
 
     /*
      * The browser says it is the Chrome it is. Electron's default names the application and

@@ -19,9 +19,8 @@ function worktreePath(workspace: string, isolate: string): string {
 
 /*
  * Kimi keeps its models in its own config.toml, one `[models."<alias>"]` table each, with the
- * name its maker shows for it in `display_name`. The alias is what -m takes and the display
- * name is what a person recognises, so the list is the aliases and the display names are what
- * they resolve to.
+ * id its API takes in `model`. The alias is what -m takes, so the list is the aliases, and each
+ * resolves to that API id, which is how the board names a model.
  */
 export function parseConfig(text: string): { models: string[]; names: Record<string, string> } {
     const models: string[] = []
@@ -38,7 +37,7 @@ export function parseConfig(text: string): { models: string[]; names: Record<str
             current = null
             continue
         }
-        const name = /^\s*display_name\s*=\s*"([^"]*)"/.exec(line)
+        const name = /^\s*model\s*=\s*"([^"]*)"/.exec(line)
         if (current && name) names[current] = name[1]
     }
     return { models, names }

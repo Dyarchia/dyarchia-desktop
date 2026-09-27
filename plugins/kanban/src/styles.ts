@@ -175,7 +175,7 @@ export const STYLES = `
 .kanban-card-who {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     gap: var(--dya-space-2);
     min-width: 0;
 }

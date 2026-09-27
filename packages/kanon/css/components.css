@@ -624,13 +624,48 @@
 }
 
 .dya-button--danger,
-.dya-key--danger {
+.dya-key--danger,
+.dya-button--resolve {
     --dya-lit: var(--dya-danger);
+}
+
+/*
+ * A state that waits for a person and is answered by pressing it. At rest it names the state,
+ * lit red; under the pointer or the focus it names the answer, lit green. The two words share one
+ * cell, so the key is as wide as the longer and never moves when it turns, and the word that
+ * leaves fades on opacity, which is the one thing here allowed to transition.
+ */
+.dya-button--resolve {
+    display: inline-grid;
+    place-items: center;
+}
+
+.dya-button--resolve:hover,
+.dya-button--resolve:focus-visible {
+    --dya-lit: var(--dya-success);
+}
+
+.dya-button__state,
+.dya-button__answer {
+    grid-area: 1 / 1;
+    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-button__answer,
+.dya-button--resolve:hover .dya-button__state,
+.dya-button--resolve:focus-visible .dya-button__state {
+    opacity: 0;
+}
+
+.dya-button--resolve:hover .dya-button__answer,
+.dya-button--resolve:focus-visible .dya-button__answer {
+    opacity: 1;
 }
 
 .dya-button--primary,
 .dya-button--success,
 .dya-button--danger,
+.dya-button--resolve,
 .dya-key.dya-key--success:not(:disabled),
 .dya-key.dya-key--danger:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
@@ -640,6 +675,7 @@
 .dya-button--primary:hover,
 .dya-button--success:hover,
 .dya-button--danger:hover,
+.dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
 .dya-key.dya-key--danger:not(:disabled):hover {
     border-color: color-mix(in srgb, var(--dya-lit) 70%, transparent);
@@ -649,6 +685,7 @@
 .dya-button--primary::after,
 .dya-button--success::after,
 .dya-button--danger::after,
+.dya-button--resolve::after,
 .dya-key.dya-key--success:not(:disabled)::after,
 .dya-key.dya-key--danger:not(:disabled)::after {
     content: "";
@@ -791,6 +828,37 @@
     height: 15px;
 }
 
+[interestfor] {
+    interest-delay-start: 350ms;
+    interest-delay-end: 120ms;
+}
+
+/*
+ * A tip on something that is not a control. The cursor is the only thing saying a word is
+ * explained rather than pressable, and a reader who cannot tell does not hover. A key carrying a
+ * tip keeps its own cursor: it is pressable and the tip is extra.
+ */
+.dya-badge[interestfor],
+.dya-tag[interestfor],
+.dya-meter[interestfor] {
+    cursor: help;
+}
+
+/*
+ * A small key: a filter to toggle, a suggestion to take. It was round once, and round is now the
+ * shape of information; a chip is pressable, so it is square like every other key.
+ */
+.dya-chip {
+    display: inline-grid;
+    place-items: center;
+    height: 26px;
+    padding: 0 var(--dya-space-3);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-key);
+    color: var(--dya-text-2);
+}
+
 /*
  * Keys joined into one: a state and the key that resolves it, a value and the key that clears
  * it. They share one edge and the small height, the corners between them go square, and each
@@ -825,37 +893,6 @@
 .dya-join > :hover,
 .dya-join > :focus-visible {
     z-index: 1;
-}
-
-[interestfor] {
-    interest-delay-start: 350ms;
-    interest-delay-end: 120ms;
-}
-
-/*
- * A tip on something that is not a control. The cursor is the only thing saying a word is
- * explained rather than pressable, and a reader who cannot tell does not hover. A key carrying a
- * tip keeps its own cursor: it is pressable and the tip is extra.
- */
-.dya-badge[interestfor],
-.dya-tag[interestfor],
-.dya-meter[interestfor] {
-    cursor: help;
-}
-
-/*
- * A small key: a filter to toggle, a suggestion to take. It was round once, and round is now the
- * shape of information; a chip is pressable, so it is square like every other key.
- */
-.dya-chip {
-    display: inline-grid;
-    place-items: center;
-    height: 26px;
-    padding: 0 var(--dya-space-3);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-xs);
-    letter-spacing: var(--dya-tracking-key);
-    color: var(--dya-text-2);
 }
 
 /*

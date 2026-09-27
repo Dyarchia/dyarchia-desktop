@@ -975,9 +975,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shown.type = 'button'
         shown.appendChild(document.createElement('selectedcontent'))
         select.appendChild(shown)
+        let family: string | null = null
         for (const value of values) {
             const entry = labels[value] ?? value
             const [text, note] = typeof entry === 'string' ? [entry, ''] : entry
+            const prefix = value.includes('/') ? value.slice(0, value.indexOf('/')) : null
+            if (prefix && family && prefix !== family) select.appendChild(el('hr'))
+            if (prefix) family = prefix
             const option = el('option', undefined, text)
             if (note) option.appendChild(el('span', 'dya-select__note', note))
             option.value = value
@@ -992,7 +996,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     /*
      * One row per phase: harness, model, effort. A card inherits from its board what it
-     * leaves blank, so a blank is labelled with what it inherits, noted `from board` in the
+     * leaves blank, so a blank is labelled with what it inherits, noted `follows the board` in the
      * list and shown bare once chosen, since what the closed control says is what will run. The
      * model list is the chosen harness's own, and an alias is named by the model it stands for.
      * A name the list does not carry is typed into the field that appears when the last entry is
@@ -1018,7 +1022,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const fallback = catalogue[0]?.id ?? 'claude'
         const nameOf = (id: string): string => catalogue.find((entry) => entry.id === id)?.label ?? id
         const harnessLabels: Record<string, string | [string, string]> = {
-            '': [nameOf(above?.harness ?? fallback), above ? 'from board' : 'default']
+            '': [nameOf(above?.harness ?? fallback), above ? 'follows the board' : 'default']
         }
         for (const entry of catalogue) {
             harnessLabels[entry.id] = entry.available ? entry.label : [entry.label, 'not on PATH']
@@ -1036,7 +1040,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const modelName = (model: string): string => pretty(info?.resolved[model] ?? model)
         const listed = current.model === null || models.includes(current.model)
         const modelLabels: Record<string, string | [string, string]> = {
-            '': above?.model ? [modelName(above.model), 'from board'] : 'default',
+            '': above ? [above.model ? modelName(above.model) : 'default', 'follows the board'] : 'default',
             [OTHER]: 'another name\u2026'
         }
         for (const model of models) {
@@ -1069,7 +1073,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         if (info?.efforts) {
             const effortLabels: Record<string, string | [string, string]> = {
-                '': above?.effort ? [above.effort, 'from board'] : 'default'
+                '': above ? [above.effort ?? 'default', 'follows the board'] : 'default'
             }
             row.appendChild(
                 choose('effort', current.effort ?? '', ['', ...info.efforts], effortLabels, disabled, (value) =>
@@ -1077,7 +1081,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 )
             )
         } else {
-            row.appendChild(el('span', 'dya-empty dya-empty--inline', 'no effort setting'))
+            row.appendChild(el('span'))
         }
         return row
     }

@@ -9,7 +9,7 @@ import { capture, findBinary, invocation } from './process.js'
 import type { Driver, HistoryRow, Launched, LaunchSpec, Progress } from './types.js'
 
 const BINARY = 'opencode'
-const PROVIDER = 'openrouter'
+const PROVIDERS = ['opencode', 'opencode-go', 'openrouter']
 const MODELS_TIMEOUT_MS = 30_000
 const MAX_ROWS = 400
 const MAX_BODY = 4_000
@@ -22,16 +22,23 @@ function worktreePath(workspace: string, isolate: string): string {
 }
 
 /*
- * `opencode models openrouter` prints one model id per line, provider prefix included,
- * in the form the -m flag takes. Three hundred and more on 2026-09-15 against 1.18.30;
- * the ones with a tilde are OpenRouter's rolling aliases and sort first, which is what
- * a chooser wants at the top.
+ * `opencode models` prints one model id per line, provider prefix included, in the form the
+ * -m flag takes, for every provider the account can reach. OpenCode's own two come first, Zen
+ * (`opencode/`) and Go (`opencode-go/`), then OpenRouter, whose four hundred would otherwise
+ * bury them, then anything else configured; each provider keeps the order it printed.
  */
 export function parseModels(text: string): string[] {
+    const rank = (id: string): number => {
+        const at = PROVIDERS.indexOf(id.slice(0, id.indexOf('/')))
+        return at < 0 ? PROVIDERS.length : at
+    }
     return text
         .split('\n')
         .map((line) => line.trim())
-        .filter((line) => line.startsWith(`${PROVIDER}/`))
+        .filter((line) => /^[\w.-]+\/\S+$/.test(line))
+        .map((id, order) => ({ id, order }))
+        .sort((a, b) => rank(a.id) - rank(b.id) || a.order - b.order)
+        .map((entry) => entry.id)
 }
 
 async function models(): Promise<string[]> {
@@ -39,7 +46,7 @@ async function models(): Promise<string[]> {
     const path = await findBinary(BINARY)
     if (!path) return []
     try {
-        listed = parseModels(await capture(invocation(path, ['models', PROVIDER]), { timeout: MODELS_TIMEOUT_MS }))
+        listed = parseModels(await capture(invocation(path, ['models']), { timeout: MODELS_TIMEOUT_MS }))
     } catch {
         listed = []
     }

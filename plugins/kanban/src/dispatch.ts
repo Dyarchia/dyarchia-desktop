@@ -37,6 +37,8 @@ const MIN_AGE_MS = 4 * 60 * 60_000
 const STRANDED_MS = 30 * 60_000
 const PRUNE_MS = 10 * 60_000
 const CREDENTIAL = /401|429|quota|credit|not logged in|refresh your login/i
+const SIGN_IN_RACE = /another Claude Code process is refreshing|refresh your login/i
+const SIGN_IN_WAIT_MS = 2 * 60_000
 const CONFIGURATION = /not on PATH|model|not logged in|not authenticated|api key|unauthori[sz]ed|401|403/i
 const YOUNG_MS = 20_000
 
@@ -306,6 +308,39 @@ export async function adopt(
     })
 }
 
+/*
+ * A turn that ended before the model said a word, on an account error, is the harness failing to
+ * reach the model, not the model breaking the protocol. A login two processes renewed at once
+ * clears within a minute, so the card waits two and starts again; any other account error waits
+ * for a person. Neither counts against the card.
+ */
+function signInFailed(
+    meta: BoardMeta,
+    card: Card,
+    run: Run,
+    progress: Progress | null,
+    back: 'ready' | 'review'
+): boolean {
+    if (!progress?.ended || progress.outputTokens > 0) return false
+    const ending = `${progress.error ?? ''}\n${progress.lastText}`
+    if (!CREDENTIAL.test(ending)) return false
+
+    const why = (progress.error ?? progress.lastText).trim().slice(0, 400)
+    const race = SIGN_IN_RACE.test(ending)
+    close(run, 'crashed', null, why)
+    card.comments.push({
+        at: Date.now(),
+        author: 'agent',
+        text: race
+            ? 'The harness could not sign in, because another process was renewing the same login. This attempt does not count, and the card starts again in two minutes.'
+            : `The harness could not use its account, so this attempt does not count and the card waits for you: ${why}`
+    })
+    if (race) land(card, back)
+    else block(meta.slug, card, 'needs_input', back)
+    void events.record(meta.slug, card.id, 'crashed', why, run.runId)
+    return true
+}
+
 async function resolveReview(
     file: BoardFile,
     meta: BoardMeta,
@@ -370,6 +405,11 @@ async function resolveReview(
             run.runId
         )
         say('completed')
+        return
+    }
+
+    if (signInFailed(meta, card, run, progress, 'review')) {
+        say('crashed')
         return
     }
 
@@ -503,6 +543,13 @@ async function resolve(
         }
         ended(sink, meta, card, run)
         sink.runEnded(meta.slug, card.id, run.outcome ?? 'completed')
+        return
+    }
+
+    if (signInFailed(meta, card, run, progress, 'ready')) {
+        run.inputTokens = progress?.inputTokens ?? 0
+        ended(sink, meta, card, run)
+        sink.runEnded(meta.slug, card.id, 'crashed')
         return
     }
 
@@ -700,7 +747,9 @@ export function guarded(card: Card, now: number): boolean {
     const run = current(card)
     if (!run?.endedAt) return false
     if (run.outcome === 'completed') return now - run.endedAt < GUARD_MS
-    return CREDENTIAL.test(`${run.error ?? ''}\n${run.summary ?? ''}`)
+    const said = `${run.error ?? ''}\n${run.summary ?? ''}`
+    if (SIGN_IN_RACE.test(said)) return now - run.endedAt < SIGN_IN_WAIT_MS
+    return CREDENTIAL.test(said)
 }
 
 function claimable(file: BoardFile, now: number): Card[] {

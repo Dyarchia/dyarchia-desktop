@@ -345,6 +345,11 @@ that completed successfully inside a short guard window: emit a diagnostic and l
 for a later tick. A 401 does not fix itself in five seconds, and a dispatcher without this guard
 burns the whole board against a bad credential.
 
+A turn that ends before the model says a word, on an account error, is the harness failing to
+reach the model and never a protocol violation. A login that two Claude processes renewed at
+once clears on its own, so the card goes back to ready and is held for two minutes; any other
+account error blocks the card as `needs input`. Neither counts against it, and the thread says why.
+
 
 ## The inspector
 

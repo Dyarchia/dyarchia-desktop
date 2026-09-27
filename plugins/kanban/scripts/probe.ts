@@ -790,6 +790,18 @@ async function reconciling(): Promise<void> {
         spoke('m7', [{ type: 'text', text: 'the agent is done' }]),
         TURN_ENDED
     ])
+    const synthetic = (id: string, text: string): unknown => ({
+        type: 'assistant',
+        message: { id, model: '<synthetic>', usage: { input_tokens: 0, output_tokens: 0 }, content: [{ type: 'text', text }] }
+    })
+    const raced = await staged('the harness lost a login race', [
+        synthetic('m8', 'Could not refresh your login because another Claude Code process is refreshing it · Try again in a minute'),
+        TURN_ENDED
+    ])
+    const signedOut = await staged('the harness is not logged in', [
+        synthetic('m9', 'Not logged in · Please run /login'),
+        TURN_ENDED
+    ])
 
     await force(sink)
 
@@ -826,7 +838,20 @@ async function reconciling(): Promise<void> {
     const answered = await reread(heardBack)
     check('once every agent has reported back, an undeclared end is a violation again', last(answered).outcome, 'violation')
 
-    check('only the finished runs were reported', outcomes.sort(), ['completed', 'violation', 'violation'])
+    const lostRace = await reread(raced)
+    check('a login two processes renewed at once is not a violation', last(lostRace).outcome, 'crashed')
+    check('nothing is counted against the card', lostRace.protocolViolations, 0)
+    check('it goes back to ready', lostRace.status, 'ready')
+    check('and says why in its thread', lostRace.comments.at(-1)?.text.includes('does not count'), true)
+    check('it is held back for now', guarded(lostRace, Date.now()), true)
+    check('and let go two minutes later', guarded(lostRace, Date.now() + 3 * 60_000), false)
+
+    const loggedOut = await reread(signedOut)
+    check('an account that cannot sign in is not a violation either', last(loggedOut).outcome, 'crashed')
+    check('nothing is counted against it', loggedOut.protocolViolations, 0)
+    check('it waits for a person', [loggedOut.status, loggedOut.blockKind], ['blocked', 'needs_input'])
+
+    check('only the finished runs were reported', outcomes.sort(), ['completed', 'crashed', 'crashed', 'violation', 'violation'])
     check(
         'and the paused sweep launched nothing',
         (await board.cards('recon')).filter((card) => card.status === 'running').length,

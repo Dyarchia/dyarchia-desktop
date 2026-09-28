@@ -85,14 +85,22 @@ const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-4);
 }
+.set-scroll > .dya-table {
+    width: 100%;
+}
 .set-toggle {
     width: 1%;
+}
+.set-scroll .dya-table__prose {
+    min-width: 20ch;
 }
 .set-needs {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: var(--dya-space-2);
+    max-width: 280px;
 }
 .set-log {
     max-height: 40%;

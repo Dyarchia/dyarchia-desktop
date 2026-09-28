@@ -87,7 +87,7 @@ Input        field (--sm --auto --prose) select checkbox form (__value __stack _
 Pills        tag badge (--success --warning --danger) pills
 Lights       light (--success --warning --danger) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
-Content      table (--stack __num __fit __key __name __subject __end __prose __section) row (--selected)
+Content      table (__num __fit __key __name __subject __end __prose __section) row (--selected)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body) notice (__body __title __text)

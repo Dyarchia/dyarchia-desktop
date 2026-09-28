@@ -556,7 +556,7 @@ export function activate(ctx) {
 function mount(ctx, container, handle) {
     const root = el('div', 'crw-root')
 
-    const tabs = el('div', 'dya-tabs crw-tabs')
+    const tabs = el('div', 'dya-tabs')
     const rounds = el('div', 'crw-view')
     const targets = el('div', 'crw-view')
     const searching = el('div', 'crw-view')
@@ -882,9 +882,6 @@ function mount(ctx, container, handle) {
                         el('td', 'dya-table__num', bytes(corpus.bytes)),
                         mark(corpus)
                     )
-                    row.querySelectorAll('td').forEach((cell, column) => {
-                        cell.dataset.label = labels[column] ?? ''
-                    })
                     row.addEventListener('click', () => void show(corpus))
                     body.appendChild(row)
                 }

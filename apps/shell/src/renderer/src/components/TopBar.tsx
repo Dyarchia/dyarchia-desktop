@@ -237,9 +237,9 @@ export function TopBar({
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="topbar-build">
-                {brand && <span className="dya-brand dya-brand--sm">Dyarchia</span>}
                 <Build />
             </div>
+            {brand && <span className="dya-brand dya-brand--sm topbar-brand">Dyarchia desktop</span>}
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {visible.map((panel) => (

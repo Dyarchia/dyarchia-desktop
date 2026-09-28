@@ -493,14 +493,12 @@
 }
 
 /*
- * The wordmark while the window is at work: the same carved serif, small, beside the version, so
- * the name is there without being the largest thing on screen. It is full size only where nothing
- * else is, on the empty window.
+ * The wordmark while the window is at work: the same carved serif, centred in the 32px title bar,
+ * so the name is always there without being the largest thing on screen. It is full size only on
+ * the empty window, where nothing else is.
  */
 .dya-brand--sm {
     font-size: var(--dya-size-brand-sm);
-    font-weight: var(--dya-weight-medium);
-    letter-spacing: var(--dya-tracking-label);
 }
 
 /*
@@ -619,11 +617,11 @@
 }
 
 /*
- * The primary is light steel, the one bright object on a black instrument: a face brushed from
- * near white to steel, black words, a dark steel edge. It is the one action a view is about, at
+ * The primary is steel, the one bright object on a black instrument: a face brushed from
+ * light steel to mid steel, black words, a dark edge. It is the one action a view is about, at
  * most one per view: run, make, install, finish. Crimson is never on a key: filled red reads as
  * destroy. It is the light that comes into the metal, on the ground, and nothing else.
- * `--dya-on-primary` measures 17.17 at the top of the face and 11.18 at its foot.
+ * `--dya-on-primary` measures 10.58 at the top of the face and 5.44 at its foot.
  *
  * Success and danger are lit rather than filled: a border in the light's colour and an ink mixed
  * from it and white, with no glow around the key, because no key shines. Success is approve;

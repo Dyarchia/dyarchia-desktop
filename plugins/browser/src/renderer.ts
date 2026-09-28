@@ -15,13 +15,13 @@ const svg = (body: string): string =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
 
 /*
- * The panel's mark: drawn for this application in flat layers, a metal body, a shadow on its lower
- * half and one colour of the palette, so it reads as a thing to press at 16px and as the panel's
- * face on its tile. Flat fills and no gradients, because the same mark is drawn several times at
- * once and a gradient is found by id.
+ * The panel's mark, one of a set drawn for this application in its own three colours, black,
+ * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
+ * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
+ * found by id.
  */
 const GLOBE_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#1970fd"/><path d="M2 12a10 10 0 0 0 20 0z" fill="#0a0a0b" fill-opacity=".18"/><ellipse cx="12" cy="12" rx="4.3" ry="9.6" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.2"/><path d="M2.4 12h19.2M4.2 7.2h15.6M4.2 16.8h15.6" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#9b1f2a"/><path d="M2 12a10 10 0 0 0 20 0z" fill="#0a0a0b" fill-opacity=".25"/><ellipse cx="12" cy="12" rx="4.3" ry="9.6" fill="none" stroke="#eceef2" stroke-opacity=".9" stroke-width="1.2"/><path d="M2.4 12h19.2M4.2 7.2h15.6M4.2 16.8h15.6" stroke="#eceef2" stroke-opacity=".6" stroke-width="1.1"/></svg>'
 const BACK_ICON = svg('<path d="m15 18-6-6 6-6"/>')
 const FORWARD_ICON = svg('<path d="m9 18 6-6-6-6"/>')
 const RELOAD_ICON = svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')

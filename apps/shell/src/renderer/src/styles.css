@@ -31,10 +31,12 @@ body,
 }
 
 /*
- * The title bar is 32px and holds three things: the name and the build on the left, the panel keys
- * and the window's own keys on the right. The large wordmark belongs to the empty window alone.
+ * The title bar is 32px and holds three things: the build on the left, the wordmark on the centre
+ * of the window whatever the sides hold, the panel keys and the window's own keys on the right.
+ * On the empty window the launcher carries the large wordmark and the bar leaves the centre empty.
  */
 .topbar {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -51,6 +53,23 @@ body,
     align-items: center;
     gap: var(--dya-space-3);
     min-width: 0;
+}
+
+.topbar-brand {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+/*
+ * The wordmark is decoration, so it is what gives way when the window is narrow. The title bar is
+ * the window, so here the window's width is the right question.
+ */
+@media (max-width: 1000px) {
+    .topbar-brand {
+        display: none;
+    }
 }
 
 .topbar-alpha,

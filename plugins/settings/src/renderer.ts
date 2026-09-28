@@ -64,13 +64,13 @@ interface Status {
 }
 
 /*
- * The panel's mark: drawn for this application in flat layers, a metal body, a shadow on its lower
- * half and one colour of the palette, so it reads as a thing to press at 16px and as the panel's
- * face on its tile. Flat fills and no gradients, because the same mark is drawn several times at
- * once and a gradient is found by id.
+ * The panel's mark, one of a set drawn for this application in its own three colours, black,
+ * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
+ * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
+ * found by id.
  */
 const GEAR_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.55 9.67 L22 9.97 L22 14.03 L19.55 14.33 L18.99 15.69 L20.5 17.64 L17.64 20.5 L15.69 18.99 L14.33 19.55 L14.03 22 L9.97 22 L9.67 19.55 L8.31 18.99 L6.36 20.5 L3.5 17.64 L5.01 15.69 L4.45 14.33 L2 14.03 L2 9.97 L4.45 9.67 L5.01 8.31 L3.5 6.36 L6.36 3.5 L8.31 5.01 L9.67 4.45 L9.97 2 L14.03 2 L14.33 4.45 L15.69 5.01 L17.64 3.5 L20.5 6.36 L18.99 8.31Z" fill="#c9ced6" stroke="#c9ced6" stroke-width=".8" stroke-linejoin="round"/><path d="M3 13.2a9 9 0 0 0 18 0z" fill="#0a0a0b" fill-opacity=".2"/><circle cx="12" cy="12" r="4.4" fill="#f5b031"/><circle cx="12" cy="12" r="2.2" fill="#15171b"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.55 9.67 L22 9.97 L22 14.03 L19.55 14.33 L18.99 15.69 L20.5 17.64 L17.64 20.5 L15.69 18.99 L14.33 19.55 L14.03 22 L9.97 22 L9.67 19.55 L8.31 18.99 L6.36 20.5 L3.5 17.64 L5.01 15.69 L4.45 14.33 L2 14.03 L2 9.97 L4.45 9.67 L5.01 8.31 L3.5 6.36 L6.36 3.5 L8.31 5.01 L9.67 4.45 L9.97 2 L14.03 2 L14.33 4.45 L15.69 5.01 L17.64 3.5 L20.5 6.36 L18.99 8.31Z" fill="#eceef2" stroke="#eceef2" stroke-width=".8" stroke-linejoin="round"/><path d="M3 13.2a9 9 0 0 0 18 0z" fill="#0a0a0b" fill-opacity=".18"/><circle cx="12" cy="12" r="4.6" fill="#111214"/><circle cx="12" cy="12" r="2.6" fill="#c42a38"/></svg>'
 
 const STYLES = `
 .set {

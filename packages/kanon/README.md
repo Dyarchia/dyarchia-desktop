@@ -30,7 +30,8 @@ light   status, and only status: a green, yellow or red dot inside a pill or aro
 Black and white, and one light. The ground is black (`#0a0a0b`) with a dark crimson light
 (`--dya-light-in`, `#7f1d1d`) coming in at two corners; the glass lets it through, which is what
 makes a panel read as glass over metal. Crimson is that light and nothing else: never a key, a word
-or a line. The primary key is light steel; the open tab's line and the focus ring are silver.
+or a line. The primary key is steel; the open tab's line and the focus ring are silver. Plugin
+marks are black, garnet and white.
 Nothing glows. Text has two inks, near white and muted. Spectral is the brand, full size only on the
 empty window; Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code.
 
@@ -62,7 +63,7 @@ empty window; Inter is the interface, with tabular figures everywhere; Plex Mono
 
 ## Keys and layout
 
-- **One primary per view**: `button--primary`, `key--primary`, light steel with black words, the
+- **One primary per view**: `button--primary`, `key--primary`, steel with black words, the
   action the view is about. `--success` is lit green for approve, `--danger` red for stop and unmake.
 - **A state a person answers is one key**: `button--resolve` names the state in red and, under the
   pointer or focus, its answer in green (`__state`, `__answer` share one cell, so it never moves).

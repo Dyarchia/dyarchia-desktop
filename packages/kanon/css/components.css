@@ -111,9 +111,9 @@
 }
 
 .dya-value {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-3);
 }
 
@@ -493,6 +493,15 @@
 }
 
 /*
+ * The wordmark while the window is at work: the same carved serif, centred in the 40px title bar,
+ * so the name is always there without being the largest thing on screen. It is full size only on
+ * the empty window, where nothing else is.
+ */
+.dya-brand--sm {
+    font-size: var(--dya-size-brand-sm);
+}
+
+/*
  * Four materials, three voices.
  *
  * Glass is the panel and only the panel. A key is every control: a flat face, straight corners at
@@ -513,7 +522,8 @@
     position: relative;
     border: var(--dya-border-width) solid var(--dya-border);
     border-radius: var(--dya-radius-sm);
-    background: var(--dya-raised);
+    background-color: var(--dya-raised);
+    background-image: var(--dya-steel);
     box-shadow: var(--dya-elev-key);
     cursor: pointer;
     transition:
@@ -607,22 +617,41 @@
 }
 
 /*
- * A lit key. The light is a border in its colour, an ink mixed from its colour and white, and a
- * glow cast on the glass around the key. The glow is still: nothing in this system animates for as
- * long as a panel is open, and a light that breathed would be the one thing on screen that did.
+ * The primary is steel, the one bright object on a black instrument: a face brushed from
+ * light steel to mid steel, black words, a dark edge. It is the one action a view is about, at
+ * most one per view: run, make, install, finish. Crimson is never on a key: filled red reads as
+ * destroy. It is the light that comes into the metal, on the ground, and nothing else.
+ * `--dya-on-primary` measures 10.58 at the top of the face and 5.44 at its foot.
  *
- * Three lights for keys, and they are spent sparingly. The primary is lit in the accent, the one
- * action a view is about, at most one per view. Success is lit green: go, run, approve, and
- * making one of the few things a plugin is built around, a board, a card, a target. Danger is
- * lit red: stop, and unmaking one of those same things. What lives inside them, a note, a file,
- * a dependency, is added and removed with plain keys. An icon key takes the green light for the
- * one key that makes such a thing and the red one for the key that stops or unmakes it. A key that
- * names a state which needs a person, a blocked card, is lit red as well, because there the light
- * is the state's own. Lit inks over the key face measure 11.49 for the primary,
- * 9.05 for success and 6.87 for danger, and 10.83, 8.53 and 6.47 over its hover step.
+ * Success is lit rather than filled: a border in green and an ink mixed from it and white, with no
+ * glow, because no key shines; it is approve. Danger, stop and unmake, is a plain key at rest and
+ * turns red under the pointer or the focus, where the hand is about to press it: a row of keys
+ * with a red one in it was the one colour on a black screen, for the action least often wanted.
+ * A key that names a state which needs a person, a blocked card, stays lit red, because there the
+ * light is the state's own.
  */
-.dya-button--primary {
-    --dya-lit: var(--dya-accent);
+.dya-button--primary,
+.dya-key--primary:not(:disabled) {
+    border-color: var(--dya-primary-border);
+    background-image: var(--dya-primary);
+    box-shadow:
+        inset 0 1px 0 #ffffff,
+        0 3px 0 var(--dya-primary-edge);
+    color: var(--dya-on-primary);
+}
+
+.dya-button--primary:hover,
+.dya-key--primary:not(:disabled):hover {
+    border-color: var(--dya-primary-border);
+    background-image: var(--dya-primary-hover);
+    color: var(--dya-on-primary);
+}
+
+.dya-button--primary:active,
+.dya-key--primary:not(:disabled):active {
+    box-shadow:
+        inset 0 1px 0 #ffffffb3,
+        0 1px 0 var(--dya-primary-edge);
 }
 
 .dya-button--success,
@@ -669,38 +698,20 @@
     opacity: 1;
 }
 
-.dya-button--primary,
 .dya-button--success,
-.dya-button--danger,
 .dya-button--resolve,
-.dya-key.dya-key--success:not(:disabled),
-.dya-key.dya-key--danger:not(:disabled) {
+.dya-key.dya-key--success:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
 
-.dya-button--primary:hover,
 .dya-button--success:hover,
-.dya-button--danger:hover,
 .dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
-.dya-key.dya-key--danger:not(:disabled):hover {
-    border-color: color-mix(in srgb, var(--dya-lit) 70%, transparent);
+.dya-button--danger:is(:hover, :focus-visible),
+.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible) {
+    border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
-}
-
-.dya-button--primary::after,
-.dya-button--success::after,
-.dya-button--danger::after,
-.dya-button--resolve::after,
-.dya-key.dya-key--success:not(:disabled)::after,
-.dya-key.dya-key--danger:not(:disabled)::after {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    box-shadow: var(--dya-glow) color-mix(in srgb, var(--dya-lit) 70%, transparent);
-    pointer-events: none;
 }
 
 .dya-button--sm {
@@ -719,33 +730,27 @@
     flex-direction: column;
     gap: var(--dya-space-2);
     padding: var(--dya-space-5);
+    background-color: var(--dya-surface-1);
+    background-image: none;
     text-align: left;
 }
 
 /*
- * A tile under the pointer is where the next click lands, so it takes the halo. The halo is a
- * pseudo-element that fades in, because a hover never changes a key's shadow: the shadow is its
- * edge, and a transition may name opacity where it may never name box-shadow.
+ * A tile is a key the size of a card, so its face is the darkest step a key has: at the size of a
+ * card, the key's own face turned a panel of tiles into a grey sheet.
  */
-.dya-tile::after {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    box-shadow: var(--dya-halo);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+.dya-tile:hover {
+    background-color: var(--dya-raised);
 }
 
-.dya-tile:hover::after {
-    opacity: 1;
-}
-
+/*
+ * A tile under the pointer is where the next click lands: its face lifts a step and its edge
+ * brightens, like every key, and nothing glows.
+ */
 .dya-tile__icon {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 32px;
+    height: 32px;
     color: var(--dya-text-2);
 }
 
@@ -771,8 +776,8 @@
 
 /*
  * A tile whose content is a row instead of an icon: a name, what is happening to it, and the
- * tallies under. Its name is data, a board, a file, a host, so it keeps its case and its mono
- * tracking, where the icon tile names a panel and is therefore a label.
+ * tallies under. Its name is data, a board, a file, a host, so it keeps its case, where the icon
+ * tile names a panel and is therefore a label.
  */
 .dya-tile--dense {
     padding: var(--dya-space-4);
@@ -794,8 +799,8 @@
 .dya-tile--dense .dya-tile__name {
     flex: 1 0 auto;
     max-width: 100%;
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     text-transform: none;
     overflow-wrap: anywhere;
 }
@@ -833,6 +838,31 @@
 .dya-key > svg {
     width: 15px;
     height: 15px;
+}
+
+/*
+ * A toolbar is a row of controls of one size: the title bar, and every panel's actions in the dock's
+ * tab row. Keys, buttons and pickers inside it are all 28px, so a row never mixes three heights.
+ */
+.dya-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+
+.dya-toolbar .dya-key {
+    width: var(--dya-size-control-sm);
+    height: var(--dya-size-control-sm);
+}
+
+.dya-toolbar .dya-button,
+.dya-toolbar .dya-field {
+    height: var(--dya-size-control-sm);
+}
+
+.dya-toolbar .dya-button {
+    padding: 0 10px;
+    font-size: var(--dya-size-body-xs);
 }
 
 [interestfor] {
@@ -914,9 +944,9 @@
     border-radius: var(--dya-radius-sm);
     background: var(--dya-sunken);
     box-shadow: var(--dya-elev-sunken);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
     outline: none;
 }
@@ -957,10 +987,8 @@ textarea.dya-field {
 }
 
 /*
- * A sentence, inside something this system sets in mono. Mono is for data, and a title someone
- * typed, a brief, a description is prose: set in mono at a tracking meant for identifiers, every
- * word is the same width and every letter held apart from the next. Prose is neither interface
- * text nor data, and it is sans.
+ * A sentence typed into a field: a title, a brief, a description. It keeps the field's face and
+ * takes the body's leading, because it is prose and wraps.
  */
 .dya-field--prose {
     font-family: var(--dya-font-sans);
@@ -974,138 +1002,50 @@ textarea.dya-field {
 }
 
 /*
- * Everything is laid out on twelve columns: the grid is `grid`, a child spans all twelve unless it
- * says otherwise, and `col-<n>` takes n of them. The columns are the container's, never the
- * window's, and the tiers are the widths of the nearest pane: `col-sm-<n>` from 400px, `col-md-<n>`
- * from 700px, `col-lg-<n>` from 1200px, each overriding the one below, so the same markup is one
- * column in a narrow panel and several side by side in a wide one. A sheet, a drawer, anything
- * that is its own width declares itself a `pane` and what is inside it answers to it.
- *
- * A grid inside a grid is `subgrid`: it keeps the twelve columns it sits on rather than dividing
- * its own span again, so a cell three columns into a nested row is three columns into the view.
+ * A grid is a gallery of things of one kind, tiles, boards, targets, each of a fixed width. A wider
+ * pane holds more of them to a row and never makes them wider. There is no column system: a panel
+ * is not a page, and what it shows beside what is decided by the panel, region by region.
  */
 .dya-grid {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 280px));
     align-content: start;
     gap: var(--dya-space-3);
 }
 
-.dya-grid > *,
-.dya-subgrid > * {
-    grid-column: span 12;
+.dya-grid > * {
     min-width: 0;
 }
 
-.dya-subgrid {
-    display: grid;
-    grid-template-columns: subgrid;
+.dya-grid > .dya-empty {
+    grid-column: 1 / -1;
 }
 
 /*
- * A gallery is the twelve columns shared out evenly among things of one kind: tiles, boards,
- * targets. One to a row in a narrow pane, two from 400px, three from 700px, four from 1200px.
- * The share is the grid's, so every tile in it is as wide as every other.
- */
-.dya-grid--gallery > * {
-    grid-column: span 12;
-}
-
-@container pane (min-width: 400px) {
-    .dya-grid--gallery > * { grid-column: span 6; }
-}
-
-@container pane (min-width: 700px) {
-    .dya-grid--gallery > * { grid-column: span 4; }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-grid--gallery > * { grid-column: span 3; }
-}
-
-.dya-grid > .dya-col-1, .dya-subgrid > .dya-col-1 { grid-column: span 1; }
-.dya-grid > .dya-col-2, .dya-subgrid > .dya-col-2 { grid-column: span 2; }
-.dya-grid > .dya-col-3, .dya-subgrid > .dya-col-3 { grid-column: span 3; }
-.dya-grid > .dya-col-4, .dya-subgrid > .dya-col-4 { grid-column: span 4; }
-.dya-grid > .dya-col-5, .dya-subgrid > .dya-col-5 { grid-column: span 5; }
-.dya-grid > .dya-col-6, .dya-subgrid > .dya-col-6 { grid-column: span 6; }
-.dya-grid > .dya-col-7, .dya-subgrid > .dya-col-7 { grid-column: span 7; }
-.dya-grid > .dya-col-8, .dya-subgrid > .dya-col-8 { grid-column: span 8; }
-.dya-grid > .dya-col-9, .dya-subgrid > .dya-col-9 { grid-column: span 9; }
-.dya-grid > .dya-col-10, .dya-subgrid > .dya-col-10 { grid-column: span 10; }
-.dya-grid > .dya-col-11, .dya-subgrid > .dya-col-11 { grid-column: span 11; }
-.dya-grid > .dya-col-12, .dya-subgrid > .dya-col-12 { grid-column: span 12; }
-
-@container pane (min-width: 400px) {
-    .dya-grid > .dya-col-sm-1, .dya-subgrid > .dya-col-sm-1 { grid-column: span 1; }
-    .dya-grid > .dya-col-sm-2, .dya-subgrid > .dya-col-sm-2 { grid-column: span 2; }
-    .dya-grid > .dya-col-sm-3, .dya-subgrid > .dya-col-sm-3 { grid-column: span 3; }
-    .dya-grid > .dya-col-sm-4, .dya-subgrid > .dya-col-sm-4 { grid-column: span 4; }
-    .dya-grid > .dya-col-sm-5, .dya-subgrid > .dya-col-sm-5 { grid-column: span 5; }
-    .dya-grid > .dya-col-sm-6, .dya-subgrid > .dya-col-sm-6 { grid-column: span 6; }
-    .dya-grid > .dya-col-sm-7, .dya-subgrid > .dya-col-sm-7 { grid-column: span 7; }
-    .dya-grid > .dya-col-sm-8, .dya-subgrid > .dya-col-sm-8 { grid-column: span 8; }
-    .dya-grid > .dya-col-sm-9, .dya-subgrid > .dya-col-sm-9 { grid-column: span 9; }
-    .dya-grid > .dya-col-sm-10, .dya-subgrid > .dya-col-sm-10 { grid-column: span 10; }
-    .dya-grid > .dya-col-sm-11, .dya-subgrid > .dya-col-sm-11 { grid-column: span 11; }
-    .dya-grid > .dya-col-sm-12, .dya-subgrid > .dya-col-sm-12 { grid-column: span 12; }
-}
-
-@container pane (min-width: 700px) {
-    .dya-grid > .dya-col-md-1, .dya-subgrid > .dya-col-md-1 { grid-column: span 1; }
-    .dya-grid > .dya-col-md-2, .dya-subgrid > .dya-col-md-2 { grid-column: span 2; }
-    .dya-grid > .dya-col-md-3, .dya-subgrid > .dya-col-md-3 { grid-column: span 3; }
-    .dya-grid > .dya-col-md-4, .dya-subgrid > .dya-col-md-4 { grid-column: span 4; }
-    .dya-grid > .dya-col-md-5, .dya-subgrid > .dya-col-md-5 { grid-column: span 5; }
-    .dya-grid > .dya-col-md-6, .dya-subgrid > .dya-col-md-6 { grid-column: span 6; }
-    .dya-grid > .dya-col-md-7, .dya-subgrid > .dya-col-md-7 { grid-column: span 7; }
-    .dya-grid > .dya-col-md-8, .dya-subgrid > .dya-col-md-8 { grid-column: span 8; }
-    .dya-grid > .dya-col-md-9, .dya-subgrid > .dya-col-md-9 { grid-column: span 9; }
-    .dya-grid > .dya-col-md-10, .dya-subgrid > .dya-col-md-10 { grid-column: span 10; }
-    .dya-grid > .dya-col-md-11, .dya-subgrid > .dya-col-md-11 { grid-column: span 11; }
-    .dya-grid > .dya-col-md-12, .dya-subgrid > .dya-col-md-12 { grid-column: span 12; }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-grid > .dya-col-lg-1, .dya-subgrid > .dya-col-lg-1 { grid-column: span 1; }
-    .dya-grid > .dya-col-lg-2, .dya-subgrid > .dya-col-lg-2 { grid-column: span 2; }
-    .dya-grid > .dya-col-lg-3, .dya-subgrid > .dya-col-lg-3 { grid-column: span 3; }
-    .dya-grid > .dya-col-lg-4, .dya-subgrid > .dya-col-lg-4 { grid-column: span 4; }
-    .dya-grid > .dya-col-lg-5, .dya-subgrid > .dya-col-lg-5 { grid-column: span 5; }
-    .dya-grid > .dya-col-lg-6, .dya-subgrid > .dya-col-lg-6 { grid-column: span 6; }
-    .dya-grid > .dya-col-lg-7, .dya-subgrid > .dya-col-lg-7 { grid-column: span 7; }
-    .dya-grid > .dya-col-lg-8, .dya-subgrid > .dya-col-lg-8 { grid-column: span 8; }
-    .dya-grid > .dya-col-lg-9, .dya-subgrid > .dya-col-lg-9 { grid-column: span 9; }
-    .dya-grid > .dya-col-lg-10, .dya-subgrid > .dya-col-lg-10 { grid-column: span 10; }
-    .dya-grid > .dya-col-lg-11, .dya-subgrid > .dya-col-lg-11 { grid-column: span 11; }
-    .dya-grid > .dya-col-lg-12, .dya-subgrid > .dya-col-lg-12 { grid-column: span 12; }
-}
-
-/*
- * A form is the twelve columns with one rule: what a field is called, and the field. A label
- * takes the first three columns and its value the other nine, two and ten from 700px, one and
- * eleven from 1200px, so the label column stays about as wide as its longest word; in a pane
- * narrower than 400px the label stands over its value and both take all twelve. Every row of a view is a row of the one
- * form, so every value starts on the same column: a key that adds a file, the pills it added and
- * a thread with the field under it are values, never words set after their label. A label stands
- * against the first line of its value, however tall the value is.
+ * A form is two columns: what a field is called, as wide as the longest label, and the field, as
+ * wide as it needs up to 560px. In a pane narrower than 400px the label stands over its value.
+ * Every row of a view is a row of the one form, so every value starts on the same line: a key that
+ * adds a file, the pills it added and a thread with the field under it are values, never words
+ * set after their label. A label stands against the first line of its value, however tall.
  *
  * A label names; the sentence behind it is a tip on the label, which is where an explanation that
  * is not always needed belongs.
  */
 .dya-form {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: max-content minmax(0, 560px);
     align-items: center;
-    gap: var(--dya-space-3);
+    column-gap: var(--dya-space-5);
+    row-gap: var(--dya-space-3);
 }
 
 .dya-form > * {
-    grid-column: 1 / -1;
+    grid-column: 2;
     min-width: 0;
 }
 
 .dya-form > .dya-label {
+    grid-column: 1;
     justify-self: start;
     align-self: start;
     display: inline-flex;
@@ -1113,33 +1053,14 @@ textarea.dya-field {
     min-height: var(--dya-size-control);
 }
 
-@container pane (min-width: 400px) {
-    .dya-form > * {
-        grid-column: 4 / -1;
+@container pane (max-width: 399.98px) {
+    .dya-form {
+        grid-template-columns: minmax(0, 1fr);
     }
 
+    .dya-form > *,
     .dya-form > .dya-label {
-        grid-column: 1 / 4;
-    }
-}
-
-@container pane (min-width: 700px) {
-    .dya-form > * {
-        grid-column: 3 / -1;
-    }
-
-    .dya-form > .dya-label {
-        grid-column: 1 / 3;
-    }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-form > * {
-        grid-column: 2 / -1;
-    }
-
-    .dya-form > .dya-label {
-        grid-column: 1 / 2;
+        grid-column: 1;
     }
 }
 
@@ -1163,18 +1084,17 @@ textarea.dya-field {
 }
 
 /*
- * A value divided on the form's own columns, three to a cell, so a row of headings stands column
- * for column over the rows it names. `col-<n>` on a cell changes its share. Three cells fill the
- * value at every width: 3 3 3 of nine, 3 3 4 of ten, 4 4 3 of eleven.
+ * A value divided in three equal cells, so a row of headings stands column for column over the
+ * rows it names.
  */
 .dya-form > .dya-form__split {
     display: grid;
-    grid-template-columns: subgrid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: start;
+    gap: var(--dya-space-3);
 }
 
 .dya-form__split > * {
-    grid-column: span 3;
     min-width: 0;
 }
 
@@ -1182,28 +1102,6 @@ textarea.dya-field {
     display: inline-flex;
     align-items: center;
     min-height: var(--dya-size-control);
-}
-
-@container pane (max-width: 399.98px) {
-    .dya-form__split > * {
-        grid-column: span 4;
-    }
-}
-
-@container pane (min-width: 700px) {
-    .dya-form__split > :nth-child(3):last-child {
-        grid-column: span 4;
-    }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-form__split:has(> :nth-child(3):last-child) > * {
-        grid-column: span 4;
-    }
-
-    .dya-form__split > :nth-child(3):last-child {
-        grid-column: span 3;
-    }
 }
 
 /*
@@ -1231,7 +1129,7 @@ textarea.dya-field {
 /*
  * A choice from a list is a key that opens a menu, not a field: nothing is typed into it. The
  * select is the platform's own, in its customisable form, so the list it opens is drawn by this
- * system and not by the operating system: the menu's ground and hairline, rows in the mono, the
+ * system and not by the operating system: the menu's ground and hairline, rows in the sans, the
  * chosen one marked with a green check. The chevron is the wrapper's, and turns over while the
  * list is open.
  */
@@ -1276,9 +1174,9 @@ textarea.dya-field {
     min-height: 32px;
     padding: 0 var(--dya-space-2);
     border-radius: var(--dya-radius-sm);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-3);
     cursor: pointer;
 }
@@ -1393,8 +1291,8 @@ textarea.dya-field {
 
 /*
  * The pill: every piece of information, a group, a tag, a count. Round, so that it is never taken
- * for a key; a faint glass of its own with a lit top edge; its words in the mono, because what a
- * pill holds is data.
+ * for a key; a faint glass of its own with a lit top edge; its words in the sans with tabular
+ * figures, because mono is for paths and code alone.
  */
 .dya-tag,
 .dya-badge {
@@ -1407,7 +1305,7 @@ textarea.dya-field {
     border-radius: var(--dya-radius-full);
     background: var(--dya-glass-pill);
     box-shadow: var(--dya-elev-pill);
-    font-family: var(--dya-font-mono);
+    font-family: var(--dya-font-sans);
     font-size: var(--dya-size-pill);
     font-weight: var(--dya-weight-medium);
     letter-spacing: var(--dya-tracking-ui);
@@ -1495,8 +1393,8 @@ textarea.dya-field {
     display: inline-grid;
     place-items: center;
     flex: none;
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
     color: var(--dya-text-4);
 }
 
@@ -1665,14 +1563,19 @@ textarea.dya-field {
  *
  * Digits stay `tabular-nums`, because 4102 sitting narrower than 1111 is what stops a column of
  * figures lining up.
+ *
+ * A table is as wide as its content and no wider. Columns shared out in percentages across a wide
+ * panel put a name and its figures half a screen apart; a panel that has more room than its table
+ * needs gives the room to another region, or leaves it empty on purpose.
  */
 .dya-table {
-    width: 100%;
+    width: max-content;
+    max-width: 100%;
     border-collapse: collapse;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
     font-variant-numeric: tabular-nums;
-    letter-spacing: var(--dya-tracking-mono);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-3);
 }
 
@@ -1690,7 +1593,7 @@ textarea.dya-field {
 
 .dya-table td {
     padding: 10px var(--dya-space-4);
-    font-size: var(--dya-size-mono-sm);
+    font-size: var(--dya-size-body-xs);
     overflow-wrap: anywhere;
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
@@ -1749,6 +1652,28 @@ textarea.dya-field {
 
 .dya-row:hover > td {
     background-color: var(--dya-glass-hover);
+}
+
+/*
+ * A row that heads the rows under it, said once instead of a pill on every row: a group, and what
+ * the rows in it share, such as when they were last swept.
+ */
+.dya-table .dya-table__section > td {
+    padding-top: var(--dya-space-5);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-label-sm);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-label);
+    text-transform: uppercase;
+    color: var(--dya-text-4);
+}
+
+.dya-table .dya-table__section:first-child > td {
+    padding-top: var(--dya-space-2);
+}
+
+.dya-row--selected > td {
+    background-color: var(--dya-glass-press);
 }
 
 /*
@@ -1811,13 +1736,13 @@ textarea.dya-field {
 
 /*
  * The rank under a name: where a thing came from, when it was last touched, how many of it there
- * are. It is data, so it keeps its case, and it is mono at the smallest step with the quietest ink
- * that is still text.
+ * are. It is data, so it keeps its case, at the smallest step with the quietest ink that is still
+ * text and figures that line up.
  */
 .dya-meta {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     color: var(--dya-text-4);
     white-space: nowrap;
@@ -1868,7 +1793,7 @@ textarea.dya-field {
 /*
  * A menu that is searched and grouped. The field sits on top, the rows scroll under it, a group is
  * named by a label, and a row can carry a second line: what the choice is, then a note on it in
- * the mono. The row the keyboard is on is lit like the row under the pointer, and a row that
+ * the quietest ink. The row the keyboard is on is lit like the row under the pointer, and a row that
  * cannot be chosen goes to the quietest ink.
  */
 .dya-menu__search {
@@ -1913,9 +1838,9 @@ textarea.dya-field {
 }
 
 .dya-menu__note {
-    font-family: var(--dya-font-mono);
+    font-family: var(--dya-font-sans);
     font-size: var(--dya-size-label-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-4);
 }
 
@@ -1941,18 +1866,17 @@ textarea.dya-field {
     border-radius: var(--dya-radius-sm);
     background: var(--dya-overlay);
     box-shadow: var(--dya-elev-popover);
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     color: var(--dya-text-2);
     overflow-wrap: anywhere;
 }
 
 /*
- * Tabs are words on the glass, with no rule under the strip. The open one is in the first ink, lit
- * by the halo, with a hairline of the accent under the word alone, drawn as an inset shadow so it
- * adds no height.
+ * Tabs are words on the glass, with no rule under the strip. The open one is in the first ink with
+ * two pixels of silver under the word alone, drawn as an inset shadow so it adds no height.
  */
 .dya-tabs {
     display: flex;
@@ -1977,8 +1901,7 @@ textarea.dya-field {
 
 .dya-tab[aria-selected="true"] {
     color: var(--dya-text);
-    box-shadow: inset 0 -1px 0 var(--dya-accent);
-    text-shadow: var(--dya-halo-text);
+    box-shadow: inset 0 -2px 0 var(--dya-accent);
 }
 
 /*
@@ -1987,8 +1910,8 @@ textarea.dya-field {
  * kept in place but hidden, they put two keys' width of nothing after every name in the strip, and
  * shown on hover, they would push every tab to the right of the pointer. Those tabs close with the
  * middle button. They look alike at rest, so the close says what it is when the pointer reaches it:
- * its glyph goes to the red ink and a red glow comes up around it. The other stays quiet, because
- * making another of a view destroys nothing.
+ * its glyph goes to the red ink. The other stays quiet, because making another of a view destroys
+ * nothing.
  */
 .dya-tab__action {
     position: relative;
@@ -2017,17 +1940,6 @@ textarea.dya-field {
 .dya-tab__action:hover {
     background-color: var(--dya-flat-hover);
     color: var(--dya-text);
-}
-
-.dya-tab__action--close::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow: var(--dya-glow) color-mix(in srgb, var(--dya-danger) 70%, transparent);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dya-dur-press) linear;
 }
 
 .dya-tab__action--close:hover {
@@ -2332,9 +2244,9 @@ button.dya-entry__head {
 }
 
 .dya-step__time {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     font-variant-numeric: tabular-nums;
     color: var(--dya-text-4);
 }
@@ -2352,12 +2264,23 @@ button.dya-entry__head {
     padding: 0;
     border: none;
     background: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     text-align: left;
     color: var(--dya-text);
+    overflow-wrap: anywhere;
+}
+
+/*
+ * A subject that is a command or a path: in the mono, on one line, cut with an ellipsis, since the
+ * step opens to show the whole of it.
+ */
+.dya-step__subject--code {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2418,14 +2341,14 @@ button.dya-step__subject {
 }
 
 /*
- * A problem: why something could not be done, said where it happened. Mono, in red's ink, and
+ * A problem: why something could not be done, said where it happened. In red's ink, and
  * broken anywhere, because the end of an error is usually the part that says what went wrong.
  * `--box` sets it on the sunken ground when it stands alone at the head of a view.
  */
 .dya-problem {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     color: var(--dya-danger-ink);
     overflow-wrap: anywhere;
@@ -2635,63 +2558,9 @@ button.dya-step__subject {
 }
 
 /*
- * A table that stacks. Below 700px of pane each row becomes a card on the first surface, the head
- * row goes, and every cell carries its column's name in front of it, from its `data-label`, so a
- * wide table never scrolls sideways in a split pane. An empty cell goes with the head: a name with
- * nothing after it is a line that says nothing.
- */
-@container pane (max-width: 699.98px) {
-    .dya-table--stack,
-    .dya-table--stack tbody,
-    .dya-table--stack tfoot,
-    .dya-table--stack tr,
-    .dya-table--stack td {
-        display: block;
-    }
-
-    .dya-table--stack tr:has(th) {
-        display: none;
-    }
-
-    .dya-table--stack tr {
-        margin-bottom: var(--dya-space-1);
-        padding: var(--dya-space-2) 0;
-        border: var(--dya-border-width) solid var(--dya-border);
-        border-radius: var(--dya-radius);
-        background: var(--dya-surface-1);
-    }
-
-    .dya-table.dya-table--stack td {
-        display: grid;
-        grid-template-columns: 8ch minmax(0, 1fr);
-        align-items: baseline;
-        justify-items: start;
-        gap: var(--dya-space-3);
-        padding: 1px var(--dya-space-3);
-        border: 0;
-        border-radius: 0;
-        background: none;
-        text-align: left;
-    }
-
-    .dya-table.dya-table--stack td:empty {
-        display: none;
-    }
-
-    .dya-table.dya-table--stack td::before {
-        content: attr(data-label);
-        font-family: var(--dya-font-sans);
-        font-size: var(--dya-size-body-xs);
-        letter-spacing: var(--dya-tracking-ui);
-        color: var(--dya-text-4);
-    }
-}
-
-/*
  * The tile that makes one more of what the tiles beside it are: an outline where a tile would be,
- * dashed, with no face of its own until the pointer reaches it. Making one of a plugin's structures
- * is green, so its glyph and its name are in the green ink: 7.61 on the first surface, 6.83 on the
- * hover ground.
+ * dashed, with no face of its own until the pointer reaches it. Its glyph and its name are in the
+ * top ink, which is all the emphasis an outline needs.
  */
 .dya-tile--new {
     border: var(--dya-border-width) dashed var(--dya-dashed);
@@ -2705,7 +2574,7 @@ button.dya-step__subject {
 
 .dya-tile--new .dya-tile__icon,
 .dya-tile--new .dya-tile__name {
-    color: var(--dya-success-ink);
+    color: var(--dya-text);
 }
 
 /* A match inside an entry's text: the words a search found, on the accent's soft ground. */
@@ -2717,7 +2586,7 @@ button.dya-step__subject {
 /*
  * The tabs of the dock are the panels themselves, so they read a step larger than a tab inside a
  * panel, and the open one takes the medium weight: across a dock of several groups, weight is what
- * says which tab each group is showing, and the halo is kept for the group being worked in.
+ * says which tab each group is showing, and the silver line is kept for the group being worked in.
  */
 .dya-tab--dock {
     font-size: var(--dya-size-body-sm);
@@ -2726,7 +2595,7 @@ button.dya-step__subject {
 
 .dya-tab--dock[aria-selected="true"] {
     font-weight: var(--dya-weight-medium);
-    text-shadow: none;
+    box-shadow: none;
 }
 
 /*
@@ -2790,9 +2659,9 @@ button.dya-step__subject {
 
 .dya-notice__title,
 .dya-notice__text {
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-xs);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     overflow-wrap: anywhere;
 }

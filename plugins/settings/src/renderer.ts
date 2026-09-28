@@ -1,5 +1,5 @@
 import { glyph, injectStyles, ownIds } from '@dyarchia/sdk'
-import type { PluginCatalogueEntry, PluginContext } from '@dyarchia/sdk'
+import type { PluginContext } from '@dyarchia/sdk'
 
 /*
  * The panel that decides what this installation is.
@@ -40,6 +40,7 @@ interface CatalogueEntry {
         requires?: Requirement[]
     }
     directory: string
+    icon?: string
     core: boolean
     enabled: boolean
     loaded: boolean
@@ -63,8 +64,13 @@ interface Status {
     detail: string
 }
 
+/*
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * a hoplite shield bearing a delta, for Dyarchia.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ */
 const GEAR_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="#eceef2"/><path d="M12 5.6 17.9 17.2H6.1z" fill="none" stroke="#0a0a0b" stroke-width="2.3" stroke-linejoin="round"/></svg>'
 
 const STYLES = `
 .set {
@@ -77,127 +83,74 @@ const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5);
+}
+.set-list {
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-5);
+    gap: var(--dya-space-2);
 }
-.set-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-3);
-}
-.set-section-head {
-    display: flex;
-    align-items: baseline;
-    gap: var(--dya-space-3);
-    flex-wrap: wrap;
-}
-.set-item {
-    display: flex;
-    gap: var(--dya-space-4);
-    align-items: flex-start;
+/*
+ * A plugin is a row of its own: the switch, its mark at a size that reads, its name and what it
+ * is, and under them, on one line that wraps, what it brings with it and how much it weighs.
+ */
+.set-plugin {
+    display: grid;
+    grid-template-columns: 20px 28px minmax(0, 1fr) auto;
+    column-gap: var(--dya-space-4);
+    row-gap: var(--dya-space-3);
+    align-items: start;
     padding: var(--dya-space-4);
+    border: var(--dya-border-width) solid var(--dya-hairline);
+    border-radius: var(--dya-radius-card);
+    background: var(--dya-glass-card);
 }
-.set-tick {
-    margin-top: 3px;
-    flex: none;
+.set-toggle {
+    padding-top: 4px;
 }
-.set-body {
-    flex: 1;
-    min-width: 0;
+.set-mark {
+    width: 28px;
+    height: 28px;
+}
+.set-mark > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.set-text {
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-2);
+    gap: var(--dya-space-1);
+    min-width: 0;
 }
-.set-title {
-    display: flex;
-    align-items: baseline;
-    gap: var(--dya-space-2);
-    flex-wrap: wrap;
-}
-.set-title > .dya-badge {
-    margin-inline-start: auto;
+.set-name {
+    font-size: var(--dya-size-h4);
+    color: var(--dya-text);
 }
 .set-needs {
+    grid-column: 3 / -1;
     display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-2);
-    margin-top: var(--dya-space-1);
-}
-.set-install {
-    display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--dya-space-2);
-    flex-wrap: wrap;
 }
-.set-where {
-    font-size: var(--dya-size-mono-xs);
-    cursor: help;
-    overflow-wrap: anywhere;
-}
-.set-need {
-    display: flex;
-    align-items: baseline;
-    gap: var(--dya-space-2);
-    flex-wrap: wrap;
-}
-.set-need > * {
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-.set-needs > .dya-button {
-    align-self: flex-start;
-    margin-top: var(--dya-space-2);
-}
-.set-foot {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
-    padding: var(--dya-space-3) var(--dya-space-5);
-}
-.set-foot-note {
-    flex: 1;
-    min-width: 0;
+.set-needs:empty {
+    display: none;
 }
 .set-log {
     max-height: 40%;
     overflow-y: auto;
-    margin: 0 var(--dya-space-5) var(--dya-space-3);
+    margin-top: var(--dya-space-3);
 }
-.set-log[hidden] {
-    display: none;
-}
-.set-detail {
-    overflow-wrap: anywhere;
+.set-folders {
+    position-area: bottom span-left;
+    inset: auto;
+    margin: var(--dya-space-2) 0 0;
+    min-width: 280px;
 }
 .set-tips {
     display: contents;
 }
 `
-
-/* A path under the data home, in whatever separator the shell just handed back. */
-function join(home: string, folder: string): string {
-    return home.includes('\\') ? `${home}\\${folder}` : `${home}/${folder}`
-}
-
-/*
- * A plugin's name beside its icon, the face it wears on its key, its tile and its tabs. This is
- * the one screen that lists every plugin at once, so it is where a reader learns which face is
- * which. A plugin that is not loaded has shown no icon yet and is its name alone.
- */
-function named(entry: PluginCatalogueEntry, tag: string, className: string): HTMLElement {
-    const name = el(tag, className)
-    const inner = el('span', 'dya-legend')
-    if (entry.icon?.startsWith('<svg')) {
-        const glyph = el('span', 'dya-glyph')
-        glyph.innerHTML = ownIds(entry.icon)
-        inner.append(glyph)
-    }
-    inner.append(entry.manifest.name)
-    name.append(inner)
-    return name
-}
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
     const node = document.createElement(tag)
@@ -213,18 +166,12 @@ export function activate(ctx: PluginContext): void {
         {
             id: 'settings',
             title: 'Setup',
-            icon: GEAR_ICON
+            icon: GEAR_ICON,
+            modal: true
         },
-        (container) => {
+        (container, handle) => {
         const root = el('div', 'set')
 
-        /*
-         * Tips live in one holder under the panel root, so they leave with it. A detail that is a
-         * whole command — crawlee declares a five-line Python program as the proof its environment
-         * works — is collapsed to one line in the row and kept whole in the tip, because a row
-         * that wraps a script across four lines is the loudest thing on a screen about something
-         * else.
-         */
         const tips = el('div', 'set-tips')
         let tipSeq = 0
         const withTip = (control: HTMLElement, text: string): void => {
@@ -239,21 +186,33 @@ export function activate(ctx: PluginContext): void {
         const log = el('pre', 'dya-log set-log')
         log.hidden = true
 
-        const foot = el('div', 'set-foot')
-        const restart = el('button', 'dya-button dya-button--sm', 'Restart to apply') as HTMLButtonElement
+        /*
+         * The panel's two actions sit in the tab row: restart, only while a choice is waiting for
+         * it, and the folders this installation keeps, which are a click away rather than three
+         * rows of absolute paths at the top of the panel.
+         */
+        const restart = el('button', 'dya-button dya-button--primary dya-button--sm', 'Restart to apply') as HTMLButtonElement
         restart.hidden = true
-        foot.append(restart)
 
-        root.append(scroll, log, foot, tips)
+        const folders = el('button', 'dya-key')
+        folders.innerHTML = glyph('folder')
+        folders.setAttribute('aria-label', 'Folders')
+        withTip(folders, 'Folders')
+        const menu = el('div', 'dya-menu set-folders')
+        menu.id = `set-folders-${handle.instanceId.replace(/[^a-zA-Z0-9_-]/g, '')}`
+        menu.setAttribute('popover', 'auto')
+        menu.setAttribute('role', 'menu')
+        const anchor = `--${menu.id}`
+        folders.style.setProperty('anchor-name', anchor)
+        menu.style.setProperty('position-anchor', anchor)
+        folders.setAttribute('popovertarget', menu.id)
+
+        handle.toolbar.append(restart, folders, menu)
+        root.append(scroll, log, tips)
         container.append(root)
 
         const wanted = new Set<string>()
         let optional: CatalogueEntry[] = []
-        let home = ''
-
-        function under(folder: string): string {
-            return join(home, folder)
-        }
         let loadedIds = new Set<string>()
 
         function say(line: string): void {
@@ -262,26 +221,20 @@ export function activate(ctx: PluginContext): void {
             log.scrollTop = log.scrollHeight
         }
 
-        function pendingRestart(): boolean {
-            return optional.some(
+        function refreshRestart(): void {
+            restart.hidden = !optional.some(
                 (entry) => wanted.has(entry.manifest.id) !== loadedIds.has(entry.manifest.id)
             )
         }
 
-        function refreshFoot(): void {
-            restart.hidden = !pendingRestart()
-        }
-
         async function persist(): Promise<void> {
             await ctx.shell.enable([...wanted])
-            refreshFoot()
+            refreshRestart()
         }
 
         /*
          * A requirement that says it comes with its plugin is fetched the moment the plugin is
-         * ticked, with no Install button in between: turning the plugin on is the decision, and a
-         * plugin that is on without what it needs is a plugin that fails the first time it is
-         * used. Only those requirements travel; anything else waits for its button as before.
+         * turned on, with no Install key in between: turning it on is the decision.
          */
         function acquireWith(entry: CatalogueEntry): void {
             const requires = entry.manifest.requires ?? []
@@ -295,37 +248,26 @@ export function activate(ctx: PluginContext): void {
             })
         }
 
+        /*
+         * What a plugin brings with it is always said, because it is what decides whether to turn
+         * it on: each thing it needs as a pill, neutral when it is there and a warning when it is
+         * not, with its reason one hover away, and how much it weighs. Install appears when
+         * something missing can be fetched.
+         */
         function renderNeeds(entry: CatalogueEntry, box: HTMLElement, statuses: Status[]): void {
             box.replaceChildren()
-            const requires = entry.manifest.requires ?? []
-            if (requires.length === 0) return
-
-            const strip = el('div', 'dya-pills')
             for (const status of statuses) {
-                const chip = el(
-                    'span',
-                    `dya-badge ${status.met ? 'dya-badge--success' : 'dya-badge--warning'}`,
-                    status.label
-                )
+                const chip = el('span', status.met ? 'dya-tag' : 'dya-badge dya-badge--warning', status.label)
                 if (!status.met) withTip(chip, status.detail)
-                strip.append(chip)
+                box.append(chip)
             }
-            box.append(strip)
+            const size = (entry.manifest.requires ?? []).find((requirement) => requirement.note)?.note
+            if (size) box.append(el('span', 'dya-meta', size))
 
             const missing = statuses.filter((status) => !status.met)
-            if (missing.length === 0) return
+            if (missing.length === 0 || missing.every((status) => !status.acquirable)) return
 
-            if (missing.every((status) => !status.acquirable)) {
-                box.append(el('span', 'dya-badge dya-badge--warning', 'install it yourself'))
-                return
-            }
-
-            const row = el('div', 'set-install')
-            const install = el('button', 'dya-button dya-button--primary', 'Install') as HTMLButtonElement
-            row.append(install)
-
-            const size = requires.find((requirement) => requirement.note)?.note
-            if (size) row.append(el('span', 'dya-tag', size))
+            const install = el('button', 'dya-button dya-button--sm', 'Install') as HTMLButtonElement
             install.addEventListener('click', () => {
                 install.disabled = true
                 install.textContent = 'Installing…'
@@ -335,115 +277,84 @@ export function activate(ctx: PluginContext): void {
                     requires: entry.manifest.requires ?? []
                 })
             })
-            box.append(row)
+            box.append(install)
         }
 
         /*
-         * One card per optional plugin: the tick, what it is, what state it is in, and the list of
-         * things it needs before it can run. The badge says which of three states it is in —
-         * loaded now, ticked for the next launch, or off — because "enabled" and "running" are
-         * different answers and a panel that shows one of them is the reason somebody ticks a box
-         * and then wonders why nothing happened.
+         * Every plugin is one row: a switch when it is a choice, its face and name, what it is, and
+         * on the right what it brings with it and whether a change waits for a restart. The four
+         * plugins the application is made of have no switch: nobody is better off without a terminal.
          */
-        function renderOptional(entry: CatalogueEntry): HTMLElement {
-            const item = el('div', 'dya-card set-item')
+        function row(entry: CatalogueEntry): HTMLElement {
+            const item = el('div', 'set-plugin')
+            const toggleCell = el('div', 'set-toggle')
+            /*
+             * The one screen that lists every plugin at once is where a reader learns which face is
+             * which, so each wears its mark; one that is not loaded has shown none yet.
+             */
+            const mark = el('span', 'set-mark')
+            if (entry.icon?.startsWith('<svg')) mark.innerHTML = ownIds(entry.icon)
 
-            const tick = el('input', 'dya-checkbox set-tick') as HTMLInputElement
-            tick.type = 'checkbox'
-            tick.checked = wanted.has(entry.manifest.id)
-            tick.setAttribute('aria-label', `Load ${entry.manifest.name}`)
-
-            const body = el('div', 'set-body')
-            const title = el('div', 'set-title')
-            title.append(named(entry, 'strong', 'dya-text'))
-
-            const state = loadedIds.has(entry.manifest.id)
-                ? { text: 'loaded', kind: 'dya-badge--success' }
-                : wanted.has(entry.manifest.id)
-                  ? { text: 'next launch', kind: 'dya-badge--warning' }
-                  : { text: 'not loaded', kind: '' }
-            const badge = el('span', `dya-badge ${state.kind}`, state.text)
-            title.append(badge)
-            body.append(title)
-
-            if (entry.manifest.description) {
-                body.append(el('p', 'dya-text', entry.manifest.description))
+            const text = el('div', 'set-text')
+            text.append(el('span', 'set-name', entry.manifest.name))
+            if (entry.manifest.description && entry.manifest.description !== entry.manifest.name) {
+                text.append(el('span', 'dya-text set-desc', entry.manifest.description))
             }
 
-            if (entry.manifest.data && home) {
-                body.append(el('span', 'dya-mono dya-text set-where', under(entry.manifest.data)))
+            const pending = el('span', 'dya-badge dya-badge--warning', 'next launch')
+            const paintPending = (): void => {
+                pending.hidden = entry.core || wanted.has(entry.manifest.id) === loadedIds.has(entry.manifest.id)
             }
+
+            if (!entry.core) {
+                const tick = el('input', 'dya-checkbox') as HTMLInputElement
+                tick.type = 'checkbox'
+                tick.checked = wanted.has(entry.manifest.id)
+                tick.setAttribute('aria-label', `Load ${entry.manifest.name}`)
+                tick.addEventListener('change', () => {
+                    if (tick.checked) wanted.add(entry.manifest.id)
+                    else wanted.delete(entry.manifest.id)
+                    if (tick.checked) acquireWith(entry)
+                    paintPending()
+                    void persist()
+                })
+                toggleCell.append(tick)
+            }
+            paintPending()
 
             const needs = el('div', 'set-needs')
-            body.append(needs)
+            item.append(toggleCell, mark, text, pending, needs)
 
-            tick.addEventListener('change', () => {
-                if (tick.checked) wanted.add(entry.manifest.id)
-                else wanted.delete(entry.manifest.id)
-                if (tick.checked) acquireWith(entry)
-                badge.className = `dya-badge ${
-                    loadedIds.has(entry.manifest.id)
-                        ? 'dya-badge--success'
-                        : tick.checked
-                          ? 'dya-badge--warning'
-                          : ''
-                }`
-                badge.textContent = loadedIds.has(entry.manifest.id)
-                    ? 'loaded'
-                    : tick.checked
-                      ? 'next launch'
-                      : 'not loaded'
-                void persist()
-            })
-
-            item.append(tick, body)
-
-            void ctx
-                .invoke('inspect', {
-                    pluginId: entry.manifest.id,
-                    requires: entry.manifest.requires ?? []
-                })
-                .then((statuses) => renderNeeds(entry, needs, statuses as Status[]))
-
+            if ((entry.manifest.requires ?? []).length > 0) {
+                void ctx
+                    .invoke('inspect', {
+                        pluginId: entry.manifest.id,
+                        requires: entry.manifest.requires ?? []
+                    })
+                    .then((statuses) => renderNeeds(entry, needs, statuses as Status[]))
+            }
             return item
         }
 
-        function section(title: string): HTMLElement {
-            const box = el('section', 'set-section')
-            const header = el('div', 'set-section-head')
-            header.append(el('span', 'dya-eyebrow', title))
-            box.append(header)
-            return box
-        }
-
-        function renderPaths(paths: Paths): HTMLElement {
-            const box = section('Paths')
-            const table = el('table', 'dya-table')
-            const body = el('tbody')
-
-            const rows: [string, string, boolean][] = [
-                ['Your files', paths.dataHome, true],
-                ['This installation', paths.application, false],
-                ['Settings and state', paths.userData, false]
+        function renderFolders(paths: Paths): void {
+            menu.replaceChildren()
+            const places: [string, string][] = [
+                ['Your files', paths.dataHome],
+                ['This installation', paths.application],
+                ['Settings and state', paths.userData]
             ]
-            for (const [label, value, openable] of rows) {
-                const row = el('tr', 'dya-row')
-                row.append(el('td', 'dya-table__key', label), el('td', 'dya-table__subject', value))
-                const last = el('td', 'dya-table__end')
-                if (openable) {
-                    const open = el('button', 'dya-key')
-                    open.innerHTML = glyph('folder')
-                    open.setAttribute('aria-label', `Open ${label.toLowerCase()}`)
-                    withTip(open, 'Open')
-                    open.addEventListener('click', () => void ctx.shell.reveal(value))
-                    last.append(open)
-                }
-                row.append(last)
-                body.append(row)
+            for (const [label, value] of places) {
+                const item = el('button', 'dya-menu__item dya-menu__item--tall')
+                item.setAttribute('role', 'menuitem')
+                const text = el('span', 'dya-menu__text')
+                text.append(el('span', undefined, label), el('span', 'dya-menu__note dya-mono', value))
+                item.append(text)
+                item.addEventListener('click', () => {
+                    menu.hidePopover()
+                    void ctx.shell.reveal(value)
+                })
+                menu.append(item)
             }
-            table.append(body)
-            box.append(table)
-            return box
         }
 
         async function draw(): Promise<void> {
@@ -451,46 +362,22 @@ export function activate(ctx: PluginContext): void {
                 ctx.shell.catalogue(),
                 ctx.shell.paths()
             ])) as [Catalogue, Paths]
-            home = paths.dataHome
             const entries = catalogue.entries.filter((entry) => entry.manifest.id !== ctx.pluginId)
             optional = entries.filter((entry) => !entry.core)
-            const core = entries.filter((entry) => entry.core)
             loadedIds = new Set(
                 catalogue.entries.filter((entry) => entry.loaded).map((entry) => entry.manifest.id)
             )
             wanted.clear()
             for (const entry of optional) if (entry.enabled) wanted.add(entry.manifest.id)
 
-            scroll.replaceChildren()
+            renderFolders(paths)
 
-            /*
-             * Where it writes, what it already loads, and only then what is a decision. The order
-             * used to open on the decision, which is the one thing here most people never make,
-             * and left the paths at the bottom of a scroll. The sentence that used to head the
-             * panel is gone: a section called Optional, holding two plugins that each say what
-             * they need, had already said it.
-             */
-            scroll.append(renderPaths(paths))
-
-            if (core.length > 0) {
-                const included = section('Included')
-                const table = el('table', 'dya-table')
-                const body = el('tbody')
-                for (const entry of core) {
-                    const row = el('tr', 'dya-row')
-                    row.append(named(entry, 'td', 'dya-table__name'))
-                    body.append(row)
-                }
-                table.append(body)
-                included.append(table)
-                scroll.append(included)
+            const list = el('div', 'set-list')
+            for (const entry of [...entries.filter((entry) => entry.core), ...optional]) {
+                list.append(row(entry))
             }
-
-            const choices = section('Optional')
-            for (const entry of optional) choices.append(renderOptional(entry))
-            scroll.append(choices)
-
-            refreshFoot()
+            scroll.replaceChildren(list)
+            refreshRestart()
         }
 
         restart.addEventListener('click', () => void ctx.shell.relaunch())

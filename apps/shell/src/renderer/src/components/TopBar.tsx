@@ -6,7 +6,7 @@ interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
     onToggle: (id: string) => void
-    wordmark: boolean
+    brand: boolean
 }
 
 const MINIMIZE_ICON =
@@ -137,7 +137,7 @@ function Build(): React.JSX.Element {
     const tip = failure ? `Check failed: ${failure}` : at ? `Checked ${at}` : 'Check for updates'
 
     return (
-        <div className="topbar-build">
+        <>
             <button
                 type="button"
                 className="dya-button dya-button--quiet topbar-alpha"
@@ -161,26 +161,26 @@ function Build(): React.JSX.Element {
             )}
             {phase === 'available' && (
                 <button
-                    className="dya-button dya-button--sm topbar-update"
+                    className="dya-button topbar-update"
                     onClick={() => act('shell:update:download')}
                 >
                     Update to {update?.version}
                 </button>
             )}
             {phase === 'downloading' && (
-                <button className="dya-button dya-button--sm topbar-update" disabled>
+                <button className="dya-button topbar-update" disabled>
                     Downloading {update?.percent ?? 0}%
                 </button>
             )}
             {phase === 'ready' && (
                 <button
-                    className="dya-button dya-button--success dya-button--sm topbar-update"
+                    className="dya-button dya-button--primary topbar-update"
                     onClick={() => act('shell:update:install')}
                 >
                     Restart to finish
                 </button>
             )}
-        </div>
+        </>
     )
 }
 
@@ -204,7 +204,7 @@ export function TopBar({
     panels,
     openPanelIds,
     onToggle,
-    wordmark
+    brand
 }: TopBarProps): React.JSX.Element {
     const [menuOpen, setMenuOpen] = useState(false)
     const overflowRef = useRef<HTMLDivElement>(null)
@@ -236,10 +236,12 @@ export function TopBar({
 
     return (
         <div className="dya-bar dya-bar--flush topbar">
-            <Build />
-            {wordmark && <span className="dya-brand topbar-brand">Dyarchia desktop</span>}
+            <div className="dya-toolbar topbar-build">
+                <Build />
+            </div>
+            {brand && <span className="dya-brand dya-brand--sm topbar-brand">Dyarchia desktop</span>}
             <div className="topbar-right">
-                <div className="topbar-actions">
+                <div className="dya-toolbar topbar-actions">
                     {visible.map((panel) => (
                         <TipKey
                             key={panel.id}

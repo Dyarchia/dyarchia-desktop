@@ -1,6 +1,7 @@
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import { brandIcon, glyph, injectStyles } from '@dyarchia/sdk'
+import { brandIcon, glyph, highlight, injectStyles } from '@dyarchia/sdk'
 import type { GlyphName, PanelHandle, PluginContext } from '@dyarchia/sdk'
+import { MARKER, parseTerminal } from './closing.js'
 import { installDrag } from './drag.js'
 import type { DragColumn } from './drag.js'
 import { openMenu, openSurface } from './menu.js'
@@ -149,8 +150,13 @@ interface CardProgress {
     waiting: boolean
 }
 
+/*
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * a phalanx, two ranks of shields with their spears carried forward.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ */
 const ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="10" rx="1"/><rect x="16" y="4" width="5" height="13" rx="1"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.6 12 6.800000000000001 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M6.300000000000001 1.6 8 3.6 6.4 4.6z" fill="#eceef2"/><path d="M8.8 12 12 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M11.5 1.6 13.2 3.6 11.600000000000001 4.6z" fill="#eceef2"/><path d="M14 12 17.2 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M16.7 1.6 18.4 3.6 16.8 4.6z" fill="#eceef2"/><path d="M19.2 12 22.400000000000002 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M21.900000000000002 1.6 23.6 3.6 22 4.6z" fill="#eceef2"/><circle cx="4.2" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="9.4" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="14.6" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="19.8" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="4.2" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="4.2" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="9.4" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="9.4" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="14.6" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="14.6" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="19.8" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="19.8" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/></svg>'
 
 const STROKE =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -375,12 +381,17 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         return button
     }
 
-    const bar = el('div', 'dya-bar kanban-bar')
+    /*
+     * The board's own controls, in the dock's tab row: which board, a new one, its settings, its
+     * worktrees, all boards, and what the board has to say about itself.
+     */
+    const bar = el('div', 'kanban-bar')
     const boardButton = el('button', 'dya-button dya-button--quiet', 'board')
     boardButton.type = 'button'
     withTip(boardButton, 'Boards')
-    const newBoardKey = key('plus', 'New board')
-    newBoardKey.classList.add('dya-key--success')
+    const newCardKey = key('plus', 'New card')
+    newCardKey.hidden = true
+    let openDraft: (() => void) | null = null
     const settingsKey = key('sliders', 'Settings')
     settingsKey.hidden = true
     const treesKey = key('branch', 'Worktrees')
@@ -388,7 +399,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const WATCH_TIP = 'All boards'
     const watchButton = key('eye', 'watch', WATCH_TIP)
     watchButton.setAttribute('aria-pressed', 'false')
-    const spacer = el('span', 'kanban-spacer')
     const healthButton = el('button', 'dya-button dya-button--quiet dya-button--sm')
     healthButton.type = 'button'
     healthButton.hidden = true
@@ -403,11 +413,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     meter.hidden = true
     bar.append(
         boardButton,
-        newBoardKey,
+        newCardKey,
         settingsKey,
         treesKey,
         watchButton,
-        spacer,
         notice,
         healthButton,
         meter
@@ -468,7 +477,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     error.hidden = true
 
     main.append(board, scrim, drawer)
-    root.append(bar, marks, main, setup, watch, error, tips)
+    handle.toolbar.append(bar)
+    root.append(marks, main, setup, watch, error, tips)
     container.appendChild(root)
 
     /*
@@ -539,6 +549,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const onBoard = meta !== null
         const configuring = next === 'form' && setup.dataset.mode === 'settings'
         settingsKey.hidden = meta === null
+        newCardKey.hidden = meta === null
         settingsKey.classList.toggle('dya-key--active', configuring)
         settingsKey.setAttribute('aria-pressed', String(configuring))
         treesKey.hidden = !onBoard || !treesHere
@@ -636,19 +647,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          */
         const empty = el('div', 'dya-drop-box kanban-drop')
 
+        /*
+         * A card is made from the key in the tab row, and its title is typed at the head of the
+         * triage column, where it lands. The key used to sit in that column's header, lit, the one
+         * bright block in a black board.
+         */
         if (status === 'triage') {
-            const plus = el('button', 'dya-key dya-key--success kanban-new-key')
-            plus.innerHTML = ICONS.plus
-            plus.type = 'button'
-            plus.setAttribute('aria-label', 'new card')
-            withTip(plus, 'New card')
             const draft = el('div', 'kanban-new')
             draft.hidden = true
             const field = el('input', 'dya-field dya-field--sm dya-field--prose')
             field.type = 'text'
             field.placeholder = 'card title'
             const confirm = key('check', 'Add')
-            confirm.classList.add('dya-key--success')
             draft.append(field, confirm)
             const dismiss = (): void => {
                 field.value = ''
@@ -673,18 +683,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     if (!added) open(title)
                 })
             }
-            plus.addEventListener('click', () => open())
+            openDraft = () => {
+                if (shell.dataset.collapsed === 'true') fold.click()
+                open()
+            }
             field.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') dismiss()
                 if (event.key === 'Enter') commit()
             })
             field.addEventListener('blur', commit)
             confirm.addEventListener('click', commit)
-            head.appendChild(plus)
             scroller.appendChild(draft)
         }
 
-        const fold = el('button', 'dya-key')
+        const fold = el('button', 'dya-key kanban-fold')
         fold.type = 'button'
         const apply = (closed: boolean): void => {
             shell.dataset.collapsed = String(closed)
@@ -1006,7 +1018,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const browse = key('folder', 'choose the directory')
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button dya-button--success', 'create board')
+        const create = el('button', 'dya-button dya-button--primary', 'create board')
         create.type = 'button'
 
         browse.addEventListener('click', () => {
@@ -1153,10 +1165,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     /*
-     * One row per phase: harness, model, effort. A card inherits from its board what it
-     * leaves blank, so a blank is labelled with what it inherits, noted `follows the board` in the
-     * list and shown bare once chosen, since what the closed control says is what will run. The
-     * model list is the chosen harness's own, and a model is named by its API id.
+     * One row per phase: harness, model, effort. A card inherits from its board what it leaves
+     * blank, so a blank is labelled with what it inherits, since what the control says is what
+     * will run. The model list is the chosen harness's own, and a model is named by its API id.
      * A name the list does not carry is typed into the field that appears when the last entry is
      * picked.
      */
@@ -1180,7 +1191,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const fallback = catalogue[0]?.id ?? 'claude'
         const nameOf = (id: string): string => catalogue.find((entry) => entry.id === id)?.label ?? id
         const harnessLabels: Record<string, string | [string, string]> = {
-            '': [nameOf(above?.harness ?? fallback), above ? 'follows the board' : 'default']
+            '': nameOf(above?.harness ?? fallback)
         }
         for (const entry of catalogue) {
             harnessLabels[entry.id] = entry.available ? entry.label : [entry.label, 'not on PATH']
@@ -1198,12 +1209,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const modelName = (model: string): string => apiName(chosen, model)
         const listed = current.model === null || models.includes(current.model)
         const modelLabels: Record<string, string | [string, string]> = {
-            '': above ? [above.model ? modelName(above.model) : 'default', 'follows the board'] : 'default',
+            '': above?.model ? modelName(above.model) : 'default',
             [OTHER]: 'another name\u2026'
         }
         for (const model of models) {
-            modelLabels[model] =
-                info?.id === 'claude' && !info.resolved[model] ? [model, 'latest'] : modelName(model)
+            modelLabels[model] = modelName(model)
         }
         const custom = el('input', 'dya-field dya-field--sm')
         custom.type = 'text'
@@ -1228,7 +1238,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         if (info?.efforts) {
             const effortLabels: Record<string, string | [string, string]> = {
-                '': above ? [above.effort ?? 'default', 'follows the board'] : 'default'
+                '': above?.effort ?? 'default'
             }
             row.appendChild(
                 choose('effort', current.effort ?? '', ['', ...info.efforts], effortLabels, disabled, (value) =>
@@ -1362,6 +1372,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         return shell
     }
 
+    const NEW_BOARD = '\u0000new-board'
     const openBoardMenu = (anchor: HTMLElement): void => {
         const rows: MenuRow[] = registry
             .filter((entry) => !entry.archived)
@@ -1380,11 +1391,23 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return
         }
 
+        rows.push({
+            key: NEW_BOARD,
+            label: 'New board',
+            group: 'new',
+            direct: true,
+            leaves: [{ label: 'New board', value: NEW_BOARD }]
+        })
+
         openMenu({
             anchor,
             rows,
             filter: 'filter boards',
             onPick: (row) => {
+                if (row.key === NEW_BOARD) {
+                    newBoard()
+                    return
+                }
                 write(pinKey, row.key)
                 void refresh().catch(fail)
             }
@@ -1395,12 +1418,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const shell = el('div', 'dya-pane kanban-setup-shell')
         shell.append(el('div', 'dya-title', 'Boards'))
 
-        const grid = el('div', 'dya-grid dya-grid--gallery')
+        const grid = el('div', 'dya-grid')
         for (const entry of open) {
             const tile = el('button', 'dya-tile')
             tile.type = 'button'
             tile.append(el('span', 'dya-tile__name', entry.name))
-            tile.append(el('span', 'dya-meta dya-meta--wrap', entry.workdir))
+            withTip(tile, entry.workdir)
             tile.addEventListener('click', () => {
                 write(pinKey, entry.slug)
                 void refresh().catch(fail)
@@ -1410,7 +1433,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.append(grid)
 
         const actions = el('div', 'dya-form__actions')
-        const make = el('button', 'dya-button dya-button--success', 'new board')
+        const make = el('button', 'dya-button dya-button--primary', 'new board')
         make.type = 'button'
         make.addEventListener('click', () => newBoard())
         actions.append(make)
@@ -1720,16 +1743,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         verb: string,
         subject: string,
         tone: string | null,
-        detail: [string, string][] = []
+        detail: [string, string][] = [],
+        code = false
     ): HTMLElement => {
         const node = el('li', `dya-step${tone ? ` dya-step--${tone}` : ''}`)
         node.append(el('span', 'dya-step__time', clock24(at)), el('span', 'dya-step__verb', verb))
+        const subjectClass = code ? 'dya-step__subject dya-step__subject--code' : 'dya-step__subject'
         const shown = detail.filter(([, text]) => text.trim())
         if (!shown.length) {
-            node.append(el('span', 'dya-step__subject', subject))
+            node.append(el('span', subjectClass, subject))
             return node
         }
-        const open = el('button', 'dya-step__subject', subject)
+        const open = el('button', subjectClass, subject)
         open.type = 'button'
         open.setAttribute('aria-expanded', 'false')
         const more = el('div', 'dya-step__detail')
@@ -1750,6 +1775,81 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     /*
+     * The block a worker closes its run with. The marker is how the board finds it in everything
+     * the agent wrote, so it is protocol, not something to read: what it says is shown instead,
+     * the outcome as a pill, the summary as prose, each artifact as a file that opens, and the
+     * JSON itself, indented and coloured, one press away.
+     */
+    const closing = (at: number, text: string, card: Card): HTMLElement[] => {
+        const cut = text.lastIndexOf(MARKER)
+        const block = parseTerminal(text)
+        if (cut < 0 || !block) return [said(at, text)]
+        const nodes: HTMLElement[] = []
+        const before = text.slice(0, cut).trim()
+        if (before) nodes.push(said(at, before))
+
+        const node = el('li', 'dya-step dya-step--said')
+        const body = el('div', 'dya-step__said kanban-outcome')
+        const head = el('div', 'dya-pills')
+        head.append(
+            el(
+                'span',
+                `dya-badge ${block.outcome === 'blocked' ? 'dya-badge--danger' : 'dya-badge--success'}`,
+                block.outcome === 'blocked' && block.blockKind ? `blocked - ${block.blockKind.replace('_', ' ')}` : block.outcome
+            )
+        )
+        if (block.verdict) head.append(el('span', 'dya-tag', block.verdict))
+        body.append(head)
+        if (block.summary) body.append(el('p', 'dya-text kanban-outcome-summary', block.summary))
+
+        const base = (card.workdir ?? meta?.workdir ?? '').replace(/[\\/]+$/, '')
+        if (block.artifacts.length) {
+            const files = el('div', 'kanban-outcome-files')
+            for (const artifact of block.artifacts) {
+                const path = /^([a-zA-Z]:[\\/]|\/)/.test(artifact) || !base ? artifact : `${base}/${artifact}`
+                const file = el('button', 'dya-chip dya-mono', artifact.split(/[\\/]/).pop() ?? artifact)
+                file.type = 'button'
+                withTip(file, artifact)
+                file.addEventListener('click', () => {
+                    void (async () => {
+                        if (!(ctx.shell.canOpen(path) && (await ctx.shell.open({ path })))) await ctx.shell.reveal(path)
+                    })()
+                })
+                files.append(file)
+            }
+            body.append(files)
+        }
+        for (const [label, items] of [
+            ['handoff', block.handoff],
+            ['follow-ups', block.followups.map((entry) => entry.title)]
+        ] as [string, string[]][]) {
+            if (!items.length) continue
+            const list = el('ul', 'kanban-outcome-list')
+            for (const item of items) list.append(el('li', 'dya-text', item))
+            body.append(el('span', 'dya-label', label), list)
+        }
+
+        const raw = text.slice(cut + MARKER.length)
+        const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)
+        let pretty = json
+        try {
+            pretty = JSON.stringify(JSON.parse(json), null, 2)
+        } catch {
+            pretty = json
+        }
+        const more = el('details', 'kanban-outcome-json')
+        const summary = el('summary', 'dya-label', 'json')
+        const code = el('pre', 'dya-code')
+        code.innerHTML = highlight(pretty, 'json')
+        more.append(summary, code)
+        body.append(more)
+
+        node.append(el('span', 'dya-step__time', clock24(at)), body)
+        nodes.push(node)
+        return nodes
+    }
+
+    /*
      * What the agent did, told as steps. A result belongs to the call it answers, so it is folded
      * into that step and read by opening it; a failed call turns its verb red. What the agent said
      * between calls is prose. The transcript itself is one press away, in whatever panel reads
@@ -1758,7 +1858,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const paintActivity = (card: Card, into: HTMLElement): void => {
         const run = card.runs.find((entry) => entry.runId === runShown) ?? card.runs[card.runs.length - 1]
         if (!run) return
-        const head = el('div', 'dya-bar dya-bar--inset kanban-activity-head')
+        const head = el('div', 'dya-bar dya-bar--inset dya-toolbar kanban-activity-head')
         if (card.runs.length > 1) {
             const labels: Record<string, string> = {}
             card.runs.forEach((entry, index) => {
@@ -1803,21 +1903,24 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                         const node = stepRow(merged.at, verbOf(merged.label), merged.body, merged.error ? 'error' : null, [
                             ['input', merged.detail ?? ''],
                             ['output', merged.output ?? '']
-                        ])
+                        ], true)
                         last.node.replaceWith(node)
                         last = { row: merged, node }
                         continue
                     }
                     let node: HTMLElement
-                    if (row.kind === 'text') node = said(row.at, row.body)
-                    else if (row.kind === 'thinking') node = stepRow(row.at, 'thought', row.body.split('\n')[0], 'quiet', [['thinking', row.body]])
+                    if (row.kind === 'text') {
+                        const parts = closing(row.at, row.body, card)
+                        for (const part of parts.slice(0, -1)) list.appendChild(part)
+                        node = parts[parts.length - 1]
+                    } else if (row.kind === 'thinking') node = stepRow(row.at, 'thought', row.body.split('\n')[0], 'quiet', [['thinking', row.body]])
                     else if (row.kind === 'end') node = stepRow(row.at, row.error ? 'stopped' : 'turn ended', row.body, row.error ? 'error' : 'quiet')
-                    else if (row.kind === 'result') node = stepRow(row.at, row.error ? 'failed' : 'got', row.body.split('\n')[0], row.error ? 'error' : 'quiet', [['output', row.body]])
+                    else if (row.kind === 'result') node = stepRow(row.at, row.error ? 'failed' : 'got', row.body.split('\n')[0], row.error ? 'error' : 'quiet', [['output', row.body]], true)
                     else {
                         node = stepRow(row.at, verbOf(row.label), row.body, row.error ? 'error' : null, [
                             ['input', row.detail ?? ''],
                             ['output', row.output ?? '']
-                        ])
+                        ], true)
                     }
                     list.appendChild(node)
                     last = { row, node }
@@ -2019,7 +2122,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const close = key('close', 'close the card')
         close.addEventListener('click', () => select(null))
-        const keys = el('div', 'kanban-drawer-keys')
+        const keys = el('div', 'dya-toolbar kanban-drawer-keys')
         keys.append(sizeKey, close)
         head.append(lead, keys)
         stage.replaceChildren(tabs, stageView)
@@ -2685,7 +2788,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     boardButton.addEventListener('click', () => openBoardMenu(boardButton))
-    newBoardKey.addEventListener('click', () => newBoard())
+    newCardKey.addEventListener('click', () => openDraft?.())
     settingsKey.addEventListener('click', () => {
         if (setup.dataset.mode === 'settings' && !setup.hidden) void refresh().catch(fail)
         else showBoardSettings()
@@ -2814,7 +2917,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          */
         const boardsGroup = el('div', 'kanban-group')
         boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
-        const grid = el('div', 'dya-grid dya-grid--gallery')
+        const grid = el('div', 'dya-grid')
         for (const entry of shape.boards) {
             const card = el('button', 'dya-tile dya-tile--dense')
             card.type = 'button'
@@ -2878,27 +2981,39 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (shape.decisions.length) {
             const log = el('div', 'kanban-group')
             log.append(el('span', 'dya-eyebrow', 'decided'))
-            const logTable = el('table', 'dya-table')
+            const logTable = el('table', 'dya-table kanban-decided')
             const logBody = el('tbody')
+            /*
+             * One card's decisions under its title, said once. Ten rows each carrying the same
+             * two-line title was the title read ten times to learn that one card had been tried
+             * five times.
+             */
+            const byCard = new Map<string, typeof shape.decisions>()
             for (const row of shape.decisions) {
-                const line = el('tr', 'dya-row')
-                const gone = row.title === row.cardId
-                const lead = gone && row.detail ? row.detail : row.title
-                const rest = gone && row.detail ? '' : row.detail
-
-                const kind = el('td', 'dya-table__fit')
-                const pill = el(
-                    'span',
-                    DECISION_PILL[row.kind] ?? 'dya-tag',
-                    row.kind.replace('_', ' ')
-                )
-                if (gone) withTip(pill, row.cardId)
-                kind.append(pill)
-
-                const first = el('td', 'dya-table__prose dya-table__subject', lead)
-                line.append(kind, first, el('td', undefined, rest))
-                line.append(el('td', 'dya-table__end', `${row.board} - ${when(row.at)}`))
-                logBody.appendChild(line)
+                const group = byCard.get(row.cardId) ?? []
+                group.push(row)
+                byCard.set(row.cardId, group)
+            }
+            for (const [cardId, rows] of byCard) {
+                const first = rows[0]
+                const gone = first.title === cardId
+                const heading = el('tr', 'kanban-decided-card')
+                const name = el('td', 'dya-table__subject', gone ? 'a card that is gone' : first.title)
+                name.colSpan = 2
+                if (gone) withTip(name, cardId)
+                heading.append(name, el('td', 'dya-table__end dya-meta', first.board))
+                logBody.appendChild(heading)
+                for (const row of rows) {
+                    const line = el('tr', 'dya-row')
+                    const kind = el('td', 'dya-table__fit')
+                    kind.append(el('span', DECISION_PILL[row.kind] ?? 'dya-tag', row.kind.replace('_', ' ')))
+                    line.append(
+                        kind,
+                        el('td', 'dya-table__prose', row.detail),
+                        el('td', 'dya-table__end dya-meta', when(row.at))
+                    )
+                    logBody.appendChild(line)
+                }
             }
             logTable.append(logBody)
             log.appendChild(logTable)

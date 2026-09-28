@@ -1,0 +1,80 @@
+import { useEffect, useRef, useState } from 'react'
+import { Svg } from '../components/Svg'
+import { getPanel, setToolbar } from './registry'
+
+const CLOSE_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
+
+interface ModalPanelProps {
+    id: string
+    onClose: () => void
+}
+
+/*
+ * A panel that is visited rather than worked in, such as Setup, opens over the window instead of
+ * taking a place in the dock: a scrim and the rest of the window inert behind it, its name, its
+ * own actions and a close key at the top, and Escape or a click outside to leave. It is the same
+ * mount a docked panel gets, so the plugin cannot tell the difference.
+ */
+export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element | null {
+    const body = useRef<HTMLDivElement>(null)
+    const tools = useRef<HTMLDivElement>(null)
+    const registered = getPanel(id)
+    const [title, setTitle] = useState(registered?.descriptor.title ?? '')
+
+    useEffect(() => {
+        const container = body.current
+        if (!registered || !container) return
+        const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+        const toolbar = document.createElement('div')
+        toolbar.className = 'dya-toolbar panel-toolbar'
+        tools.current?.replaceChildren(toolbar)
+        setToolbar(id, toolbar)
+        const dispose = registered.mount(container, {
+            instanceId: id,
+            toolbar,
+            close: onClose,
+            setTitle: (next) => setTitle(next ?? registered.descriptor.title)
+        })
+        const onKey = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape' && !event.defaultPrevented) onClose()
+        }
+        document.addEventListener('keydown', onKey)
+        return () => {
+            document.removeEventListener('keydown', onKey)
+            setToolbar(id, null)
+            dispose?.()
+            container.replaceChildren()
+            opener?.focus()
+        }
+    }, [id])
+
+    if (!registered) return null
+
+    return (
+        <>
+            <div className="dya-scrim shell-modal-scrim" onClick={onClose} />
+            <section
+                className="dya-sheet dya-sheet--modal shell-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-label={title}
+            >
+                <header className="dya-toolbar shell-modal-head">
+                    <Svg className="dya-glyph shell-modal-mark" svg={registered.descriptor.icon} />
+                    <span className="dya-title">{title}</span>
+                    <div className="shell-modal-tools" ref={tools} />
+                    <button
+                        type="button"
+                        className="dya-key"
+                        aria-label="Close"
+                        title="Close"
+                        onClick={onClose}
+                        dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
+                    />
+                </header>
+                <div ref={body} className="dya-pane shell-modal-body" />
+            </section>
+        </>
+    )
+}

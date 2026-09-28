@@ -8,8 +8,13 @@ interface OpenResult {
     src?: string
 }
 
+/*
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * an aulos, the double pipe the phalanx marched to.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ */
 const PLAYER_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(18 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" fill="#eceef2"/><circle cx="5" cy="10.4" r=".55" fill="#0a0a0b"/><circle cx="5" cy="13" r=".55" fill="#0a0a0b"/><circle cx="5" cy="15.6" r=".55" fill="#0a0a0b"/></g><g transform="rotate(48 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" fill="#eceef2"/><circle cx="5" cy="10.4" r=".55" fill="#0a0a0b"/><circle cx="5" cy="13" r=".55" fill="#0a0a0b"/><circle cx="5" cy="15.6" r=".55" fill="#0a0a0b"/></g><rect x="3.2" y="18.4" width="3.8" height="2.6" rx=".6" fill="#eceef2" transform="rotate(33 5 20)"/><path d="M3.4 21.4 1.8 23" stroke="#eceef2" stroke-width="1.6" stroke-linecap="round"/></svg>'
 
 const STYLES = `
 .player {
@@ -17,32 +22,12 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.player-header {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
-    padding: var(--dya-space-2) var(--dya-space-3);
-}
-.player-header[hidden] {
-    display: none;
-}
-.player-name {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 .player-invite {
     max-width: 420px;
     padding: 0;
 }
 .player-tile {
     width: 100%;
-}
-.player-tile .dya-tile__icon {
-    width: 22px;
-    height: 22px;
 }
 .player-stage {
     flex: 1;
@@ -86,26 +71,19 @@ export function activate(ctx: PluginContext): void {
             icon: PLAYER_ICON,
             duplicable: true
         },
-        (container) => {
+        (container, handle) => {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'player'
 
             /*
-             * The bar names what is open, so it is there once something is. With nothing open the
-             * offer is the panel itself and a bar holding one control and a rule is a fragment of
-             * an interface above a void.
+             * What is playing is the tab's title, and the key that opens another sits in the tab
+             * row once something is open. With nothing open the tile in the panel is the way in.
              */
-            const header = document.createElement('div')
-            header.className = 'player-header'
-            const name = document.createElement('span')
-            name.className = 'dya-mono player-name'
-            header.append(name)
-
             const stage = document.createElement('div')
             stage.className = 'player-stage'
-            root.append(header, stage)
+            root.append(stage)
             container.appendChild(root)
 
             let busy = false
@@ -133,8 +111,8 @@ export function activate(ctx: PluginContext): void {
              * to do next.
              */
             function showEmpty(message?: string): void {
-                name.textContent = ''
-                header.hidden = true
+                handle.setTitle(null)
+                open.hidden = true
 
                 const invite = document.createElement('div')
                 invite.className = 'dya-empty player-invite'
@@ -172,8 +150,8 @@ export function activate(ctx: PluginContext): void {
                     media.autoplay = true
                     media.src = result.src
                     media.onerror = () => showEmpty('Cannot play that file')
-                    name.textContent = result.name ?? ''
-                    header.hidden = false
+                    handle.setTitle(result.name ?? null)
+                    open.hidden = false
                     stage.replaceChildren(media)
                 } catch {
                     showEmpty('Cannot open that file')
@@ -182,7 +160,8 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
-            header.append(openButton())
+            const open = openButton()
+            handle.toolbar.append(open)
             showEmpty()
 
             return () => {

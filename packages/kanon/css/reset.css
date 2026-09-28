@@ -24,7 +24,15 @@ body {
     font-size: var(--dya-size-body);
     font-weight: var(--dya-weight);
     line-height: var(--dya-leading-body);
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font-variant-numeric: tabular-nums;
 }
 
 ::selection {

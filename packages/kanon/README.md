@@ -6,11 +6,11 @@ JavaScript. This file is the authority over the CSS; the before and after of a c
 ```text
 css/dyarchia.css     the only entry point; imports the five below, in this order
 css/fonts.css        the @font-face declarations
-css/tokens.css       the one theme, graphite, on :root
+css/tokens.css       the one theme, black metal, on :root
 css/reset.css        normalisation, [hidden], the ground, focus ring, scrollbars, reduced motion
 css/motion.css       the keyframes
 css/components.css   the dya-* classes
-fonts/               IBM Plex Sans 300/400/500, Plex Mono 400/500, Spectral 300/500
+fonts/               Inter 300-500 variable, Plex Mono 400/500, Spectral 300/500
 tools/               contrast.py measures, palette.py lifts the six colours to lights and inks
 ```
 
@@ -23,20 +23,28 @@ is prefixed `--dya-`, every keyframe and class `dya-`. The CSS never consults `p
 glass   the panel, and only the panel: translucent white over the grain, no blur; brighter at the
         top, under a chrome rim lit from above, cut from the ground by a black line and a shadow
 key     every control: flat face, 3px corners, a hard 3px edge underneath; pressed, it drops 2px
-pill    every piece of information: round, words in the mono; never pressable
+pill    every piece of information: round, words in the sans; never pressable
 light   status, and only status: a green, yellow or red dot inside a pill or around a key
 ```
 
-Spectral is the brand and the one big figure, Plex Sans the interface, Plex Mono the data. Nothing
-inside a panel is divided by a horizontal line. `--dya-halo` means here: the open tab, the focused field.
+Black and white, and one light. The ground is black (`#0a0a0b`) with a dark crimson light
+(`--dya-light-in`, `#7f1d1d`) coming in at two corners; the glass lets it through, which is what
+makes a panel read as glass over metal. Crimson is that light and nothing else: never a key, a word
+or a line. The primary key is light steel; the open tab's line and the focus ring are silver.
+Nothing glows. Text has two inks, near white and muted.
+
+Spectral is the brand, full size only on the empty window and small beside the version otherwise.
+Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code, nothing else.
+Nothing inside a panel is divided by a horizontal line.
 
 ## Colour and contrast
 
 - **Six colours and no others**: blue, purple, orange, green, yellow, red, each a light
   `--dya-<name>` for what is not text and an `-ink` that is text on every ground.
 - **Green is success, yellow warning, red error, always.** Blue, purple and orange are the only
-  categorical hues (`hue--<name>`, assigned by `ctx.hues`): a pill's word, a dot beside a name, a
-  glyph; never a fill, never a dot inside a pill. **Plugins have no hue**; a brand mark keeps its own.
+  categorical hues (`hue--<name>`, assigned by `ctx.hues`): a dot beside a name or a glyph; never
+  a pill's word, a fill or a dot inside a pill. A pill that informs is neutral. **Plugins have no
+  hue**; a brand mark keeps its own.
 - **An ink under 4.50 against what it sits on is not text**; above 3.00 it may be a graphical
   object. `--dya-text-4` is the quietest ink, 4.61 at the least. Lights are never text;
   `--dya-text-off`, the word on a disabled key, is exempt.
@@ -62,9 +70,10 @@ inside a panel is divided by a horizontal line. `--dya-halo` means here: the ope
 
 ## Keys and layout
 
-- **Lit keys**: `button--primary` silver, at most one per view; `button--success` green, go and
-  make; `button--danger` red, stop and unmake; `key--success` and `key--danger` their icon forms.
-  **Green makes and red unmakes a board, a card, a target**, and nothing else.
+- **One primary per view**: `button--primary` and `key--primary`, light steel with black words,
+  the action the view is about: run, make, install, finish. `button--success` and `key--success`
+  are lit green for approve; `button--danger` and `key--danger` lit red for stop and unmake. No key
+  glows, and no key is crimson.
 - **A state a person answers is one key**: `button--resolve` names the state in red and, under the
   pointer or focus, its answer in green (`__state`, `__answer` share one cell, so it never moves).
 - **An action with a known glyph is an icon key** with a tip, never a `button` spelling the verb.
@@ -78,9 +87,9 @@ inside a panel is divided by a horizontal line. `--dya-halo` means here: the ope
 
 ```text
 Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead brand carved splitter sheet (--side --modal)
+             --pending --ghosted --carried) card__header masthead brand (--sm) carved splitter sheet (--side --modal)
              well lanes lane (--accept --refuse) drop-line drop-box
-Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--active --success --danger)
+Keys         button (--primary --success --danger --resolve --quiet --sm --xs __state __answer) key (--primary --active --success --danger --sm)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)
 Layout       grid (--gallery) subgrid col-<n> col-sm-<n> col-md-<n> col-lg-<n>
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)

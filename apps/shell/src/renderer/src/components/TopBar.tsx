@@ -6,7 +6,6 @@ interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
     onToggle: (id: string) => void
-    wordmark: boolean
 }
 
 const MINIMIZE_ICON =
@@ -52,7 +51,7 @@ function TipKey({
     return (
         <>
             <button
-                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}`}
+                className={`${className ?? 'dya-key dya-key--sm'}${active ? ' dya-key--active' : ''}`}
                 aria-label={label}
                 aria-pressed={expanded === undefined ? active : undefined}
                 aria-haspopup={expanded === undefined ? undefined : 'menu'}
@@ -137,10 +136,10 @@ function Build(): React.JSX.Element {
     const tip = failure ? `Check failed: ${failure}` : at ? `Checked ${at}` : 'Check for updates'
 
     return (
-        <div className="topbar-build">
+        <>
             <button
                 type="button"
-                className="dya-button dya-button--quiet topbar-alpha"
+                className="dya-button dya-button--quiet dya-button--xs topbar-alpha"
                 interestfor={id}
                 disabled={phase === 'checking' || phase === 'unsupported'}
                 onClick={check}
@@ -161,26 +160,26 @@ function Build(): React.JSX.Element {
             )}
             {phase === 'available' && (
                 <button
-                    className="dya-button dya-button--sm topbar-update"
+                    className="dya-button dya-button--xs topbar-update"
                     onClick={() => act('shell:update:download')}
                 >
                     Update to {update?.version}
                 </button>
             )}
             {phase === 'downloading' && (
-                <button className="dya-button dya-button--sm topbar-update" disabled>
+                <button className="dya-button dya-button--xs topbar-update" disabled>
                     Downloading {update?.percent ?? 0}%
                 </button>
             )}
             {phase === 'ready' && (
                 <button
-                    className="dya-button dya-button--success dya-button--sm topbar-update"
+                    className="dya-button dya-button--primary dya-button--xs topbar-update"
                     onClick={() => act('shell:update:install')}
                 >
                     Restart to finish
                 </button>
             )}
-        </div>
+        </>
     )
 }
 
@@ -203,8 +202,7 @@ function windowAction(action: string): void {
 export function TopBar({
     panels,
     openPanelIds,
-    onToggle,
-    wordmark
+    onToggle
 }: TopBarProps): React.JSX.Element {
     const [menuOpen, setMenuOpen] = useState(false)
     const overflowRef = useRef<HTMLDivElement>(null)
@@ -236,8 +234,10 @@ export function TopBar({
 
     return (
         <div className="dya-bar dya-bar--flush topbar">
-            <Build />
-            {wordmark && <span className="dya-brand topbar-brand">Dyarchia desktop</span>}
+            <div className="topbar-build">
+                <span className="dya-brand dya-brand--sm">Dyarchia</span>
+                <Build />
+            </div>
             <div className="topbar-right">
                 <div className="topbar-actions">
                     {visible.map((panel) => (

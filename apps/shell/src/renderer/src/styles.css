@@ -6,9 +6,10 @@ body,
 }
 
 /*
- * The ground the glass sits on: an even near-black under a fine grain. The panels are
- * translucent, so the grain is what shows through them and reads as frosted, and no panel needs
- * a `backdrop-filter`. The grain is a static image, painted once.
+ * The ground the glass sits on: black, under a fine grain, with a dark crimson light coming in at
+ * two corners. The panels are translucent, so the grain and that light are what show through them
+ * and make them read as glass over metal rather than as grey, and no panel needs a
+ * `backdrop-filter`. Both are static images, painted once.
  */
 .shell {
     position: relative;
@@ -16,7 +17,7 @@ body,
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--dya-ground);
+    background: var(--dya-light-in), var(--dya-ground);
 }
 
 .shell::before {
@@ -30,68 +31,36 @@ body,
 }
 
 /*
- * Three columns, so the wordmark sits on the centre of the window whatever the two sides hold:
- * the build on the left, the keys on the right. On the launcher the wordmark is the page itself
- * and the bar leaves its column empty.
+ * The title bar is 32px and holds three things: the name and the build on the left, the panel keys
+ * and the window's own keys on the right. The large wordmark belongs to the empty window alone.
  */
 .topbar {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--dya-size-bar);
+    min-height: var(--dya-size-bar);
     padding-block: 0;
-    padding-left: var(--dya-space-2);
+    padding-left: var(--dya-space-3);
     -webkit-app-region: drag;
     user-select: none;
 }
 
-/*
- * The build and what can be done about it. The auto margin is on the group rather than on the
- * version, because the version stopped being the last thing on this side of the bar the moment an
- * update could offer itself beside it.
- */
 .topbar-build {
     display: flex;
     align-items: center;
-    gap: var(--dya-space-2);
-    grid-column: 1;
-    justify-self: start;
+    gap: var(--dya-space-3);
     min-width: 0;
-    margin-left: var(--dya-space-2);
 }
 
-.topbar-brand {
-    grid-column: 2;
-}
-
-.topbar-alpha {
-    flex: none;
-    white-space: nowrap;
-    -webkit-app-region: no-drag;
-}
-
+.topbar-alpha,
 .topbar-update {
     flex: none;
     white-space: nowrap;
     -webkit-app-region: no-drag;
 }
 
-/*
- * The wordmark is what gives way when the window is narrow. It is the one thing in this bar that
- * is decoration: the version tag states which build this is and every key is a control, so the
- * word is the only piece that can go without taking information with it.
- *
- * A media query rather than a container query, and this is the one place that is right: the
- * title bar is the window, so the window width is the question being asked. Everything inside
- * a panel asks the pane instead.
- */
-@media (max-width: 1100px) {
-    .topbar-brand {
-        display: none;
-    }
-}
-
 .topbar-right {
-    grid-column: 3;
-    justify-self: end;
     display: flex;
     align-items: center;
     height: 100%;
@@ -100,8 +69,8 @@ body,
 .topbar-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding-right: var(--dya-space-4);
+    gap: var(--dya-space-1);
+    padding-right: var(--dya-space-3);
     padding-bottom: 3px;
     -webkit-app-region: no-drag;
 }
@@ -129,8 +98,8 @@ body,
 .topbar-icon,
 .topbar-icon svg {
     display: block;
-    width: 15px;
-    height: 15px;
+    width: 13px;
+    height: 13px;
 }
 
 .topbar-window-controls {
@@ -213,7 +182,7 @@ body,
  * than as two boundaries, so the rule inside the panel is the one that stays.
  */
 .dv-shell.dockview-theme-abyss-spaced .dv-tabs-and-actions-container {
-    background: transparent;
+    background: var(--dya-steel-band);
     border-radius: var(--dya-radius-chassis) var(--dya-radius-chassis) 0 0;
     padding-inline: var(--dya-space-2);
 }
@@ -260,10 +229,10 @@ body,
 
 /*
  * Every group shows one of its tabs, but only one group is the one the window is working in, and
- * only its tab is here. The others keep the top ink and lose the halo.
+ * only its tab carries the silver underline. The others keep the top ink and the weight.
  */
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
-    text-shadow: var(--dya-halo-text);
+    box-shadow: inset 0 -2px 0 var(--dya-accent);
 }
 
 .panel-tab-actions {

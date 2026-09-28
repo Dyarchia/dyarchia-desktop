@@ -39,7 +39,8 @@ marked                             MIT            markdown in the reader
 DOMPurify, by Cure53               MPL-2.0 or     sanitises that markdown before it is shown
                                    Apache-2.0
 highlight.js                       BSD-3-Clause   the colour of code everywhere it is shown
-IBM Plex Sans, IBM Plex Mono       OFL 1.1        the interface and data faces
+Inter                              OFL 1.1        the interface face
+IBM Plex Mono                      OFL 1.1        paths and code
 Spectral                           OFL 1.1        the brand face
 Lobe Icons, by LobeHub             MIT            the marks of the agent CLIs
 @ghostery/adblocker, by Ghostery,  MPL-2.0        blocks ads and trackers in the browser

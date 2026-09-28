@@ -19,7 +19,7 @@
     --dya-space-16: 96px;
     --dya-space-24: 160px;
 
-    --dya-font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --dya-font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --dya-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
     --dya-font-serif: "Spectral", Georgia, "Times New Roman", serif;
 
@@ -41,9 +41,12 @@
     --dya-size-label-sm: 10.5px;
     --dya-size-pill: 11.5px;
     --dya-size-brand: 30px;
+    --dya-size-brand-sm: 13px;
 
     --dya-size-control: 34px;
     --dya-size-control-sm: 28px;
+    --dya-size-control-xs: 24px;
+    --dya-size-bar: 32px;
 
     --dya-tracking-ui: 0;
     --dya-tracking-key: -0.005em;
@@ -61,32 +64,37 @@
     --dya-leading-loose: 165%;
     --dya-leading-log: 160%;
 
-    --dya-bg: #0a0b0d;
-    --dya-sunken: #0c0d0e;
-    --dya-chassis: #0e0f11;
-    --dya-surface-1: #161719;
-    --dya-surface-2: #1c1e21;
-    --dya-flat-hover: #202124;
-    --dya-raised: #1f2125;
-    --dya-overlay: #141518;
-    --dya-raised-hover: #23262a;
-    --dya-selected: #2a2d32;
-    --dya-disabled: #1a1b1e;
-    --dya-scrim: #0a0b0df0;
+    --dya-bg: #0a0a0b;
+    --dya-sunken: #070708;
+    --dya-chassis: #0d0e10;
+    --dya-surface-1: #121316;
+    --dya-surface-2: #17181c;
+    --dya-flat-hover: #1b1c21;
+    --dya-raised: #1a1b1f;
+    --dya-overlay: #111215;
+    --dya-raised-hover: #202227;
+    --dya-selected: #25272d;
+    --dya-disabled: #151619;
+    --dya-scrim: #0a0a0bf0;
 
-    --dya-ground: #0a0b0d;
+    --dya-ground: #0a0a0b;
+    --dya-light-in:
+        radial-gradient(50% 46% at 86% 2%, #7f1d1d59, #7f1d1d00 72%),
+        radial-gradient(40% 46% at 4% 98%, #7f1d1d38, #7f1d1d00 72%);
     --dya-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 
-    --dya-glass: linear-gradient(180deg, #ffffff15, #ffffff09 56px, #ffffff05 40%, #ffffff04);
-    --dya-glass-card: linear-gradient(180deg, #ffffff09, #ffffff03);
-    --dya-glass-pill: linear-gradient(180deg, #ffffff0f, #ffffff05);
+    --dya-glass: linear-gradient(180deg, #d6e2f20f, #d6e2f205 56px, #d6e2f203 40%, #d6e2f202);
+    --dya-glass-card: linear-gradient(180deg, #d6e2f209, #d6e2f203);
+    --dya-glass-pill: linear-gradient(180deg, #d6e2f20d, #d6e2f204);
+    --dya-steel: linear-gradient(180deg, #ffffff0d, #ffffff03 55%, #00000026);
+    --dya-steel-band: linear-gradient(180deg, #ffffff0a, #ffffff02 70%, #ffffff00);
     --dya-glass-edge: linear-gradient(180deg, #ffffff4d, #ffffff29 32px, #ffffff0f 30%, #ffffff05 62%, #ffffff12);
     --dya-glass-hover: #ffffff05;
     --dya-glass-press: #ffffff0d;
 
-    --dya-text: #e6e8ec;
-    --dya-text-2: #c4c8cf;
-    --dya-text-3: #a3a8b2;
+    --dya-text: #eceef2;
+    --dya-text-2: #eceef2;
+    --dya-text-3: #9499a3;
     --dya-text-4: #9499a3;
     --dya-text-off: #6b717c;
 
@@ -98,9 +106,15 @@
     --dya-pill-border: #ffffff17;
     --dya-dashed: #ffffff1c;
 
-    --dya-accent: #c9ced6;
-    --dya-accent-soft: #c9ced61f;
-    --dya-on-accent: #0a0b0d;
+    --dya-accent: #d7dbe1;
+    --dya-accent-soft: #d7dbe12e;
+    --dya-on-accent: #0a0a0b;
+
+    --dya-primary: linear-gradient(180deg, #f4f5f7, #d3d7dd 55%, #bcc1c9);
+    --dya-primary-hover: linear-gradient(180deg, #ffffff, #dde1e6 55%, #c7ccd3);
+    --dya-primary-border: #e8eaee;
+    --dya-primary-edge: #5d626b;
+    --dya-on-primary: #0a0a0b;
 
     --dya-blue: #1970fd;
     --dya-purple: #8559f9;
@@ -153,9 +167,6 @@
     --dya-code-comment: #9499a3;
     --dya-code-punct: #a3a8b2;
 
-    --dya-halo: 0 0 22px -4px #c9ced6b3;
-    --dya-halo-text: 0 0 12px #c9ced680;
-
     --dya-carve-filter:
         drop-shadow(0 -1px 0 #000000e6)
         drop-shadow(0 1px 0 #ffffff17);
@@ -191,8 +202,7 @@
 
     --dya-elev-focus:
         inset 0 1px 3px #00000099,
-        0 0 0 1px var(--dya-focus),
-        var(--dya-halo);
+        0 0 0 1px var(--dya-focus);
 
     --dya-elev-popover:
         inset 0 1px 0 #ffffff0f,
@@ -201,8 +211,6 @@
     --dya-elev-overlay:
         inset 0 1px 0 #ffffff0f,
         0 24px 48px -12px #000000e6;
-
-    --dya-glow: 0 0 22px -4px;
 
     --dya-focus: #9a9fa8;
 

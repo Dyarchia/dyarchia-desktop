@@ -43,10 +43,6 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.docviewer-header[hidden],
-.docviewer-library[hidden] {
-    display: none;
-}
 .docviewer-library-head {
     display: flex;
     align-items: center;

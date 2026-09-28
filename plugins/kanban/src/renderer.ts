@@ -380,7 +380,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     boardButton.type = 'button'
     withTip(boardButton, 'Boards')
     const newBoardKey = key('plus', 'New board')
-    newBoardKey.classList.add('dya-key--success')
     const settingsKey = key('sliders', 'Settings')
     settingsKey.hidden = true
     const treesKey = key('branch', 'Worktrees')
@@ -637,7 +636,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const empty = el('div', 'dya-drop-box kanban-drop')
 
         if (status === 'triage') {
-            const plus = el('button', 'dya-key dya-key--success kanban-new-key')
+            const plus = el('button', 'dya-key dya-key--primary kanban-new-key')
             plus.innerHTML = ICONS.plus
             plus.type = 'button'
             plus.setAttribute('aria-label', 'new card')
@@ -648,7 +647,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             field.type = 'text'
             field.placeholder = 'card title'
             const confirm = key('check', 'Add')
-            confirm.classList.add('dya-key--success')
+            confirm.classList.add('dya-key--primary')
             draft.append(field, confirm)
             const dismiss = (): void => {
                 field.value = ''
@@ -1006,7 +1005,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const browse = key('folder', 'choose the directory')
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button dya-button--success', 'create board')
+        const create = el('button', 'dya-button dya-button--primary', 'create board')
         create.type = 'button'
 
         browse.addEventListener('click', () => {
@@ -1410,7 +1409,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.append(grid)
 
         const actions = el('div', 'dya-form__actions')
-        const make = el('button', 'dya-button dya-button--success', 'new board')
+        const make = el('button', 'dya-button dya-button--primary', 'new board')
         make.type = 'button'
         make.addEventListener('click', () => newBoard())
         actions.append(make)

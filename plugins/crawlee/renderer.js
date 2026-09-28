@@ -657,7 +657,7 @@ function mount(ctx, container) {
         const scopeGroup = el('div', 'dya-bar__group')
         scopeGroup.append(el('span', 'dya-eyebrow', 'round'), scopeBox)
 
-        const run = iconKey(PLAY, 'Run', 'dya-key--success')
+        const run = iconKey(PLAY, 'Run', 'dya-key--primary')
         const stop = iconKey(STOP, 'Stop', 'dya-key--danger')
         stop.hidden = true
         const actionGroup = el('div', 'dya-bar__group')

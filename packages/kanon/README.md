@@ -30,10 +30,9 @@ light   status, and only status: a green, yellow or red dot inside a pill or aro
 Black and white, and one light. The ground is black (`#0a0a0b`) with a dark crimson light
 (`--dya-light-in`, `#7f1d1d`) coming in at two corners; the glass lets it through, which is what
 makes a panel read as glass over metal. Crimson is that light and nothing else: never a key, a word
-or a line. The primary key is steel; the open tab's line and the focus ring are silver. Plugin
-marks are black, garnet and white.
-Nothing glows. Text has two inks, near white and muted. Spectral is the brand, full size only on the
-empty window; Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code.
+or a line. The primary key is steel; the open tab's line and the focus ring are silver; plugin
+marks are black, garnet and white. Nothing glows. Text has two inks, near white and muted. Spectral
+is the brand; Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code.
 
 ## Colour and contrast
 

@@ -989,138 +989,50 @@ textarea.dya-field {
 }
 
 /*
- * Everything is laid out on twelve columns: the grid is `grid`, a child spans all twelve unless it
- * says otherwise, and `col-<n>` takes n of them. The columns are the container's, never the
- * window's, and the tiers are the widths of the nearest pane: `col-sm-<n>` from 400px, `col-md-<n>`
- * from 700px, `col-lg-<n>` from 1200px, each overriding the one below, so the same markup is one
- * column in a narrow panel and several side by side in a wide one. A sheet, a drawer, anything
- * that is its own width declares itself a `pane` and what is inside it answers to it.
- *
- * A grid inside a grid is `subgrid`: it keeps the twelve columns it sits on rather than dividing
- * its own span again, so a cell three columns into a nested row is three columns into the view.
+ * A grid is a gallery of things of one kind, tiles, boards, targets, each of a fixed width. A wider
+ * pane holds more of them to a row and never makes them wider. There is no column system: a panel
+ * is not a page, and what it shows beside what is decided by the panel, region by region.
  */
 .dya-grid {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 280px));
     align-content: start;
     gap: var(--dya-space-3);
 }
 
-.dya-grid > *,
-.dya-subgrid > * {
-    grid-column: span 12;
+.dya-grid > * {
     min-width: 0;
 }
 
-.dya-subgrid {
-    display: grid;
-    grid-template-columns: subgrid;
+.dya-grid > .dya-empty {
+    grid-column: 1 / -1;
 }
 
 /*
- * A gallery is the twelve columns shared out evenly among things of one kind: tiles, boards,
- * targets. One to a row in a narrow pane, two from 400px, three from 700px, four from 1200px.
- * The share is the grid's, so every tile in it is as wide as every other.
- */
-.dya-grid--gallery > * {
-    grid-column: span 12;
-}
-
-@container pane (min-width: 400px) {
-    .dya-grid--gallery > * { grid-column: span 6; }
-}
-
-@container pane (min-width: 700px) {
-    .dya-grid--gallery > * { grid-column: span 4; }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-grid--gallery > * { grid-column: span 3; }
-}
-
-.dya-grid > .dya-col-1, .dya-subgrid > .dya-col-1 { grid-column: span 1; }
-.dya-grid > .dya-col-2, .dya-subgrid > .dya-col-2 { grid-column: span 2; }
-.dya-grid > .dya-col-3, .dya-subgrid > .dya-col-3 { grid-column: span 3; }
-.dya-grid > .dya-col-4, .dya-subgrid > .dya-col-4 { grid-column: span 4; }
-.dya-grid > .dya-col-5, .dya-subgrid > .dya-col-5 { grid-column: span 5; }
-.dya-grid > .dya-col-6, .dya-subgrid > .dya-col-6 { grid-column: span 6; }
-.dya-grid > .dya-col-7, .dya-subgrid > .dya-col-7 { grid-column: span 7; }
-.dya-grid > .dya-col-8, .dya-subgrid > .dya-col-8 { grid-column: span 8; }
-.dya-grid > .dya-col-9, .dya-subgrid > .dya-col-9 { grid-column: span 9; }
-.dya-grid > .dya-col-10, .dya-subgrid > .dya-col-10 { grid-column: span 10; }
-.dya-grid > .dya-col-11, .dya-subgrid > .dya-col-11 { grid-column: span 11; }
-.dya-grid > .dya-col-12, .dya-subgrid > .dya-col-12 { grid-column: span 12; }
-
-@container pane (min-width: 400px) {
-    .dya-grid > .dya-col-sm-1, .dya-subgrid > .dya-col-sm-1 { grid-column: span 1; }
-    .dya-grid > .dya-col-sm-2, .dya-subgrid > .dya-col-sm-2 { grid-column: span 2; }
-    .dya-grid > .dya-col-sm-3, .dya-subgrid > .dya-col-sm-3 { grid-column: span 3; }
-    .dya-grid > .dya-col-sm-4, .dya-subgrid > .dya-col-sm-4 { grid-column: span 4; }
-    .dya-grid > .dya-col-sm-5, .dya-subgrid > .dya-col-sm-5 { grid-column: span 5; }
-    .dya-grid > .dya-col-sm-6, .dya-subgrid > .dya-col-sm-6 { grid-column: span 6; }
-    .dya-grid > .dya-col-sm-7, .dya-subgrid > .dya-col-sm-7 { grid-column: span 7; }
-    .dya-grid > .dya-col-sm-8, .dya-subgrid > .dya-col-sm-8 { grid-column: span 8; }
-    .dya-grid > .dya-col-sm-9, .dya-subgrid > .dya-col-sm-9 { grid-column: span 9; }
-    .dya-grid > .dya-col-sm-10, .dya-subgrid > .dya-col-sm-10 { grid-column: span 10; }
-    .dya-grid > .dya-col-sm-11, .dya-subgrid > .dya-col-sm-11 { grid-column: span 11; }
-    .dya-grid > .dya-col-sm-12, .dya-subgrid > .dya-col-sm-12 { grid-column: span 12; }
-}
-
-@container pane (min-width: 700px) {
-    .dya-grid > .dya-col-md-1, .dya-subgrid > .dya-col-md-1 { grid-column: span 1; }
-    .dya-grid > .dya-col-md-2, .dya-subgrid > .dya-col-md-2 { grid-column: span 2; }
-    .dya-grid > .dya-col-md-3, .dya-subgrid > .dya-col-md-3 { grid-column: span 3; }
-    .dya-grid > .dya-col-md-4, .dya-subgrid > .dya-col-md-4 { grid-column: span 4; }
-    .dya-grid > .dya-col-md-5, .dya-subgrid > .dya-col-md-5 { grid-column: span 5; }
-    .dya-grid > .dya-col-md-6, .dya-subgrid > .dya-col-md-6 { grid-column: span 6; }
-    .dya-grid > .dya-col-md-7, .dya-subgrid > .dya-col-md-7 { grid-column: span 7; }
-    .dya-grid > .dya-col-md-8, .dya-subgrid > .dya-col-md-8 { grid-column: span 8; }
-    .dya-grid > .dya-col-md-9, .dya-subgrid > .dya-col-md-9 { grid-column: span 9; }
-    .dya-grid > .dya-col-md-10, .dya-subgrid > .dya-col-md-10 { grid-column: span 10; }
-    .dya-grid > .dya-col-md-11, .dya-subgrid > .dya-col-md-11 { grid-column: span 11; }
-    .dya-grid > .dya-col-md-12, .dya-subgrid > .dya-col-md-12 { grid-column: span 12; }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-grid > .dya-col-lg-1, .dya-subgrid > .dya-col-lg-1 { grid-column: span 1; }
-    .dya-grid > .dya-col-lg-2, .dya-subgrid > .dya-col-lg-2 { grid-column: span 2; }
-    .dya-grid > .dya-col-lg-3, .dya-subgrid > .dya-col-lg-3 { grid-column: span 3; }
-    .dya-grid > .dya-col-lg-4, .dya-subgrid > .dya-col-lg-4 { grid-column: span 4; }
-    .dya-grid > .dya-col-lg-5, .dya-subgrid > .dya-col-lg-5 { grid-column: span 5; }
-    .dya-grid > .dya-col-lg-6, .dya-subgrid > .dya-col-lg-6 { grid-column: span 6; }
-    .dya-grid > .dya-col-lg-7, .dya-subgrid > .dya-col-lg-7 { grid-column: span 7; }
-    .dya-grid > .dya-col-lg-8, .dya-subgrid > .dya-col-lg-8 { grid-column: span 8; }
-    .dya-grid > .dya-col-lg-9, .dya-subgrid > .dya-col-lg-9 { grid-column: span 9; }
-    .dya-grid > .dya-col-lg-10, .dya-subgrid > .dya-col-lg-10 { grid-column: span 10; }
-    .dya-grid > .dya-col-lg-11, .dya-subgrid > .dya-col-lg-11 { grid-column: span 11; }
-    .dya-grid > .dya-col-lg-12, .dya-subgrid > .dya-col-lg-12 { grid-column: span 12; }
-}
-
-/*
- * A form is the twelve columns with one rule: what a field is called, and the field. A label
- * takes the first three columns and its value the other nine, two and ten from 700px, one and
- * eleven from 1200px, so the label column stays about as wide as its longest word; in a pane
- * narrower than 400px the label stands over its value and both take all twelve. Every row of a view is a row of the one
- * form, so every value starts on the same column: a key that adds a file, the pills it added and
- * a thread with the field under it are values, never words set after their label. A label stands
- * against the first line of its value, however tall the value is.
+ * A form is two columns: what a field is called, as wide as the longest label, and the field, as
+ * wide as it needs up to 560px. In a pane narrower than 400px the label stands over its value.
+ * Every row of a view is a row of the one form, so every value starts on the same line: a key that
+ * adds a file, the pills it added and a thread with the field under it are values, never words
+ * set after their label. A label stands against the first line of its value, however tall.
  *
  * A label names; the sentence behind it is a tip on the label, which is where an explanation that
  * is not always needed belongs.
  */
 .dya-form {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: max-content minmax(0, 560px);
     align-items: center;
-    gap: var(--dya-space-3);
+    column-gap: var(--dya-space-5);
+    row-gap: var(--dya-space-3);
 }
 
 .dya-form > * {
-    grid-column: 1 / -1;
+    grid-column: 2;
     min-width: 0;
 }
 
 .dya-form > .dya-label {
+    grid-column: 1;
     justify-self: start;
     align-self: start;
     display: inline-flex;
@@ -1128,33 +1040,14 @@ textarea.dya-field {
     min-height: var(--dya-size-control);
 }
 
-@container pane (min-width: 400px) {
-    .dya-form > * {
-        grid-column: 4 / -1;
+@container pane (max-width: 399.98px) {
+    .dya-form {
+        grid-template-columns: minmax(0, 1fr);
     }
 
+    .dya-form > *,
     .dya-form > .dya-label {
-        grid-column: 1 / 4;
-    }
-}
-
-@container pane (min-width: 700px) {
-    .dya-form > * {
-        grid-column: 3 / -1;
-    }
-
-    .dya-form > .dya-label {
-        grid-column: 1 / 3;
-    }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-form > * {
-        grid-column: 2 / -1;
-    }
-
-    .dya-form > .dya-label {
-        grid-column: 1 / 2;
+        grid-column: 1;
     }
 }
 
@@ -1178,18 +1071,17 @@ textarea.dya-field {
 }
 
 /*
- * A value divided on the form's own columns, three to a cell, so a row of headings stands column
- * for column over the rows it names. `col-<n>` on a cell changes its share. Three cells fill the
- * value at every width: 3 3 3 of nine, 3 3 4 of ten, 4 4 3 of eleven.
+ * A value divided in three equal cells, so a row of headings stands column for column over the
+ * rows it names.
  */
 .dya-form > .dya-form__split {
     display: grid;
-    grid-template-columns: subgrid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: start;
+    gap: var(--dya-space-3);
 }
 
 .dya-form__split > * {
-    grid-column: span 3;
     min-width: 0;
 }
 
@@ -1197,28 +1089,6 @@ textarea.dya-field {
     display: inline-flex;
     align-items: center;
     min-height: var(--dya-size-control);
-}
-
-@container pane (max-width: 399.98px) {
-    .dya-form__split > * {
-        grid-column: span 4;
-    }
-}
-
-@container pane (min-width: 700px) {
-    .dya-form__split > :nth-child(3):last-child {
-        grid-column: span 4;
-    }
-}
-
-@container pane (min-width: 1200px) {
-    .dya-form__split:has(> :nth-child(3):last-child) > * {
-        grid-column: span 4;
-    }
-
-    .dya-form__split > :nth-child(3):last-child {
-        grid-column: span 3;
-    }
 }
 
 /*

@@ -7,7 +7,8 @@ export const STYLES = `
 }
 
 .kanban-bar {
-    flex: none;
+    display: flex;
+    align-items: center;
     gap: var(--dya-space-2);
 }
 
@@ -24,7 +25,20 @@ export const STYLES = `
 
 .kanban-tips { display: contents; }
 
-.kanban-spacer { flex: 1; }
+/*
+ * Folding is there when a column is being looked at, not eight times over at rest. A folded
+ * column keeps its key, because it is the only way back.
+ */
+.kanban-fold {
+    opacity: 0;
+    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+}
+
+.kanban-column:hover .kanban-fold,
+.kanban-fold:focus-visible,
+.kanban-column[data-collapsed='true'] .kanban-fold {
+    opacity: 1;
+}
 
 .kanban-meta {
     flex: none;

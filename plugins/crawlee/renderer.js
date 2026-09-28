@@ -205,8 +205,8 @@ const STYLE = `
     min-height: 0;
 }
 /*
- * The targets, on the gallery's share of the twelve columns. A rail of names 210px wide made a
- * 1400px window 85% black, and told the reader nothing about a target except that it exists.
+ * The targets, as a gallery of cards of one width. A rail of names 210px wide made a 1400px window
+ * 85% black, and told the reader nothing about a target except that it exists.
  */
 .crw-grid {
     flex: 1;
@@ -1156,7 +1156,7 @@ function mount(ctx, container, handle) {
          * leave a list too narrow to read and an editor too narrow to write in, at every width
          * this panel is ever given.
          */
-        const grid = el('div', 'dya-grid dya-grid--gallery crw-grid')
+        const grid = el('div', 'dya-grid crw-grid')
         const scrim = el('div', 'dya-scrim')
         scrim.hidden = true
         const sheet = el('div', 'dya-sheet crw-sheet')
@@ -1446,7 +1446,7 @@ function mount(ctx, container, handle) {
 
                 for (const profile of profiles) grid.appendChild(targetCard(profile, byName.get(profile.name)))
             } catch (error) {
-                grid.replaceChildren(el('div', 'dya-empty dya-text--danger dya-col-12', reason(error)))
+                grid.replaceChildren(el('div', 'dya-empty dya-text--danger', reason(error)))
             }
         }
 

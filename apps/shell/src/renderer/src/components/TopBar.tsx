@@ -6,6 +6,7 @@ interface TopBarProps {
     panels: PanelDescriptor[]
     openPanelIds: Set<string>
     onToggle: (id: string) => void
+    brand: boolean
 }
 
 const MINIMIZE_ICON =
@@ -202,7 +203,8 @@ function windowAction(action: string): void {
 export function TopBar({
     panels,
     openPanelIds,
-    onToggle
+    onToggle,
+    brand
 }: TopBarProps): React.JSX.Element {
     const [menuOpen, setMenuOpen] = useState(false)
     const overflowRef = useRef<HTMLDivElement>(null)
@@ -235,7 +237,7 @@ export function TopBar({
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="topbar-build">
-                <span className="dya-brand dya-brand--sm">Dyarchia</span>
+                {brand && <span className="dya-brand dya-brand--sm">Dyarchia</span>}
                 <Build />
             </div>
             <div className="topbar-right">

@@ -76,8 +76,7 @@ const STYLES = `
 .docviewer-header {
     display: flex;
     align-items: center;
-    gap: var(--dya-space-3);
-    padding: var(--dya-space-2) var(--dya-space-3);
+    gap: var(--dya-space-2);
 }
 .docviewer-modes {
     display: flex;
@@ -90,13 +89,6 @@ const STYLES = `
     display: block;
     width: 13px;
     height: 13px;
-}
-.docviewer-name {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 .docviewer-content {
     flex: 1;
@@ -205,20 +197,19 @@ export function activate(ctx: PluginContext): void {
             icon: DOCS_ICON,
             duplicable: true
         },
-        (container) => {
+        (container, handle) => {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'docviewer'
 
             /*
-             * The bar names what is open, so it is there once something is. With nothing open the
-             * tile in the middle of the panel is the way in, and a bar repeating it is noise.
+             * The file's name is the tab's title, and what can be done to it sits in the tab row:
+             * the views, save, and the pages. With nothing open the tile in the middle of the
+             * panel is the way in, and the row is empty.
              */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
-            const name = document.createElement('span')
-            name.className = 'dya-mono docviewer-name'
             const modes = document.createElement('div')
             modes.className = 'docviewer-modes'
             modes.hidden = true
@@ -244,10 +235,11 @@ export function activate(ctx: PluginContext): void {
             save.setAttribute('aria-label', 'Save')
             save.hidden = true
 
-            header.append(name, unsaved, problem, modes, save)
+            header.append(unsaved, problem, modes, save)
 
             const content = document.createElement('div')
-            root.append(header, content)
+            handle.toolbar.append(header)
+            root.append(content)
             container.appendChild(root)
 
             let busy = false
@@ -352,7 +344,7 @@ export function activate(ctx: PluginContext): void {
              */
             function showEmpty(message?: string): void {
                 current = null
-                name.textContent = ''
+                handle.setTitle(null)
                 modes.hidden = true
                 header.hidden = true
                 saved = ''
@@ -631,7 +623,7 @@ export function activate(ctx: PluginContext): void {
                         current.path = result.path
                         current.name = result.name
                         current.markdown = result.name.toLowerCase().endsWith('.md')
-                        name.textContent = result.name
+                        handle.setTitle(result.name)
                         if (!current.markdown && mode === 'rendered') mode = 'source'
                         syncModes()
                         void renderCurrent()
@@ -808,7 +800,7 @@ export function activate(ctx: PluginContext): void {
                  * lines to point at. The mode buttons are right there when the reader wants prose.
                  */
                 mode = start ?? (line || !result.markdown ? 'source' : 'rendered')
-                name.textContent = result.name ?? ''
+                handle.setTitle(result.name ?? null)
                 header.hidden = false
                 /*
                  * The bar used to appear for markdown alone, because reading the source of a

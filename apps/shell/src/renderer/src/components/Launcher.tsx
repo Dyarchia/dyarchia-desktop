@@ -30,7 +30,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
             <div className="launcher-head">
                 <span className="dya-carved">Dyarchia desktop</span>
             </div>
-            <div className="dya-grid dya-grid--gallery launcher-grid">
+            <div className="dya-grid launcher-grid">
                 {panels.map((panel) => (
                     <button
                         key={panel.id}

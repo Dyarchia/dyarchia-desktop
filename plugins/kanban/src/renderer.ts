@@ -375,7 +375,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         return button
     }
 
-    const bar = el('div', 'dya-bar kanban-bar')
+    /*
+     * The board's own controls, in the dock's tab row: which board, a new one, its settings, its
+     * worktrees, all boards, and what the board has to say about itself.
+     */
+    const bar = el('div', 'kanban-bar')
     const boardButton = el('button', 'dya-button dya-button--quiet', 'board')
     boardButton.type = 'button'
     withTip(boardButton, 'Boards')
@@ -387,7 +391,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const WATCH_TIP = 'All boards'
     const watchButton = key('eye', 'watch', WATCH_TIP)
     watchButton.setAttribute('aria-pressed', 'false')
-    const spacer = el('span', 'kanban-spacer')
     const healthButton = el('button', 'dya-button dya-button--quiet dya-button--sm')
     healthButton.type = 'button'
     healthButton.hidden = true
@@ -406,7 +409,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         settingsKey,
         treesKey,
         watchButton,
-        spacer,
         notice,
         healthButton,
         meter
@@ -467,7 +469,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     error.hidden = true
 
     main.append(board, scrim, drawer)
-    root.append(bar, marks, main, setup, watch, error, tips)
+    handle.toolbar.append(bar)
+    root.append(marks, main, setup, watch, error, tips)
     container.appendChild(root)
 
     /*
@@ -683,7 +686,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             scroller.appendChild(draft)
         }
 
-        const fold = el('button', 'dya-key')
+        const fold = el('button', 'dya-key kanban-fold')
         fold.type = 'button'
         const apply = (closed: boolean): void => {
             shell.dataset.collapsed = String(closed)
@@ -1394,12 +1397,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const shell = el('div', 'dya-pane kanban-setup-shell')
         shell.append(el('div', 'dya-title', 'Boards'))
 
-        const grid = el('div', 'dya-grid dya-grid--gallery')
+        const grid = el('div', 'dya-grid')
         for (const entry of open) {
             const tile = el('button', 'dya-tile')
             tile.type = 'button'
             tile.append(el('span', 'dya-tile__name', entry.name))
-            tile.append(el('span', 'dya-meta dya-meta--wrap', entry.workdir))
+            withTip(tile, entry.workdir)
             tile.addEventListener('click', () => {
                 write(pinKey, entry.slug)
                 void refresh().catch(fail)
@@ -2813,7 +2816,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          */
         const boardsGroup = el('div', 'kanban-group')
         boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
-        const grid = el('div', 'dya-grid dya-grid--gallery')
+        const grid = el('div', 'dya-grid')
         for (const entry of shape.boards) {
             const card = el('button', 'dya-tile dya-tile--dense')
             card.type = 'button'

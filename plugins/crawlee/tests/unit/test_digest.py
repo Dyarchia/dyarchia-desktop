@@ -155,6 +155,22 @@ def test_a_report_older_than_the_sweep_is_not_this_week_s_news(tmp_path: Path) -
     assert 'no change in the sweep of' in target.summary
 
 
+def test_the_last_report_is_given_back_when_asked_for_and_still_called_stale(tmp_path: Path) -> None:
+    """A reader shown the report's date may want its pages; they come back, and it is still stale."""
+    settings = Settings(data_dir=tmp_path)
+    directory = corpus(settings, 'quiet', [edited('https://s/one', 'One')])
+    old = ChangeReport(name='quiet', generated_at=datetime(2026, 8, 28, tzinfo=UTC))
+    old.changes = [edited('https://s/one', 'One')]
+    save_changes(old, directory)
+    sweep(settings, '2026-08-30T22:58:26+00:00', ['quiet'])
+
+    target = build(['quiet'], settings, last=True).targets[0]
+
+    assert target.stale
+    assert not target.changed
+    assert [page.url for page in target.pages] == ['https://s/one']
+
+
 def test_a_report_written_by_the_sweep_is_current(tmp_path: Path) -> None:
     settings = Settings(data_dir=tmp_path)
     directory = corpus(settings, 'mover', [])

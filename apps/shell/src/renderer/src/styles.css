@@ -260,6 +260,27 @@ body,
     overflow: hidden;
 }
 
+/*
+ * A panel that caps its content keeps it at the top left; past the cap the panel is room, not
+ * stretched rows.
+ */
+.plugin-panel-container > * {
+    max-inline-size: var(--panel-max, none);
+}
+
+.panel-toolbar-host {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-inline-end: var(--dya-space-3);
+}
+
+.panel-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+
 .notices {
     position: fixed;
     right: var(--dya-space-3);

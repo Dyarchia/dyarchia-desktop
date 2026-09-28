@@ -4,6 +4,7 @@ import type {
     DockviewApi,
     DockviewReadyEvent,
     DockviewTheme,
+    IDockviewHeaderActionsProps,
     IDockviewPanelHeaderProps,
     SerializedDockview
 } from 'dockview-react'
@@ -15,7 +16,9 @@ import {
     getPanel,
     getRegisteredPanels,
     getTabIcon,
+    getToolbar,
     onTabIconChange,
+    onToolbarChange,
     panelRenderer
 } from '../panels/registry'
 
@@ -133,6 +136,26 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     )
 }
 
+/*
+ * The open panel's own actions, at the right of its group's tab row. The element belongs to the
+ * panel and is only lent to the header: it moves here when its panel becomes the group's open tab
+ * and leaves when another does, keeping its state and its listeners.
+ */
+function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
+    const host = useRef<HTMLDivElement>(null)
+    const [revision, setRevision] = useState(0)
+    const active = props.activePanel?.id
+
+    useEffect(() => onToolbarChange(() => setRevision((value) => value + 1)), [])
+
+    useEffect(() => {
+        const element = active ? getToolbar(active) : undefined
+        host.current?.replaceChildren(...(element ? [element] : []))
+    }, [active, revision])
+
+    return <div ref={host} className="panel-toolbar-host" />
+}
+
 interface DockLayoutProps {
     onReady: (api: DockviewApi) => void
     onOpen: (id: string) => void
@@ -185,6 +208,7 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
             theme={dyarchiaTheme}
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
+            rightHeaderActionsComponent={PanelToolbar}
             watermarkComponent={watermark}
             onReady={handleReady}
         />

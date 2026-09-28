@@ -14,7 +14,8 @@
         "start",
         "stop",
         "catalog",
-        "install"
+        "install",
+        "changes"
     ],
     "boot": true,
     "description": "Documentation snapshots, change reports and search",

@@ -6,6 +6,8 @@ export interface PanelDescriptor {
     /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is the menu. */
     toolbar?: number
     keepAlive?: boolean
+    width?: number
+    maxWidth?: number
 }
 
 /*
@@ -29,6 +31,7 @@ export interface PanelHandle {
     readonly instanceId: string
     close(): void
     setTitle(title: string | null, icon?: string | null): void
+    readonly toolbar: HTMLElement
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
@@ -87,4 +90,26 @@ export function getTabIcon(instanceId: string): string | undefined {
 export function onTabIconChange(listener: (instanceId: string) => void): () => void {
     tabIconListeners.add(listener)
     return () => tabIconListeners.delete(listener)
+}
+
+/*
+ * Each panel instance's toolbar element, which the group header shows while that instance is the
+ * group's open tab.
+ */
+const toolbars = new Map<string, HTMLElement>()
+const toolbarListeners = new Set<() => void>()
+
+export function setToolbar(instanceId: string, element: HTMLElement | null): void {
+    if (element) toolbars.set(instanceId, element)
+    else toolbars.delete(instanceId)
+    for (const listener of toolbarListeners) listener()
+}
+
+export function getToolbar(instanceId: string): HTMLElement | undefined {
+    return toolbars.get(instanceId)
+}
+
+export function onToolbarChange(listener: () => void): () => void {
+    toolbarListeners.add(listener)
+    return () => toolbarListeners.delete(listener)
 }

@@ -1680,9 +1680,14 @@ textarea.dya-field {
  *
  * Digits stay `tabular-nums`, because 4102 sitting narrower than 1111 is what stops a column of
  * figures lining up.
+ *
+ * A table is as wide as its content and no wider. Columns shared out in percentages across a wide
+ * panel put a name and its figures half a screen apart; a panel that has more room than its table
+ * needs gives the room to another region, or leaves it empty on purpose.
  */
 .dya-table {
-    width: 100%;
+    width: max-content;
+    max-width: 100%;
     border-collapse: collapse;
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
@@ -1764,6 +1769,28 @@ textarea.dya-field {
 
 .dya-row:hover > td {
     background-color: var(--dya-glass-hover);
+}
+
+/*
+ * A row that heads the rows under it, said once instead of a pill on every row: a group, and what
+ * the rows in it share, such as when they were last swept.
+ */
+.dya-table .dya-table__section > td {
+    padding-top: var(--dya-space-5);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-label-sm);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-label);
+    text-transform: uppercase;
+    color: var(--dya-text-4);
+}
+
+.dya-table .dya-table__section:first-child > td {
+    padding-top: var(--dya-space-2);
+}
+
+.dya-row--selected > td {
+    background-color: var(--dya-glass-press);
 }
 
 /*
@@ -2678,6 +2705,20 @@ button.dya-step__subject {
 
     .dya-table.dya-table--stack td:empty {
         display: none;
+    }
+
+    .dya-table--stack tr.dya-table__section {
+        padding: 0;
+        border: 0;
+        background: none;
+    }
+
+    .dya-table.dya-table--stack .dya-table__section > td {
+        display: block;
+    }
+
+    .dya-table.dya-table--stack .dya-table__section > td::before {
+        content: none;
     }
 
     .dya-table.dya-table--stack td::before {

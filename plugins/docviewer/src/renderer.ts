@@ -57,6 +57,9 @@ const STYLES = `
     min-height: 0;
     overflow-y: auto;
 }
+.docviewer-library-list .dya-table {
+    width: 100%;
+}
 .docviewer-library-list .dya-row {
     cursor: pointer;
 }

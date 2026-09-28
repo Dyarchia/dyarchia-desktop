@@ -19,6 +19,13 @@ export interface PanelDescriptor {
      * cannot be put back cheaply, a live web page above all; the default frees what is hidden.
      */
     keepAlive?: boolean
+    /*
+     * How wide the panel wants to be when it opens beside others, and how wide its content may
+     * grow. A panel with a narrow job opens as a column of `width` rather than taking half the
+     * window, and past `maxWidth` its content stays at the top left and the rest is room.
+     */
+    width?: number
+    maxWidth?: number
 }
 
 export type PanelDispose = () => void
@@ -34,6 +41,12 @@ export interface PanelHandle {
      * name that stopped being true does not outlive the session.
      */
     setTitle(title: string | null, icon?: string | null): void
+    /*
+     * The panel's own actions, shown in the dock's tab row while this panel is the one its group
+     * shows: a view switch, a run key, a picker. A panel fills it once; the shell moves it in and
+     * out of the header as the group changes tab.
+     */
+    readonly toolbar: HTMLElement
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void

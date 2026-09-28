@@ -62,10 +62,18 @@ export function App(): React.JSX.Element {
                 (panel) => panel.descriptor.id === id
             )
             if (!registered) return
+            /*
+             * A panel that names its width opens as a column of that width at the right, when there
+             * is something already open to stand beside; otherwise dockview gives it a share.
+             */
+            const width = registered.descriptor.width
             api.addPanel({
                 id,
                 component: 'plugin-panel',
                 title: registered.descriptor.title,
+                ...(width && api.panels.length > 0
+                    ? { position: { direction: 'right' as const }, initialWidth: width }
+                    : {}),
                 ...panelRenderer(registered.descriptor)
             })
         },

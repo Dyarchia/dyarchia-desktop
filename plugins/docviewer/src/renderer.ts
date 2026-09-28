@@ -43,10 +43,6 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.docviewer-header[hidden],
-.docviewer-library[hidden] {
-    display: none;
-}
 .docviewer-library-head {
     display: flex;
     align-items: center;
@@ -60,6 +56,9 @@ const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+}
+.docviewer-library-list .dya-table {
+    width: 100%;
 }
 .docviewer-library-list .dya-row {
     cursor: pointer;
@@ -77,8 +76,7 @@ const STYLES = `
 .docviewer-header {
     display: flex;
     align-items: center;
-    gap: var(--dya-space-3);
-    padding: var(--dya-space-2) var(--dya-space-3);
+    gap: var(--dya-space-2);
 }
 .docviewer-modes {
     display: flex;
@@ -91,13 +89,6 @@ const STYLES = `
     display: block;
     width: 13px;
     height: 13px;
-}
-.docviewer-name {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 .docviewer-content {
     flex: 1;
@@ -114,10 +105,6 @@ const STYLES = `
 .docviewer-tile {
     width: 100%;
 }
-.docviewer-tile .dya-tile__icon {
-    width: 22px;
-    height: 22px;
-}
 .docviewer-content--empty {
     display: flex;
     align-items: center;
@@ -133,8 +120,13 @@ const STYLES = `
 }
 `
 
+/*
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * a stele, the Great Rhetra, the written law of Lycurgus.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ */
 const DOCS_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1.6 20.4 6.6H3.6z" fill="#eceef2"/><circle cx="3.6" cy="6" r="1.1" fill="#eceef2"/><circle cx="20.4" cy="6" r="1.1" fill="#eceef2"/><rect x="4.6" y="7.8" width="14.8" height="12.6" fill="#eceef2"/><rect x="3" y="20.4" width="18" height="2.2" rx=".4" fill="#eceef2"/><text x="12" y="11.9" text-anchor="middle" font-family="Spectral, Georgia, serif" font-weight="500" font-size="3.6" fill="#0a0a0b">RETRA</text><path d="M7 14.4h10M7 16.6h10M7 18.8h6.4" stroke="#0a0a0b" stroke-width=".9" stroke-linecap="round"/></svg>'
 
 const EYE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
@@ -206,20 +198,19 @@ export function activate(ctx: PluginContext): void {
             icon: DOCS_ICON,
             duplicable: true
         },
-        (container) => {
+        (container, handle) => {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
             root.className = 'docviewer'
 
             /*
-             * The bar names what is open, so it is there once something is. With nothing open the
-             * tile in the middle of the panel is the way in, and a bar repeating it is noise.
+             * The file's name is the tab's title, and what can be done to it sits in the tab row:
+             * the views, save, and the pages. With nothing open the tile in the middle of the
+             * panel is the way in, and the row is empty.
              */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
-            const name = document.createElement('span')
-            name.className = 'dya-mono docviewer-name'
             const modes = document.createElement('div')
             modes.className = 'docviewer-modes'
             modes.hidden = true
@@ -245,10 +236,11 @@ export function activate(ctx: PluginContext): void {
             save.setAttribute('aria-label', 'Save')
             save.hidden = true
 
-            header.append(name, unsaved, problem, modes, save)
+            header.append(unsaved, problem, modes, save)
 
             const content = document.createElement('div')
-            root.append(header, content)
+            handle.toolbar.append(header)
+            root.append(content)
             container.appendChild(root)
 
             let busy = false
@@ -353,7 +345,7 @@ export function activate(ctx: PluginContext): void {
              */
             function showEmpty(message?: string): void {
                 current = null
-                name.textContent = ''
+                handle.setTitle(null)
                 modes.hidden = true
                 header.hidden = true
                 saved = ''
@@ -632,7 +624,7 @@ export function activate(ctx: PluginContext): void {
                         current.path = result.path
                         current.name = result.name
                         current.markdown = result.name.toLowerCase().endsWith('.md')
-                        name.textContent = result.name
+                        handle.setTitle(result.name)
                         if (!current.markdown && mode === 'rendered') mode = 'source'
                         syncModes()
                         void renderCurrent()
@@ -809,7 +801,7 @@ export function activate(ctx: PluginContext): void {
                  * lines to point at. The mode buttons are right there when the reader wants prose.
                  */
                 mode = start ?? (line || !result.markdown ? 'source' : 'rendered')
-                name.textContent = result.name ?? ''
+                handle.setTitle(result.name ?? null)
                 header.hidden = false
                 /*
                  * The bar used to appear for markdown alone, because reading the source of a

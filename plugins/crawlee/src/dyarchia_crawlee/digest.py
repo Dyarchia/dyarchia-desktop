@@ -186,7 +186,7 @@ def _last_sweep(directory: Path, name: str) -> datetime | None:
     return latest
 
 
-def _target(name: str, settings: Settings) -> DigestTarget:
+def _target(name: str, settings: Settings, last: bool = False) -> DigestTarget:
     directory = inventory.directory_for(name, settings)
     target = DigestTarget(name=name, directory=directory)
 
@@ -209,8 +209,10 @@ def _target(name: str, settings: Settings) -> DigestTarget:
         # The sweep ran and this corpus wrote nothing, so the report on disk describes an older run.
         # Carrying its pages forward is how a target that did not change reaches the next step as if
         # it had, which is worse than saying nothing: it is a wrong answer nobody can see is wrong.
+        # `last` asks for that older report on purpose, for a reader shown its date beside it.
         target.stale = True
-        return target
+        if not last:
+            return target
 
     manifest = load_manifest(directory)
     paths = {url: record.path for url, record in manifest.pages.items()} if manifest else {}
@@ -236,17 +238,19 @@ def build(
     names: list[str] | None = None,
     settings: Settings | None = None,
     group: str | None = None,
+    last: bool = False,
 ) -> Digest:
     """Assemble the digest for these targets, or for every tracked one, or for one group's."""
     settings = settings or get_settings()
     chosen = names or watchable(settings, group)
-    return Digest(targets=[_target(name, settings) for name in chosen])
+    return Digest(targets=[_target(name, settings, last) for name in chosen])
 
 
 def across(
     names: list[str] | None = None,
     group: str | None = None,
     settings: Settings | None = None,
+    last: bool = False,
 ) -> Digest:
     """The same digest, over every corpus repository this machine holds.
 
@@ -257,7 +261,7 @@ def across(
     """
     targets: list[DigestTarget] = []
     for repository, selected in rounds(names, group, settings):
-        targets += build(selected, repository).targets
+        targets += build(selected, repository, last=last).targets
     return Digest(targets=targets)
 
 

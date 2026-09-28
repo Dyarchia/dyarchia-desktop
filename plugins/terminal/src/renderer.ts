@@ -42,8 +42,13 @@ const ANSI_TOKENS = {
     brightWhite: 'text'
 } as const satisfies Partial<Record<keyof ITheme, string>>
 
+/*
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * the prompt turned upright, which is a lambda: Lacedaemon on every shield.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ */
 const TERMINAL_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.4 19.4 7.8 4.6 13.2 19.4" fill="none" stroke="#eceef2" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.2 19.4h2.8M11.8 19.4h2.6" stroke="#eceef2" stroke-width="1.6" stroke-linecap="round"/><rect x="15.4" y="17.7" width="8.2" height="3" rx=".6" fill="#eceef2"/></svg>'
 
 interface PortAnnouncement {
     dyarchiaPort?: {

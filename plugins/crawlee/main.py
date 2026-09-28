@@ -448,6 +448,12 @@ def activate(ctx: Any) -> None:
                 raise
             return {'needsEnvironment': True}
 
+    def changes(name: str) -> Any:
+        """What the last snapshot of one target found, page by page, with the diff of each."""
+        found = json.loads(_read(['digest', str(name), '--json', '--last']))
+        targets = found.get('targets') or []
+        return targets[0] if targets else None
+
     def install(group: str) -> Any:
         folder = json.loads(_read(['state', '--json']))['folder']
         return _install(group, installed(), folder)
@@ -462,6 +468,7 @@ def activate(ctx: Any) -> None:
     ctx.handle('stop', stop)
     ctx.handle('catalog', catalog)
     ctx.handle('install', install)
+    ctx.handle('changes', changes)
     threading.Thread(target=_publish, daemon=True).start()
 
 

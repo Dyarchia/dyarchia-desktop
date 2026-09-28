@@ -122,7 +122,7 @@ function tell(
 ): void {
     sink.notify({
         title,
-        body: `${meta.name} - ${body}`.slice(0, 400),
+        body: events.clip(`${meta.name} - ${body}`, 400),
         action: { slug: meta.slug, cardId: card.id }
     })
 }
@@ -326,7 +326,7 @@ function signInFailed(
     const ending = `${progress.error ?? ''}\n${progress.lastText}`
     if (!CREDENTIAL.test(ending)) return false
 
-    const why = (progress.error ?? progress.lastText).trim().slice(0, 400)
+    const why = events.clip(progress.error ?? progress.lastText, 400)
     const before = card.runs[card.runs.indexOf(run) - 1]
     const again = before?.outcome === 'crashed' && SIGN_IN_RACE.test(`${before.error ?? ''}
 ${before.summary ?? ''}`)
@@ -407,7 +407,7 @@ async function resolveReview(
             meta.slug,
             card.id,
             'reviewed',
-            `${declared.verdict}: ${declared.summary.slice(0, 140)}`,
+            `${declared.verdict}: ${events.clip(declared.summary, 140)}`,
             run.runId
         )
         say('completed')
@@ -421,7 +421,7 @@ async function resolveReview(
 
     if (progress?.ended) {
         card.protocolViolations += 1
-        close(run, 'violation', progress.lastText.slice(0, 400) || null, 'no terminal block')
+        close(run, 'violation', events.clip(progress.lastText, 400) || null, 'no terminal block')
         if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'review')
         else land(card, 'review')
         void events.record(
@@ -537,7 +537,7 @@ async function resolve(
                 meta.slug,
                 card.id,
                 'completed',
-                declared.summary.slice(0, 160),
+                events.clip(declared.summary, 240),
                 run.runId
             )
         } else if (declared.blockKind === 'dependency') {
@@ -561,7 +561,7 @@ async function resolve(
 
     if (progress?.ended) {
         card.protocolViolations += 1
-        close(run, 'violation', progress.lastText.slice(0, 400) || null, 'no terminal block')
+        close(run, 'violation', events.clip(progress.lastText, 400) || null, 'no terminal block')
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
         if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'ready')

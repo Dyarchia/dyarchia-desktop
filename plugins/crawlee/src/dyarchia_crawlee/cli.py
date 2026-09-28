@@ -490,6 +490,10 @@ def digest_command(
         bool, typer.Option('--diffs/--no-diffs', help='Include the diff of every changed page.')
     ] = True,
     limit: Annotated[int, typer.Option('--limit', min=1, help='Maximum pages listed per section.')] = 50,
+    last: Annotated[
+        bool,
+        typer.Option('--last', help='Include the last change report even when a later sweep found nothing.'),
+    ] = False,
     out: Annotated[
         Path | None, typer.Option('--out', help='Write to this file instead of standard output.')
     ] = None,
@@ -501,7 +505,7 @@ def digest_command(
     """
     settings = get_settings()
     try:
-        bundle = digest.across(list(names) if names else None, group, settings)
+        bundle = digest.across(list(names) if names else None, group, settings, last=last)
     except DyarchiaCrawleeError as error:
         error_console.print(f'[bold red]{error}[/bold red]')
         raise typer.Exit(code=1) from error

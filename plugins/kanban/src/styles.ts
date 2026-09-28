@@ -7,7 +7,8 @@ export const STYLES = `
 }
 
 .kanban-bar {
-    flex: none;
+    display: flex;
+    align-items: center;
     gap: var(--dya-space-2);
 }
 
@@ -24,7 +25,62 @@ export const STYLES = `
 
 .kanban-tips { display: contents; }
 
-.kanban-spacer { flex: 1; }
+.kanban-decided {
+    width: 100%;
+}
+
+.kanban-decided-card > td {
+    padding-top: var(--dya-space-5);
+    padding-bottom: var(--dya-space-1);
+}
+
+.kanban-outcome {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    white-space: normal;
+}
+
+.kanban-outcome-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dya-space-2);
+}
+
+.kanban-outcome-list {
+    margin: 0;
+    padding-inline-start: var(--dya-space-4);
+}
+
+.kanban-outcome-json > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.kanban-outcome-json > summary::-webkit-details-marker {
+    display: none;
+}
+
+.kanban-outcome-json > .dya-code {
+    margin-top: var(--dya-space-2);
+    max-height: 320px;
+    overflow: auto;
+}
+
+/*
+ * Folding is there when a column is being looked at, not eight times over at rest. A folded
+ * column keeps its key, because it is the only way back.
+ */
+.kanban-fold {
+    opacity: 0;
+    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+}
+
+.kanban-column:hover .kanban-fold,
+.kanban-fold:focus-visible,
+.kanban-column[data-collapsed='true'] .kanban-fold {
+    opacity: 1;
+}
 
 .kanban-meta {
     flex: none;
@@ -82,10 +138,6 @@ export const STYLES = `
 }
 
 /* Adding a card is not something you do to a stage you have put away. */
-.kanban-column[data-collapsed='true'] .kanban-new-key {
-    display: none;
-}
-
 .kanban-column[data-collapsed='true'] .kanban-list,
 .kanban-column[data-collapsed='true'] .kanban-empty {
     display: none;
@@ -255,10 +307,8 @@ export const STYLES = `
 
 .kanban-drawer-title {
     min-width: 0;
-    padding-inline-end: calc(2 * var(--dya-size-control) + var(--dya-space-2));
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    padding-inline-end: calc(2 * var(--dya-size-control-sm) + var(--dya-space-2));
+    overflow-wrap: anywhere;
 }
 
 .kanban-drawer-body {

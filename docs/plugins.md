@@ -54,9 +54,8 @@ export function activate(ctx: PluginContext): void {
 - `duplicable` allows `<id>#<n>` instances, `keepAlive` keeps a covered panel mounted, `width` and
   `maxWidth` size its column and content, `modal` opens it over the window instead of the dock.
 - The panel's actions go in `handle.toolbar`, shown in the tab row or a modal's head at one size.
-- `registerOpener` goes in `activate`, not in a mount. The shell shows the panel before handing
-  the request over and keeps the first opener per extension. A finder never names the reader:
-  it asks `ctx.shell.canOpen` and falls back to `reveal`.
+- `registerOpener` goes in `activate`; the shell keeps the first opener per extension. A finder
+  never names the reader: it asks `ctx.shell.canOpen` and falls back to `reveal`.
 - `ctx.token(name)` resolves a `--dya-*` value for a canvas; `highlight` and `hues` are in the SDK.
 
 ## Main module

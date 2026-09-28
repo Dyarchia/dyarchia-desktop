@@ -72,15 +72,15 @@
     --dya-raised-hover: #23262a;
     --dya-selected: #2a2d32;
     --dya-disabled: #1a1b1e;
-    --dya-scrim: #0a0b0db8;
+    --dya-scrim: #0a0b0df0;
 
     --dya-ground: #0a0b0d;
     --dya-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 
-    --dya-glass: linear-gradient(180deg, #ffffff0d, #ffffff05);
+    --dya-glass: linear-gradient(180deg, #ffffff15, #ffffff09 56px, #ffffff05 40%, #ffffff04);
     --dya-glass-card: linear-gradient(180deg, #ffffff09, #ffffff03);
     --dya-glass-pill: linear-gradient(180deg, #ffffff0f, #ffffff05);
-    --dya-glass-edge: linear-gradient(180deg, #ffffff38, #ffffff0a 30%, #ffffff00 60%, #ffffff0f);
+    --dya-glass-edge: linear-gradient(180deg, #ffffff4d, #ffffff29 32px, #ffffff0f 30%, #ffffff05 62%, #ffffff12);
     --dya-glass-hover: #ffffff05;
     --dya-glass-press: #ffffff0d;
 
@@ -162,14 +162,19 @@
     --dya-carve-a: #3b3e44;
     --dya-carve-b: #6b717c;
 
-    --dya-edge: #0a0b0c;
+    --dya-edge: #040405;
 
     --dya-elev-flat: none;
 
-    --dya-elev-chassis: inset 0 1px 0 #ffffff1c;
+    --dya-elev-chassis: inset 0 1px 0 #ffffff1f;
+
+    --dya-elev-panel:
+        inset 0 1px 0 #ffffff1f,
+        0 0 0 1px #00000099,
+        0 14px 32px -12px #000000cc;
 
     --dya-elev-key:
-        inset 0 1px 0 #ffffff17,
+        inset 0 1px 0 #ffffff21,
         0 3px 0 var(--dya-edge);
 
     --dya-elev-key-down:
@@ -213,4 +218,5 @@
     --dya-dur-fast: 150ms;
     --dya-dur: 220ms;
     --dya-dur-slow: 320ms;
+    --dya-dur-leave: 5s;
 }

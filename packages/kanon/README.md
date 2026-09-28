@@ -20,7 +20,8 @@ is prefixed `--dya-`, every keyframe and class `dya-`. The CSS never consults `p
 ## Materials
 
 ```text
-glass   the panel, and only the panel: translucent white over the grain, no blur
+glass   the panel, and only the panel: translucent white over the grain, no blur; brighter at the
+        top, under a chrome rim lit from above, cut from the ground by a black line and a shadow
 key     every control: flat face, 3px corners, a hard 3px edge underneath; pressed, it drops 2px
 pill    every piece of information: round, words in the mono; never pressable
 light   status, and only status: a green, yellow or red dot inside a pill or around a key
@@ -56,6 +57,7 @@ inside a panel is divided by a horizontal line. `--dya-halo` means here: the ope
   sheet; 999px a pill, a light, a dot. **Weights are 300, 400, 500**; hierarchy comes from size,
   tracking and rank first.
 - **Performance outranks aesthetics.** No WebGL, no shaders, no `backdrop-filter`; nothing animates forever.
+  A word that reports something done (`key-label--leave`) fades over `--dya-dur-leave`, five seconds.
 - **A plugin's own CSS is layout only.** A new look is declared here first and measured; an unused class goes.
 
 ## Keys and layout
@@ -76,7 +78,7 @@ inside a panel is divided by a horizontal line. `--dya-halo` means here: the ope
 
 ```text
 Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead brand carved splitter sheet (--side)
+             --pending --ghosted --carried) card__header masthead brand carved splitter sheet (--side --modal)
              well lanes lane (--accept --refuse) drop-line drop-box
 Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)
@@ -87,7 +89,7 @@ Lights       light (--success --warning --danger) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
 Content      table (--stack __num __fit __key __name __subject __end __prose) row
              stat (__figure __value __unit __text) title text (--success --warning --danger)
-             label eyebrow value name meta (--sm --lift --wrap) mono key-label problem (--box)
+             label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body) notice (__body __title __text)
              steps step (--said --error --warning --quiet __time __verb __subject __said __detail)
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)

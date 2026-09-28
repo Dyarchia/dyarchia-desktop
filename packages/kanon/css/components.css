@@ -493,7 +493,7 @@
 }
 
 /*
- * The wordmark while the window is at work: the same carved serif, centred in the 32px title bar,
+ * The wordmark while the window is at work: the same carved serif, centred in the 40px title bar,
  * so the name is always there without being the largest thing on screen. It is full size only on
  * the empty window, where nothing else is.
  */
@@ -720,12 +720,6 @@
     font-size: var(--dya-size-body-xs);
 }
 
-.dya-button--xs {
-    height: var(--dya-size-control-xs);
-    padding: 0 var(--dya-space-2);
-    font-size: var(--dya-size-label);
-}
-
 /*
  * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
  * nothing on it yet offers what to do next, rather than stating that there is nothing. It is a
@@ -736,7 +730,17 @@
     flex-direction: column;
     gap: var(--dya-space-2);
     padding: var(--dya-space-5);
+    background-color: var(--dya-surface-1);
+    background-image: none;
     text-align: left;
+}
+
+/*
+ * A tile is a key the size of a card, so its face is the darkest step a key has: at the size of a
+ * card, the key's own face turned a panel of tiles into a grey sheet.
+ */
+.dya-tile:hover {
+    background-color: var(--dya-raised);
 }
 
 /*
@@ -745,8 +749,8 @@
  */
 .dya-tile__icon {
     display: block;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     color: var(--dya-text-2);
 }
 
@@ -837,17 +841,28 @@
 }
 
 /*
- * The small key lives in the title bar, which is 32px: a 24px face and its 3px edge leave room for
- * the drop without touching either side of the bar.
+ * A toolbar is a row of controls of one size: the title bar, and every panel's actions in the dock's
+ * tab row. Keys, buttons and pickers inside it are all 28px, so a row never mixes three heights.
  */
-.dya-key--sm {
-    width: var(--dya-size-control-xs);
-    height: var(--dya-size-control-xs);
+.dya-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
 }
 
-.dya-key--sm > svg {
-    width: 13px;
-    height: 13px;
+.dya-toolbar .dya-key {
+    width: var(--dya-size-control-sm);
+    height: var(--dya-size-control-sm);
+}
+
+.dya-toolbar .dya-button,
+.dya-toolbar .dya-field {
+    height: var(--dya-size-control-sm);
+}
+
+.dya-toolbar .dya-button {
+    padding: 0 10px;
+    font-size: var(--dya-size-body-xs);
 }
 
 [interestfor] {
@@ -1378,8 +1393,8 @@ textarea.dya-field {
     display: inline-grid;
     place-items: center;
     flex: none;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     color: var(--dya-text-4);
 }
 

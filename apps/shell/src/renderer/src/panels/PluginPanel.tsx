@@ -11,7 +11,7 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
         const container = containerRef.current
         if (!registered || !container) return
         const toolbar = document.createElement('div')
-        toolbar.className = 'panel-toolbar'
+        toolbar.className = 'dya-toolbar panel-toolbar'
         setToolbar(props.api.id, toolbar)
         const dispose = registered.mount(container, {
             instanceId: props.api.id,

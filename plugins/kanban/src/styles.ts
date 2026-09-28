@@ -96,10 +96,6 @@ export const STYLES = `
 }
 
 /* Adding a card is not something you do to a stage you have put away. */
-.kanban-column[data-collapsed='true'] .kanban-new-key {
-    display: none;
-}
-
 .kanban-column[data-collapsed='true'] .kanban-list,
 .kanban-column[data-collapsed='true'] .kanban-empty {
     display: none;

@@ -31,7 +31,7 @@ body,
 }
 
 /*
- * The title bar is 32px and holds three things: the build on the left, the wordmark on the centre
+ * The title bar is 40px and holds three things: the build on the left, the wordmark on the centre
  * of the window whatever the sides hold, the panel keys and the window's own keys on the right.
  * On the empty window the launcher carries the large wordmark and the bar leaves the centre empty.
  */
@@ -49,9 +49,6 @@ body,
 }
 
 .topbar-build {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
     min-width: 0;
 }
 
@@ -86,9 +83,6 @@ body,
 }
 
 .topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-1);
     padding-right: var(--dya-space-3);
     padding-bottom: 3px;
     -webkit-app-region: no-drag;
@@ -110,15 +104,15 @@ body,
 
 .topbar-menu .topbar-icon,
 .topbar-menu .topbar-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
 }
 
 .topbar-icon,
 .topbar-icon svg {
     display: block;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
 }
 
 .topbar-window-controls {
@@ -294,10 +288,8 @@ body,
     padding-inline-end: var(--dya-space-3);
 }
 
-.panel-toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
+.panel-toolbar:empty {
+    display: none;
 }
 
 .notices {

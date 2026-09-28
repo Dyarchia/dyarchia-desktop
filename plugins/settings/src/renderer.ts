@@ -64,13 +64,12 @@ interface Status {
 }
 
 /*
- * The panel's mark, one of a set drawn for this application in its own three colours, black,
- * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
- * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
- * found by id.
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * a hoplite shield, the aspis, with the lambda of Lacedaemon.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const GEAR_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.55 9.67 L22 9.97 L22 14.03 L19.55 14.33 L18.99 15.69 L20.5 17.64 L17.64 20.5 L15.69 18.99 L14.33 19.55 L14.03 22 L9.97 22 L9.67 19.55 L8.31 18.99 L6.36 20.5 L3.5 17.64 L5.01 15.69 L4.45 14.33 L2 14.03 L2 9.97 L4.45 9.67 L5.01 8.31 L3.5 6.36 L6.36 3.5 L8.31 5.01 L9.67 4.45 L9.97 2 L14.03 2 L14.33 4.45 L15.69 5.01 L17.64 3.5 L20.5 6.36 L18.99 8.31Z" fill="#eceef2" stroke="#eceef2" stroke-width=".8" stroke-linejoin="round"/><path d="M3 13.2a9 9 0 0 0 18 0z" fill="#0a0a0b" fill-opacity=".18"/><circle cx="12" cy="12" r="4.6" fill="#111214"/><circle cx="12" cy="12" r="2.6" fill="#c42a38"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="#eceef2"/><circle cx="12" cy="12" r="8.6" fill="#0a0a0b"/><circle cx="12" cy="12" r="7.6" fill="#eceef2"/><path d="M7.9 16.6 12 6.6l4.1 10" fill="none" stroke="#0a0a0b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 
 const STYLES = `
 .set {
@@ -234,24 +233,25 @@ export function activate(ctx: PluginContext): void {
         }
 
         /*
-         * What a plugin needs is said only when it is missing: a warning pill per missing thing,
-         * its reason one hover away, and Install with its size when it can be fetched. A plugin
-         * with everything it needs says nothing about needing it.
+         * What a plugin brings with it is always said, because it is what decides whether to turn
+         * it on: each thing it needs as a pill, neutral when it is there and a warning when it is
+         * not, with its reason one hover away, and how much it weighs. Install appears when
+         * something missing can be fetched.
          */
         function renderNeeds(entry: CatalogueEntry, box: HTMLElement, statuses: Status[]): void {
             box.replaceChildren()
-            const missing = statuses.filter((status) => !status.met)
-            for (const status of missing) {
-                const chip = el('span', 'dya-badge dya-badge--warning', status.label)
-                withTip(chip, status.detail)
+            for (const status of statuses) {
+                const chip = el('span', status.met ? 'dya-tag' : 'dya-badge dya-badge--warning', status.label)
+                if (!status.met) withTip(chip, status.detail)
                 box.append(chip)
             }
-            if (missing.length === 0) return
-            if (missing.every((status) => !status.acquirable)) return
+            const size = (entry.manifest.requires ?? []).find((requirement) => requirement.note)?.note
+            if (size) box.append(el('span', 'dya-meta', size))
+
+            const missing = statuses.filter((status) => !status.met)
+            if (missing.length === 0 || missing.every((status) => !status.acquirable)) return
 
             const install = el('button', 'dya-button dya-button--sm', 'Install') as HTMLButtonElement
-            const size = (entry.manifest.requires ?? []).find((requirement) => requirement.note)?.note
-            if (size) withTip(install, size)
             install.addEventListener('click', () => {
                 install.disabled = true
                 install.textContent = 'Installing…'
@@ -266,9 +266,8 @@ export function activate(ctx: PluginContext): void {
 
         /*
          * Every plugin is one row: a switch when it is a choice, its face and name, what it is, and
-         * on the right only what asks for attention: a change that waits for a restart, or
-         * something it needs and does not have. The four plugins the application is made of have
-         * no switch, because nobody is better off without a terminal.
+         * on the right what it brings with it and whether a change waits for a restart. The four
+         * plugins the application is made of have no switch: nobody is better off without a terminal.
          */
         function row(entry: CatalogueEntry): HTMLElement {
             const tr = el('tr', 'dya-row')

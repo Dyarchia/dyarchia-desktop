@@ -150,16 +150,12 @@ interface CardProgress {
 }
 
 /*
- * The panel's mark, one of a set drawn for this application in its own three colours, black,
- * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
- * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
- * found by id.
- *
- * This one is a phalanx: three ranks of four shields, the front rank marked with the lambda of
- * Lacedaemon, spears carried forward. A board of agents is that, a line that holds and moves as one.
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * a phalanx, two ranks of shields with their spears carried forward.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3.10 11 L6.90 1.8" stroke="#eceef2" stroke-width="1" stroke-linecap="round"/><path d="M8.20 11 L12.00 1.8" stroke="#eceef2" stroke-width="1" stroke-linecap="round"/><path d="M13.30 11 L17.10 1.8" stroke="#eceef2" stroke-width="1" stroke-linecap="round"/><path d="M18.40 11 L22.20 1.8" stroke="#eceef2" stroke-width="1" stroke-linecap="round"/><circle cx="4.3" cy="10.2" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="9.4" cy="10.2" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="14.5" cy="10.2" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="19.6" cy="10.2" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="4.3" cy="14.7" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="9.4" cy="14.7" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="14.5" cy="14.7" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="19.6" cy="14.7" r="2.45" fill="#9b1f2a" stroke="#0a0a0b" stroke-width=".7"/><circle cx="4.3" cy="19.2" r="2.45" fill="#c42a38" stroke="#0a0a0b" stroke-width=".7"/><path d="M3.30 20.20 L4.3 18.10 L5.30 20.20" fill="none" stroke="#eceef2" stroke-width=".85" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.4" cy="19.2" r="2.45" fill="#c42a38" stroke="#0a0a0b" stroke-width=".7"/><path d="M8.40 20.20 L9.4 18.10 L10.40 20.20" fill="none" stroke="#eceef2" stroke-width=".85" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14.5" cy="19.2" r="2.45" fill="#c42a38" stroke="#0a0a0b" stroke-width=".7"/><path d="M13.50 20.20 L14.5 18.10 L15.50 20.20" fill="none" stroke="#eceef2" stroke-width=".85" stroke-linecap="round" stroke-linejoin="round"/><circle cx="19.6" cy="19.2" r="2.45" fill="#c42a38" stroke="#0a0a0b" stroke-width=".7"/><path d="M18.60 20.20 L19.6 18.10 L20.60 20.20" fill="none" stroke="#eceef2" stroke-width=".85" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.6 12 6.800000000000001 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M6.300000000000001 1.6 8 3.6 6.4 4.6z" fill="#eceef2"/><path d="M8.8 12 12 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M11.5 1.6 13.2 3.6 11.600000000000001 4.6z" fill="#eceef2"/><path d="M14 12 17.2 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M16.7 1.6 18.4 3.6 16.8 4.6z" fill="#eceef2"/><path d="M19.2 12 22.400000000000002 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M21.900000000000002 1.6 23.6 3.6 22 4.6z" fill="#eceef2"/><circle cx="4.2" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="9.4" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="14.6" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="19.8" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="4.2" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="4.2" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="9.4" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="9.4" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="14.6" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="14.6" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="19.8" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="19.8" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/></svg>'
 
 const STROKE =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -392,7 +388,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const boardButton = el('button', 'dya-button dya-button--quiet', 'board')
     boardButton.type = 'button'
     withTip(boardButton, 'Boards')
-    const newBoardKey = key('plus', 'New board')
+    const newCardKey = key('plus', 'New card')
+    newCardKey.hidden = true
+    let openDraft: (() => void) | null = null
     const settingsKey = key('sliders', 'Settings')
     settingsKey.hidden = true
     const treesKey = key('branch', 'Worktrees')
@@ -414,7 +412,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     meter.hidden = true
     bar.append(
         boardButton,
-        newBoardKey,
+        newCardKey,
         settingsKey,
         treesKey,
         watchButton,
@@ -550,6 +548,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const onBoard = meta !== null
         const configuring = next === 'form' && setup.dataset.mode === 'settings'
         settingsKey.hidden = meta === null
+        newCardKey.hidden = meta === null
         settingsKey.classList.toggle('dya-key--active', configuring)
         settingsKey.setAttribute('aria-pressed', String(configuring))
         treesKey.hidden = !onBoard || !treesHere
@@ -647,19 +646,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          */
         const empty = el('div', 'dya-drop-box kanban-drop')
 
+        /*
+         * A card is made from the key in the tab row, and its title is typed at the head of the
+         * triage column, where it lands. The key used to sit in that column's header, lit, the one
+         * bright block in a black board.
+         */
         if (status === 'triage') {
-            const plus = el('button', 'dya-key dya-key--primary kanban-new-key')
-            plus.innerHTML = ICONS.plus
-            plus.type = 'button'
-            plus.setAttribute('aria-label', 'new card')
-            withTip(plus, 'New card')
             const draft = el('div', 'kanban-new')
             draft.hidden = true
             const field = el('input', 'dya-field dya-field--sm dya-field--prose')
             field.type = 'text'
             field.placeholder = 'card title'
             const confirm = key('check', 'Add')
-            confirm.classList.add('dya-key--primary')
             draft.append(field, confirm)
             const dismiss = (): void => {
                 field.value = ''
@@ -684,14 +682,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     if (!added) open(title)
                 })
             }
-            plus.addEventListener('click', () => open())
+            openDraft = () => {
+                if (shell.dataset.collapsed === 'true') fold.click()
+                open()
+            }
             field.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') dismiss()
                 if (event.key === 'Enter') commit()
             })
             field.addEventListener('blur', commit)
             confirm.addEventListener('click', commit)
-            head.appendChild(plus)
             scroller.appendChild(draft)
         }
 
@@ -1373,6 +1373,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         return shell
     }
 
+    const NEW_BOARD = '\u0000new-board'
     const openBoardMenu = (anchor: HTMLElement): void => {
         const rows: MenuRow[] = registry
             .filter((entry) => !entry.archived)
@@ -1391,11 +1392,23 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return
         }
 
+        rows.push({
+            key: NEW_BOARD,
+            label: 'New board',
+            group: 'new',
+            direct: true,
+            leaves: [{ label: 'New board', value: NEW_BOARD }]
+        })
+
         openMenu({
             anchor,
             rows,
             filter: 'filter boards',
             onPick: (row) => {
+                if (row.key === NEW_BOARD) {
+                    newBoard()
+                    return
+                }
                 write(pinKey, row.key)
                 void refresh().catch(fail)
             }
@@ -2696,7 +2709,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     boardButton.addEventListener('click', () => openBoardMenu(boardButton))
-    newBoardKey.addEventListener('click', () => newBoard())
+    newCardKey.addEventListener('click', () => openDraft?.())
     settingsKey.addEventListener('click', () => {
         if (setup.dataset.mode === 'settings' && !setup.hidden) void refresh().catch(fail)
         else showBoardSettings()

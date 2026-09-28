@@ -15,13 +15,12 @@ const svg = (body: string): string =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
 
 /*
- * The panel's mark, one of a set drawn for this application in its own three colours, black,
- * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
- * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
- * found by id.
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * a scytale, the rod a Spartan wrapped a message round so only its twin could read it.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const GLOBE_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#9b1f2a"/><path d="M2 12a10 10 0 0 0 20 0z" fill="#0a0a0b" fill-opacity=".25"/><ellipse cx="12" cy="12" rx="4.3" ry="9.6" fill="none" stroke="#eceef2" stroke-opacity=".9" stroke-width="1.2"/><path d="M2.4 12h19.2M4.2 7.2h15.6M4.2 16.8h15.6" stroke="#eceef2" stroke-opacity=".6" stroke-width="1.1"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.6 21.4 21.4 2.6" stroke="#9499a3" stroke-width="2.6" stroke-linecap="round"/><path d="M2.51 16.40 L8.66 20.43 L9.86 19.23 L3.71 15.20Z" fill="#eceef2"/><path d="M4.28 16.89 L5.47 17.68 M6.48 18.36 L7.67 19.16" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M5.91 13.00 L12.06 17.03 L13.26 15.83 L7.11 11.80Z" fill="#eceef2"/><path d="M7.68 13.49 L8.87 14.28 M9.88 14.96 L11.07 15.76" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M9.31 9.60 L15.46 13.63 L16.66 12.43 L10.51 8.40Z" fill="#eceef2"/><path d="M11.08 10.09 L12.27 10.88 M13.28 11.56 L14.47 12.36" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M12.71 6.20 L18.86 10.23 L20.06 9.03 L13.91 5.00Z" fill="#eceef2"/><path d="M14.48 6.69 L15.67 7.48 M16.68 8.16 L17.87 8.96" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M19.43 9.38 C22.26 10.79 24.10 8.39 27.21 8.96" fill="none" stroke="#eceef2" stroke-width="2.2" stroke-linecap="round"/></svg>'
 const BACK_ICON = svg('<path d="m15 18-6-6 6-6"/>')
 const FORWARD_ICON = svg('<path d="m9 18 6-6-6-6"/>')
 const RELOAD_ICON = svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')

@@ -9,13 +9,12 @@ interface OpenResult {
 }
 
 /*
- * The panel's mark, one of a set drawn for this application in its own three colours, black,
- * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
- * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
- * found by id.
+ * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
+ * an aulos, the double pipe the phalanx marched to.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const PLAYER_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#9b1f2a"/><path d="M2 12a10 10 0 0 0 20 0z" fill="#0a0a0b" fill-opacity=".25"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="#eceef2" stroke-opacity=".25" stroke-width="1.2"/><path d="M10 8v8l6.3-4z" fill="#eceef2" stroke="#eceef2" stroke-width="1.3" stroke-linejoin="round"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(18 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" fill="#eceef2"/><circle cx="5" cy="10.4" r=".55" fill="#0a0a0b"/><circle cx="5" cy="13" r=".55" fill="#0a0a0b"/><circle cx="5" cy="15.6" r=".55" fill="#0a0a0b"/></g><g transform="rotate(48 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" fill="#eceef2"/><circle cx="5" cy="10.4" r=".55" fill="#0a0a0b"/><circle cx="5" cy="13" r=".55" fill="#0a0a0b"/><circle cx="5" cy="15.6" r=".55" fill="#0a0a0b"/></g><rect x="3.2" y="18.4" width="3.8" height="2.6" rx=".6" fill="#eceef2" transform="rotate(33 5 20)"/><path d="M3.4 21.4 1.8 23" stroke="#eceef2" stroke-width="1.6" stroke-linecap="round"/></svg>'
 
 const STYLES = `
 .player {

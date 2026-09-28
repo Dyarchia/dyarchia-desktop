@@ -52,7 +52,7 @@ function TipKey({
     return (
         <>
             <button
-                className={`${className ?? 'dya-key dya-key--sm'}${active ? ' dya-key--active' : ''}`}
+                className={`${className ?? 'dya-key'}${active ? ' dya-key--active' : ''}`}
                 aria-label={label}
                 aria-pressed={expanded === undefined ? active : undefined}
                 aria-haspopup={expanded === undefined ? undefined : 'menu'}
@@ -140,7 +140,7 @@ function Build(): React.JSX.Element {
         <>
             <button
                 type="button"
-                className="dya-button dya-button--quiet dya-button--xs topbar-alpha"
+                className="dya-button dya-button--quiet topbar-alpha"
                 interestfor={id}
                 disabled={phase === 'checking' || phase === 'unsupported'}
                 onClick={check}
@@ -161,20 +161,20 @@ function Build(): React.JSX.Element {
             )}
             {phase === 'available' && (
                 <button
-                    className="dya-button dya-button--xs topbar-update"
+                    className="dya-button topbar-update"
                     onClick={() => act('shell:update:download')}
                 >
                     Update to {update?.version}
                 </button>
             )}
             {phase === 'downloading' && (
-                <button className="dya-button dya-button--xs topbar-update" disabled>
+                <button className="dya-button topbar-update" disabled>
                     Downloading {update?.percent ?? 0}%
                 </button>
             )}
             {phase === 'ready' && (
                 <button
-                    className="dya-button dya-button--primary dya-button--xs topbar-update"
+                    className="dya-button dya-button--primary topbar-update"
                     onClick={() => act('shell:update:install')}
                 >
                     Restart to finish
@@ -236,12 +236,12 @@ export function TopBar({
 
     return (
         <div className="dya-bar dya-bar--flush topbar">
-            <div className="topbar-build">
+            <div className="dya-toolbar topbar-build">
                 <Build />
             </div>
             {brand && <span className="dya-brand dya-brand--sm topbar-brand">Dyarchia desktop</span>}
             <div className="topbar-right">
-                <div className="topbar-actions">
+                <div className="dya-toolbar topbar-actions">
                     {visible.map((panel) => (
                         <TipKey
                             key={panel.id}

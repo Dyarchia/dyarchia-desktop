@@ -80,8 +80,8 @@ is the brand; Inter is the interface, with tabular figures everywhere; Plex Mono
 ```text
 Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning --marked
              --pending --ghosted --carried) card__header masthead brand (--sm) carved splitter sheet (--side --modal)
-             well lanes lane (--accept --refuse) drop-line drop-box grid
-Keys         button (--primary --success --danger --resolve --quiet --sm --xs __state __answer) key (--primary --active --success --danger --sm)
+             well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
+Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--primary --active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)
 Input        field (--sm --auto --prose) select checkbox form (__value __stack __split __actions __push)
 Pills        tag badge (--success --warning --danger) pills

@@ -4,14 +4,8 @@
  * than imported. A plugin that cannot be read without first being compiled is harder to trust.
  */
 
-/*
- * The panel's mark, one of a set drawn for this application in its own three colours, black,
- * garnet and white, so the marks read as one family and as Dyarchia's. Flat layers, a shadow on the
- * lower half, no gradients, because the same mark is drawn several times at once and a gradient is
- * found by id.
- */
 const ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="#eceef2" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 11.2 5.8 8.6 4.2 4.8"/><path d="M9.3 13.4 4.8 12.6 2.6 10.2"/><path d="M9.5 15.6 5.4 17.2 3.8 20.6"/><path d="M10.4 17.4 8.2 20.4 8 22"/><path d="M14.4 11.2 18.2 8.6 19.8 4.8"/><path d="M14.7 13.4 19.2 12.6 21.4 10.2"/><path d="M14.5 15.6 18.6 17.2 20.2 20.6"/><path d="M13.6 17.4 15.8 20.4 16 22"/></g><ellipse cx="12" cy="15" rx="3.6" ry="4.6" fill="#9b1f2a"/><circle cx="12" cy="8.6" r="2.7" fill="#c42a38"/><path d="M9.2 13.4a3.6 3.6 0 0 1 5.6 0" fill="none" stroke="#eceef2" stroke-opacity=".35" stroke-width="1"/></svg>'
+    '<svg viewBox="9.15 5 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M39.843 34.81h-29.4c-.42 0-.683-.474-.473-.855l7.35-13.24 7.351-13.238a.537.537 0 0 1 .947 0l4.728 8.517a6.521 6.521 0 0 0 1.57 12.848c1.765 0 3.369-.7 4.542-1.843l3.861 6.956c.21.378-.053.854-.473.854h-.003Z" fill="url(#crawlee-body)" stroke="url(#crawlee-body)" stroke-width="1.039"/><path d="M37.855 25.017a6.519 6.519 0 0 1-5.938 3.825 6.518 6.518 0 0 1-6.52-6.52 6.518 6.518 0 0 1 9.343-5.878" stroke="url(#crawlee-arc)" stroke-width="2"/><defs><linearGradient id="crawlee-body" x1="40.393" y1="7.193" x2="12.912" y2="37.541" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient><linearGradient id="crawlee-arc" x1="37.855" y1="15.803" x2="24.829" y2="28.247" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient></defs></svg>'
 
 const PLAY =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l11 7-11 7z"/></svg>'

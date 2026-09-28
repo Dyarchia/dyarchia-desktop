@@ -49,9 +49,13 @@ export function activate(ctx: PluginContext): void {
 }
 ```
 
-- `icon` is inline SVG in `currentColor` or a mark in its own colours. Icon keys draw their
+- `icon` is inline SVG, a mark of the plugin's own. Icon keys draw their
   glyph with `glyph()` from `@dyarchia/sdk`, never a local SVG or a spelled verb.
 - `duplicable: true` allows `<id>#<n>` instances; `keepAlive: true` keeps a covered panel mounted.
+- The panel's actions go in `handle.toolbar`, which the shell shows in the dock's tab row (or a
+  modal's head) at one control size. `width` and `maxWidth` set the column it opens as and how
+  wide its content may grow; `modal: true` opens it over the window instead of in the dock.
+- Icons are black and white Spartan marks, solid shapes, `aria-hidden`; a brand keeps its own.
 - `registerOpener` goes in `activate`, not in a mount. The shell shows the panel before handing
   the request over and keeps the first opener per extension. A finder never names the reader:
   it asks `ctx.shell.canOpen` and falls back to `reveal`.

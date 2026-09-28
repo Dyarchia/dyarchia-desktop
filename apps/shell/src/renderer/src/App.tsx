@@ -3,6 +3,7 @@ import type { DockviewApi } from 'dockview-react'
 import { DockLayout } from './layout/DockLayout'
 import { Notices } from './components/Notices'
 import { TopBar } from './components/TopBar'
+import { ModalPanel } from './panels/ModalPanel'
 import { basePanelId, getRegisteredPanels, onRegistryChange, panelRenderer } from './panels/registry'
 import { installOpeners } from './panels/openers'
 import { loadPlugins } from './plugins/host'
@@ -13,6 +14,9 @@ export function App(): React.JSX.Element {
     const [pluginsReady, setPluginsReady] = useState(false)
     const [, setRevision] = useState(0)
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
+    const [modal, setModal] = useState<string | null>(null)
+    const isModal = (id: string): boolean =>
+        getRegisteredPanels().some((panel) => panel.descriptor.id === id && panel.descriptor.modal)
 
     useEffect(() => {
         const unsubscribe = onRegistryChange(() => setRevision((r) => r + 1))
@@ -37,7 +41,7 @@ export function App(): React.JSX.Element {
             for (const panel of [...dockApi.panels]) {
                 const base = basePanelId(panel.id)
                 const descriptor = getRegisteredPanels().find((p) => p.descriptor.id === base)
-                if (!descriptor) {
+                if (!descriptor || descriptor.descriptor.modal) {
                     dockApi.removePanel(panel)
                 } else if (panel.title !== descriptor.descriptor.title) {
                     panel.api.setTitle(descriptor.descriptor.title)
@@ -53,6 +57,10 @@ export function App(): React.JSX.Element {
     const handleToggle = useCallback(
         (id: string) => {
             if (!api) return
+            if (isModal(id)) {
+                setModal((current) => (current === id ? null : id))
+                return
+            }
             const instances = api.panels.filter((panel) => basePanelId(panel.id) === id)
             if (instances.length > 0) {
                 for (const panel of instances) api.removePanel(panel)
@@ -83,6 +91,10 @@ export function App(): React.JSX.Element {
     const handleOpen = useCallback(
         (id: string) => {
             if (!api) return
+            if (isModal(id)) {
+                setModal(id)
+                return
+            }
             const instance = api.panels.find((panel) => basePanelId(panel.id) === id)
             if (instance) {
                 instance.api.setActive()
@@ -107,11 +119,11 @@ export function App(): React.JSX.Element {
         <div className="shell">
             <TopBar
                 panels={getRegisteredPanels().map((panel) => panel.descriptor)}
-                openPanelIds={openPanelIds}
+                openPanelIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
                 onToggle={handleToggle}
-                brand={pluginsReady && openPanelIds.size > 0}
+                brand={pluginsReady && (openPanelIds.size > 0 || modal !== null)}
             />
-            <div className="shell-body">
+            <div className="shell-body" inert={modal !== null}>
                 {pluginsReady ? (
                     <DockLayout onReady={handleReady} onOpen={handleOpen} />
                 ) : (
@@ -122,6 +134,7 @@ export function App(): React.JSX.Element {
                     </div>
                 )}
             </div>
+            {modal && <ModalPanel key={modal} id={modal} onClose={() => setModal(null)} />}
             <Notices />
         </div>
     )

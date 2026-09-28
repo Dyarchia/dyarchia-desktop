@@ -1,5 +1,5 @@
 import { glyph, injectStyles, ownIds } from '@dyarchia/sdk'
-import type { PluginCatalogueEntry, PluginContext } from '@dyarchia/sdk'
+import type { PluginContext } from '@dyarchia/sdk'
 
 /*
  * The panel that decides what this installation is.
@@ -40,6 +40,7 @@ interface CatalogueEntry {
         requires?: Requirement[]
     }
     directory: string
+    icon?: string
     core: boolean
     enabled: boolean
     loaded: boolean
@@ -65,11 +66,11 @@ interface Status {
 
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
- * a hoplite shield, the aspis, with the lambda of Lacedaemon.
+ * a hoplite shield bearing a delta, for Dyarchia.
  * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const GEAR_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10.4" fill="#eceef2"/><circle cx="12" cy="12" r="8.6" fill="#0a0a0b"/><circle cx="12" cy="12" r="7.6" fill="#eceef2"/><path d="M7.9 16.6 12 6.6l4.1 10" fill="none" stroke="#0a0a0b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="#eceef2"/><path d="M12 5.6 17.9 17.2H6.1z" fill="none" stroke="#0a0a0b" stroke-width="2.3" stroke-linejoin="round"/></svg>'
 
 const STYLES = `
 .set {
@@ -82,29 +83,63 @@ const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-4);
 }
-.set-scroll > .dya-table {
-    width: 100%;
+.set-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+}
+/*
+ * A plugin is a row of its own: the switch, its mark at a size that reads, its name and what it
+ * is, and under them, on one line that wraps, what it brings with it and how much it weighs.
+ */
+.set-plugin {
+    display: grid;
+    grid-template-columns: 20px 28px minmax(0, 1fr) auto;
+    column-gap: var(--dya-space-4);
+    row-gap: var(--dya-space-3);
+    align-items: start;
+    padding: var(--dya-space-4);
+    border: var(--dya-border-width) solid var(--dya-hairline);
+    border-radius: var(--dya-radius-card);
+    background: var(--dya-glass-card);
 }
 .set-toggle {
-    width: 1%;
+    padding-top: 4px;
 }
-.set-scroll .dya-table__prose {
-    min-width: 20ch;
+.set-mark {
+    width: 28px;
+    height: 28px;
+}
+.set-mark > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.set-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-1);
+    min-width: 0;
+}
+.set-name {
+    font-size: var(--dya-size-h4);
+    color: var(--dya-text);
 }
 .set-needs {
+    grid-column: 3 / -1;
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--dya-space-2);
-    max-width: 280px;
+}
+.set-needs:empty {
+    display: none;
 }
 .set-log {
     max-height: 40%;
     overflow-y: auto;
-    margin: 0 var(--dya-space-4) var(--dya-space-3);
+    margin-top: var(--dya-space-3);
 }
 .set-folders {
     position-area: bottom span-left;
@@ -116,24 +151,6 @@ const STYLES = `
     display: contents;
 }
 `
-
-/*
- * A plugin's name beside its icon, the face it wears on its key, its tile and its tabs. This is
- * the one screen that lists every plugin at once, so it is where a reader learns which face is
- * which. A plugin that is not loaded has shown no icon yet and is its name alone.
- */
-function named(entry: PluginCatalogueEntry, tag: string, className: string): HTMLElement {
-    const name = el(tag, className)
-    const inner = el('span', 'dya-legend')
-    if (entry.icon?.startsWith('<svg')) {
-        const glyph = el('span', 'dya-glyph')
-        glyph.innerHTML = ownIds(entry.icon)
-        inner.append(glyph)
-    }
-    inner.append(entry.manifest.name)
-    name.append(inner)
-    return name
-}
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
     const node = document.createElement(tag)
@@ -150,8 +167,7 @@ export function activate(ctx: PluginContext): void {
             id: 'settings',
             title: 'Setup',
             icon: GEAR_ICON,
-            width: 560,
-            maxWidth: 880
+            modal: true
         },
         (container, handle) => {
         const root = el('div', 'set')
@@ -270,11 +286,20 @@ export function activate(ctx: PluginContext): void {
          * plugins the application is made of have no switch: nobody is better off without a terminal.
          */
         function row(entry: CatalogueEntry): HTMLElement {
-            const tr = el('tr', 'dya-row')
-            const toggleCell = el('td', 'set-toggle')
-            const end = el('td', 'dya-table__end')
-            const needs = el('div', 'set-needs')
-            end.append(needs)
+            const item = el('div', 'set-plugin')
+            const toggleCell = el('div', 'set-toggle')
+            /*
+             * The one screen that lists every plugin at once is where a reader learns which face is
+             * which, so each wears its mark; one that is not loaded has shown none yet.
+             */
+            const mark = el('span', 'set-mark')
+            if (entry.icon?.startsWith('<svg')) mark.innerHTML = ownIds(entry.icon)
+
+            const text = el('div', 'set-text')
+            text.append(el('span', 'set-name', entry.manifest.name))
+            if (entry.manifest.description && entry.manifest.description !== entry.manifest.name) {
+                text.append(el('span', 'dya-text set-desc', entry.manifest.description))
+            }
 
             const pending = el('span', 'dya-badge dya-badge--warning', 'next launch')
             const paintPending = (): void => {
@@ -297,19 +322,8 @@ export function activate(ctx: PluginContext): void {
             }
             paintPending()
 
-            tr.append(
-                toggleCell,
-                named(entry, 'td', 'dya-table__name'),
-                el(
-                    'td',
-                    'dya-table__prose',
-                    entry.manifest.description === entry.manifest.name ? '' : (entry.manifest.description ?? '')
-                ),
-                end
-            )
-            needs.append(pending)
-            const status = el('div', 'set-needs')
-            needs.append(status)
+            const needs = el('div', 'set-needs')
+            item.append(toggleCell, mark, text, pending, needs)
 
             if ((entry.manifest.requires ?? []).length > 0) {
                 void ctx
@@ -317,9 +331,9 @@ export function activate(ctx: PluginContext): void {
                         pluginId: entry.manifest.id,
                         requires: entry.manifest.requires ?? []
                     })
-                    .then((statuses) => renderNeeds(entry, status, statuses as Status[]))
+                    .then((statuses) => renderNeeds(entry, needs, statuses as Status[]))
             }
-            return tr
+            return item
         }
 
         function renderFolders(paths: Paths): void {
@@ -358,15 +372,11 @@ export function activate(ctx: PluginContext): void {
 
             renderFolders(paths)
 
-            const table = el('table', 'dya-table')
-            const body = el('tbody')
-            const ordered = [
-                ...entries.filter((entry) => entry.core),
-                ...optional
-            ]
-            for (const entry of ordered) body.append(row(entry))
-            table.append(body)
-            scroll.replaceChildren(table)
+            const list = el('div', 'set-list')
+            for (const entry of [...entries.filter((entry) => entry.core), ...optional]) {
+                list.append(row(entry))
+            }
+            scroll.replaceChildren(list)
             refreshRestart()
         }
 

@@ -26,6 +26,11 @@ export interface PanelDescriptor {
      */
     width?: number
     maxWidth?: number
+    /*
+     * A panel that is visited rather than worked in opens over the window as a modal, never in
+     * the dock: somewhere to decide something and leave.
+     */
+    modal?: boolean
 }
 
 export type PanelDispose = () => void

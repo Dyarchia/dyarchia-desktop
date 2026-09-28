@@ -8,6 +8,7 @@ export interface PanelDescriptor {
     keepAlive?: boolean
     width?: number
     maxWidth?: number
+    modal?: boolean
 }
 
 /*

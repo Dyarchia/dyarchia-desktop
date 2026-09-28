@@ -29,6 +29,12 @@
     }
 }
 
+@keyframes dya-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
 @keyframes dya-blink {
     50% {
         opacity: 0;

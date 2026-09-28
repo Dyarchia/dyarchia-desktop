@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { registerNotices, showNotice } from './notices'
 import type { PluginNotice } from './notices'
 import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './pythonHost'
-import { root } from './paths'
+import { dataHome, root } from './paths'
 import { hasChosen, isCore, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
 import { withdrawDisabledOffers } from './offers'
 
@@ -236,6 +236,7 @@ async function activateMainModules(): Promise<void> {
             const mod = await import(moduleUrl)
             await mod.activate({
                 pluginId: manifest.id,
+                dataHome: dataHome(),
                 handle: (channel: string, handler: (...args: unknown[]) => unknown) => {
                     ipcMain.handle(
                         `plugin:${manifest.id}:${channel}`,

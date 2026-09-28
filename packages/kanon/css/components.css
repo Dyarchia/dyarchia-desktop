@@ -95,6 +95,21 @@
     color: var(--dya-text-4);
 }
 
+/*
+ * A word that reports something finished and then leaves on its own: nothing needs doing about
+ * it, so it never waits to be dismissed. It fades over five seconds, slowly enough to be read;
+ * with reduced motion it stays the same five seconds and then goes at once.
+ */
+.dya-key-label--leave {
+    animation: dya-fade-out var(--dya-dur-leave) var(--dya-ease) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dya-key-label--leave {
+        animation-delay: var(--dya-dur-leave);
+    }
+}
+
 .dya-value {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
@@ -1770,6 +1785,18 @@ textarea.dya-field {
 }
 
 /*
+ * A sheet for one errand, choosing or making something, rather than for reading: centred, as wide
+ * as a list of names needs and no wider, with the scrim showing round it, so it reads as a box
+ * raised over the panel and not as the panel turned into another page.
+ */
+.dya-sheet--modal {
+    inset: var(--dya-space-6) 0 auto;
+    width: min(640px, calc(100% - 2 * var(--dya-space-3)));
+    max-height: calc(100% - 2 * var(--dya-space-6));
+    margin-inline: auto;
+}
+
+/*
  * What a sheet leaves behind it, and the half of modality that can be seen. The scrim says the
  * region is out of play; `inert` on the same region makes it true. Neither is optional and neither
  * is sufficient, so a sheet raises both or it is not a sheet.
@@ -2610,11 +2637,13 @@ button.dya-step__subject {
 /*
  * A table that stacks. Below 700px of pane each row becomes a card on the first surface, the head
  * row goes, and every cell carries its column's name in front of it, from its `data-label`, so a
- * wide table never scrolls sideways in a split pane.
+ * wide table never scrolls sideways in a split pane. An empty cell goes with the head: a name with
+ * nothing after it is a line that says nothing.
  */
 @container pane (max-width: 699.98px) {
     .dya-table--stack,
     .dya-table--stack tbody,
+    .dya-table--stack tfoot,
     .dya-table--stack tr,
     .dya-table--stack td {
         display: block;
@@ -2643,6 +2672,10 @@ button.dya-step__subject {
         border-radius: 0;
         background: none;
         text-align: left;
+    }
+
+    .dya-table.dya-table--stack td:empty {
+        display: none;
     }
 
     .dya-table.dya-table--stack td::before {

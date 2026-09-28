@@ -1,6 +1,6 @@
-import { BrowserWindow, dialog } from 'electron'
-import { readFile, stat, writeFile } from 'node:fs/promises'
-import { basename, extname } from 'node:path'
+import { BrowserWindow, dialog, shell } from 'electron'
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { basename, dirname, extname, join, resolve } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -24,6 +24,17 @@ async function choose(): Promise<string | null> {
         ? await dialog.showOpenDialog(parent, options)
         : await dialog.showOpenDialog(options)
     return result.canceled ? null : (result.filePaths[0] ?? null)
+}
+
+/*
+ * A page is named by whoever makes it, in a field, so the name is checked here: one segment, none
+ * of the characters Windows refuses, and markdown unless it says otherwise.
+ */
+function pageName(raw: unknown): string | null {
+    if (typeof raw !== 'string') return null
+    const name = raw.trim().replace(/[. ]+$/, '')
+    if (!name || /[<>:"/\\|?*\u0000-\u001f]/.test(name)) return null
+    return extname(name) ? name : `${name}.md`
 }
 
 async function load(filePath: string): Promise<Record<string, unknown>> {
@@ -54,6 +65,79 @@ export function activate(ctx: PluginMainContext): void {
         const filePath = await choose()
         if (!filePath) return { canceled: true }
         return load(filePath)
+    })
+
+    const pages = join(ctx.dataHome, 'docs')
+
+    /*
+     * The pages this panel keeps: the files in one folder of the data home, newest first. Files
+     * anywhere else are reached through the file picker and are not listed.
+     */
+    ctx.handle('list', async () => {
+        await mkdir(pages, { recursive: true })
+        const entries = await readdir(pages, { withFileTypes: true })
+        const files = await Promise.all(
+            entries
+                .filter((entry) => entry.isFile())
+                .map(async (entry) => {
+                    const path = join(pages, entry.name)
+                    const info = await stat(path)
+                    return { name: entry.name, path, size: info.size, mtime: info.mtimeMs }
+                })
+        )
+        return files.sort((a, b) => b.mtime - a.mtime)
+    })
+
+    /*
+     * A new page is created empty and then read like any other. A name already taken is refused
+     * rather than emptied.
+     */
+    ctx.handle('create', async (raw: unknown) => {
+        const name = pageName(raw)
+        if (!name) return { error: 'Not a file name' }
+        const filePath = join(pages, name)
+        try {
+            await mkdir(pages, { recursive: true })
+            await writeFile(filePath, '', { encoding: 'utf-8', flag: 'wx' })
+        } catch (error) {
+            return {
+                error: (error as NodeJS.ErrnoException).code === 'EEXIST'
+                    ? 'Already exists'
+                    : 'Cannot create that file'
+            }
+        }
+        return load(filePath)
+    })
+
+    ctx.handle('rename', async (payload: unknown) => {
+        const { path, name: raw } = (payload ?? {}) as { path?: unknown; name?: unknown }
+        const name = pageName(raw)
+        if (typeof path !== 'string' || !path) return { error: 'No file to rename' }
+        if (!name) return { error: 'Not a file name' }
+        const next = join(dirname(path), name)
+        if (next === resolve(path)) return { path: next, name }
+        const taken = await stat(next).then(() => true, () => false)
+        if (taken) return { error: 'Already exists' }
+        try {
+            await rename(path, next)
+            return { path: next, name }
+        } catch {
+            return { error: 'Cannot rename that file' }
+        }
+    })
+
+    /*
+     * Deleting sends the file to the recycle bin, never past it, so a wrong click costs a trip
+     * there and not the file.
+     */
+    ctx.handle('delete', async (target: unknown) => {
+        if (typeof target !== 'string' || !target) return { error: 'No file to delete' }
+        try {
+            await shell.trashItem(resolve(target))
+            return {}
+        } catch {
+            return { error: 'Cannot delete that file' }
+        }
     })
 
     /*

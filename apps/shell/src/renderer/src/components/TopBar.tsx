@@ -92,7 +92,7 @@ interface UpdateState {
  * The build, and what can be done about it, in one place: the version was already stated here and
  * an update is a fact about that version. The version is itself the key that asks GitHub now, so
  * a release published while the window is open need not wait for the next scheduled check; it
- * says `checking` while it asks and `up to date` for a moment when the answer is that. Beside it
+ * says `checking` while it asks and `up to date`, fading out, when the answer is that. Beside it
  * a control appears only in the three states that have something to press.
  *
  * A check that failed does not take the bar. It is a background request to a service that may
@@ -121,10 +121,7 @@ function Build(): React.JSX.Element {
     useEffect(() => {
         if (!asked || phase === 'checking') return
         setAsked(false)
-        if (phase !== 'current') return
-        setTold(true)
-        const timer = window.setTimeout(() => setTold(false), 4000)
-        return () => window.clearTimeout(timer)
+        setTold(phase === 'current')
     }, [asked, phase])
 
     const check = (): void => {
@@ -154,7 +151,14 @@ function Build(): React.JSX.Element {
                 {tip}
             </div>
             {phase === 'checking' && asked && <span className="dya-key-label">checking…</span>}
-            {told && <span className="dya-key-label">up to date</span>}
+            {told && (
+                <span
+                    className="dya-key-label dya-key-label--leave"
+                    onAnimationEnd={() => setTold(false)}
+                >
+                    up to date
+                </span>
+            )}
             {phase === 'available' && (
                 <button
                     className="dya-button dya-button--sm topbar-update"

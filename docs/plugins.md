@@ -59,7 +59,8 @@ export function activate(ctx: PluginContext): void {
 
 ## Main module
 
-Node, ESM, exporting `activate(ctx)` with `handle`, `broadcast` and `notify({ title, body })`.
+Node, ESM, exporting `activate(ctx)` with `handle`, `broadcast` and `notify({ title, body })`;
+`ctx.dataHome` is where what a plugin makes for the user goes, `~/.dyarchia/data`.
 Channels are short names the shell prefixes: `ctx.handle('spawn')` registers `plugin:<id>:spawn`,
 which `ctx.invoke('spawn')` reaches. Never write the full name. Edits need an app restart.
 

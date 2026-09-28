@@ -5,5 +5,5 @@
     "toolbar": 3,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
-    "description": "Markdown reader and text editor"
+    "description": "Pages: write, read, rename, delete"
 }

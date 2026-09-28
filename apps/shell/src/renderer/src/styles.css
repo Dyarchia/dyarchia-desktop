@@ -189,13 +189,13 @@ body,
     background: var(--dya-glass);
     border: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius-chassis);
-    box-shadow: var(--dya-elev-chassis);
+    box-shadow: var(--dya-elev-panel);
 }
 
 .dv-shell.dockview-theme-abyss-spaced .dv-groupview::before {
     content: '';
     position: absolute;
-    inset: -1px;
+    inset: 0;
     z-index: 1;
     padding: 1px;
     border-radius: inherit;

@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { glyph, highlight, highlightLines, injectStyles } from '@dyarchia/sdk'
-import type { OpenRequest, PluginContext } from '@dyarchia/sdk'
+import type { GlyphName, OpenRequest, PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
     canceled?: boolean
@@ -13,6 +13,23 @@ interface OpenResult {
     content?: string
 }
 
+interface DeleteResult {
+    error?: string
+}
+
+interface Page {
+    name: string
+    path: string
+    size: number
+    mtime: number
+}
+
+interface RenameResult {
+    error?: string
+    path?: string
+    name?: string
+}
+
 interface WriteResult {
     error?: string
     stale?: boolean
@@ -21,18 +38,47 @@ interface WriteResult {
 
 const STYLES = `
 .docviewer {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
+}
+.docviewer-header[hidden],
+.docviewer-library[hidden] {
+    display: none;
+}
+.docviewer-library-head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+.docviewer-library-head .dya-field {
+    flex: 1;
+    min-width: 0;
+}
+.docviewer-library-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+.docviewer-library-list .dya-row {
+    cursor: pointer;
+}
+.docviewer-library-list .dya-table td:first-child {
+    padding-inline-start: calc(var(--dya-space-3) + var(--dya-border-width));
+}
+.docviewer-library-list .dya-table td:last-child {
+    padding-inline-end: 0;
+}
+.docviewer-row-keys {
+    display: inline-flex;
+    gap: var(--dya-space-2);
 }
 .docviewer-header {
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
     padding: var(--dya-space-2) var(--dya-space-3);
-}
-.docviewer-header[hidden] {
-    display: none;
 }
 .docviewer-modes {
     display: flex;
@@ -168,8 +214,7 @@ export function activate(ctx: PluginContext): void {
 
             /*
              * The bar names what is open, so it is there once something is. With nothing open the
-             * offer is the panel itself and a bar holding one control and a rule is a fragment of
-             * an interface above a void.
+             * tile in the middle of the panel is the way in, and a bar repeating it is noise.
              */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
@@ -327,8 +372,9 @@ export function activate(ctx: PluginContext): void {
                 tile.innerHTML =
                     `<span class="dya-tile__icon">${DOCS_ICON}</span>` +
                     '<span class="dya-tile__name">Unfold a page</span>' +
-                    '<span class="dya-tile__note">Markdown, or any text to edit</span>'
-                tile.onclick = () => void openFile()
+                    '<span class="dya-tile__note">Write, read, rename or delete pages. ' +
+                    'Markdown with its diagrams, JSON, YAML, code, plain text</span>'
+                tile.onclick = () => openLibrary()
 
                 if (message) {
                     const line = document.createElement('span')
@@ -341,19 +387,301 @@ export function activate(ctx: PluginContext): void {
                 content.replaceChildren(invite)
             }
 
-            /*
-             * Opening is an icon key in the bar. An empty panel already says what it is for with
-             * the tile in its middle, so the bar's key does not have to spell it out as well.
-             */
-            function openButton(): HTMLButtonElement {
+            function barKey(icon: GlyphName, label: string, act: () => void): HTMLButtonElement {
                 const button = document.createElement('button')
+                button.type = 'button'
                 button.className = 'dya-key'
-                button.innerHTML = glyph('folder')
-                button.title = 'Open'
-                button.setAttribute('aria-label', 'Open')
-                button.onclick = () => void openFile()
+                button.innerHTML = glyph(icon)
+                button.title = label
+                button.setAttribute('aria-label', label)
+                button.onclick = (event) => {
+                    event.stopPropagation()
+                    act()
+                }
                 return button
             }
+
+            /*
+             * The pages: every file in the data home's docs folder, in a sheet over the panel.
+             * It is the whole of what can be done to a page. The one field finds a page as it is
+             * typed and makes one of that name on Enter when none matches, a row opens on a click,
+             * and each row carries its rename and its delete. Browse is the way to a file kept
+             * anywhere else. The sheet covers, so it is modal: a scrim, the rest inert, Escape out.
+             */
+            const scrim = document.createElement('div')
+            scrim.className = 'dya-scrim'
+            scrim.hidden = true
+
+            const library = document.createElement('aside')
+            library.className = 'dya-sheet dya-sheet--modal dya-pane docviewer-library'
+            library.setAttribute('role', 'dialog')
+            library.setAttribute('aria-modal', 'true')
+            library.setAttribute('aria-label', 'Pages')
+            library.hidden = true
+
+            const find = document.createElement('input')
+            find.className = 'dya-field'
+            find.placeholder = 'Find or name a page'
+            find.setAttribute('aria-label', 'Find or name a page')
+            find.spellcheck = false
+
+            const libraryHead = document.createElement('div')
+            libraryHead.className = 'docviewer-library-head'
+            libraryHead.append(
+                find,
+                barKey('new-file', 'New', () => void makePage()),
+                barKey('folder', 'Browse', () => void browse()),
+                barKey('close', 'Close', closeLibrary)
+            )
+
+            const complaint = document.createElement('span')
+            complaint.className = 'dya-problem'
+            complaint.hidden = true
+
+            const list = document.createElement('div')
+            list.className = 'docviewer-library-list'
+
+            library.append(libraryHead, complaint, list)
+
+            let pages: Page[] = []
+            let opener: HTMLElement | null = null
+
+            function complain(message?: string): void {
+                complaint.textContent = message ?? ''
+                complaint.hidden = !message
+            }
+
+            function when(mtime: number): string {
+                const at = new Date(mtime)
+                const pad = (value: number): string => String(value).padStart(2, '0')
+                return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} ` +
+                    `${pad(at.getHours())}:${pad(at.getMinutes())}`
+            }
+
+            function size(bytes: number): string {
+                if (bytes < 1024) return `${bytes} B`
+                if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+                return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+            }
+
+            function cell(className: string, text: string): HTMLTableCellElement {
+                const td = document.createElement('td')
+                td.className = className
+                td.textContent = text
+                return td
+            }
+
+            function draw(): void {
+                const wanted = find.value.trim().toLowerCase()
+                const shown = pages.filter((page) => page.name.toLowerCase().includes(wanted))
+                if (shown.length === 0) {
+                    list.replaceChildren()
+                    return
+                }
+                const table = document.createElement('table')
+                table.className = 'dya-table'
+                const body = document.createElement('tbody')
+                for (const page of shown) {
+                    const row = document.createElement('tr')
+                    row.className = 'dya-row'
+                    const title = cell('dya-table__subject', page.name)
+                    const end = document.createElement('td')
+                    end.className = 'dya-table__end'
+                    const keys = document.createElement('span')
+                    keys.className = 'docviewer-row-keys'
+                    keys.append(
+                        barKey('rename', 'Rename', () => renameRow(page, title)),
+                        barKey('delete', 'Delete', () => void deletePage(page))
+                    )
+                    end.append(keys)
+                    row.append(
+                        title,
+                        cell('dya-table__fit', when(page.mtime)),
+                        cell('dya-table__num dya-table__fit', size(page.size)),
+                        end
+                    )
+                    row.onclick = () => void openPage(page.path)
+                    body.append(row)
+                }
+                table.append(body)
+                list.replaceChildren(table)
+            }
+
+            async function refresh(): Promise<void> {
+                try {
+                    pages = (await ctx.invoke('list')) as Page[]
+                } catch {
+                    pages = []
+                    complain('Cannot list the pages')
+                }
+                draw()
+            }
+
+            function openLibrary(): void {
+                if (!library.hidden) return
+                opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+                header.inert = true
+                content.inert = true
+                scrim.hidden = false
+                library.hidden = false
+                find.value = ''
+                complain()
+                void refresh()
+                find.focus()
+            }
+
+            function closeLibrary(): void {
+                if (library.hidden) return
+                library.hidden = true
+                scrim.hidden = true
+                header.inert = false
+                content.inert = false
+                opener?.focus()
+                opener = null
+            }
+
+            /*
+             * Leaving a page with unsaved changes is the one thing here that loses work without
+             * a trace, so it alone asks.
+             */
+            function leave(): boolean {
+                return !dirty || window.confirm(`Discard changes to ${current?.name}?`)
+            }
+
+            async function shift(load: () => Promise<OpenResult>, start?: Mode): Promise<void> {
+                if (busy || !leave()) return
+                busy = true
+                complain()
+                try {
+                    const result = await load()
+                    if (result.canceled) return
+                    if (result.error) {
+                        complain(result.error)
+                        return
+                    }
+                    closeLibrary()
+                    await present(result, undefined, start)
+                } catch {
+                    complain('Cannot open that file')
+                } finally {
+                    busy = false
+                }
+            }
+
+            function openPage(path: string): Promise<void> {
+                return shift(() => ctx.invoke('read', path) as Promise<OpenResult>)
+            }
+
+            function browse(): Promise<void> {
+                return shift(() => ctx.invoke('open') as Promise<OpenResult>)
+            }
+
+            async function makePage(): Promise<void> {
+                const wanted = find.value.trim()
+                if (!wanted) {
+                    find.focus()
+                    return
+                }
+                await shift(() => ctx.invoke('create', wanted) as Promise<OpenResult>, 'edit')
+            }
+
+            find.oninput = () => {
+                complain()
+                draw()
+            }
+
+            find.onkeydown = (event) => {
+                if (event.key !== 'Enter') return
+                event.preventDefault()
+                const wanted = find.value.trim()
+                const match = pages.find((page) => page.name === wanted || page.name === `${wanted}.md`)
+                void (match ? openPage(match.path) : makePage())
+            }
+
+            /*
+             * A rename is the name cell turned into a field. Enter or clicking away keeps the new
+             * name, Escape keeps the old one.
+             */
+            function renameRow(page: Page, title: HTMLTableCellElement): void {
+                const field = document.createElement('input')
+                field.className = 'dya-field dya-field--sm'
+                field.value = page.name
+                field.spellcheck = false
+                field.setAttribute('aria-label', `Rename ${page.name}`)
+                field.onclick = (event) => event.stopPropagation()
+                let settled = false
+
+                const commit = async (): Promise<void> => {
+                    if (settled) return
+                    settled = true
+                    const next = field.value.trim()
+                    if (!next || next === page.name) {
+                        draw()
+                        return
+                    }
+                    const result = (await ctx.invoke('rename', {
+                        path: page.path,
+                        name: next
+                    })) as RenameResult
+                    if (result.error) {
+                        complain(result.error)
+                        draw()
+                        return
+                    }
+                    if (current?.path === page.path && result.path && result.name) {
+                        current.path = result.path
+                        current.name = result.name
+                        current.markdown = result.name.toLowerCase().endsWith('.md')
+                        name.textContent = result.name
+                        if (!current.markdown && mode === 'rendered') mode = 'source'
+                        syncModes()
+                        void renderCurrent()
+                    }
+                    complain()
+                    await refresh()
+                }
+
+                field.onkeydown = (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void commit()
+                    } else if (event.key === 'Escape') {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        settled = true
+                        draw()
+                    }
+                }
+                field.onblur = () => void commit()
+
+                title.replaceChildren(field)
+                field.focus()
+                const dot = page.name.lastIndexOf('.')
+                field.setSelectionRange(0, dot > 0 ? dot : page.name.length)
+            }
+
+            async function deletePage(page: Page): Promise<void> {
+                if (!window.confirm(`Delete ${page.name}?`)) return
+                complain()
+                try {
+                    const result = (await ctx.invoke('delete', page.path)) as DeleteResult
+                    if (result.error) {
+                        complain(result.error)
+                        return
+                    }
+                    if (current?.path === page.path) showEmpty()
+                } catch {
+                    complain('Cannot delete that file')
+                }
+                await refresh()
+            }
+
+            scrim.onclick = closeLibrary
+            root.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape' || library.hidden || event.defaultPrevented) return
+                event.preventDefault()
+                closeLibrary()
+            })
 
             /*
              * Every fenced block in a rendered document, coloured by the language it declares.
@@ -472,7 +800,7 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
-            async function present(result: OpenResult, line?: number): Promise<void> {
+            async function present(result: OpenResult, line?: number, start?: Mode): Promise<void> {
                 current = result
                 target = line ?? null
                 /*
@@ -480,7 +808,7 @@ export function activate(ctx: PluginContext): void {
                  * view where a line number means anything: the rendered view is HTML and has no
                  * lines to point at. The mode buttons are right there when the reader wants prose.
                  */
-                mode = line || !result.markdown ? 'source' : 'rendered'
+                mode = start ?? (line || !result.markdown ? 'source' : 'rendered')
                 name.textContent = result.name ?? ''
                 header.hidden = false
                 /*
@@ -495,24 +823,6 @@ export function activate(ctx: PluginContext): void {
                 say()
                 syncModes()
                 await renderCurrent()
-            }
-
-            async function openFile(): Promise<void> {
-                if (busy) return
-                busy = true
-                try {
-                    const result = (await ctx.invoke('open')) as OpenResult
-                    if (result.canceled) return
-                    if (result.error) {
-                        showEmpty(result.error)
-                        return
-                    }
-                    await present(result)
-                } catch {
-                    showEmpty('Cannot open that file')
-                } finally {
-                    busy = false
-                }
             }
 
             async function renderDiagrams(host: HTMLElement): Promise<void> {
@@ -560,11 +870,13 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
-            header.append(openButton())
+            header.append(barKey('file', 'Pages', openLibrary))
+            root.append(scrim, library)
             showEmpty()
 
             async function accept(request: OpenRequest): Promise<void> {
-                if (busy) return
+                if (busy || !leave()) return
+                closeLibrary()
                 busy = true
                 try {
                     const result = (await ctx.invoke('read', request.path)) as OpenResult

@@ -159,6 +159,7 @@ export interface PluginNotice {
 
 export interface PluginMainContext {
     readonly pluginId: string
+    readonly dataHome: string
     handle(channel: string, handler: (...args: unknown[]) => unknown | Promise<unknown>): void
     broadcast(channel: string, ...args: unknown[]): void
     notify(notice: PluginNotice): void

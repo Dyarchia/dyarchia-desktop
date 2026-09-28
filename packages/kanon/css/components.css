@@ -747,8 +747,8 @@
  */
 .dya-tile__icon {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 28px;
+    height: 28px;
     color: var(--dya-text-2);
 }
 
@@ -1380,8 +1380,8 @@ textarea.dya-field {
     display: inline-grid;
     place-items: center;
     flex: none;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     color: var(--dya-text-4);
 }
 

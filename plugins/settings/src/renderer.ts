@@ -63,8 +63,14 @@ interface Status {
     detail: string
 }
 
+/*
+ * The panel's mark: drawn for this application in flat layers, a metal body, a shadow on its lower
+ * half and one colour of the palette, so it reads as a thing to press at 16px and as the panel's
+ * face on its tile. Flat fills and no gradients, because the same mark is drawn several times at
+ * once and a gradient is found by id.
+ */
 const GEAR_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.55 9.67 L22 9.97 L22 14.03 L19.55 14.33 L18.99 15.69 L20.5 17.64 L17.64 20.5 L15.69 18.99 L14.33 19.55 L14.03 22 L9.97 22 L9.67 19.55 L8.31 18.99 L6.36 20.5 L3.5 17.64 L5.01 15.69 L4.45 14.33 L2 14.03 L2 9.97 L4.45 9.67 L5.01 8.31 L3.5 6.36 L6.36 3.5 L8.31 5.01 L9.67 4.45 L9.97 2 L14.03 2 L14.33 4.45 L15.69 5.01 L17.64 3.5 L20.5 6.36 L18.99 8.31Z" fill="#c9ced6" stroke="#c9ced6" stroke-width=".8" stroke-linejoin="round"/><path d="M3 13.2a9 9 0 0 0 18 0z" fill="#0a0a0b" fill-opacity=".2"/><circle cx="12" cy="12" r="4.4" fill="#f5b031"/><circle cx="12" cy="12" r="2.2" fill="#15171b"/></svg>'
 
 const STYLES = `
 .set {

@@ -149,8 +149,14 @@ interface CardProgress {
     waiting: boolean
 }
 
+/*
+ * The panel's mark: drawn for this application in flat layers, a metal body, a shadow on its lower
+ * half and one colour of the palette, so it reads as a thing to press at 16px and as the panel's
+ * face on its tile. Flat fills and no gradients, because the same mark is drawn several times at
+ * once and a gradient is found by id.
+ */
 const ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="10" rx="1"/><rect x="16" y="4" width="5" height="13" rx="1"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="3.5" width="19" height="17" rx="3" fill="#15171b" stroke="#b9bfc8" stroke-width="1.3"/><rect x="5.3" y="6.4" width="3.8" height="10.6" rx="1.1" fill="#8559f9"/><rect x="10.1" y="6.4" width="3.8" height="6.6" rx="1.1" fill="#1970fd"/><rect x="14.9" y="6.4" width="3.8" height="8.6" rx="1.1" fill="#f07a35"/></svg>'
 
 const STROKE =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'

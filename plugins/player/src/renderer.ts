@@ -8,8 +8,14 @@ interface OpenResult {
     src?: string
 }
 
+/*
+ * The panel's mark: drawn for this application in flat layers, a metal body, a shadow on its lower
+ * half and one colour of the palette, so it reads as a thing to press at 16px and as the panel's
+ * face on its tile. Flat fills and no gradients, because the same mark is drawn several times at
+ * once and a gradient is found by id.
+ */
 const PLAYER_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#f07a35"/><path d="M2 12a10 10 0 0 0 20 0z" fill="#0a0a0b" fill-opacity=".18"/><path d="M5 7.5a8.4 8.4 0 0 1 14 0" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.2" stroke-linecap="round"/><path d="M10 8v8l6.3-4z" fill="#fff" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>'
 
 const STYLES = `
 .player {
@@ -23,10 +29,6 @@ const STYLES = `
 }
 .player-tile {
     width: 100%;
-}
-.player-tile .dya-tile__icon {
-    width: 22px;
-    height: 22px;
 }
 .player-stage {
     flex: 1;

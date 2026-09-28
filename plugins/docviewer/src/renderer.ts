@@ -105,10 +105,6 @@ const STYLES = `
 .docviewer-tile {
     width: 100%;
 }
-.docviewer-tile .dya-tile__icon {
-    width: 22px;
-    height: 22px;
-}
 .docviewer-content--empty {
     display: flex;
     align-items: center;
@@ -124,8 +120,14 @@ const STYLES = `
 }
 `
 
+/*
+ * The panel's mark: drawn for this application in flat layers, a metal body, a shadow on its lower
+ * half and one colour of the palette, so it reads as a thing to press at 16px and as the panel's
+ * face on its tile. Flat fills and no gradients, because the same mark is drawn several times at
+ * once and a gradient is found by id.
+ */
 const DOCS_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.2 2.5h8.3l5 5v13a1.5 1.5 0 0 1-1.5 1.5H6.2a1.5 1.5 0 0 1-1.5-1.5V4a1.5 1.5 0 0 1 1.5-1.5z" fill="#dfe3e8"/><path d="M4.7 17h14.8v3.5a1.5 1.5 0 0 1-1.5 1.5H6.2a1.5 1.5 0 0 1-1.5-1.5z" fill="#0a0a0b" fill-opacity=".16"/><path d="M14.5 2.5v3.6a1.4 1.4 0 0 0 1.4 1.4h3.6z" fill="#9aa1ab"/><rect x="7.6" y="10.6" width="8.8" height="1.7" rx=".85" fill="#1970fd"/><rect x="7.6" y="13.9" width="8.8" height="1.7" rx=".85" fill="#75a8fe"/><rect x="7.6" y="17.2" width="5.6" height="1.7" rx=".85" fill="#75a8fe"/></svg>'
 
 const EYE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'

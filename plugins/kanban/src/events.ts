@@ -5,6 +5,18 @@ import { boardRoot } from './boards.js'
 const LIMIT_BYTES = 2 * 1024 * 1024
 const KEEP = 200
 
+/*
+ * A line kept short enough for a log row, cut at the last word that fits and marked as cut, so a
+ * summary never ends in half a word as if that were all it said.
+ */
+export function clip(text: string, limit: number): string {
+    const flat = text.trim()
+    if (flat.length <= limit) return flat
+    const cut = flat.slice(0, limit - 1)
+    const space = cut.lastIndexOf(' ')
+    return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`
+}
+
 export type EventKind =
     | 'created'
     | 'edited'

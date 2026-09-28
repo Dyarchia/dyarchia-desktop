@@ -623,10 +623,12 @@
  * destroy. It is the light that comes into the metal, on the ground, and nothing else.
  * `--dya-on-primary` measures 10.58 at the top of the face and 5.44 at its foot.
  *
- * Success and danger are lit rather than filled: a border in the light's colour and an ink mixed
- * from it and white, with no glow around the key, because no key shines. Success is approve;
- * danger is stop, and unmaking a board, a card, a target. A key that names a state which needs a
- * person, a blocked card, is lit red as well, because there the light is the state's own.
+ * Success is lit rather than filled: a border in green and an ink mixed from it and white, with no
+ * glow, because no key shines; it is approve. Danger, stop and unmake, is a plain key at rest and
+ * turns red under the pointer or the focus, where the hand is about to press it: a row of keys
+ * with a red one in it was the one colour on a black screen, for the action least often wanted.
+ * A key that names a state which needs a person, a blocked card, stays lit red, because there the
+ * light is the state's own.
  */
 .dya-button--primary,
 .dya-key--primary:not(:disabled) {
@@ -697,19 +699,17 @@
 }
 
 .dya-button--success,
-.dya-button--danger,
 .dya-button--resolve,
-.dya-key.dya-key--success:not(:disabled),
-.dya-key.dya-key--danger:not(:disabled) {
+.dya-key.dya-key--success:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
 
 .dya-button--success:hover,
-.dya-button--danger:hover,
 .dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
-.dya-key.dya-key--danger:not(:disabled):hover {
+.dya-button--danger:is(:hover, :focus-visible),
+.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible) {
     border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -2264,12 +2264,23 @@ button.dya-entry__head {
     padding: 0;
     border: none;
     background: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-sm);
-    letter-spacing: var(--dya-tracking-mono);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     text-align: left;
     color: var(--dya-text);
+    overflow-wrap: anywhere;
+}
+
+/*
+ * A subject that is a command or a path: in the mono, on one line, cut with an ellipsis, since the
+ * step opens to show the whole of it.
+ */
+.dya-step__subject--code {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

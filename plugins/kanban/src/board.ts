@@ -427,7 +427,7 @@ export async function comment(
     card.comments.push({ at: Date.now(), author, text: body })
     touch(card)
     await save(slug, file)
-    await events.record(slug, id, 'commented', `${author}: ${body.slice(0, 120)}`)
+    await events.record(slug, id, 'commented', `${author}: ${events.clip(body, 120)}`)
     return card
 }
 
@@ -439,7 +439,7 @@ export async function uncomment(slug: string, id: string, at: number): Promise<C
     const [gone] = card.comments.splice(index, 1)
     touch(card)
     await save(slug, file)
-    await events.record(slug, id, 'uncommented', `${gone.author}: ${gone.text.slice(0, 120)}`)
+    await events.record(slug, id, 'uncommented', `${gone.author}: ${events.clip(gone.text, 120)}`)
     return card
 }
 

@@ -62,8 +62,8 @@ is the brand; Inter is the interface, with tabular figures everywhere; Plex Mono
 
 ## Keys and layout
 
-- **One primary per view**: `button--primary`, `key--primary`, steel with black words, the
-  action the view is about. `--success` is lit green for approve, `--danger` red for stop and unmake.
+- **One primary per view**: `--primary`, steel with black words, the action the view is about.
+  `--success` is lit green for approve; `--danger` turns red only under the pointer or focus.
 - **A state a person answers is one key**: `button--resolve` names the state in red and, under the
   pointer or focus, its answer in green (`__state`, `__answer` share one cell, so it never moves).
 - **An action with a known glyph is an icon key** with a tip, never a `button` spelling the verb.
@@ -91,7 +91,7 @@ Content      table (__num __fit __key __name __subject __end __prose __section) 
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body) notice (__body __title __text)
-             steps step (--said --error --warning --quiet __time __verb __subject __said __detail)
+             steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
 Navigation   tabs tab (--dock __action --close)

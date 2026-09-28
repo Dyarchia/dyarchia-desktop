@@ -25,6 +25,18 @@ const REVIEW_MODE = 'plan'
 const DENIED = ['Bash', 'PowerShell']
 
 const ALIASES = ['fable', 'opus', 'sonnet', 'haiku'] as const
+
+/*
+ * What each alias resolved to when this was written, used only when the account's own transcripts
+ * have never named that family: a picker that says `haiku` and `latest` tells nobody which model
+ * runs, and the API id is what a person reads to know.
+ */
+const KNOWN: Record<(typeof ALIASES)[number], string> = {
+    fable: 'claude-fable-5-1',
+    opus: 'claude-opus-5-5',
+    sonnet: 'claude-sonnet-5',
+    haiku: 'claude-haiku-4-5-20251001'
+}
 const TRANSCRIPTS_READ = 48
 const TRANSCRIPT_TAIL = 256 * 1024
 const MODEL_ID = /"model":"(claude-([a-z]+)-(\d[a-z0-9-]*))"/g
@@ -71,8 +83,7 @@ async function resolved(): Promise<Record<string, string>> {
     const out: Record<string, string> = {}
     for (const alias of ALIASES) {
         const pinned = process.env[`ANTHROPIC_DEFAULT_${alias.toUpperCase()}_MODEL`]
-        const id = pinned || found[alias]?.id
-        if (id) out[alias] = id
+        out[alias] = pinned || found[alias]?.id || KNOWN[alias]
     }
     return out
 }

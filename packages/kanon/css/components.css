@@ -518,7 +518,9 @@
 .dya-key,
 .dya-chip,
 .dya-tile,
-.dya-select > .dya-field {
+.dya-select > .dya-field,
+.dya-tab__action,
+.dya-winkey {
     position: relative;
     border: var(--dya-border-width) solid var(--dya-rim);
     border-radius: var(--dya-radius-sm);
@@ -535,7 +537,9 @@
 .dya-key:hover,
 .dya-chip:hover,
 .dya-tile:hover,
-.dya-select > .dya-field:hover {
+.dya-select > .dya-field:hover,
+.dya-tab__action:hover,
+.dya-winkey:hover {
     background-color: var(--dya-hover);
     border-color: var(--dya-rim-hover);
 }
@@ -544,7 +548,9 @@
 .dya-key:active,
 .dya-chip:active,
 .dya-tile:active,
-.dya-select > .dya-field:active {
+.dya-select > .dya-field:active,
+.dya-tab__action:active,
+.dya-winkey:active {
     transform: translateY(var(--dya-press-y));
     box-shadow: var(--dya-elev-key-down);
 }
@@ -660,7 +666,9 @@
 
 .dya-button--danger,
 .dya-key--danger,
-.dya-button--resolve {
+.dya-button--resolve,
+.dya-tab__action--close,
+.dya-winkey--close {
     --dya-lit: var(--dya-danger);
 }
 
@@ -708,7 +716,9 @@
 .dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
 .dya-button--danger:is(:hover, :focus-visible),
-.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible) {
+.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible),
+.dya-tab__action--close:is(:hover, :focus-visible),
+.dya-winkey--close:is(:hover, :focus-visible) {
     border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -1895,49 +1905,28 @@ textarea.dya-field {
 }
 
 /*
- * What a tab can do to itself: another like it, and close. Two glyphs with no face, on the open tab
- * and nowhere else, big enough to hit without aiming. On every other tab they take no room at all:
- * kept in place but hidden, they put two keys' width of nothing after every name in the strip, and
- * shown on hover, they would push every tab to the right of the pointer. Those tabs close with the
- * middle button. They look alike at rest, so the close says what it is when the pointer reaches it:
- * its glyph goes to the red ink. The other stays quiet, because making another of a view destroys
- * nothing.
+ * What a tab can do to itself: another like it, and close. Two small keys on the open tab and
+ * nowhere else. On every other tab they take no room at all: kept in place but hidden, they put
+ * two keys' width of nothing after every name in the strip, and shown on hover, they would push
+ * every tab to the right of the pointer. Those tabs close with the middle button. The close turns
+ * red under the pointer, like every key that unmakes something.
  */
 .dya-tab__action {
-    position: relative;
     display: none;
     place-items: center;
     width: 22px;
     height: 22px;
     padding: 0;
-    border: none;
-    border-radius: var(--dya-radius-sm);
-    background: transparent;
     color: var(--dya-text);
-    cursor: pointer;
-    transition: background-color var(--dya-dur-press) linear;
 }
 
 .dya-tab__action > svg {
-    width: 13px;
-    height: 13px;
+    width: 12px;
+    height: 12px;
 }
 
 .dya-tab[aria-selected="true"] .dya-tab__action {
     display: grid;
-}
-
-.dya-tab__action:hover {
-    background-color: var(--dya-hover);
-    color: var(--dya-text);
-}
-
-.dya-tab__action--close:hover {
-    color: var(--dya-danger-ink);
-}
-
-.dya-tab__action--close:hover::after {
-    opacity: 1;
 }
 
 /*
@@ -2590,36 +2579,22 @@ button.dya-step__subject {
 }
 
 /*
- * The window's own keys: minimise, maximise, close. Flat, the height of the title bar, answering
- * the pointer with a breath of white; close answers in red, which is what every operating system
- * has taught a hand to expect of that corner.
+ * The window's own keys: minimise, maximise, close. Keys like every other, at the toolbar's size;
+ * close is a danger key and turns red under the pointer.
  */
 .dya-winkey {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 100%;
-    border: none;
-    background: transparent;
+    display: grid;
+    place-items: center;
+    width: var(--dya-size-control-sm);
+    height: var(--dya-size-control-sm);
+    padding: 0;
     color: var(--dya-text);
     cursor: default;
-    transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-winkey > svg {
     width: 12px;
     height: 12px;
-}
-
-.dya-winkey:hover {
-    background-color: var(--dya-hover);
-    color: var(--dya-text);
-}
-
-.dya-winkey--close:hover {
-    background-color: var(--dya-danger);
-    color: var(--dya-on-status);
 }
 
 /*

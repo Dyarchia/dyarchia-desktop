@@ -290,7 +290,7 @@ export function TopBar({
                         </div>
                     )}
                 </div>
-                <div className="topbar-window-controls">
+                <div className="dya-toolbar topbar-window-controls">
                     <button
                         className="dya-winkey"
                         aria-label="Minimize"

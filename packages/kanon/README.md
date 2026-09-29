@@ -53,6 +53,11 @@ the interface, with tabular figures everywhere; Plex Mono is paths and code.
 ## Rules
 
 - **Components reference tokens, never literals**: no literal colour, radius or duration in `components.css`.
+- **Pressable is raised, information is flat.** Every control is a key with its rim, edge and drop:
+  button, key, chip, tile, select, a dock tab's actions, every key in a panel's toolbar and the
+  window's own keys. Pills, cards, rows and entries are flat. Content that opens when pressed, a
+  lifted card, an entry, a table row, a step's subject, a menu row, a tab, is the thing itself and
+  not a control: it stays flat and answers with its ground. `tile--new` is a key's dashed outline.
 - **Round is information, square is action.** **Colour is status or which-one, never emphasis.**
 - **Hover changes the background and the border, never the shadow.** A transition names only
   `transform`, `opacity` and `background-color`; the focus ring is an outline.

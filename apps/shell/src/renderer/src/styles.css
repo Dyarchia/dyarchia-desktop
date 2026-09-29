@@ -116,8 +116,8 @@ body,
 }
 
 .topbar-window-controls {
-    display: flex;
-    height: 100%;
+    padding-right: var(--dya-space-3);
+    padding-bottom: 3px;
     -webkit-app-region: no-drag;
 }
 
@@ -251,7 +251,7 @@ body,
 .panel-tab-actions {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--dya-space-1);
     margin-inline-start: var(--dya-space-1);
 }
 

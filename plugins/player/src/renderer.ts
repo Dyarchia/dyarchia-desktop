@@ -22,12 +22,9 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.player-invite {
-    max-width: 420px;
-    padding: 0;
-}
-.player-tile {
-    width: 100%;
+.player-stage.player-stage--empty {
+    display: block;
+    padding: var(--dya-space-4);
 }
 .player-stage {
     flex: 1;
@@ -107,33 +104,33 @@ export function activate(ctx: PluginContext): void {
              * reasoning that its bar already carries the one control that matters, and at a
              * window's width that reasoning produces a black rectangle nine hundred pixels tall
              * with a word in the corner — which is what a reader opens once and never again.
-             * A failure is said here too, under the same offer, because the offer is still what
-             * to do next.
+             * A failure is said here too, over the same offer, because the offer is still what
+             * to do next. The offer starts at the top left, where every gallery of tiles starts.
              */
             function showEmpty(message?: string): void {
                 handle.setTitle(null)
                 open.hidden = true
 
                 const invite = document.createElement('div')
-                invite.className = 'dya-empty player-invite'
-
-                const tile = document.createElement('button')
-                tile.className = 'dya-tile player-tile'
-                tile.type = 'button'
-                tile.innerHTML =
-                    `<span class="dya-tile__icon">${PLAYER_ICON}</span>` +
-                    '<span class="dya-tile__name">Cue a file</span>' +
-                    '<span class="dya-tile__note">Sound or film from this machine</span>'
-                tile.onclick = () => void openMedia()
+                invite.className = 'dya-grid'
 
                 if (message) {
                     const line = document.createElement('span')
-                    line.className = 'dya-text--danger'
+                    line.className = 'dya-empty dya-text--danger'
                     line.textContent = message
                     invite.append(line)
                 }
 
+                const tile = document.createElement('button')
+                tile.className = 'dya-tile'
+                tile.type = 'button'
+                tile.innerHTML =
+                    `<span class="dya-tile__icon">${PLAYER_ICON}</span>` +
+                    '<span class="dya-tile__name">Cue a file</span>'
+                tile.onclick = () => void openMedia()
+
                 invite.append(tile)
+                stage.classList.add('player-stage--empty')
                 stage.replaceChildren(invite)
             }
 
@@ -152,6 +149,7 @@ export function activate(ctx: PluginContext): void {
                     media.onerror = () => showEmpty('Cannot play that file')
                     handle.setTitle(result.name ?? null)
                     open.hidden = false
+                    stage.classList.remove('player-stage--empty')
                     stage.replaceChildren(media)
                 } catch {
                     showEmpty('Cannot open that file')

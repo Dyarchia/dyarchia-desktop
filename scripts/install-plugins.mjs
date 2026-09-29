@@ -11,8 +11,16 @@ import { stagePlugins } from './stage-plugins.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..')
 
-/* The same root the shell reads, derived the same way: see apps/shell/src/main/paths.ts. */
-const target = join(process.env.DYARCHIA_HOME || join(homedir(), '.dyarchia'), 'plugins')
+/*
+ * The same root the shell reads, derived the same way: Electron's appData joined with the name,
+ * see apps/shell/src/main/paths.ts.
+ */
+const appData =
+    process.env.APPDATA ||
+    (process.platform === 'darwin'
+        ? join(homedir(), 'Library', 'Application Support')
+        : process.env.XDG_CONFIG_HOME || join(homedir(), '.config'))
+const target = join(process.env.DYARCHIA_HOME || join(appData, 'dyarchia'), 'plugins')
 
 await mkdir(target, { recursive: true })
 const staged = await stagePlugins(join(repoRoot, 'plugins'), target, {

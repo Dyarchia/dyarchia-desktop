@@ -120,7 +120,7 @@ export interface OpenerDescriptor {
 
 /*
  * Where this installation keeps things. `dataHome` is the one a user opens: `data/` under the
- * application's one root, `~/.dyarchia`, holding whatever a plugin produces on their behalf. A
+ * application's one root, `%APPDATA%\dyarchia`, holding whatever a plugin produces on their behalf. A
  * plugin that writes something durable puts it there rather than beside its own code, which in a
  * packaged build is a directory it does not own and must not assume will still exist.
  */

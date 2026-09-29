@@ -11,7 +11,7 @@ import { guardWebviews } from './webviews'
 
 /*
  * Before anything else, and in this order. `userData` is read when the first session is created,
- * so it has to be pointed at `~/.dyarchia` while there is still nothing to move; and plugin
+ * so it has to be pointed at the one root while there is still nothing open; and plugin
  * discovery reads that root to collect the custom schemes, which `registerSchemesAsPrivileged`
  * demands before the application is ready.
  */

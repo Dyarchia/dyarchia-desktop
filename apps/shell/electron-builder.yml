@@ -69,11 +69,13 @@ win:
 # %TEMP%\<guid> on every launch, which made the installation directory both unfindable and
 # different each time: every plugin resolving a path against its own directory — crawlee resolves
 # its corpus, its profiles and its index that way — was writing into a folder Windows deletes.
-# `installer.nsh` holds two things NSIS has no option for: the install directory, which is
-# ~/.dyarchia/app and not %LOCALAPPDATA%\Programs, and the answer to the question an assisted
-# installer asks about who the application is for. `perMachine: false` does not mean per user,
-# it means the installer asks, and the answer that installs for everyone elevates into Program
-# Files, where the application cannot write.
+# It installs per user into %LOCALAPPDATA%\Programs\dyarchia, electron-builder's own default, and
+# keeps nothing there: state and data are in %APPDATA%\dyarchia, which uninstalling leaves alone.
+# `installer.nsh` holds two things NSIS has no option for: forgetting the ~/.dyarchia/app location
+# that versions up to 0.4.x recorded, so an update lands in the default, and the answer to the
+# question an assisted installer asks about who the application is for. `perMachine: false` does
+# not mean per user, it means the installer asks, and the answer that installs for everyone
+# elevates into Program Files, where the application cannot write.
 nsis:
     oneClick: false
     perMachine: false

@@ -95,7 +95,7 @@ developers".
   `README.txt`, `LICENSE` and `ffmpeg -L` on 2026-09-26.
 - Windows arm64 and Linux: the GPL builds by **BtbN** (https://github.com/BtbN/FFmpeg-Builds).
 
-Each is extracted unmodified under `~/.dyarchia/tools/ffmpeg`, with its licence inside. FFmpeg
+Each is extracted unmodified under `%APPDATA%\dyarchia\tools\ffmpeg`, with its licence inside. FFmpeg
 is not redistributed by this project and nothing here links against it.
 
 ## What the kanban drives, and does not ship

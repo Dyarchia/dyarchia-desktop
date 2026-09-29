@@ -26,6 +26,8 @@ _SPA_MARKERS = ('__NEXT_DATA__', 'id="root"', 'id="__nuxt"', 'ng-version', 'data
 _MIN_STATIC_CONTENT = 400
 _BARELY_ANY_CONTENT = 200
 _SCRIPT_TAG = re.compile(r'<script[\s>]', re.IGNORECASE)
+_SITEMAP_ROOT = re.compile(r'<(?:[\w-]+:)?(urlset|sitemapindex)[\s>]', re.IGNORECASE)
+_SITEMAP_LOC = re.compile(r'<(?:[\w-]+:)?loc[\s>]', re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -46,6 +48,8 @@ class Recon:
     link_count: int = 0
     spa_markers: list[str] = field(default_factory=list)
     runs_scripts: bool = False
+    sitemap_kind: str | None = None
+    sitemap_entries: int = 0
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -58,6 +62,16 @@ class Recon:
 
     @property
     def recommendation(self) -> str:
+        if self.sitemap_kind == 'sitemapindex':
+            return (
+                f'a sitemap index of {self.sitemap_entries} sitemaps, seed the profile with it under'
+                ' sitemap_urls and inspect one of its pages to choose the crawler'
+            )
+        if self.sitemap_kind == 'urlset':
+            return (
+                f'a sitemap of {self.sitemap_entries} pages, seed the profile with it under sitemap_urls'
+                ' and inspect one of its pages to choose the crawler'
+            )
         if self.markdown_url is not None:
             return 'a markdown variant exists, fetch it directly with --crawler http'
         if self.needs_browser:
@@ -119,6 +133,16 @@ async def _check_markdown_variant(client: httpx.AsyncClient, url: str, recon: Re
             return
 
 
+def read_sitemap(text: str, recon: Recon) -> bool:
+    """Recognise an XML sitemap by its root element, whatever content type it was served with."""
+    found = _SITEMAP_ROOT.search(text[:4096])
+    if found is None:
+        return False
+    recon.sitemap_kind = found.group(1).lower()
+    recon.sitemap_entries = len(_SITEMAP_LOC.findall(text))
+    return True
+
+
 def _content_type(response: httpx.Response) -> str:
     return str(response.headers.get('content-type', '')).lower()
 
@@ -161,6 +185,10 @@ async def inspect_url(
         recon.content_type = _content_type(response) or None
         recon.html_bytes = len(response.content)
         recon.url = str(response.url)
+
+        if 'html' not in (recon.content_type or '') and read_sitemap(response.text, recon):
+            recon.sitemaps = [recon.url, *(known for known in recon.sitemaps if known != recon.url)]
+            return recon
 
         if 'html' in (recon.content_type or ''):
             dom = SoupAdapter.from_html(response.text)

@@ -7,12 +7,6 @@
 const ICON =
     '<svg viewBox="9.15 5 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M39.843 34.81h-29.4c-.42 0-.683-.474-.473-.855l7.35-13.24 7.351-13.238a.537.537 0 0 1 .947 0l4.728 8.517a6.521 6.521 0 0 0 1.57 12.848c1.765 0 3.369-.7 4.542-1.843l3.861 6.956c.21.378-.053.854-.473.854h-.003Z" fill="url(#crawlee-body)" stroke="url(#crawlee-body)" stroke-width="1.039"/><path d="M37.855 25.017a6.519 6.519 0 0 1-5.938 3.825 6.518 6.518 0 0 1-6.52-6.52 6.518 6.518 0 0 1 9.343-5.878" stroke="url(#crawlee-arc)" stroke-width="2"/><defs><linearGradient id="crawlee-body" x1="40.393" y1="7.193" x2="12.912" y2="37.541" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient><linearGradient id="crawlee-arc" x1="37.855" y1="15.803" x2="24.829" y2="28.247" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient></defs></svg>'
 
-const PLAY =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l11 7-11 7z"/></svg>'
-
-const STOP =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>'
-
 const CLOSE =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
 
@@ -53,11 +47,15 @@ const STYLE = `
     padding: var(--dya-space-4);
     overflow: hidden;
 }
-.crw-controls {
-    display: flex;
-    align-items: center;
+/*
+ * What a round covers and the key that runs it, heading the list they act on. They lived in the
+ * dock's tab row, which on a wide window put them two thousand pixels from the first target.
+ */
+.crw-bar.crw-runbar {
     gap: var(--dya-space-2);
-    margin-inline-start: var(--dya-space-5);
+}
+.crw-runbar > .dya-ring {
+    margin-inline-start: var(--dya-space-3);
 }
 .crw-view {
     position: relative;
@@ -171,8 +169,8 @@ const STYLE = `
     display: none;
 }
 /*
- * The console and the handle that sizes it. Everything else in this application can be resized —
- * the window, the dock, every panel in it — and the one region that fills with text a line at a
+ * The console and the handle that sizes it. Everything else in this application can be resized -
+ * the window, the dock, every panel in it - and the one region that fills with text a line at a
  * time was 120 pixels tall for ever, so a round's output was read four lines at a time through a
  * slot. The handle sits inside the region so that one :has() rule hides both when there is no output.
  */
@@ -283,7 +281,7 @@ const STYLE = `
     min-height: 1.4em;
 }
 .crw-query {
-    flex: 1;
+    flex: 0 1 560px;
     min-width: 200px;
 }
 .crw-hits {
@@ -415,26 +413,31 @@ function bytes(value) {
     return `${unit === 0 ? size : size.toFixed(1)} ${units[unit]}`
 }
 
+const NEEDS_ENVIRONMENT = 'Python environment missing - enable Crawlee in Setup'
+
+const KINDS = { added: 'Added', modified: 'Changed', removed: 'Removed' }
+
+function plural(count, noun) {
+    return `${count.toLocaleString('en')} ${noun}${count === 1 ? '' : 's'}`
+}
+
 function stateBadge(corpus) {
-    if (corpus.error) {
-        const badge = el('span', 'dya-badge dya-badge--danger', 'unreadable')
-        badge.title = corpus.error
-        return badge
-    }
+    if (corpus.error) return el('span', 'dya-badge dya-badge--danger', 'Unreadable')
 
     /*
      * A sweep that found nothing writes no change report, so the one on disk is older than the
      * sweep. That is the quiet outcome, not a warning: it wore the yellow light as `stale` and
-     * twelve of fourteen corpora looked like trouble. Only a change asks to be looked at.
+     * twelve of fourteen corpora looked like trouble. Only a change asks to be looked at, and a
+     * quiet target carries nothing: `unchanged` on twelve of fourteen is a word read twelve times
+     * to learn nothing. A first snapshot says `New`, a failure says so in red.
+     *
+     * The change is one number and a word, in a neutral pill: finding changes is what a round is
+     * for, not a warning. `+1 ~71` was three signs to decode; the detail says which, page by page.
      */
-    if (!corpus.changed) return el('span', 'dya-tag', corpus.first_run ? 'new' : 'unchanged')
+    if (!corpus.changed) return corpus.first_run ? el('span', 'dya-tag', 'New') : null
 
-    const counts = [
-        [corpus.added, '+'],
-        [corpus.modified, '~'],
-        [corpus.removed, '−']
-    ].filter(([count]) => count)
-    return el('span', 'dya-badge dya-badge--warning', counts.map(([count, sign]) => `${sign}${count}`).join(' ') || 'changed')
+    const moved = ['added', 'modified', 'removed'].reduce((sum, key) => sum + (Number(corpus[key]) || 0), 0)
+    return el('span', 'dya-tag', moved ? `${moved.toLocaleString('en')} changed` : 'Changed')
 }
 
 
@@ -518,6 +521,14 @@ function arming(button, prompt) {
     }
 }
 
+/*
+ * The palette's commands act on a panel that may not be open. `shell.show` answers with the
+ * instance as soon as the dock has it, which is before the panel has mounted, so an action for
+ * an instance not mounted yet waits here and the mount takes it.
+ */
+const mounted = new Map()
+const waiting = new Map()
+
 export function activate(ctx) {
     injectStyles(ctx.pluginId, STYLE)
     ctx.registerPanel(
@@ -528,6 +539,23 @@ export function activate(ctx) {
         },
         (container, handle) => mount(ctx, container, handle)
     )
+    for (const [id, title] of [
+        ['run', 'Run round'],
+        ['new', 'New target'],
+        ['search', 'Search corpus']
+    ]) {
+        ctx.registerCommand({
+            id,
+            title,
+            run: async () => {
+                const instance = await ctx.shell.show('crawlee')
+                if (!instance) return
+                const perform = mounted.get(instance)
+                if (perform) perform(id)
+                else waiting.set(instance, id)
+            }
+        })
+    }
 }
 
 function mount(ctx, container, handle) {
@@ -570,22 +598,33 @@ function mount(ctx, container, handle) {
             view.node.hidden = !active
             buttons[index].setAttribute('aria-selected', String(active))
         })
-        roundsView.controls.hidden = id !== 'rounds'
+        if (id === 'search') searchView.focus()
     }
 
     const roundsView = buildRounds()
     const targetsView = buildTargets()
     const searchView = buildSearch()
 
-    /*
-     * The panel's actions live in the dock's tab row: the three views, and, on Rounds, what the
-     * round covers and the key that runs it. They sat at the foot of the view, a screen away from
-     * the tab that names it.
-     */
-    handle.toolbar.append(tabs, roundsView.controls)
+    handle.toolbar.append(tabs)
     root.append(rounds, targets, searching)
     container.appendChild(root)
     select('rounds')
+
+    const act = (action) => {
+        if (action === 'run') {
+            select('rounds')
+            roundsView.start()
+        } else if (action === 'new') {
+            select('targets')
+            targetsView.create()
+        } else if (action === 'search') {
+            select('search')
+        }
+    }
+    mounted.set(handle.instanceId, act)
+    const waited = waiting.get(handle.instanceId)
+    waiting.delete(handle.instanceId)
+    if (waited) act(waited)
 
     const unsubscribeLine = ctx.on('line', (text) => {
         if (!sink) return
@@ -608,6 +647,7 @@ function mount(ctx, container, handle) {
     void searchView.refresh()
 
     return () => {
+        mounted.delete(handle.instanceId)
         unsubscribeLine()
         unsubscribeProgress()
         unsubscribeDone()
@@ -618,7 +658,7 @@ function mount(ctx, container, handle) {
     /*
      * A console somebody can make bigger. The handle drags, the arrow keys move it for anybody not
      * using a pointer, and a double-click swaps between the height it was given and most of the
-     * view — which is what a reader wants the moment a round starts failing and the interesting
+     * view - which is what a reader wants the moment a round starts failing and the interesting
      * line is forty lines up. The height is remembered per view, so the panel opens the way it was
      * left rather than the way it was written.
      */
@@ -712,7 +752,15 @@ function mount(ctx, container, handle) {
         const table = el('table', 'dya-table crw-table')
         const summary = el('p', 'dya-meta crw-summary')
         const list = el('div', 'crw-list')
-        list.append(table, summary)
+        const vacant = el('div', 'dya-empty')
+        const vacantActions = el('div', 'dya-empty__actions')
+        const first = el('button', 'dya-button', 'New target')
+        first.type = 'button'
+        first.addEventListener('click', () => act('new'))
+        vacantActions.append(first)
+        vacant.append(vacantActions)
+        vacant.hidden = true
+        list.append(table, summary, vacant)
 
         /*
          * What the selected target's last change was, page by page with its diff. It is a region
@@ -723,24 +771,31 @@ function mount(ctx, container, handle) {
         const split = el('div', 'crw-split')
         split.append(list, detail)
 
-        const scope = el('select', 'dya-field dya-field--auto dya-field--sm crw-scope')
-        scope.setAttribute('aria-label', 'Round')
+        /*
+         * The scope is one choice for two things: which targets the list shows and which the round
+         * runs. A list of fourteen beside a round of one was a picker that looked as if it did
+         * nothing until the key beside it was pressed.
+         */
+        const scope = el('select', 'dya-field dya-field--auto crw-scope')
+        scope.setAttribute('aria-label', 'Targets')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
 
-        const run = iconKey(PLAY, 'Run', 'dya-key--primary')
-        const stop = iconKey(STOP, 'Stop', 'dya-key--danger')
+        const run = el('button', 'dya-button dya-button--primary', 'Run')
+        run.type = 'button'
+        const stop = el('button', 'dya-button dya-button--danger', 'Stop')
+        stop.type = 'button'
         stop.hidden = true
         const ring = el('span', 'dya-ring')
         ring.hidden = true
-        const controls = el('div', 'crw-controls')
-        controls.append(scopeBox, ring, run, stop)
 
         const status = el('span', 'dya-text crw-status', '')
+        const controls = el('div', 'dya-bar dya-bar--inset crw-bar crw-runbar')
+        controls.append(scopeBox, run, stop, ring, status)
 
         /*
-         * Where a round is, while it runs: a ring of one segment per target in the toolbar, and a
-         * line over the output with the target by its place and name, what changed and failed so
+         * Where a round is, while it runs: a ring of one segment per target beside the key, and a
+         * line after it with the target by its place and name, what changed and failed so
          * far, and the time it has been running. Until the command has said how many targets it
          * holds, the line is the time alone.
          */
@@ -792,13 +847,16 @@ function mount(ctx, container, handle) {
 
         const output = buildConsole('crawlee.console.rounds')
         const log = output.log
-        rounds.append(headline, split, status, output.node)
+        rounds.append(controls, headline, split, output.node)
 
         run.addEventListener('click', () => void startRound())
         stop.addEventListener('click', () => void ctx.invoke('stop'))
 
         let chosen = null
         let asked = 0
+        let everything = []
+
+        scope.addEventListener('change', () => paint())
 
         async function refreshState() {
             try {
@@ -814,15 +872,47 @@ function mount(ctx, container, handle) {
             headline.className = 'dya-value crw-headline'
 
             if (state.needsEnvironment) {
-                headline.textContent = 'needs its Python environment - turn this plugin on in Setup'
+                headline.textContent = NEEDS_ENVIRONMENT
+                everything = []
+                vacant.hidden = true
                 table.replaceChildren()
                 summary.textContent = ''
+                detail.replaceChildren()
                 return
             }
 
             headline.textContent = ''
+            everything = (state.repositories || []).flatMap((repo) => repo.corpora || [])
 
-            const corpora = (state.repositories || []).flatMap((repo) => repo.corpora || [])
+            const sweptGroups = [...new Set(everything.map((corpus) => corpus.group).filter(Boolean))].sort()
+            const kept = scope.value
+            scope.replaceChildren()
+            scope.appendChild(new Option('All targets', 'all'))
+            if (sweptGroups.length) scope.appendChild(el('hr'))
+            for (const group of sweptGroups) scope.appendChild(new Option(group, `group:${group}`))
+            if (everything.length) scope.appendChild(el('hr'))
+            for (const corpus of everything) {
+                scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
+            }
+            if (kept && [...scope.options].some((option) => option.value === kept)) scope.value = kept
+
+            paint()
+        }
+
+        function scoped() {
+            const [kind, value] = picked()
+            if (kind === 'group') return everything.filter((corpus) => corpus.group === value)
+            if (kind === 'name') return everything.filter((corpus) => corpus.name === value)
+            return everything
+        }
+
+        function picked() {
+            const at = scope.value.indexOf(':')
+            return at < 0 ? [scope.value, ''] : [scope.value.slice(0, at), scope.value.slice(at + 1)]
+        }
+
+        function paint() {
+            const corpora = scoped()
             const labels = ['target', 'pages', 'size', 'change']
             const thead = el('thead')
             const header = el('tr')
@@ -864,35 +954,23 @@ function mount(ctx, container, handle) {
                     body.appendChild(row)
                 }
             }
-            table.replaceChildren(thead, body)
+            table.replaceChildren(...(corpora.length ? [thead, body] : []))
+            vacant.hidden = everything.length > 0
+            run.disabled = everything.length === 0
 
             const total = (key) => corpora.reduce((sum, corpus) => sum + (Number(corpus[key]) || 0), 0)
-            summary.textContent = `${corpora.length} targets - ${total('pages').toLocaleString('en')} pages - ${bytes(total('bytes'))}`
-
-            const sweptGroups = [...new Set(corpora.map((corpus) => corpus.group).filter(Boolean))]
-            const kept = scope.value
-            scope.replaceChildren()
-            scope.appendChild(new Option('all targets', 'all'))
-            scope.appendChild(el('hr'))
-            for (const group of sweptGroups) scope.appendChild(new Option(group, `group:${group}`))
-            scope.appendChild(el('hr'))
-            for (const corpus of corpora) {
-                scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
-            }
-            if (kept && [...scope.options].some((option) => option.value === kept)) scope.value = kept
+            summary.textContent = corpora.length
+                ? [plural(corpora.length, 'target'), plural(total('pages'), 'page'), bytes(total('bytes'))].join(' - ')
+                : ''
 
             const again = corpora.find((corpus) => corpus.name === chosen)
             void show(again ?? corpora.find((corpus) => corpus.changed) ?? corpora[0] ?? null)
         }
 
-        /*
-         * Only a change is marked. A quiet target has an empty cell, because `unchanged` on twelve
-         * rows out of fourteen is a word read twelve times to learn nothing; a first snapshot says
-         * `new`, a failure says so in red.
-         */
         function mark(corpus) {
             const cell = el('td')
-            if (corpus.error || corpus.changed || corpus.first_run) cell.appendChild(stateBadge(corpus))
+            const badge = stateBadge(corpus)
+            if (badge) cell.appendChild(badge)
             return cell
         }
 
@@ -908,6 +986,10 @@ function mount(ctx, container, handle) {
             const ticket = ++asked
             const head = el('div', 'crw-detail-head')
             head.append(el('span', 'dya-title', corpus.name))
+            if (corpus.error) {
+                detail.replaceChildren(head, el('p', 'dya-problem', corpus.error))
+                return
+            }
             detail.replaceChildren(head, el('span', 'dya-loading'))
             let found = null
             try {
@@ -921,16 +1003,22 @@ function mount(ctx, container, handle) {
             const pages = (found?.pages || []).filter((page) => !page.reordered)
             const when = ctx.when(found?.generated_at)
             if (pages.length === 0) {
-                head.append(el('span', 'dya-meta', when ? `no change since ${when}` : 'no change report'))
+                head.append(el('span', 'dya-meta', when ? `No change since ${when}` : 'No change yet'))
                 detail.replaceChildren(head)
                 return
             }
-            head.append(el('span', 'dya-meta', found.stale ? `last change ${when}` : when))
+            head.append(el('span', 'dya-meta', found.stale ? `Last change ${when}` : when))
+            const tally = el('span', 'dya-pills')
+            for (const [kind, word] of Object.entries(KINDS)) {
+                const count = pages.filter((page) => page.kind === kind).length
+                if (count) tally.append(el('span', 'dya-tag', `${count.toLocaleString('en')} ${word.toLowerCase()}`))
+            }
+            head.append(tally)
             const changes = el('div', 'crw-changes')
             for (const page of pages) {
                 const item = el('details', 'crw-change')
                 const line = el('summary', 'crw-change-head')
-                line.append(el('span', 'dya-tag', page.kind), el('span', 'dya-name', page.title || page.url))
+                line.append(el('span', 'dya-tag', KINDS[page.kind] ?? page.kind), el('span', 'dya-name', page.title || page.url))
                 item.append(line)
                 if (page.diff) item.append(diffBlock(page.diff))
                 changes.append(item)
@@ -940,19 +1028,25 @@ function mount(ctx, container, handle) {
         }
 
         async function startRound() {
+            if (busy || run.hidden) {
+                status.className = 'dya-text crw-status'
+                status.textContent = 'Busy'
+                return
+            }
             Object.assign(round, { total: 0, done: 0, changed: 0, failed: 0, current: '', index: 0, started: Date.now() })
             pips()
             window.clearInterval(round.timer)
-            round.timer = window.setInterval(paintRound, 1000)
-            const [kind, value] = scope.value.split(':')
+            const [kind, value] = picked()
             const payload = { commit: true }
             if (kind === 'group') payload.group = value
             if (kind === 'name') payload.names = [value]
-            await begin('run', payload, log, status, { run, stop })
+            if (await begin('run', payload, log, status, { run, stop }, elapsed())) {
+                round.timer = window.setInterval(paintRound, 1000)
+            }
         }
 
         return {
-            controls,
+            start: () => void startRound(),
             refresh: refreshState,
             heard,
             /*
@@ -974,7 +1068,8 @@ function mount(ctx, container, handle) {
                 const parts = [`${head} at ${at}`]
                 if (total) {
                     parts.push(`${done} of ${total}`)
-                    parts.push(`${report.changed ?? round.changed} changed`)
+                    const changed = report.changed ?? round.changed
+                    if (changed) parts.push(`${changed} changed`)
                     if (report.failed) parts.push(`${report.failed} failed`)
                 } else if (report.verdict) {
                     parts.push(report.verdict)
@@ -1050,7 +1145,7 @@ function mount(ctx, container, handle) {
             try {
                 const state = await ctx.invoke('state')
                 scope.replaceChildren()
-                const every = el('option', undefined, 'every repository')
+                const every = el('option', undefined, 'All repositories')
                 every.value = ''
                 scope.appendChild(every)
                 for (const repo of state.repositories || []) {
@@ -1068,7 +1163,7 @@ function mount(ctx, container, handle) {
         async function run() {
             const text = query.value.trim()
             if (!text) return
-            hits.replaceChildren(el('div', 'dya-empty', 'searching…'))
+            hits.replaceChildren(el('div', 'dya-loading'))
             try {
                 const found = await ctx.invoke('search', { query: text, repository: scope.value || null, limit: 20 })
                 render(found)
@@ -1117,7 +1212,10 @@ function mount(ctx, container, handle) {
             }
         }
 
-        return { refresh }
+        return {
+            refresh,
+            focus: () => query.focus()
+        }
     }
 
     function buildTargets() {
@@ -1175,7 +1273,7 @@ function mount(ctx, container, handle) {
         library.hidden = true
         const libraryBar = el('div', 'dya-bar dya-bar--inset crw-bar crw-sheet-bar')
         const libraryClose = iconKey(CLOSE, 'Close')
-        libraryBar.append(el('span', 'dya-title crw-status', 'Profile library'), libraryClose)
+        libraryBar.append(el('span', 'dya-title crw-status', 'Library'), libraryClose)
         const shelves = el('div', 'crw-library')
         const libraryNote = el('div', 'dya-text crw-note')
         library.append(libraryBar, shelves, libraryNote)
@@ -1185,6 +1283,7 @@ function mount(ctx, container, handle) {
         let current = null
         let raisedBy = null
         let landed = ''
+        let probing = null
         let corpora = new Map()
 
         const report = (text, good) => {
@@ -1203,18 +1302,28 @@ function mount(ctx, container, handle) {
         function raise(name, source) {
             current = name
             raisedBy = source ?? null
-            title.textContent = name ?? 'new target'
+            title.textContent = name ?? 'New target'
             yaml.node.hidden = name === null
             inspect.disabled = name === null
             save.disabled = name === null
             landed = ''
             report('')
+            hush()
             confirmClose.reset()
             confirmDelete.reset()
             remove.disabled = name === null
             grid.inert = true
             scrim.hidden = false
             sheet.hidden = false
+        }
+
+        /*
+         * An inspection's output belongs to the target it was run on, so it goes when the sheet
+         * closes or turns to another target, a new one included.
+         */
+        function hush() {
+            log.textContent = ''
+            log.hidden = true
         }
 
         function drop() {
@@ -1227,6 +1336,7 @@ function mount(ctx, container, handle) {
             scrim.hidden = true
             grid.inert = false
             say('')
+            hush()
             /* Back where it came from, so the keyboard is not returned to the top of the grid. */
             if (raisedBy && raisedBy.isConnected) raisedBy.focus()
             raisedBy = null
@@ -1235,7 +1345,7 @@ function mount(ctx, container, handle) {
         /* An unsaved profile is work, and closing over it silently is how it is lost. */
         const dirty = () => Boolean(current) && yaml.value !== landed
         const confirmClose = arming(close, 'Discard')
-        const confirmDelete = arming(remove, 'Delete for good')
+        const confirmDelete = arming(remove, 'Delete')
 
         const leave = () => {
             if (confirmClose.armed) {
@@ -1248,7 +1358,7 @@ function mount(ctx, container, handle) {
                 return
             }
             confirmClose.arm()
-            say('unsaved', false)
+            say('Not saved', false)
         }
 
         close.addEventListener('click', leave)
@@ -1277,7 +1387,7 @@ function mount(ctx, container, handle) {
                 const catalog = await ctx.invoke('catalog')
                 if (catalog && catalog.needsEnvironment) {
                     shelves.replaceChildren(
-                        el('div', 'dya-empty', 'needs its Python environment — turn this plugin on in Setup')
+                        el('div', 'dya-empty', NEEDS_ENVIRONMENT)
                     )
                     return
                 }
@@ -1292,9 +1402,8 @@ function mount(ctx, container, handle) {
             const head = el('div', 'crw-libhead')
             const here = shelf.profiles.filter((profile) => profile.installed).length
             const missing = shelf.profiles.length - here
-            const counts = [`${shelf.profiles.length} profiles`]
-            if (here) counts.push(missing ? `${here} installed` : 'all installed')
-            head.append(groupTag(shelf.group), el('span', 'dya-meta', counts.join(' - ')))
+            head.append(groupTag(shelf.group))
+            if (!missing) head.append(el('span', 'dya-badge dya-badge--success', 'Installed'))
             if (missing) {
                 const install = el('button', 'dya-button dya-button--sm', `Install ${missing}`)
                 install.addEventListener('click', () => void put(shelf.group, install))
@@ -1307,7 +1416,7 @@ function mount(ctx, container, handle) {
                 const row = el('tr')
                 const end = el('td', 'dya-table__end')
                 if (profile.installed && missing) {
-                    end.append(el('span', 'dya-badge dya-badge--success', 'installed'))
+                    end.append(el('span', 'dya-badge dya-badge--success', 'Installed'))
                 }
                 row.append(
                     el('td', 'dya-table__name', profile.name),
@@ -1324,13 +1433,12 @@ function mount(ctx, container, handle) {
         async function put(group, button) {
             button.disabled = true
             libraryNote.className = 'dya-text crw-note'
-            libraryNote.textContent = `installing ${group}…`
+            libraryNote.textContent = 'Installing…'
             try {
                 const done = await ctx.invoke('install', group)
                 const count = done.installed.length
-                const noun = count === 1 ? 'profile' : 'profiles'
                 libraryNote.className = 'dya-text crw-note dya-text--success'
-                libraryNote.textContent = `${count} ${noun} installed`
+                libraryNote.textContent = `${plural(count, 'target')} installed`
                 await Promise.all([shelve(), refreshList(), roundsView.refresh()])
             } catch (error) {
                 button.disabled = false
@@ -1354,7 +1462,7 @@ function mount(ctx, container, handle) {
             const corpus = corpora.get(current)
             confirmDelete.arm()
             say(
-                corpus ? `press again to delete ${current} and its ${corpus.pages} pages` : `press again to delete ${current}`,
+                corpus ? `Deletes ${current} and its ${plural(corpus.pages, 'page')}` : `Deletes ${current}`,
                 false
             )
         })
@@ -1362,7 +1470,7 @@ function mount(ctx, container, handle) {
         async function erase() {
             const name = current
             if (!name) return
-            say('deleting…')
+            say('Deleting…')
             try {
                 const said = String(await ctx.invoke('delete', name, true))
                 landed = yaml.value
@@ -1403,13 +1511,7 @@ function mount(ctx, container, handle) {
             try {
                 const [profiles, state] = await Promise.all([ctx.invoke('profiles'), ctx.invoke('state')])
                 if (profiles && profiles.needsEnvironment) {
-                    grid.replaceChildren(
-                        el(
-                            'div',
-                            'dya-empty',
-                            'needs its Python environment — turn this plugin on in Setup'
-                        )
-                    )
+                    grid.replaceChildren(el('div', 'dya-empty', NEEDS_ENVIRONMENT))
                     return
                 }
 
@@ -1441,27 +1543,28 @@ function mount(ctx, container, handle) {
             const card = el('button', 'dya-tile crw-new')
             const icon = el('span', 'dya-tile__icon')
             icon.innerHTML = BOOK
-            card.append(icon, el('span', 'dya-tile__name', 'Profile library'))
+            card.append(icon, el('span', 'dya-tile__name', 'Library'))
             card.addEventListener('click', () => browse(card))
             return card
         }
 
         /*
          * A target, as the thing it is rather than as its name. The state badge is the same one the
-         * rounds table carries, so a corpus that changed says so in both places in one colour.
+         * rounds table carries, so a corpus that changed says so in both places in the same words.
          */
         function targetCard(profile, corpus) {
             const card = el('button', 'dya-tile dya-tile--dense crw-target')
             const head = el('div', 'dya-tile__head')
             head.append(el('span', 'dya-tile__name', profile.name))
-            if (corpus) head.append(stateBadge(corpus))
+            const badge = corpus && stateBadge(corpus)
+            if (badge) head.append(badge)
             card.append(head)
 
             if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
 
             const facts = corpus
-                ? [`${corpus.pages} pages`, ctx.when(corpus.swept_at)].filter(Boolean)
-                : [`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`]
+                ? [plural(corpus.pages, 'page'), ctx.when(corpus.swept_at)].filter(Boolean)
+                : [plural(profile.urls.length, 'start URL')]
             const line = el('div', 'crw-facts')
             if (profile.group) line.append(groupTag(profile.group))
             line.append(el('span', 'dya-meta', facts.join(' - ')))
@@ -1486,7 +1589,7 @@ function mount(ctx, container, handle) {
 
         async function write() {
             if (!current) return
-            say('saving…')
+            say('Saving…')
             try {
                 say(String(await ctx.invoke('save', current, yaml.value)), true)
                 landed = yaml.value
@@ -1499,11 +1602,11 @@ function mount(ctx, container, handle) {
         async function probe() {
             const url = firstUrl(yaml.value)
             if (!url) {
-                say('no URL', false)
+                say('No URL', false)
                 return
             }
-            log.textContent = ''
-            await begin('inspect', { url }, log, note, { run: inspect, stop: null })
+            probing = current
+            await begin('inspect', { url }, log, note, { run: inspect, stop: null }, 'Inspecting…')
         }
 
         function say(text, good) {
@@ -1557,13 +1660,14 @@ function mount(ctx, container, handle) {
             node.hidden = true
             const fields = {}
             for (const [key, label, placeholder] of [
-                ['name', 'name', 'claude-docs'],
+                ['name', 'Name', 'claude-docs'],
                 ['url', 'URL or sitemap', 'https://example.com/sitemap.xml'],
-                ['group', 'group', 'docs-labs'],
-                ['description', 'description', 'what this corpus is'],
+                ['group', 'Group', 'docs-labs'],
+                ['description', 'Description', 'Optional'],
             ]) {
                 const input = el('input', `dya-field${key === 'description' ? ' dya-field--prose' : ''}`)
                 input.placeholder = placeholder
+                input.addEventListener('input', () => say(''))
                 fields[key] = input
                 node.append(el('span', 'dya-label', label), input)
             }
@@ -1571,17 +1675,17 @@ function mount(ctx, container, handle) {
             const snapshot = el('input', 'dya-checkbox')
             snapshot.type = 'checkbox'
             snapshot.checked = true
-            snapshotBox.append(snapshot, el('span', 'dya-text', 'track changes'))
-            const create = el('button', 'dya-button dya-button--sm', 'Draft it')
+            snapshotBox.append(snapshot, el('span', 'dya-text', 'Track'))
+            const create = el('button', 'dya-button dya-button--sm', 'Draft')
             const actions = el('div', 'dya-form__actions')
             actions.append(create)
-            node.append(el('span', 'dya-label', 'snapshot'), snapshotBox, actions)
+            node.append(el('span', 'dya-label', 'Changes'), snapshotBox, actions)
 
             create.addEventListener('click', () => {
                 const name = fields.name.value.trim()
                 const url = fields.url.value.trim()
                 if (!name || !url) {
-                    say('name and URL required', false)
+                    say('Name and URL required', false)
                     return
                 }
                 yaml.value = draft({
@@ -1591,9 +1695,9 @@ function mount(ctx, container, handle) {
                     description: fields.description.value.trim(),
                     snapshot: snapshot.checked,
                 })
-                raise(name)
+                raise(name, raisedBy)
                 node.hidden = true
-                say('draft, not saved')
+                say('Not saved')
             })
 
             return {
@@ -1612,18 +1716,33 @@ function mount(ctx, container, handle) {
 
         return {
             refresh: refreshList,
+            create() {
+                if (!library.hidden) shut()
+                if (!sheet.hidden && dirty()) {
+                    leave()
+                    return
+                }
+                raise(null, null)
+                form.open()
+            },
             finished(report) {
-                inspect.disabled = false
-                say(report.code === 0 ? 'probe finished' : `probe ${report.verdict}`, report.code === 0)
+                inspect.disabled = current === null
+                if (probing !== current) return
+                say(report.code === 0 ? 'Inspected' : 'Inspect failed', report.code === 0)
             },
         }
     }
 
 
-    async function begin(kind, payload, into, status, controls) {
+    async function begin(kind, payload, into, status, controls, said) {
+        const tone = (name) => {
+            status.classList.remove('dya-text--danger', 'dya-text--success')
+            if (name) status.classList.add(name)
+        }
         if (busy) {
-            status.textContent = 'busy'
-            return
+            tone('')
+            status.textContent = 'Busy'
+            return false
         }
         busy = true
         sink = into
@@ -1639,17 +1758,20 @@ function mount(ctx, container, handle) {
         controls.run.disabled = !controls.stop
         controls.run.hidden = Boolean(controls.stop)
         if (controls.stop) controls.stop.hidden = false
-        status.className = 'dya-text crw-status'
+        tone('')
+        status.textContent = said
         try {
-            status.textContent = `running ${String(await ctx.invoke('start', kind, payload))}`
+            await ctx.invoke('start', kind, payload)
+            return true
         } catch (error) {
             busy = false
             delete into.dataset.running
             controls.run.disabled = false
             controls.run.hidden = false
             if (controls.stop) controls.stop.hidden = true
-            status.className = 'dya-text crw-status dya-text--danger'
+            tone('dya-text--danger')
             status.textContent = reason(error)
+            return false
         }
     }
 }

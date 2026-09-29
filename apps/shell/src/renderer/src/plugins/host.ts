@@ -1,5 +1,6 @@
 import { token } from '@dyarchia/kanon'
 import { highlight, hues } from '@dyarchia/sdk'
+import { registerCommand } from '../commands'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import { canOpen, openFile, registerOpener } from '../panels/openers'
@@ -64,12 +65,20 @@ export interface PluginCatalogue {
     entries: PluginCatalogueEntry[]
 }
 
+interface PluginCommand {
+    id: string
+    title: string
+    icon?: string
+    run: () => void | Promise<void>
+}
+
 interface PluginModule {
     activate(ctx: {
         pluginId: string
         token(name: string): string
         registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
         registerOpener(descriptor: OpenerDescriptor, open: OpenHandler): void
+        registerCommand(command: PluginCommand): () => void
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         highlight(source: string, language?: string): string
@@ -115,6 +124,10 @@ async function invokeFor(id: string, channel: string, args: unknown[]): Promise<
  */
 const pluginIcons = new Map<string, string>()
 
+export function pluginIcon(id: string): string | undefined {
+    return pluginIcons.get(id)
+}
+
 async function catalogue(): Promise<PluginCatalogue> {
     const found = (await window.dyarchia!.invoke('shell:plugins:catalogue')) as PluginCatalogue
     return {
@@ -141,6 +154,8 @@ export async function loadPlugins(): Promise<void> {
                 },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),
+                registerCommand: (command: PluginCommand) =>
+                    registerCommand({ ...command, id: `${id}:${command.id}`, owner: id }),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 highlight,

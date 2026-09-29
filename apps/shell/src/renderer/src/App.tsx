@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { DockviewApi } from 'dockview-react'
 import { DockLayout } from './layout/DockLayout'
 import { Notices } from './components/Notices'
+import { Palette } from './components/Palette'
 import { TopBar } from './components/TopBar'
 import { ModalPanel } from './panels/ModalPanel'
 import { basePanelId, getRegisteredPanels, onRegistryChange, panelRenderer } from './panels/registry'
@@ -15,6 +16,7 @@ export function App(): React.JSX.Element {
     const [, setRevision] = useState(0)
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
     const [modal, setModal] = useState<string | null>(null)
+    const [palette, setPalette] = useState(false)
     const isModal = (id: string): boolean =>
         getRegisteredPanels().some((panel) => panel.descriptor.id === id && panel.descriptor.modal)
 
@@ -107,7 +109,10 @@ export function App(): React.JSX.Element {
 
     useEffect(() => {
         if (!api) return
-        return installShortcuts(api, { openPanel: handleOpen })
+        return installShortcuts(api, {
+            openPanel: handleOpen,
+            togglePalette: () => setPalette((open) => !open)
+        })
     }, [api, handleOpen])
 
     useEffect(() => {
@@ -117,12 +122,14 @@ export function App(): React.JSX.Element {
 
     return (
         <div className="shell">
-            <TopBar
-                panels={getRegisteredPanels().map((panel) => panel.descriptor)}
-                openPanelIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
-                onToggle={handleToggle}
-            />
-            <div className="shell-body" inert={modal !== null}>
+            <div className="shell-top" inert={palette}>
+                <TopBar
+                    panels={getRegisteredPanels().map((panel) => panel.descriptor)}
+                    openPanelIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
+                    onToggle={handleToggle}
+                />
+            </div>
+            <div className="shell-body" inert={modal !== null || palette}>
                 {pluginsReady ? (
                     <DockLayout onReady={handleReady} onOpen={handleOpen} />
                 ) : (
@@ -133,7 +140,18 @@ export function App(): React.JSX.Element {
                     </div>
                 )}
             </div>
-            {modal && <ModalPanel key={modal} id={modal} onClose={() => setModal(null)} />}
+            {modal && (
+                <div className="shell-top" inert={palette}>
+                    <ModalPanel key={modal} id={modal} onClose={() => setModal(null)} />
+                </div>
+            )}
+            {palette && (
+                <Palette
+                    panels={getRegisteredPanels().map((panel) => panel.descriptor)}
+                    onOpen={handleOpen}
+                    onClose={() => setPalette(false)}
+                />
+            )}
             <Notices />
         </div>
     )

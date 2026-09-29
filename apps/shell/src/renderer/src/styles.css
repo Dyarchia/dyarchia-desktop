@@ -82,9 +82,18 @@ body,
     -webkit-app-region: no-drag;
 }
 
+.shell-top {
+    display: contents;
+}
+
 .shell-body {
     flex: 1;
     min-height: 0;
+}
+
+.shell-palette-scrim {
+    position: fixed;
+    z-index: 949;
 }
 
 .shell-loading {

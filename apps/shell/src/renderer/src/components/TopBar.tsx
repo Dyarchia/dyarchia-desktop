@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { registerCommand } from '../commands'
 import type { PanelDescriptor } from '../panels/registry'
 import { Svg } from './Svg'
 
@@ -83,6 +84,28 @@ function Build(): React.JSX.Element {
     }, [])
 
     const phase = update?.phase ?? 'idle'
+    const [asked, setAsked] = useState(false)
+    const [told, setTold] = useState(false)
+    const checkable = update !== null && phase !== 'unsupported'
+
+    useEffect(() => {
+        if (!checkable) return
+        return registerCommand({
+            id: 'shell:update-check',
+            title: 'Check for updates',
+            run: () => {
+                setAsked(true)
+                setTold(false)
+                act('shell:update:check')
+            }
+        })
+    }, [checkable])
+
+    useEffect(() => {
+        if (!asked || phase === 'checking') return
+        setAsked(false)
+        setTold(phase === 'current')
+    }, [asked, phase])
 
     if (phase === 'available') {
         return (
@@ -108,7 +131,20 @@ function Build(): React.JSX.Element {
             </button>
         )
     }
-    return <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
+    return (
+        <>
+            <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
+            {asked && phase === 'checking' && <span className="dya-key-label">checking…</span>}
+            {told && (
+                <span
+                    className="dya-key-label dya-key-label--leave"
+                    onAnimationEnd={() => setTold(false)}
+                >
+                    up to date
+                </span>
+            )}
+        </>
+    )
 }
 
 function byToolbar(a: PanelDescriptor, b: PanelDescriptor): number {

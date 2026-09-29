@@ -142,6 +142,13 @@ export interface ShellApi {
     reveal(path: string): Promise<boolean>
 }
 
+export interface PluginCommand {
+    id: string
+    title: string
+    icon?: string
+    run(): void | Promise<void>
+}
+
 export interface PluginContext {
     readonly pluginId: string
     token(name: string): string
@@ -151,6 +158,7 @@ export interface PluginContext {
      * shell shows that panel before handing the request over, so a reader only has to read.
      */
     registerOpener(descriptor: OpenerDescriptor, open: (request: OpenRequest) => void | Promise<void>): void
+    registerCommand(command: PluginCommand): () => void
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
     /*

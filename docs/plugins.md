@@ -53,10 +53,10 @@ export function activate(ctx: PluginContext): void {
   draw their glyph with `glyph()` from `@dyarchia/sdk`, never a local SVG or a spelled verb.
 - `duplicable` allows `<id>#<n>` instances, `keepAlive` keeps a covered panel mounted, `width` and
   `maxWidth` size its column and content, `modal` opens it over the window instead of the dock.
-- The panel's actions go in `handle.toolbar`, shown in the tab row or a modal's head at one size.
-- `registerOpener` goes in `activate`; the shell keeps the first opener per extension. A finder
-  never names the reader: it asks `ctx.shell.canOpen` and falls back to `reveal`.
-- `ctx.token(name)` resolves a `--dya-*` value for a canvas; `highlight` and `hues` are in the SDK.
+- Actions go in `handle.toolbar`. `registerOpener` goes in `activate`; the first opener per
+  extension wins. A finder never names the reader: it asks `ctx.shell.canOpen`, else `reveal`.
+- `ctx.registerCommand({ id, title, icon?, run })` joins the Ctrl+K palette and returns its removal.
+  `ctx.token(name)` resolves a `--dya-*` value; `highlight` and `hues` are in the SDK.
 
 ## Main module
 

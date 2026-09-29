@@ -1,26 +1,12 @@
-import { BrowserWindow, dialog, protocol } from 'electron'
+import { app, BrowserWindow, dialog, protocol } from 'electron'
 import { createReadStream } from 'node:fs'
-import { stat } from 'node:fs/promises'
-import { basename, extname } from 'node:path'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { basename, dirname, extname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import type { PluginMainContext } from '@dyarchia/sdk'
+import { MIME_TYPES, VIDEO_EXTENSIONS } from './media.js'
 
 const MEDIA_SCHEME = 'dyarchia-media'
-
-const MIME_TYPES: Record<string, string> = {
-    '.mp3': 'audio/mpeg',
-    '.m4a': 'audio/mp4',
-    '.flac': 'audio/flac',
-    '.wav': 'audio/wav',
-    '.ogg': 'audio/ogg',
-    '.opus': 'audio/ogg',
-    '.mp4': 'video/mp4',
-    '.webm': 'video/webm',
-    '.mkv': 'video/x-matroska',
-    '.mov': 'video/quicktime'
-}
-
-const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mkv', '.mov'])
 
 function mimeOf(filePath: string): string {
     const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase()
@@ -77,10 +63,42 @@ async function serveMedia(request: Request): Promise<Response> {
     })
 }
 
+interface Recent {
+    path: string
+    name: string
+    at: number
+}
+
+const RECENT_LIMIT = 11
+
+function recentPath(): string {
+    return join(app.getPath('userData'), 'player', 'recent.json')
+}
+
+async function readRecent(): Promise<Recent[]> {
+    try {
+        const parsed: unknown = JSON.parse(await readFile(recentPath(), 'utf-8'))
+        return Array.isArray(parsed) ? parsed.filter((item): item is Recent => typeof item?.path === 'string') : []
+    } catch {
+        return []
+    }
+}
+
+async function isFile(path: string): Promise<boolean> {
+    return stat(path).then((info) => info.isFile(), () => false)
+}
+
+async function remember(path: string): Promise<void> {
+    const kept = (await readRecent()).filter((item) => item.path !== path)
+    const next = [{ path, name: basename(path), at: Date.now() }, ...kept].slice(0, RECENT_LIMIT)
+    await mkdir(dirname(recentPath()), { recursive: true })
+    await writeFile(recentPath(), JSON.stringify(next, null, 4) + '\n', 'utf-8')
+}
+
 export function activate(ctx: PluginMainContext): void {
     protocol.handle(MEDIA_SCHEME, serveMedia)
 
-    ctx.handle('open', async () => {
+    ctx.handle('pick', async () => {
         const options = {
             title: 'Open media',
             properties: ['openFile' as const],
@@ -93,12 +111,24 @@ export function activate(ctx: PluginMainContext): void {
         const result = parent
             ? await dialog.showOpenDialog(parent, options)
             : await dialog.showOpenDialog(options)
-        const filePath = result.canceled ? undefined : result.filePaths[0]
-        if (!filePath) return { canceled: true }
+        return result.canceled ? null : (result.filePaths[0] ?? null)
+    })
+
+    ctx.handle('media', async (path) => {
+        const filePath = String(path)
+        if (!(await isFile(filePath))) throw new Error('not a file')
+        await remember(filePath).catch(() => undefined)
         return {
+            path: filePath,
             name: basename(filePath),
             kind: VIDEO_EXTENSIONS.has(extname(filePath).toLowerCase()) ? 'video' : 'audio',
             src: `${MEDIA_SCHEME}://local/${encodeURIComponent(filePath)}`
         }
+    })
+
+    ctx.handle('recent', async () => {
+        const all = await readRecent()
+        const present = await Promise.all(all.map((item) => isFile(item.path)))
+        return all.filter((_, index) => present[index])
     })
 }

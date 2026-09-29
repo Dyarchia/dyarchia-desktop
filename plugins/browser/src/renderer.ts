@@ -113,6 +113,15 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 export function activate(ctx: PluginContext): void {
+    ctx.registerCommand({
+        id: 'browser.new',
+        title: 'New tab',
+        icon: GLOBE_ICON,
+        run: async () => {
+            await ctx.shell.show('browser', { fresh: true })
+        }
+    })
+
     ctx.registerPanel(
         {
             id: 'browser',
@@ -199,7 +208,10 @@ export function activate(ctx: PluginContext): void {
                 forward.disabled = !view.canGoForward()
                 const marked = bookmarks.some((entry) => entry.url === url)
                 star.classList.toggle('dya-key--active', marked)
-                star.setAttribute('aria-label', marked ? 'Remove bookmark' : 'Bookmark')
+                const label = marked ? 'Unbookmark' : 'Bookmark'
+                star.setAttribute('aria-label', label)
+                const tip = document.getElementById(star.getAttribute('interestfor') ?? '')
+                if (tip) tip.textContent = label
                 handle.setTitle(view.getTitle() || hostOf(url) || null)
             }
 
@@ -207,6 +219,8 @@ export function activate(ctx: PluginContext): void {
                 loading = next
                 reload.innerHTML = next ? STOP_ICON : RELOAD_ICON
                 reload.setAttribute('aria-label', next ? 'Stop' : 'Reload')
+                const tip = document.getElementById(reload.getAttribute('interestfor') ?? '')
+                if (tip) tip.textContent = next ? 'Stop' : 'Reload'
             }
 
             /*
@@ -276,7 +290,7 @@ export function activate(ctx: PluginContext): void {
              */
             view.addEventListener('did-fail-load', (event) => {
                 if (!event.isMainFrame || event.errorCode === -3) return
-                const retry = el('button', 'dya-button', 'Try again')
+                const retry = el('button', 'dya-button', 'Retry')
                 retry.type = 'button'
                 retry.addEventListener('click', () => go(event.validatedURL))
                 const actions = el('div', 'dya-empty__actions')

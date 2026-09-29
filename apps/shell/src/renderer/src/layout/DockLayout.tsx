@@ -135,33 +135,34 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             {icon && <Svg className={glyph} svg={icon} />}
             <span className="panel-tab-title">{shown}</span>
             <span className="panel-tab-actions">
-                {descriptor?.duplicable ? (
+                {!descriptor?.duplicable && <span className="panel-tab-slot" aria-hidden="true" />}
+                <span className="dya-join">
+                    {descriptor?.duplicable && (
+                        <button
+                            className="dya-tab__action"
+                            aria-label={`Another ${descriptor.title}`}
+                            interestfor={anotherTip}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                                event.stopPropagation()
+                                another()
+                            }}
+                            dangerouslySetInnerHTML={{ __html: ANOTHER_ICON }}
+                        />
+                    )}
                     <button
-                        className="dya-tab__action"
-                        aria-label={`Another ${descriptor.title}`}
-                        interestfor={anotherTip}
+                        className="dya-tab__action dya-tab__action--close"
+                        aria-label={`Close ${shown}`}
+                        interestfor={closeTip}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
                             event.stopPropagation()
-                            another()
+                            props.api.close()
                         }}
-                        dangerouslySetInnerHTML={{ __html: ANOTHER_ICON }}
+                        dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
                     />
-                ) : (
-                    <span className="panel-tab-slot" aria-hidden="true" />
-                )}
-                <button
-                    className="dya-tab__action dya-tab__action--close"
-                    aria-label={`Close ${shown}`}
-                    interestfor={closeTip}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                        event.stopPropagation()
-                        props.api.close()
-                    }}
-                    dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
-                />
-                {descriptor?.duplicable && <Tip id={anotherTip} label={`Another ${descriptor.title}`} />}
+                </span>
+                {descriptor?.duplicable && <Tip id={anotherTip} label="Another" />}
                 <Tip id={closeTip} label="Close" />
             </span>
         </div>

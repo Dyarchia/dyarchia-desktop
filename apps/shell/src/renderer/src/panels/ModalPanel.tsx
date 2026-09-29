@@ -62,18 +62,20 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
                 aria-modal="true"
                 aria-label={title}
             >
-                <header className="dya-toolbar shell-modal-head">
+                <header className="dya-sheet__head">
                     <Svg className="dya-glyph shell-modal-mark" svg={registered.descriptor.icon} />
                     <span className="dya-title">{title}</span>
-                    <div className="shell-modal-tools" ref={tools} />
-                    <button
-                        type="button"
-                        className="dya-key"
-                        aria-label="Close"
-                        interestfor={closeTip}
-                        onClick={onClose}
-                        dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
-                    />
+                    <div className="dya-sheet__end">
+                        <div ref={tools} />
+                        <button
+                            type="button"
+                            className="dya-key"
+                            aria-label="Close"
+                            interestfor={closeTip}
+                            onClick={onClose}
+                            dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
+                        />
+                    </div>
                     <Tip id={closeTip} label="Close" />
                 </header>
                 <div ref={body} className="dya-pane shell-modal-body" />

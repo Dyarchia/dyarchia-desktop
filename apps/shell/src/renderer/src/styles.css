@@ -227,7 +227,6 @@ body,
 .panel-tab-actions {
     display: flex;
     align-items: center;
-    gap: var(--dya-space-1);
     margin-inline-start: var(--dya-space-1);
 }
 
@@ -238,10 +237,11 @@ body,
 /*
  * A panel that cannot be duplicated keeps the place of the key that would, so the open tab ends
  * the same distance after its name whichever plugin it is and its close key sits at one offset.
+ * The strip overlaps its two keys by their shared rim, and the slot is that much narrower.
  */
 .panel-tab-slot {
-    width: 22px;
-    height: 22px;
+    width: calc(var(--dya-size-control) - var(--dya-border-width));
+    height: var(--dya-size-control);
 }
 
 .plugin-panel-container {
@@ -277,19 +277,9 @@ body,
     gap: var(--dya-space-4);
 }
 
-.shell-modal-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
-}
-
 .shell-modal-mark {
     width: 22px;
     height: 22px;
-}
-
-.shell-modal-tools {
-    margin-inline-start: auto;
 }
 
 .shell-modal-body {

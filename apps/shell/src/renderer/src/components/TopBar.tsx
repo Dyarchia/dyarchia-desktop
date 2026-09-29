@@ -74,7 +74,6 @@ function act(channel: string): void {
 
 function Build(): React.JSX.Element {
     const [update, setUpdate] = useState<UpdateState | null>(null)
-    const tip = useTipId()
 
     useEffect(() => {
         const bridge = window.dyarchia
@@ -132,16 +131,11 @@ function Build(): React.JSX.Element {
     if (phase === 'failed') {
         return (
             <>
-                <button
-                    className="dya-button dya-button--sm topbar-update"
-                    aria-label="Update check failed"
-                    interestfor={tip}
-                    onClick={check}
-                >
+                <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
+                <button className="dya-button topbar-update" onClick={check}>
                     <span className="dya-light dya-light--warning" />
-                    <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
+                    Retry update
                 </button>
-                <Tip id={tip} label="Update check failed" />
             </>
         )
     }
@@ -190,7 +184,7 @@ export function TopBar({ panels, openPanelIds, onToggle }: TopBarProps): React.J
                         </TipKey>
                     ))}
                 </div>
-                <div className="dya-toolbar topbar-window-controls">
+                <div className="dya-join topbar-window-controls">
                     <button
                         className="dya-winkey"
                         aria-label="Minimize"

@@ -437,6 +437,13 @@ export const STYLES = `
     align-items: center;
 }
 
+.kanban-setup[data-mode='gallery'] {
+    justify-content: flex-start;
+    padding: var(--dya-space-4);
+}
+
+.kanban-gallery { width: 100%; }
+
 .kanban-welcome {
     padding: var(--dya-space-5);
 }

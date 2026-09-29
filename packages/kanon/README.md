@@ -37,8 +37,7 @@ Inter is the interface, with tabular figures everywhere; Plex Mono is paths and 
 
 ## Colour and contrast
 
-- **Six colours and no others**: blue, purple, orange, green, yellow, red, each a light
-  `--dya-<name>` for what is not text and an `-ink` that is text on every ground.
+- **Six colours and no others**: blue, purple, orange, green, yellow, red; a light `--dya-<name>`, an `-ink` for text.
 - **Green is success, yellow warning, red error, always.** Blue, purple and orange are the only
   categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a glyph, never a pill's
   word, a fill or a dot inside a pill. A pill that informs is neutral. **Plugins have no hue.**
@@ -70,7 +69,8 @@ Inter is the interface, with tabular figures everywhere; Plex Mono is paths and 
 - **An action with a known glyph is an icon key** with a tip, never a `button` spelling the verb.
 - **A panel measures itself**: it is a `pane`, addressed as `@container pane (...)`, never a media
   query. Density is fixed on the 4 and 8px scale; width changes how many regions a panel shows,
-  never how far things stretch. No column system: `grid` is a gallery of fixed-width things.
+  never how far things stretch. No column system: `grid` is a gallery of fixed-width things, from
+  the top left, `tile--new` first; an empty panel is its gallery, never one tile in the middle.
 - **Content is as wide as it needs.** Table columns are their content's width; spare room holds
   another region or is left empty on purpose, content at the top left. `form`: labels as wide as
   the longest, values up to 560px, the label over its value below 400px.

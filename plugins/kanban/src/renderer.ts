@@ -25,6 +25,7 @@ import type {
     RunnersPatch,
     Settings,
     Status,
+    WatchBoard,
     WatchRun
 } from './types.js'
 
@@ -989,6 +990,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * and the way back to real work was a control in the bar. The boards are the answer to
          * "what now", so they are what the screen shows.
          */
+        if (open.length > 0) setup.dataset.mode = 'gallery'
         setup.appendChild(open.length > 0 ? buildBoardChooser(open) : buildBoardForm())
     }
 
@@ -1414,31 +1416,79 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
     }
 
-    const buildBoardChooser = (open: BoardMeta[]): HTMLElement => {
-        const shell = el('div', 'dya-pane kanban-setup-shell')
-        shell.append(el('div', 'dya-title', 'Boards'))
+    /*
+     * A board as the thing it is: its name, whether it is running or paused, what waits in it and
+     * where it works. The chooser and the watch build the same card, so a board reads the same in
+     * both places.
+     */
+    const boardTile = (name: string, slug: string, shape?: WatchBoard, workdir?: string): HTMLElement => {
+        const card = el('button', 'dya-tile dya-tile--dense')
+        card.type = 'button'
+        card.addEventListener('click', () => {
+            write(pinKey, slug)
+            closeWatch()
+            void refresh().catch(fail)
+        })
 
-        const grid = el('div', 'dya-grid')
-        for (const entry of open) {
-            const tile = el('button', 'dya-tile')
-            tile.type = 'button'
-            tile.append(el('span', 'dya-tile__name', entry.name))
-            withTip(tile, entry.workdir)
-            tile.addEventListener('click', () => {
-                write(pinKey, entry.slug)
-                void refresh().catch(fail)
-            })
-            grid.append(tile)
+        const top = el('div', 'dya-tile__head')
+        top.append(el('span', 'dya-tile__name', name))
+        if (shape?.cap === 0) {
+            top.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
+        } else if (shape && shape.running > 0) {
+            top.append(el('span', 'dya-badge dya-badge--success', `${shape.running} running`))
         }
-        shell.append(grid)
+        card.append(top)
 
-        const actions = el('div', 'dya-form__actions')
-        const make = el('button', 'dya-button dya-button--primary', 'new board')
+        if (shape) {
+            const pills = el('div', 'dya-pills')
+            const tallies: [number, string, string][] = [
+                [shape.counts.ready, 'ready', 'dya-tag'],
+                [shape.counts.review, 'in review', 'dya-tag'],
+                [shape.counts.blocked, 'blocked', 'dya-badge dya-badge--warning'],
+                [shape.counts.triage + shape.counts.scheduled, 'waiting', 'dya-tag'],
+                [shape.counts.done, 'done', 'dya-tag']
+            ]
+            for (const [n, word, tone] of tallies) {
+                if (n > 0) pills.append(el('span', tone, `${n} ${word}`))
+            }
+            if (pills.childElementCount) card.append(pills)
+        }
+        if (workdir) {
+            const parts = workdir.split(/[\\/]+/).filter(Boolean)
+            const tail = parts.length > 2 ? `…/${parts.slice(-2).join('/')}` : workdir
+            const where = el('span', 'dya-meta dya-mono', tail)
+            withTip(where, workdir)
+            card.append(where)
+        }
+        return card
+    }
+
+    /*
+     * The boards on this machine, as a gallery from the top left, with the way to make another as
+     * its first card. It was a title, one tile and a button in the middle of the panel: an island
+     * that left the rest of the pane black and put the action under the thing it adds to.
+     */
+    const buildBoardChooser = (open: BoardMeta[]): HTMLElement => {
+        const grid = el('div', 'dya-grid kanban-gallery')
+        const make = el('button', 'dya-tile dya-tile--new')
         make.type = 'button'
+        const icon = el('span', 'dya-tile__icon')
+        icon.innerHTML = ICONS.plus
+        make.append(icon, el('span', 'dya-tile__name', 'New board'))
         make.addEventListener('click', () => newBoard())
-        actions.append(make)
-        shell.append(actions)
-        return shell
+        grid.append(make)
+
+        const place = (shapes: Map<string, WatchBoard>): void => {
+            grid.replaceChildren(
+                make,
+                ...open.map((entry) => boardTile(entry.name, entry.slug, shapes.get(entry.slug), entry.workdir))
+            )
+        }
+        place(new Map())
+        void invoke<Overview>('overview')
+            .then((shape) => place(new Map(shape.boards.map((board) => [board.slug, board]))))
+            .catch(() => undefined)
+        return grid
     }
 
     const newBoard = (): void => {
@@ -2919,40 +2969,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         boardsGroup.append(el('span', 'dya-eyebrow', 'boards'))
         const grid = el('div', 'dya-grid')
         for (const entry of shape.boards) {
-            const card = el('button', 'dya-tile dya-tile--dense')
-            card.type = 'button'
-            card.addEventListener('click', () => {
-                write(pinKey, entry.slug)
-                closeWatch()
-                void refresh().catch(fail)
-            })
-
-            const top = el('div', 'dya-tile__head')
-            top.append(el('span', 'dya-tile__name', entry.name))
-            if (entry.cap === 0) {
-                top.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
-            } else if (entry.running > 0) {
-                top.append(el('span', 'dya-badge dya-badge--success', `${entry.running} running`))
-            }
-            card.append(top)
-
-            const pills = el('div', 'dya-pills')
-            const tallies: [number, string, string][] = [
-                [entry.counts.ready, 'ready', 'dya-tag'],
-                [entry.counts.review, 'in review', 'dya-tag'],
-                [entry.counts.blocked, 'blocked', 'dya-badge dya-badge--warning'],
-                [
-                    entry.counts.triage + entry.counts.scheduled,
-                    'waiting',
-                    'dya-tag'
-                ]
-            ]
-            for (const [n, word, tone] of tallies) {
-                if (n > 0) pills.append(el('span', tone, `${n} ${word}`))
-            }
-            if (pills.childElementCount) card.append(pills)
-
-            grid.append(card)
+            const workdir = registry.find((board) => board.slug === entry.slug)?.workdir
+            grid.append(boardTile(entry.name, entry.slug, entry, workdir))
         }
         boardsGroup.append(grid)
         holder.appendChild(boardsGroup)

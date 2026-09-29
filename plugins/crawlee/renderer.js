@@ -439,17 +439,6 @@ function stateBadge(corpus) {
 
 
 /*
- * A sweep as a reader says it: the day, the month and the minute on this machine's clock.
- */
-function sweptShort(iso) {
-    const at = iso ? new Date(iso) : null
-    if (!at || Number.isNaN(at.getTime())) return ''
-    const month = at.toLocaleString('en', { month: 'short' })
-    const two = (value) => String(value).padStart(2, '0')
-    return `${at.getDate()} ${month} ${two(at.getHours())}:${two(at.getMinutes())}`
-}
-
-/*
  * A unified diff with its added lines in green and its removed lines in red, one element per line.
  */
 function diffBlock(text) {
@@ -465,18 +454,6 @@ function diffBlock(text) {
         pre.append(el('span', tone ? `dya-code__line ${tone}` : 'dya-code__line', line))
     }
     return pre
-}
-
-/*
- * When a corpus was last swept, as the date and the minute on this machine's clock. It was the date
- * alone, cut off the stored timestamp, and that timestamp is UTC: two rounds on one day read the
- * same, and a round run at half past midnight in Madrid was dated the day before.
- */
-function swept(iso) {
-    const at = iso ? new Date(iso) : null
-    if (!at || Number.isNaN(at.getTime())) return '-'
-    const two = (value) => String(value).padStart(2, '0')
-    return `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())} ${two(at.getHours())}:${two(at.getMinutes())}`
 }
 
 /*
@@ -868,7 +845,8 @@ function mount(ctx, container, handle) {
                 if (group) {
                     const latest = members.map((corpus) => corpus.swept_at).filter(Boolean).sort().at(-1)
                     const section = el('tr', 'dya-table__section')
-                    const cell = el('td', undefined, latest ? `${group} - ${sweptShort(latest)}` : group)
+                    const cell = el('td', undefined, group)
+                    if (latest) cell.append(' - ', el('span', 'dya-meta', ctx.when(latest)))
                     cell.colSpan = labels.length
                     section.append(cell)
                     body.append(section)
@@ -941,7 +919,7 @@ function mount(ctx, container, handle) {
             }
             if (ticket !== asked) return
             const pages = (found?.pages || []).filter((page) => !page.reordered)
-            const when = found?.generated_at ? sweptShort(found.generated_at) : ''
+            const when = ctx.when(found?.generated_at)
             if (pages.length === 0) {
                 head.append(el('span', 'dya-meta', when ? `no change since ${when}` : 'no change report'))
                 detail.replaceChildren(head)
@@ -1482,7 +1460,7 @@ function mount(ctx, container, handle) {
             if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
 
             const facts = corpus
-                ? [`${corpus.pages} pages`, swept(corpus.swept_at)]
+                ? [`${corpus.pages} pages`, ctx.when(corpus.swept_at)].filter(Boolean)
                 : [`${profile.urls.length} start ${profile.urls.length === 1 ? 'url' : 'urls'}`]
             const line = el('div', 'crw-facts')
             if (profile.group) line.append(groupTag(profile.group))

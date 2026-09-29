@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { glyph, highlight, highlightLines, injectStyles } from '@dyarchia/sdk'
+import { glyph, highlight, highlightLines, injectStyles, when } from '@dyarchia/sdk'
 import type { GlyphName, OpenRequest, PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
@@ -458,13 +458,6 @@ export function activate(ctx: PluginContext): void {
             function complain(message?: string): void {
                 complaint.textContent = message ?? ''
                 complaint.hidden = !message
-            }
-
-            function when(mtime: number): string {
-                const at = new Date(mtime)
-                const pad = (value: number): string => String(value).padStart(2, '0')
-                return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} ` +
-                    `${pad(at.getHours())}:${pad(at.getMinutes())}`
             }
 
             function size(bytes: number): string {

@@ -1,5 +1,5 @@
 import { token } from '@dyarchia/kanon'
-import { highlight, hues } from '@dyarchia/sdk'
+import { highlight, hues, when } from '@dyarchia/sdk'
 import { registerCommand } from '../commands'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
@@ -83,6 +83,7 @@ interface PluginModule {
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         highlight(source: string, language?: string): string
         hues(keys: Iterable<string>): Record<string, string>
+        when(value: Date | number | string | null | undefined): string
         shell: ShellApi
     }): void | Promise<void>
 }
@@ -160,6 +161,7 @@ export async function loadPlugins(): Promise<void> {
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 highlight,
                 hues,
+                when,
                 shell: {
                     catalogue,
                     paths: () => bridge.invoke('shell:app:paths') as Promise<ShellPaths>,

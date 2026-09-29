@@ -1,5 +1,5 @@
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import { brandIcon, glyph, highlight, injectStyles } from '@dyarchia/sdk'
+import { brandIcon, glyph, highlight, injectStyles, when } from '@dyarchia/sdk'
 import type { GlyphName, PanelHandle, PluginContext } from '@dyarchia/sdk'
 import { MARKER, parseTerminal } from './closing.js'
 import { installDrag } from './drag.js'
@@ -264,12 +264,6 @@ function tokens(count: number): string {
     if (count < 1000) return String(count)
     if (count < 1_000_000) return `${(count / 1000).toFixed(1)}k`
     return `${(count / 1_000_000).toFixed(2)}M`
-}
-
-function when(at: number): string {
-    const date = new Date(at)
-    const day = date.toDateString() === new Date().toDateString() ? '' : `${date.getDate()}/${date.getMonth() + 1} `
-    return `${day}${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 function local(at: number): string {

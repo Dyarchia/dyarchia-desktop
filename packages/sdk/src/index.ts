@@ -2,6 +2,7 @@ export { highlight, highlightLines } from './highlight.js'
 export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
 export { hues } from './hues.js'
+export { when } from './when.js'
 export { brandIcon, ownIds } from './brands.js'
 export { glyph } from './glyphs.js'
 export type { GlyphName } from './glyphs.js'
@@ -174,6 +175,7 @@ export interface PluginContext {
      * the plugin with no build step, like `highlight`.
      */
     hues(keys: Iterable<string>): Record<string, Hue>
+    when(value: Date | number | string | null | undefined): string
     shell: ShellApi
 }
 

@@ -2075,24 +2075,25 @@ textarea.dya-field {
 }
 
 /*
- * Lanes: the stages of one board, as strips of it rather than cards on it. Flush, on the chassis,
- * with a hairline between each and the next that is the board's own ground showing through a
- * one-pixel gap, so no border doubles where two lanes meet. A lane answers a drag with its ground:
+ * Lanes: the stages of one board, as strips of it rather than cards on it. Flush and transparent,
+ * so the glass and the light behind it read through the board as through every other panel, with
+ * a hairline before every lane but the first, so no border doubles. A lane answers a drag with its ground:
  * the accent's soft ground where a card may land, red's where it may not. The line is where it
  * lands, and the drop box is the place to drop into an empty lane, drawn only while dragging.
  */
 .dya-lanes {
     display: flex;
     align-items: stretch;
-    gap: var(--dya-border-width);
-    background: var(--dya-hairline);
 }
 
 .dya-lane {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: var(--dya-chassis);
+}
+
+.dya-lane + .dya-lane {
+    border-inline-start: var(--dya-border-width) solid var(--dya-hairline);
 }
 
 .dya-lane--accept {

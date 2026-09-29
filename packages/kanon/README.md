@@ -20,19 +20,20 @@ is prefixed `--dya-`, every keyframe and class `dya-`. The CSS never consults `p
 ## Materials
 
 ```text
-glass   the panel, and only the panel: translucent white over the grain, no blur; brighter at the
-        top, under a chrome rim lit from above, cut from the ground by a black line and a shadow
+glass   the panel, and only the panel: dark metal, a smoked black a shade under the ground that
+        the light passes through, no blur; a chrome rim lit from above, a black line and a shadow
 key     every control: brushed face, 3px corners, a hard 3px edge underneath; pressed, it drops 2px
 pill    every piece of information: round, words in the sans; never pressable
 light   status, and only status: a green, yellow or red dot inside a pill or around a key
 ```
 
 Black and white, and one light. The ground is black (`#0a0a0b`) with a dark crimson light
-(`--dya-light-in`, `#7f1d1d`) coming in at two corners; the glass lets it through, which is what
-makes a panel read as glass over metal. Crimson is that light and nothing else: never a key, a word
-or a line. The primary key is steel; the open tab's line and the focus ring are silver; plugin
-marks are black, garnet and white. Nothing glows. Text has two inks, near white and muted. Spectral
-is the brand; Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code.
+(`--dya-light-in`, `#7f1d1d`) coming in at two corners and dying into darker crimsons, never grey;
+the grain is an overlay and adds no light. The glass lets the light through, and its rim is the only
+light thing a panel carries. Crimson is that light and nothing else: never a key, a word or a line.
+The primary key is steel; the open tab's line and the focus ring are silver; plugin marks are black,
+garnet and white. Nothing glows. Text has two inks, near white and muted. Spectral is the brand;
+Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code.
 
 ## Colour and contrast
 
@@ -95,6 +96,5 @@ Content      table (__num __fit __key __name __subject __end __prose __section) 
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
 Navigation   tabs tab (--dock __action --close)
-Absence      empty (__actions) loading
-Assistive    sr-only
+Absence      empty (__actions) loading        Assistive    sr-only
 ```

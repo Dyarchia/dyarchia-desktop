@@ -473,12 +473,11 @@
 }
 
 /*
- * The word in the title bar is stamped into the metal rather than printed on it: an ink barely
- * off the ground, a dark lip above and a light one below. It measures 1.45 against the ground and
- * is not text; the window's title carries the name for anything that reads it. It is the one
- * element in the system that is allowed to be decoration.
+ * The wordmark on the empty window is stamped into the metal rather than printed on it: an ink
+ * barely off the ground, a dark lip above and a light one below. It measures 1.45 against the
+ * ground and is not text; the window's title carries the name for anything that reads it. It is
+ * the one element in the system that is allowed to be decoration.
  */
-.dya-brand,
 .dya-carved {
     font-family: var(--dya-font-serif);
     font-size: var(--dya-size-display);
@@ -491,20 +490,6 @@
     -webkit-background-clip: text;
     background-clip: text;
     filter: var(--dya-carve-filter);
-}
-
-.dya-brand {
-    font-size: var(--dya-size-brand);
-    white-space: nowrap;
-}
-
-/*
- * The wordmark while the window is at work: the same carved serif, centred in the 40px title bar,
- * so the name is always there without being the largest thing on screen. It is full size only on
- * the empty window, where nothing else is.
- */
-.dya-brand--sm {
-    font-size: var(--dya-size-brand-sm);
 }
 
 /*

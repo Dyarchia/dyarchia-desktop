@@ -79,7 +79,7 @@ Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths
 
 ```text
 Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead brand (--sm) carved splitter sheet (--side --modal)
+             --pending --ghosted --carried) card__header masthead carved splitter sheet (--side --modal)
              well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--primary --active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)

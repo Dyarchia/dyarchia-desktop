@@ -121,7 +121,6 @@ export function App(): React.JSX.Element {
                 panels={getRegisteredPanels().map((panel) => panel.descriptor)}
                 openPanelIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
                 onToggle={handleToggle}
-                brand={pluginsReady && (openPanelIds.size > 0 || modal !== null)}
             />
             <div className="shell-body" inert={modal !== null}>
                 {pluginsReady ? (

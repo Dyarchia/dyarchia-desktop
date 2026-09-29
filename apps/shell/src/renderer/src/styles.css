@@ -31,9 +31,8 @@ body,
 }
 
 /*
- * The title bar is 40px and holds three things: the build on the left, the wordmark on the centre
- * of the window whatever the sides hold, the panel keys and the window's own keys on the right.
- * On the empty window the launcher carries the large wordmark and the bar leaves the centre empty.
+ * The title bar is 40px: the build on the left, a key for every plugin in manifest order and the
+ * window's own keys on the right. The wordmark lives only on the empty window.
  */
 .topbar {
     position: relative;
@@ -52,24 +51,6 @@ body,
     min-width: 0;
 }
 
-.topbar-brand {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    pointer-events: none;
-}
-
-/*
- * The wordmark is decoration, so it is what gives way when the window is narrow. The title bar is
- * the window, so here the window's width is the right question.
- */
-@media (max-width: 1000px) {
-    .topbar-brand {
-        display: none;
-    }
-}
-
-.topbar-alpha,
 .topbar-update {
     flex: none;
     white-space: nowrap;
@@ -86,26 +67,6 @@ body,
     padding-right: var(--dya-space-3);
     padding-bottom: 3px;
     -webkit-app-region: no-drag;
-}
-
-.topbar-overflow {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.topbar-menu {
-    position: absolute;
-    top: calc(100% + var(--dya-space-2));
-    right: 0;
-    z-index: 20;
-    min-width: 168px;
-}
-
-.topbar-menu .topbar-icon,
-.topbar-menu .topbar-icon svg {
-    width: 18px;
-    height: 18px;
 }
 
 .topbar-icon,

@@ -3,7 +3,7 @@ export interface PanelDescriptor {
     title: string
     icon: string
     duplicable?: boolean
-    /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is the menu. */
+    /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is last. */
     toolbar?: number
     keepAlive?: boolean
     width?: number

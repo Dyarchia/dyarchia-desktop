@@ -5,6 +5,8 @@ export { hues } from './hues.js'
 export { when } from './when.js'
 export { brandIcon, ownIds } from './brands.js'
 export { glyph } from './glyphs.js'
+export { tips } from './tips.js'
+export type { Tip } from './tips.js'
 export type { GlyphName } from './glyphs.js'
 export type { Hue } from './hues.js'
 

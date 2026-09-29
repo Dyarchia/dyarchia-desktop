@@ -1,4 +1,4 @@
-import { glyph, injectStyles } from '@dyarchia/sdk'
+import { glyph, injectStyles, tips } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import { MIME_TYPES } from './media.js'
 
@@ -125,7 +125,9 @@ export function activate(ctx: PluginContext): void {
              */
             const stage = document.createElement('div')
             stage.className = 'player-stage'
-            root.append(stage)
+            const tipHolder = document.createElement('div')
+            const withTip = tips(tipHolder)
+            root.append(stage, tipHolder)
             container.appendChild(root)
 
             let busy = false
@@ -136,7 +138,7 @@ export function activate(ctx: PluginContext): void {
                 const button = document.createElement('button')
                 button.className = 'dya-key'
                 button.innerHTML = glyph('folder')
-                button.title = 'Open'
+                withTip(button, 'Open')
                 button.setAttribute('aria-label', 'Open')
                 button.onclick = () => void pick()
                 return button
@@ -159,7 +161,6 @@ export function activate(ctx: PluginContext): void {
                 const card = document.createElement('button')
                 card.type = 'button'
                 card.className = 'dya-tile dya-tile--dense'
-                card.title = item.path
                 const top = document.createElement('div')
                 top.className = 'dya-tile__head'
                 const name = document.createElement('span')

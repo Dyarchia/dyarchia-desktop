@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { glyph, highlight, highlightLines, injectStyles, when } from '@dyarchia/sdk'
+import { glyph, highlight, highlightLines, injectStyles, tips, when } from '@dyarchia/sdk'
 import type { GlyphName, OpenRequest, PluginContext } from '@dyarchia/sdk'
 
 interface OpenResult {
@@ -225,6 +225,8 @@ export function activate(ctx: PluginContext): void {
 
             const root = document.createElement('div')
             root.className = 'docviewer'
+            const tipHolder = document.createElement('div')
+            const withTip = tips(tipHolder)
 
             /*
              * The file's name is the tab's title, and what can be done to it sits in the tab row:
@@ -259,7 +261,7 @@ export function activate(ctx: PluginContext): void {
 
             const content = document.createElement('div')
             handle.toolbar.append(header)
-            root.append(content)
+            root.append(content, tipHolder)
             container.appendChild(root)
 
             let busy = false
@@ -315,7 +317,7 @@ export function activate(ctx: PluginContext): void {
 
             const modeButtons = MODES.map((entry) => {
                 const button = document.createElement('button')
-                button.title = entry.label
+                withTip(button, entry.label)
                 button.setAttribute('aria-label', entry.label)
                 button.innerHTML = `<span class="docviewer-mode">${entry.icon}</span>`
                 button.onclick = () => setMode(entry.id)
@@ -344,7 +346,7 @@ export function activate(ctx: PluginContext): void {
                 saveShows = overwrite
                 if (overwrite) {
                     save.className = 'dya-button dya-button--resolve docviewer-save'
-                    save.removeAttribute('title')
+                    withTip(save, '')
                     save.setAttribute('aria-label', 'Overwrite')
                     const state = document.createElement('span')
                     state.className = 'dya-button__state'
@@ -357,7 +359,7 @@ export function activate(ctx: PluginContext): void {
                 }
                 save.className = 'dya-key docviewer-save'
                 save.innerHTML = glyph('save')
-                save.title = 'Save'
+                withTip(save, 'Save')
                 save.setAttribute('aria-label', 'Save')
             }
 
@@ -454,7 +456,7 @@ export function activate(ctx: PluginContext): void {
                 button.type = 'button'
                 button.className = 'dya-key'
                 button.innerHTML = glyph(icon)
-                button.title = label
+                withTip(button, label)
                 button.setAttribute('aria-label', label)
                 button.onclick = (event) => {
                     event.stopPropagation()

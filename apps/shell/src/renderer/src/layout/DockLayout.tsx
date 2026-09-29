@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DockviewReact, themeAbyssSpaced } from 'dockview-react'
+import { glyph } from '@dyarchia/sdk'
 import type {
     DockviewApi,
     DockviewReadyEvent,
@@ -10,6 +11,7 @@ import type {
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
 import { Svg } from '../components/Svg'
+import { Tip, useTipId } from '../components/Tip'
 import { PluginPanel } from '../panels/PluginPanel'
 import {
     basePanelId,
@@ -29,10 +31,8 @@ const dyarchiaTheme: DockviewTheme = {
     tabGroupIndicator: 'none'
 }
 
-const ANOTHER_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>'
-const CLOSE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
+const ANOTHER_ICON = glyph('add')
+const CLOSE_ICON = glyph('close')
 
 const titleListeners = new Set<() => void>()
 
@@ -92,6 +92,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 
     const descriptor = getPanel(props.api.id)?.descriptor
     const icon = mark ?? descriptor?.icon
+    const anotherTip = useTipId()
+    const closeTip = useTipId()
     const glyph = mark ? 'dya-glyph dya-glyph--mark' : 'dya-glyph'
 
     /*
@@ -136,8 +138,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                 {descriptor?.duplicable ? (
                     <button
                         className="dya-tab__action"
-                        title={`Another ${descriptor.title}`}
                         aria-label={`Another ${descriptor.title}`}
+                        interestfor={anotherTip}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
                             event.stopPropagation()
@@ -150,8 +152,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                 )}
                 <button
                     className="dya-tab__action dya-tab__action--close"
-                    title={`Close ${shown}`}
                     aria-label={`Close ${shown}`}
+                    interestfor={closeTip}
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => {
                         event.stopPropagation()
@@ -159,6 +161,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                     }}
                     dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
                 />
+                {descriptor?.duplicable && <Tip id={anotherTip} label={`Another ${descriptor.title}`} />}
+                <Tip id={closeTip} label="Close" />
             </span>
         </div>
     )

@@ -1,4 +1,4 @@
-import { injectStyles } from '@dyarchia/sdk'
+import { glyph, injectStyles, tips } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import type { WebviewTag } from 'electron'
 
@@ -23,14 +23,11 @@ const GLOBE_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.6 21.4 21.4 2.6" stroke="#9499a3" stroke-width="2.6" stroke-linecap="round"/><path d="M2.51 16.40 L8.66 20.43 L9.86 19.23 L3.71 15.20Z" fill="#eceef2"/><path d="M4.28 16.89 L5.47 17.68 M6.48 18.36 L7.67 19.16" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M5.91 13.00 L12.06 17.03 L13.26 15.83 L7.11 11.80Z" fill="#eceef2"/><path d="M7.68 13.49 L8.87 14.28 M9.88 14.96 L11.07 15.76" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M9.31 9.60 L15.46 13.63 L16.66 12.43 L10.51 8.40Z" fill="#eceef2"/><path d="M11.08 10.09 L12.27 10.88 M13.28 11.56 L14.47 12.36" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M12.71 6.20 L18.86 10.23 L20.06 9.03 L13.91 5.00Z" fill="#eceef2"/><path d="M14.48 6.69 L15.67 7.48 M16.68 8.16 L17.87 8.96" stroke="#0a0a0b" stroke-width=".7" stroke-linecap="round"/><path d="M19.43 9.38 C22.26 10.79 24.10 8.39 27.21 8.96" fill="none" stroke="#eceef2" stroke-width="2.2" stroke-linecap="round"/></svg>'
 const BACK_ICON = svg('<path d="m15 18-6-6 6-6"/>')
 const FORWARD_ICON = svg('<path d="m9 18 6-6-6-6"/>')
-const RELOAD_ICON = svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')
-const STOP_ICON = svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>')
+const RELOAD_ICON = glyph('refresh')
+const STOP_ICON = glyph('close')
 const HOME_ICON = svg('<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>')
 const STAR_ICON = svg(
     '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/>'
-)
-const EXTERNAL_ICON = svg(
-    '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'
 )
 
 const STYLES = `
@@ -134,21 +131,15 @@ export function activate(ctx: PluginContext): void {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = el('div', 'brw')
-            const tips = el('div')
-            tips.style.display = 'contents'
-            let tipSeq = 0
-            const tipId = `brw-${handle.instanceId.replace(/[^\w-]/g, '')}`
+            const tipHolder = el('div')
+            const withTip = tips(tipHolder)
 
             function key(icon: string, label: string, onClick: () => void): HTMLButtonElement {
                 const button = el('button', 'dya-key')
                 button.type = 'button'
                 button.innerHTML = icon
                 button.setAttribute('aria-label', label)
-                const tip = el('div', 'dya-tip', label)
-                tip.id = `${tipId}-${++tipSeq}`
-                tip.setAttribute('popover', 'hint')
-                tips.append(tip)
-                button.setAttribute('interestfor', tip.id)
+                withTip(button, label)
                 button.addEventListener('click', onClick)
                 return button
             }
@@ -163,7 +154,7 @@ export function activate(ctx: PluginContext): void {
             address.setAttribute('aria-label', 'Address')
             address.placeholder = 'Search or address'
             const star = key(STAR_ICON, 'Bookmark', () => void toggleBookmark())
-            const external = key(EXTERNAL_ICON, 'Open outside', () => {
+            const external = key(glyph('open'), 'Open outside', () => {
                 if (ready) void ctx.invoke('external', view.getURL())
             })
             bar.append(back, forward, reload, home, address, star, external)
@@ -184,7 +175,7 @@ export function activate(ctx: PluginContext): void {
             fail.hidden = true
             stage.append(view, fail)
 
-            root.append(bar, marks, stage, tips)
+            root.append(bar, marks, stage, tipHolder)
             container.append(root)
 
             let loading = false
@@ -210,8 +201,7 @@ export function activate(ctx: PluginContext): void {
                 star.classList.toggle('dya-key--active', marked)
                 const label = marked ? 'Unbookmark' : 'Bookmark'
                 star.setAttribute('aria-label', label)
-                const tip = document.getElementById(star.getAttribute('interestfor') ?? '')
-                if (tip) tip.textContent = label
+                withTip(star, label)
                 handle.setTitle(view.getTitle() || hostOf(url) || null)
             }
 
@@ -219,8 +209,7 @@ export function activate(ctx: PluginContext): void {
                 loading = next
                 reload.innerHTML = next ? STOP_ICON : RELOAD_ICON
                 reload.setAttribute('aria-label', next ? 'Stop' : 'Reload')
-                const tip = document.getElementById(reload.getAttribute('interestfor') ?? '')
-                if (tip) tip.textContent = next ? 'Stop' : 'Reload'
+                withTip(reload, next ? 'Stop' : 'Reload')
             }
 
             /*
@@ -297,7 +286,6 @@ export function activate(ctx: PluginContext): void {
                 actions.append(retry)
                 fail.replaceChildren(
                     el('span', 'dya-title', `${hostOf(event.validatedURL)} did not answer`),
-                    el('span', 'dya-mono', event.errorDescription),
                     actions
                 )
                 fail.hidden = false

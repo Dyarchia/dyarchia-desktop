@@ -49,8 +49,8 @@ export function activate(ctx: PluginContext): void {
 }
 ```
 
-- `icon` is a black and white mark, solid shapes, `aria-hidden`; a brand keeps its own. Icon keys
-  draw their glyph with `glyph()` from `@dyarchia/sdk`, never a local SVG or a spelled verb.
+- `icon` is a black and white mark, solid shapes, `aria-hidden`; a brand keeps its own. An icon key
+  is `glyph()` plus a tip from `tips(holder)`, never a local SVG, a spelled verb or a `title`.
 - `duplicable` allows `<id>#<n>` instances, `keepAlive` keeps a covered panel mounted, `width` and
   `maxWidth` size its column and content, `modal` opens it over the window instead of the dock.
 - Actions go in `handle.toolbar`. `registerOpener` goes in `activate`; the first opener per

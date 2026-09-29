@@ -32,14 +32,14 @@ const CONFIRM: Record<string, string> = {
 }
 
 const LABELS: Record<Status, string> = {
-    triage: 'triage',
-    scheduled: 'scheduled',
-    ready: 'ready',
-    running: 'running',
-    blocked: 'blocked',
-    review: 'review',
-    done: 'done',
-    archived: 'archived'
+    triage: 'Triage',
+    scheduled: 'Scheduled',
+    ready: 'Ready',
+    running: 'Running',
+    blocked: 'Blocked',
+    review: 'Review',
+    done: 'Done',
+    archived: 'Archived'
 }
 
 const TONE: Record<Status, string> = {

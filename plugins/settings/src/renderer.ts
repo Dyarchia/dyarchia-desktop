@@ -1,4 +1,4 @@
-import { glyph, injectStyles, ownIds } from '@dyarchia/sdk'
+import { glyph, injectStyles, ownIds, tips } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import { needLabels } from './needs.js'
 import type { Requirement, Status } from './needs.js'
@@ -14,7 +14,8 @@ import type { Requirement, Status } from './needs.js'
  *
  * Legible means three things per plugin, in this order: what it does, what it will go and get, and
  * where what it produces ends up. What a reader needs at rest is the name, the state and the one
- * action; the paths and the reasons are tips, one hover away.
+ * action; the paths are a menu one press away, and a reason is said only when a person has to act
+ * on it by hand.
  *
  * And still. The sheet is modal and sized by its content, so every row is drawn in its final shape
  * in the first frame, from the manifest, and what the disk says later only repaints it in place.
@@ -55,6 +56,7 @@ interface Row {
     needs: HTMLElement | null
     log: HTMLPreElement | null
     install: HTMLButtonElement | null
+    why: HTMLElement | null
     chips: HTMLElement[]
 }
 
@@ -148,9 +150,6 @@ const STYLES = `
     margin: var(--dya-space-2) 0 0;
     min-width: 280px;
 }
-.set-tips {
-    display: contents;
-}
 `
 
 /*
@@ -199,15 +198,8 @@ export function activate(ctx: PluginContext): void {
         const root = el('div', 'set')
         const scope = handle.instanceId.replace(/[^a-zA-Z0-9_-]/g, '')
 
-        const tips = el('div', 'set-tips')
-        let tipSeq = 0
-        const withTip = (control: HTMLElement, text: string): void => {
-            const tip = el('div', 'dya-tip', text)
-            tip.id = `set-tip-${scope}-${++tipSeq}`
-            tip.setAttribute('popover', 'hint')
-            tips.append(tip)
-            control.setAttribute('interestfor', tip.id)
-        }
+        const tipHolder = el('div')
+        const withTip = tips(tipHolder)
 
         const scroll = el('div', 'set-scroll')
         const list = el('div', 'set-list')
@@ -235,7 +227,7 @@ export function activate(ctx: PluginContext): void {
         folders.setAttribute('popovertarget', menu.id)
 
         handle.toolbar.append(restart, folders, menu)
-        root.append(scroll, tips)
+        root.append(scroll, tipHolder)
         container.append(root)
 
         const wanted = new Set<string>()
@@ -271,8 +263,8 @@ export function activate(ctx: PluginContext): void {
 
         /*
          * Every pill a plugin needs is drawn from its manifest at once, neutral, and the inspection
-         * repaints each in place: a warning with its reason one hover away when it is missing, and
-         * Install at the end of the line when something missing can be fetched.
+         * repaints each in place: a warning when it is missing, Install at the end of the line when
+         * something missing can be fetched, and the reason, once, when it cannot.
          */
         function paintNeeds(row: Row, statuses: Status[] | undefined): void {
             if (!row.needs) return
@@ -281,11 +273,12 @@ export function activate(ctx: PluginContext): void {
                 if (!chip) return
                 chip.className = status.met ? 'dya-tag' : 'dya-badge dya-badge--warning'
                 chip.textContent = status.label
-                const tipId = chip.getAttribute('interestfor')
-                if (status.met) chip.removeAttribute('interestfor')
-                else if (tipId && document.getElementById(tipId)) document.getElementById(tipId)!.textContent = status.detail
-                else withTip(chip, status.detail)
             })
+            if (row.why && statuses) {
+                const by = statuses.filter((status) => !status.met && !status.acquirable).map((status) => status.detail)
+                row.why.textContent = by.join(' - ')
+                row.why.hidden = by.length === 0
+            }
             const fetchable = statuses?.some((status) => !status.met && status.acquirable) ?? false
             if (fetchable && !row.install) {
                 const install = el('button', 'dya-button dya-button--sm', 'Install') as HTMLButtonElement
@@ -347,11 +340,11 @@ export function activate(ctx: PluginContext): void {
                 text.append(el('span', 'dya-text set-desc', entry.manifest.description))
             }
 
-            const row: Row = { entry, item, tick: null, pending: null, needs: null, log: null, install: null, chips: [] }
+            const row: Row = { entry, item, tick: null, pending: null, needs: null, log: null, install: null, why: null, chips: [] }
             const state = el('div', 'set-state')
 
             if (entry.core) {
-                toggleCell.append(el('span', 'dya-tag', 'core'))
+                toggleCell.append(el('span', 'dya-tag', 'Core'))
             } else {
                 const tick = el('input', 'dya-checkbox') as HTMLInputElement
                 tick.type = 'checkbox'
@@ -368,7 +361,7 @@ export function activate(ctx: PluginContext): void {
                 })
                 toggleCell.append(tick)
                 row.tick = tick
-                row.pending = el('span', 'dya-badge dya-badge--warning', 'next launch')
+                row.pending = el('span', 'dya-badge dya-badge--warning', 'Next launch')
                 state.append(row.pending)
             }
             item.append(toggleCell, mark, text, state)
@@ -383,6 +376,10 @@ export function activate(ctx: PluginContext): void {
                 }
                 const size = requires.find((requirement) => requirement.note)?.note
                 if (size) needs.append(el('span', 'dya-meta', size))
+                const why = el('span', 'dya-meta')
+                why.hidden = true
+                needs.append(why)
+                row.why = why
                 const log = el('pre', 'dya-log set-log') as HTMLPreElement
                 log.hidden = true
                 item.append(needs, log)

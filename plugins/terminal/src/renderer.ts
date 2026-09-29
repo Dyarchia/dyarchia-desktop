@@ -171,16 +171,16 @@ export function activate(ctx: PluginContext): void {
         /*
          * The pty lives in its own process and starting it is not instant. A terminal that shows a
          * black rectangle while that happens reads as a terminal that is broken, which is what the
-         * first open of a session looked like. It says it is starting until the channel exists,
-         * and stops saying it on the frame the channel arrives rather than on a timer.
+         * first open of a session looked like. A turning ring shows until the channel exists, and
+         * goes on the frame the channel arrives rather than on a timer.
          */
         const connecting = document.createElement('div')
         connecting.className = 'dya-loading dyarchia-terminal-connecting'
-        const connectingText = document.createElement('span')
-        connectingText.textContent = 'Starting…'
+        connecting.setAttribute('role', 'status')
+        connecting.setAttribute('aria-label', 'Starting')
         const connectingRing = document.createElement('span')
         connectingRing.className = 'dya-ring dya-ring--busy'
-        connecting.append(connectingRing, connectingText)
+        connecting.append(connectingRing)
         container.appendChild(connecting)
 
         let port: MessagePort | null = null

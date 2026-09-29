@@ -50,8 +50,6 @@ export const STYLES = `
     height: 14px;
 }
 
-.kanban-tips { display: contents; }
-
 .kanban-decided {
     width: 100%;
 }
@@ -107,11 +105,6 @@ export const STYLES = `
 .kanban-fold:focus-visible,
 .kanban-column[data-collapsed='true'] .kanban-fold {
     opacity: 1;
-}
-
-.kanban-meta {
-    flex: none;
-    cursor: help;
 }
 
 .kanban-main {

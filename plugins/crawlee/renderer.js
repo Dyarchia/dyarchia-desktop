@@ -343,15 +343,6 @@ function el(tag, className, text) {
     return node
 }
 
-function iconKey(glyph, label, tone = '') {
-    const button = el('button', tone ? `dya-key ${tone}` : 'dya-key')
-    button.type = 'button'
-    button.innerHTML = glyph
-    button.title = label
-    button.setAttribute('aria-label', label)
-    return button
-}
-
 /*
  * A line as its program coloured it. Crawlee colours its own log -- the crawler's name grey, the
  * level in its colour -- and the console printed the escapes, so every line opened with a box
@@ -413,7 +404,16 @@ function bytes(value) {
     return `${unit === 0 ? size : size.toFixed(1)} ${units[unit]}`
 }
 
-const NEEDS_ENVIRONMENT = 'Python environment missing - enable Crawlee in Setup'
+function needsEnvironment(ctx) {
+    const box = el('div', 'dya-empty')
+    const actions = el('div', 'dya-empty__actions')
+    const setup = el('button', 'dya-button', 'Setup')
+    setup.type = 'button'
+    setup.addEventListener('click', () => void ctx.shell.show('settings'))
+    actions.append(setup)
+    box.append(el('span', 'dya-title', 'No Python environment'), actions)
+    return box
+}
 
 const KINDS = { added: 'Added', modified: 'Changed', removed: 'Removed' }
 
@@ -561,6 +561,29 @@ export function activate(ctx) {
 function mount(ctx, container, handle) {
     const root = el('div', 'crw-root')
 
+    /*
+     * A glyph key's tip is kanon's hint popover, the same as every other panel's, kept in one
+     * holder under the root that takes no room in the layout.
+     */
+    const tipHolder = el('div')
+    tipHolder.style.display = 'contents'
+    function withTip(control, text) {
+        const tip = el('div', 'dya-tip', text)
+        tip.id = `dya-tip-${crypto.randomUUID()}`
+        tip.setAttribute('popover', 'hint')
+        tipHolder.append(tip)
+        control.setAttribute('interestfor', tip.id)
+    }
+
+    function iconKey(glyph, label, tone = '') {
+        const button = el('button', tone ? `dya-key ${tone}` : 'dya-key')
+        button.type = 'button'
+        button.innerHTML = glyph
+        button.setAttribute('aria-label', label)
+        withTip(button, label)
+        return button
+    }
+
     const tabs = el('div', 'dya-tabs')
     const rounds = el('div', 'crw-view')
     const targets = el('div', 'crw-view')
@@ -606,7 +629,7 @@ function mount(ctx, container, handle) {
     const searchView = buildSearch()
 
     handle.toolbar.append(tabs)
-    root.append(rounds, targets, searching)
+    root.append(rounds, targets, searching, tipHolder)
     container.appendChild(root)
     select('rounds')
 
@@ -669,14 +692,10 @@ function mount(ctx, container, handle) {
         grip.setAttribute('role', 'separator')
         grip.setAttribute('aria-orientation', 'horizontal')
         grip.tabIndex = 0
-        grip.title = 'Resize'
+        grip.setAttribute('aria-label', 'Resize')
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
-        const close = el('button', 'dya-key')
-        close.type = 'button'
-        close.innerHTML = CLOSE
-        close.title = 'Close'
-        close.setAttribute('aria-label', 'close the output')
+        const close = iconKey(CLOSE, 'Close')
         close.addEventListener('click', () => {
             log.hidden = true
         })
@@ -747,7 +766,7 @@ function mount(ctx, container, handle) {
          * under it, the folder is Setup's, and the state is read again whenever it can have moved:
          * on open, after a round, after a target is saved.
          */
-        const headline = el('span', 'dya-value crw-headline')
+        const headline = el('div', 'dya-value crw-headline')
 
         const table = el('table', 'dya-table crw-table')
         const summary = el('p', 'dya-meta crw-summary')
@@ -872,7 +891,7 @@ function mount(ctx, container, handle) {
             headline.className = 'dya-value crw-headline'
 
             if (state.needsEnvironment) {
-                headline.textContent = NEEDS_ENVIRONMENT
+                headline.replaceChildren(needsEnvironment(ctx))
                 everything = []
                 vacant.hidden = true
                 table.replaceChildren()
@@ -1175,7 +1194,7 @@ function mount(ctx, container, handle) {
         function render(found) {
             hits.replaceChildren()
             if (!found.length) {
-                hits.appendChild(el('div', 'dya-empty', 'No results'))
+                hits.appendChild(el('div', 'dya-empty', 'No match'))
                 return
             }
             for (const hit of found) {
@@ -1386,9 +1405,7 @@ function mount(ctx, container, handle) {
             try {
                 const catalog = await ctx.invoke('catalog')
                 if (catalog && catalog.needsEnvironment) {
-                    shelves.replaceChildren(
-                        el('div', 'dya-empty', NEEDS_ENVIRONMENT)
-                    )
+                    shelves.replaceChildren(needsEnvironment(ctx))
                     return
                 }
                 shelves.replaceChildren(...catalog.map(shelfOf))
@@ -1511,7 +1528,7 @@ function mount(ctx, container, handle) {
             try {
                 const [profiles, state] = await Promise.all([ctx.invoke('profiles'), ctx.invoke('state')])
                 if (profiles && profiles.needsEnvironment) {
-                    grid.replaceChildren(el('div', 'dya-empty', NEEDS_ENVIRONMENT))
+                    grid.replaceChildren(needsEnvironment(ctx))
                     return
                 }
 

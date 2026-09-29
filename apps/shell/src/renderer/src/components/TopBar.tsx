@@ -1,7 +1,8 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { registerCommand } from '../commands'
 import type { PanelDescriptor } from '../panels/registry'
 import { Svg } from './Svg'
+import { Tip, useTipId } from './Tip'
 
 interface TopBarProps {
     panels: PanelDescriptor[]
@@ -31,7 +32,7 @@ interface KeyProps {
 }
 
 function TipKey({ label, active, onClick, children }: KeyProps): React.JSX.Element {
-    const id = `tip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+    const id = useTipId()
     return (
         <>
             <button
@@ -43,9 +44,7 @@ function TipKey({ label, active, onClick, children }: KeyProps): React.JSX.Eleme
             >
                 {children}
             </button>
-            <div className="dya-tip" popover="hint" id={id}>
-                {label}
-            </div>
+            <Tip id={id} label={label} />
         </>
     )
 }
@@ -75,7 +74,7 @@ function act(channel: string): void {
 
 function Build(): React.JSX.Element {
     const [update, setUpdate] = useState<UpdateState | null>(null)
-    const tip = `tip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+    const tip = useTipId()
 
     useEffect(() => {
         const bridge = window.dyarchia
@@ -142,9 +141,7 @@ function Build(): React.JSX.Element {
                     <span className="dya-light dya-light--warning" />
                     <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
                 </button>
-                <div className="dya-tip" popover="hint" id={tip}>
-                    Update check failed
-                </div>
+                <Tip id={tip} label="Update check failed" />
             </>
         )
     }

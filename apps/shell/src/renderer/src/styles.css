@@ -6,10 +6,10 @@ body,
 }
 
 /*
- * The ground the glass sits on: black, under a fine grain, with a dark crimson light coming in at
- * two corners. The panels are translucent, so the grain and that light are what show through them
- * and make them read as glass over metal rather than as grey, and no panel needs a
- * `backdrop-filter`. Both are static images, painted once.
+ * The ground the panels sit on: black, with a dark crimson light coming in at two corners, under
+ * a grain blended as an overlay, so it darkens as much as it lightens and the black stays black
+ * wherever the light dies. The panels are translucent, so that light shows through them and no
+ * panel needs a `backdrop-filter`. Both are static images, painted once.
  */
 .shell {
     position: relative;
@@ -26,7 +26,7 @@ body,
     inset: 0;
     z-index: -1;
     background-image: var(--dya-noise);
-    opacity: 0.9;
+    mix-blend-mode: overlay;
     pointer-events: none;
 }
 
@@ -160,9 +160,9 @@ body,
 }
 
 /*
- * The panel is glass, and the only glass: a translucent white that fades from the top edge down,
- * under a hairline, with a lit rim that is bright along the top and all but gone halfway down the
- * sides. The rim is a gradient border cut out of a pseudo-element with a mask, because a border
+ * The panel is dark metal: a smoked black a shade under the ground, which the light behind it
+ * passes through, under a hairline, with a lit rim that is bright along the top and all but gone
+ * halfway down the sides. The rim is the only light thing a panel carries. The rim is a gradient border cut out of a pseudo-element with a mask, because a border
  * cannot carry a gradient and a panel lit from above is lit unevenly. Nothing here blurs what is
  * behind it: the ground is blurred already.
  */

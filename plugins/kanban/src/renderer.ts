@@ -200,14 +200,11 @@ const STROKE =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
 
 const ICONS = {
-    grid: `${STROKE}<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>`,
     pulse: `${STROKE}<polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg>`,
-    plus: `${STROKE}<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     sliders: `${STROKE}<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.5" fill="var(--dya-panel)"/><circle cx="15" cy="17" r="2.5" fill="var(--dya-panel)"/></svg>`,
     branch: `${STROKE}<circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 7.5v9"/><path d="M18 10.5c0 4-12 3-12 6"/></svg>`,
     expand: `${STROKE}<polyline points="15 4 20 4 20 9"/><polyline points="9 20 4 20 4 15"/><line x1="20" y1="4" x2="14" y2="10"/><line x1="4" y1="20" x2="10" y2="14"/></svg>`,
-    contract: `${STROKE}<polyline points="4 10 9 10 9 5"/><polyline points="20 14 15 14 15 19"/><line x1="9" y1="10" x2="3" y2="4"/><line x1="15" y1="14" x2="21" y2="20"/></svg>`,
-    close: `${STROKE}<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`
+    contract: `${STROKE}<polyline points="4 10 9 10 9 5"/><polyline points="20 14 15 14 15 19"/><line x1="9" y1="10" x2="3" y2="4"/><line x1="15" y1="14" x2="21" y2="20"/></svg>`
 }
 
 const PROVIDERS: Record<string, string> = {
@@ -358,7 +355,7 @@ function runTone(run: Run): string {
     if (run.outcome === 'completed') return 'success'
     if (run.outcome === 'blocked' || run.outcome === 'stopped') return 'warning'
     if (run.outcome === 'violation' || run.outcome === 'crashed') return 'danger'
-    return 'idle'
+    return run.outcome === null && !run.endedAt ? 'busy' : 'idle'
 }
 
 function runEnd(run: Run): string {
@@ -490,7 +487,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     boardButton.append(boardLabel)
     boardSwitch.append(boardButton)
     withTip(boardButton, 'Switch board')
-    const newCardKey = key('plus', 'New card')
+    const newCardKey = key('add', 'New card')
     newCardKey.hidden = true
     let openDraft: (() => void) | null = null
     const settingsKey = key('sliders', 'Settings')
@@ -500,7 +497,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const WATCH_TIP = 'All boards'
     const watchButton = key('grid', 'All boards', WATCH_TIP)
     watchButton.setAttribute('aria-pressed', 'false')
-    const healthButton = el('button', 'dya-button dya-button--quiet dya-button--sm')
+    const healthButton = el('button', 'dya-button dya-button--sm')
     healthButton.type = 'button'
     healthButton.hidden = true
     const healthMark = el('span', 'dya-text--warning kanban-health-mark')
@@ -1591,7 +1588,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (shape?.cap === 0) {
             top.append(el('span', 'dya-badge dya-badge--warning', 'paused'))
         } else if (shape && shape.running > 0) {
-            top.append(el('span', 'dya-badge dya-badge--success', `${shape.running} running`))
+            top.append(el('span', 'dya-badge dya-badge--busy', `${shape.running} running`))
         }
         card.append(top)
 
@@ -1629,7 +1626,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const make = el('button', 'dya-tile dya-tile--new')
         make.type = 'button'
         const icon = el('span', 'dya-tile__icon')
-        icon.innerHTML = ICONS.plus
+        icon.innerHTML = glyph('add')
         make.append(icon, el('span', 'dya-tile__name', 'New board'))
         make.addEventListener('click', () => newBoard())
         grid.append(make)
@@ -2452,7 +2449,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 )
             })
             const drop = el('button', 'dya-key')
-            drop.innerHTML = ICONS.close
+            drop.innerHTML = glyph('close')
             drop.type = 'button'
             drop.title = 'Remove'
             drop.disabled = card.locked
@@ -2502,7 +2499,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             chip.disabled = !parent
             chip.addEventListener('click', () => select(parentId))
             const drop = el('button', 'dya-key')
-            drop.innerHTML = ICONS.close
+            drop.innerHTML = glyph('close')
             drop.type = 'button'
             drop.title = 'Remove'
             drop.disabled = card.locked
@@ -2521,7 +2518,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const item = el('div', 'dya-entry')
             const itemHead = el('div', 'dya-entry__head')
             const forget = el('button', 'dya-key')
-            forget.innerHTML = ICONS.close
+            forget.innerHTML = glyph('close')
             forget.type = 'button'
             forget.title = 'Delete'
             forget.addEventListener('click', () => {
@@ -2565,7 +2562,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         })
         note.addEventListener('blur', leave)
         const post = el('button', 'dya-key')
-        post.innerHTML = ICONS.plus
+        post.innerHTML = glyph('add')
         post.type = 'button'
         post.title = 'Add'
         post.setAttribute('aria-label', 'add this note')
@@ -3056,7 +3053,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const row = el('button', 'dya-entry dya-entry--row')
         row.type = 'button'
 
-        const dot = el('span', light(run.waiting ? 'warning' : 'success'))
+        const dot = el('span', light(run.waiting ? 'warning' : 'busy'))
 
         const said = [
             run.board,

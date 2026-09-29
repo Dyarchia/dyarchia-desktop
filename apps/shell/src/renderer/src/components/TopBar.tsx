@@ -75,6 +75,7 @@ function act(channel: string): void {
 
 function Build(): React.JSX.Element {
     const [update, setUpdate] = useState<UpdateState | null>(null)
+    const tip = `tip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 
     useEffect(() => {
         const bridge = window.dyarchia
@@ -88,17 +89,15 @@ function Build(): React.JSX.Element {
     const [told, setTold] = useState(false)
     const checkable = update !== null && phase !== 'unsupported'
 
+    const check = (): void => {
+        setAsked(true)
+        setTold(false)
+        act('shell:update:check')
+    }
+
     useEffect(() => {
         if (!checkable) return
-        return registerCommand({
-            id: 'shell:update-check',
-            title: 'Check for updates',
-            run: () => {
-                setAsked(true)
-                setTold(false)
-                act('shell:update:check')
-            }
-        })
+        return registerCommand({ id: 'shell:update-check', title: 'Check for updates', run: check })
     }, [checkable])
 
     useEffect(() => {
@@ -129,6 +128,24 @@ function Build(): React.JSX.Element {
             >
                 Restart to finish
             </button>
+        )
+    }
+    if (phase === 'failed') {
+        return (
+            <>
+                <button
+                    className="dya-button dya-button--sm topbar-update"
+                    aria-label="Update check failed"
+                    interestfor={tip}
+                    onClick={check}
+                >
+                    <span className="dya-light dya-light--warning" />
+                    <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
+                </button>
+                <div className="dya-tip" popover="hint" id={tip}>
+                    Update check failed
+                </div>
+            </>
         )
     }
     return (

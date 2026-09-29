@@ -20,10 +20,10 @@ tools/               contrast.py measures, palette.py lifts the six colours to l
 ```text
 glass   the panel, and only the panel: dark metal, a smoked black a shade under the ground that
         the light passes through, no blur; a chrome rim lit from above, a black line and a shadow
-key     every control: a near-black face under a light rim, 3px corners, a hard 3px edge underneath;
-        pressed, it drops 2px
+key     every control: a near-black face under a light rim, a hard 3px edge that drops 2px pressed
 pill    every piece of information: round, words in the sans; never pressable
-light   status, and only status: a green, yellow or red dot inside a pill or around a key
+light   status, and only status: a green, yellow or red dot, or a hollow ring in the top ink for
+        what is under way; still, inside a pill, beside a name or around a key
 ```
 
 Black and white, and one light. One black in three roles, none of them absolute: `ground` #0c0c0e,
@@ -63,7 +63,7 @@ Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths
 ## Keys and layout
 
 - **One primary per view**: `--primary`, steel with black words, the action the view is about.
-  `--success` is lit green for approve; `--danger` turns red only under the pointer or focus.
+  `key--success` is lit green for approve; `--danger` turns red only under the pointer or focus.
 - **A state a person answers is one key**: `button--resolve`, the state in red, its answer in green
   under the pointer, in one cell. **A known glyph is an icon key** with a tip, never a spelled verb.
 - **A panel measures itself** as a `pane` (`@container pane`), never a media query; width changes
@@ -78,23 +78,23 @@ Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths
 ## Components
 
 ```text
-Structure    pane bar (--flush --inset __group __sep) card (--lift --selected --danger --warning --marked
+Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
              --pending --ghosted --carried) card__header masthead carved splitter sheet (--side --modal)
-             well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
-Keys         button (--primary --success --danger --resolve --quiet --sm __state __answer) key (--primary --active --success --danger)
+             well lanes lane (--accept) drop-line drop-box grid toolbar
+Keys         button (--primary --danger --resolve --sm __state __answer) key (--active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)
-Input        field (--sm --auto --prose __label) select checkbox form (__value __stack __split __actions __push)
-Pills        tag badge (--success --warning --danger) pills
-Lights       light (--success --warning --danger) ring (--current --busy)
+Input        field (--sm --auto --prose __label) select checkbox form (__value __stack __split __actions)
+Pills        tag badge (--success --warning --danger --busy) pills
+Lights       light (--success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
-Content      table (__num __fit __key __name __subject __end __prose __section) row (--selected)
+Content      table (__num __fit __name __subject __end __prose __section) row (--selected)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
-             entry (--row __head __text __body) notice (__body __title __text)
+             entry (--row __head __text __body; aria-current) notice (__body __title __text)
              steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
              palette (__list __row __icon __name __hint __empty)
 Navigation   tabs tab (--dock __action --close)
-Absence      empty (__actions) loading        Assistive    sr-only
+Absence      empty (__actions) loading
 ```

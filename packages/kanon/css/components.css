@@ -609,10 +609,6 @@
     display: none;
 }
 
-.dya-button--quiet {
-    color: var(--dya-text);
-}
-
 /*
  * The primary is steel, the one bright object on a black instrument: a face brushed from
  * light steel to mid steel, black words, a dark edge. It is the one action a view is about, at
@@ -626,8 +622,7 @@
  * A key that names a state which needs a person, a blocked card, stays lit red, because there the
  * light is the state's own.
  */
-.dya-button--primary,
-.dya-key--primary:not(:disabled) {
+.dya-button--primary {
     border-color: var(--dya-primary-border);
     background-image: var(--dya-primary);
     box-shadow:
@@ -636,21 +631,18 @@
     color: var(--dya-on-primary);
 }
 
-.dya-button--primary:hover,
-.dya-key--primary:not(:disabled):hover {
+.dya-button--primary:hover {
     border-color: var(--dya-primary-border);
     background-image: var(--dya-primary-hover);
     color: var(--dya-on-primary);
 }
 
-.dya-button--primary:active,
-.dya-key--primary:not(:disabled):active {
+.dya-button--primary:active {
     box-shadow:
         inset 0 1px 0 #ffffffb3,
         0 1px 0 var(--dya-primary-edge);
 }
 
-.dya-button--success,
 .dya-key--success {
     --dya-lit: var(--dya-success);
 }
@@ -696,14 +688,12 @@
     opacity: 1;
 }
 
-.dya-button--success,
 .dya-button--resolve,
 .dya-key.dya-key--success:not(:disabled) {
     border-color: color-mix(in srgb, var(--dya-lit) 50%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
 
-.dya-button--success:hover,
 .dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
 .dya-button--danger:is(:hover, :focus-visible),
@@ -1113,10 +1103,6 @@ textarea.dya-field {
     margin-top: var(--dya-space-2);
 }
 
-.dya-form__push {
-    margin-inline-start: auto;
-}
-
 /*
  * A choice from a list is a key that opens a menu, not a field: nothing is typed into it. The
  * select is the platform's own, in its customisable form, so the list it opens is drawn by this
@@ -1353,9 +1339,11 @@ textarea.dya-field {
 
 /*
  * A light on its own: the state of a row, a run or a card where a whole pill would be too much.
- * The same dot a status pill carries, the same three colours and the same glow, and grey with no
- * glow when it has nothing to say. A light is status and nothing else; which one of several
- * things this is, is a hue and a `.dya-dot`.
+ * The same dot a status pill carries, the same three colours, grey when it has nothing to say, and
+ * none of them glows. `--busy` is a thing under way with no outcome yet: a ring in the top ink,
+ * hollow because the outcome is still to fill it, and still, because nothing animates forever.
+ * A light is status and nothing else; which one of several things this is, is a hue and a
+ * `.dya-dot`.
  */
 .dya-light {
     --dya-light: var(--dya-idle);
@@ -1369,17 +1357,19 @@ textarea.dya-field {
 
 .dya-light--success {
     --dya-light: var(--dya-success);
-    box-shadow: 0 0 6px var(--dya-light);
 }
 
 .dya-light--warning {
     --dya-light: var(--dya-warning);
-    box-shadow: 0 0 6px var(--dya-light);
 }
 
 .dya-light--danger {
     --dya-light: var(--dya-danger);
-    box-shadow: 0 0 6px var(--dya-light);
+}
+
+.dya-light--busy {
+    background: none;
+    border: 1.5px solid var(--dya-text);
 }
 
 /*
@@ -1411,10 +1401,11 @@ textarea.dya-field {
 }
 
 /*
- * The light: status, inside a pill. A dot in the light's colour with a glow of the same, the pill
- * tinted toward it and bordered in it, and the words in the light's ink. With no light it is idle,
- * a grey dot in a plain pill. There are three and only three, and a pill that is a kind rather
- * than an outcome, a queue, a phase, a sort of event, is a plain tag: its word says which.
+ * The light: status, inside a pill. A dot in the light's colour, the pill tinted toward it and
+ * bordered in it, and the words in the light's ink. With no light it is idle, a grey dot in a plain
+ * pill; `--busy` is the light's hollow ring and the top ink, a thing under way. There are three
+ * outcomes and only three, and a pill that is a kind rather than an outcome, a queue, a phase, a
+ * sort of event, is a plain tag: its word says which.
  */
 .dya-badge {
     --dya-light: var(--dya-idle);
@@ -1428,7 +1419,6 @@ textarea.dya-field {
     height: 6px;
     border-radius: var(--dya-radius-full);
     background: var(--dya-light);
-    box-shadow: 0 0 6px var(--dya-light);
 }
 
 .dya-badge--success {
@@ -1450,6 +1440,15 @@ textarea.dya-field {
     border-color: var(--dya-danger-line);
     background: var(--dya-danger-soft);
     color: var(--dya-danger-ink);
+}
+
+.dya-badge--busy {
+    color: var(--dya-text);
+}
+
+.dya-badge--busy::before {
+    background: none;
+    border: 1.5px solid var(--dya-text);
 }
 
 /*
@@ -1622,27 +1621,15 @@ textarea.dya-field {
 }
 
 /*
- * Four column shapes, all of them a column as wide as its content and no wider: a cell that simply
- * fits, the two ways a row names itself, and the end of the row, which is where an action sits.
- *
- * A key is interface text, it says what the value beside it is, so it is sans and quiet. A name is
- * data, a plugin, a board, a file, so it keeps its case.
+ * Three column shapes, each as wide as its content and no wider: a cell that simply fits, a name,
+ * which is data and keeps its case, and the end of the row, which is where an action sits.
  */
 .dya-table .dya-table__fit,
-.dya-table .dya-table__key,
 .dya-table .dya-table__name,
 .dya-table .dya-table__end {
     width: 1%;
     white-space: nowrap;
 }
-
-.dya-table .dya-table__key {
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-xs);
-    letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-muted);
-}
-
 
 .dya-table .dya-table__end {
     text-align: right;
@@ -1972,18 +1959,6 @@ textarea.dya-field {
     flex-wrap: wrap;
 }
 
-.dya-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-}
-
 /*
  * A name: the words a person gave a thing, where a list of such things is read by them. Sans, one
  * step under body, in the top ink, and broken anywhere rather than cut, because a name that is cut
@@ -2061,9 +2036,10 @@ textarea.dya-field {
 /*
  * Lanes: the stages of one board, as strips of it rather than cards on it. Flush and transparent,
  * so the glass and the light behind it read through the board as through every other panel, with
- * a hairline before every lane but the first, so no border doubles. A lane answers a drag with its ground:
- * the accent's soft ground where a card may land, red's where it may not. The line is where it
- * lands, and the drop box is the place to drop into an empty lane, drawn only while dragging.
+ * a hairline before every lane but the first, so no border doubles. A lane answers a drag with
+ * its ground: the accent's soft ground where a card may land, and nothing where it may not. The
+ * line is where it lands, and the drop box is the place to drop into an empty lane, drawn only
+ * while dragging.
  */
 .dya-lanes {
     display: flex;
@@ -2084,10 +2060,6 @@ textarea.dya-field {
     background: var(--dya-accent-soft);
 }
 
-.dya-lane--refuse {
-    background: var(--dya-danger-soft);
-}
-
 .dya-drop-line {
     height: 2px;
     background: var(--dya-accent);
@@ -2101,22 +2073,13 @@ textarea.dya-field {
 }
 
 /*
- * A separator between groups of keys in a bar: a hairline standing up, as tall as a glyph.
- */
-.dya-bar__sep {
-    flex: none;
-    width: var(--dya-border-width);
-    height: 16px;
-    margin: 0 var(--dya-space-1);
-    background: var(--dya-hairline);
-}
-
-/*
  * An entry: one record in a running list, a note in a thread, a run, a step of a history. A box on
  * the panel face with a hairline, a head of small things on one line, and the text under it.
  * `--row` lays the head's things and the text on one wrapping line. A pressable entry is a button
- * with the same box that answers the pointer with its ground. `__body` is what an entry holds
- * verbatim, a command's output or a tool's input: sunken, mono, kept to 320px and scrolled.
+ * with the same box that answers the pointer with its ground, and the one of a list being read
+ * (`aria-current` or `aria-selected` on it or on its head) stands on `selected` under the rim.
+ * `__body` is what an entry holds verbatim, a command's output or a tool's input: sunken, mono,
+ * kept to 320px and scrolled.
  */
 .dya-entry {
     display: flex;
@@ -2147,6 +2110,12 @@ button.dya-entry {
 
 button.dya-entry:hover {
     background-color: var(--dya-hover);
+}
+
+.dya-entry:is([aria-current="true"], [aria-selected="true"]),
+.dya-entry:has(> .dya-entry__head:is([aria-current="true"], [aria-selected="true"])) {
+    border-color: var(--dya-rim);
+    background-color: var(--dya-selected);
 }
 
 .dya-entry__head {

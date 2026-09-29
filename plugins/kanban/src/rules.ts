@@ -46,7 +46,7 @@ const TONE: Record<Status, string> = {
     triage: 'idle',
     scheduled: 'idle',
     ready: 'idle',
-    running: 'success',
+    running: 'busy',
     blocked: 'warning',
     review: 'idle',
     done: 'success',

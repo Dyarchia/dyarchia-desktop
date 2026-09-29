@@ -34,6 +34,12 @@ const ANOTHER_ICON =
 const CLOSE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
 
+const titleListeners = new Set<() => void>()
+
+function titlesChanged(): void {
+    for (const listener of titleListeners) listener()
+}
+
 function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     /*
      * A tab is selected when its panel is the one its group is showing, not when it has the focus.
@@ -45,12 +51,35 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 
     useEffect(() => {
         const activity = props.api.onDidVisibilityChange((event) => setActive(event.isVisible))
-        const naming = props.api.onDidTitleChange((event) => setTitle(event.title))
+        const naming = props.api.onDidTitleChange((event) => {
+            setTitle(event.title)
+            titlesChanged()
+        })
         return () => {
             activity.dispose()
             naming.dispose()
         }
     }, [props.api])
+
+    const [, setRevision] = useState(0)
+    useEffect(() => {
+        const bump = (): void => setRevision((value) => value + 1)
+        titleListeners.add(bump)
+        const added = props.containerApi.onDidAddPanel(bump)
+        const removed = props.containerApi.onDidRemovePanel(bump)
+        return () => {
+            titleListeners.delete(bump)
+            added.dispose()
+            removed.dispose()
+        }
+    }, [props.containerApi])
+
+    const base = basePanelId(props.api.id)
+    const twins = props.containerApi.panels.filter(
+        (panel) => basePanelId(panel.id) === base && panel.title === title
+    )
+    const place = twins.findIndex((panel) => panel.id === props.api.id)
+    const shown = place > 0 ? `${title} ${place + 1}` : title
 
     const [mark, setMark] = useState(() => getTabIcon(props.api.id))
     useEffect(
@@ -76,7 +105,6 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
      */
     const another = (): void => {
         if (!descriptor) return
-        const base = basePanelId(props.api.id)
         let n = 2
         while (props.containerApi.getPanel(`${base}#${n}`)) n++
         props.containerApi.addPanel({
@@ -103,7 +131,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             }}
         >
             {icon && <Svg className={glyph} svg={icon} />}
-            {title}
+            <span className="panel-tab-title">{shown}</span>
             <span className="panel-tab-actions">
                 {descriptor?.duplicable ? (
                     <button
@@ -122,8 +150,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                 )}
                 <button
                     className="dya-tab__action dya-tab__action--close"
-                    title={`Close ${title}`}
-                    aria-label={`Close ${title}`}
+                    title={`Close ${shown}`}
+                    aria-label={`Close ${shown}`}
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => {
                         event.stopPropagation()

@@ -200,7 +200,7 @@ export function activate(ctx: PluginContext): void {
                 const marked = bookmarks.some((entry) => entry.url === url)
                 star.classList.toggle('dya-key--active', marked)
                 star.setAttribute('aria-label', marked ? 'Remove bookmark' : 'Bookmark')
-                handle.setTitle(hostOf(url) || null)
+                handle.setTitle(view.getTitle() || hostOf(url) || null)
             }
 
             function setLoading(next: boolean): void {

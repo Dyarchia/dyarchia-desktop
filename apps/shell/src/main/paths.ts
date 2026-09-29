@@ -1,29 +1,33 @@
 import { app, ipcMain } from 'electron'
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { busy, migrate, pending } from './migrate'
 
 /*
- * One directory holds everything this application keeps: `%APPDATA%\dyarchia`, Electron's own
- * `appData` joined with the name, which on Windows is where an application's state belongs and on
- * every platform is derived per user rather than written down. `DYARCHIA_HOME` moves the whole of it.
+ * One directory holds everything this application keeps, and it is `~/.dyarchia`.
  *
- * The program is not in it. The installer puts that in `%LOCALAPPDATA%\Programs\dyarchia`, the
- * per-user default, so uninstalling removes the program and nothing the user made.
+ * It used to be two, in the two places Windows offers and neither of which the user picked:
+ * Electron's `userData` under `%APPDATA%`, and the data home under `Documents`. Both were wrong
+ * for the same reason. `%APPDATA%` is somewhere nobody navigates to, so the state of the
+ * application was effectively invisible; and `app.getPath('documents')` is the one path a machine
+ * redirects — on any Windows with OneDrive signed in it answers `…/OneDrive/Documentos`, which is
+ * a sync client pointed at a git checkout that a crawl rewrites.
  *
- * Inside, everything at the top is machine state, rebuildable and uninteresting, and `data/` is
- * what plugins produce on the user's behalf, such as a corpus repository. It is never under
- * `Documents`, which a machine with OneDrive signed in redirects into a sync client.
+ * A dot directory in the home directory is the convention the tools this one sits beside already
+ * use, it is derived per user rather than written down, and it is one place to look, one place to
+ * back up and one place to delete. `DYARCHIA_HOME` moves the whole of it.
+ *
+ * Inside, the split that mattered survives as a subdirectory rather than as a second root:
+ * everything at the top is machine state, rebuildable and uninteresting, and `data/` is what
+ * plugins produce on the user's behalf — a corpus repository is hundreds of megabytes of their own
+ * material, cloned and committed on its own. Setup prints that path with a button that opens it.
  */
 
-const OLD_ROOT = '.dyarchia'
-
-let kept: string | null = null
+const LEGACY = 'dyarchia'
 
 export function root(): string {
-    return kept ?? (process.env['DYARCHIA_HOME'] || join(app.getPath('appData'), 'dyarchia'))
+    return process.env['DYARCHIA_HOME'] || join(homedir(), '.dyarchia')
 }
 
 export function dataHome(): string {
@@ -31,39 +35,83 @@ export function dataHome(): string {
 }
 
 /*
- * Point Electron at the root, carrying the previous one, `~/.dyarchia`, into it once.
+ * Move one tree into another, entry by entry, without overwriting anything already there.
+ *
+ * A single `rename` of the whole directory is what this wanted to be, and it is wrong, because the
+ * destination is not reliably absent. The first attempt at this migration ran inside a dev
+ * instance that `electron-vite --watch` had just restarted: the rename failed on a profile the
+ * same process tree still held open, and the fallback then created the new root anyway. A guard
+ * that reads "the target exists, so this already happened" would have refused to migrate that
+ * machine ever again, with every board still sitting in the old directory.
+ *
+ * So it grafts instead. A path the target does not have is moved; a path it has is recursed into
+ * when both sides are directories and left alone otherwise, because the newer session's copy is
+ * the live one. Directories emptied by the walk are removed, and anything left behind is still
+ * there to look at rather than silently gone.
+ */
+function graft(from: string, to: string): number {
+    mkdirSync(to, { recursive: true })
+    let moved = 0
+    for (const entry of readdirSync(from)) {
+        const source = join(from, entry)
+        const destination = join(to, entry)
+        if (!existsSync(destination)) {
+            renameSync(source, destination)
+            moved += 1
+        } else if (statSync(source).isDirectory() && statSync(destination).isDirectory()) {
+            moved += graft(source, destination)
+        }
+    }
+    if (readdirSync(from).length === 0) rmdirSync(from)
+    return moved
+}
+
+/*
+ * Point Electron at that directory, carrying an older installation's state with it.
  *
  * Synchronous and before `app.whenReady()`, because `userData` is read when the first session is
- * created and nothing may hold a database or a profile open while it moves. What moves and what is
- * rebuilt instead is `migrate.ts`'s to say.
+ * created and a path set afterwards is a path nothing uses. It is a move rather than a copy, so
+ * there is no second copy to go stale, and what travels is real: the saved layout, the enabled
+ * list, the Python environments Setup built, the MCP offers and the kanban boards, which are
+ * somebody's actual work.
  *
- * **An old root still in use keeps this session on it.** A running copy of an older version holds
- * its profile's lock, and moving its boards from under it reads as data loss in both windows. So
- * the move waits for a launch with nothing else running, and until then this one works where the
- * data is.
+ * **A move that fails keeps the old root for that session.** Another instance running out of the
+ * old directory holds files open and Windows refuses the rename, which is not exotic — it is how
+ * this was discovered. Pointing at the new root anyway starts the application on a directory with
+ * no boards and no layout, which reads as data loss even though nothing was lost. Staying where
+ * the data is says what happened, and the next launch tries again.
  *
- * An explicit `--user-data-dir` or `DYARCHIA_HOME` wins over all of it and migrates nothing: they
- * are how an instance is run against a throwaway profile, and one that touched the real root
- * would make its own state impossible to isolate.
+ * An explicit `--user-data-dir` wins over all of it. It is Chromium's own switch, it is how a
+ * second instance is run against a throwaway profile, and an application that overrode it would
+ * make its own state impossible to isolate.
  */
 export function adoptUserData(): void {
     if (process.argv.some((argument) => argument.startsWith('--user-data-dir'))) return
 
     const target = root()
-    const old = join(homedir(), OLD_ROOT)
-    if (!process.env['DYARCHIA_HOME'] && pending(old)) {
-        if (busy(old)) {
-            console.warn(`[paths] ${old} is in use by another instance, so this session keeps it`)
-            kept = old
-            app.setPath('userData', old)
+    const legacy = join(app.getPath('appData'), LEGACY)
+    /*
+     * Electron recreates the default `userData` directory while the `app` module initialises,
+     * which is before any of this runs, so the old root is back — empty — on every launch of a
+     * machine that migrated long ago. The graft removes it again for nothing, and says so only
+     * when something actually travelled: a line reporting a migration of zero entries on every
+     * start is a log that contradicts what happened.
+     */
+    if (existsSync(legacy)) {
+        try {
+            const moved = graft(legacy, target)
+            if (moved > 0) {
+                console.log(`[paths] moved ${moved} entries from ${legacy} into ${target}`)
+            }
+        } catch (error) {
+            console.error(
+                `[paths] ${legacy} could not be moved into ${target}, so this session keeps using it`,
+                error
+            )
+            app.setPath('userData', legacy)
             separateWorkspace()
             return
         }
-        const result = migrate(old, target)
-        if (result.moved.length) console.log(`[paths] moved into ${target}: ${result.moved.join(', ')}`)
-        if (result.dropped.length) console.log(`[paths] dropped to rebuild: ${result.dropped.join(', ')}`)
-        if (result.skipped.length) console.warn(`[paths] kept in ${old}, already in ${target}: ${result.skipped.join(', ')}`)
-        if (result.failed.length) console.warn(`[paths] left in ${old}: ${result.failed.join(', ')}`)
     }
     app.setPath('userData', target)
     separateWorkspace()

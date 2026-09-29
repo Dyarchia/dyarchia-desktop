@@ -94,7 +94,7 @@ def _installed_paths(root: Path) -> dict[str, str]:
     was a folder in %TEMP% that Windows deleted between launches, taking the corpus with it.
 
     So an installed copy is told where to write instead. The shell names one directory,
-    DYARCHIA_DATA_HOME, `data/` under the application's one root; the corpus repositories go there, one per
+    DYARCHIA_DATA_HOME, inside `~/.dyarchia`; the corpus repositories go there, one per
     subdirectory, and a command that names none falls back to the first of them. Derived data does
     not: the index is rebuilt from the snapshots and the crawler's working directory is purged on
     every run, so both live beside the application's own state rather than in the user's folders.

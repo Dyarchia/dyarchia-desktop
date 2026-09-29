@@ -1,25 +1,39 @@
 /*
- * The program installs where electron-builder puts a per-user NSIS installer when nobody says
- * otherwise, %LOCALAPPDATA%\Programs\dyarchia, and the state and data live apart from it in
- * %APPDATA%\dyarchia, which the uninstaller never touches.
+ * One root. Everything this application is or keeps lives under ~/.dyarchia: the program in
+ * app/, what the plugins make in data/, the state at the top. Nothing of it is in
+ * %LOCALAPPDATA%\Programs, which is where an NSIS installer goes when nobody tells it
+ * otherwise, and nothing of it is anywhere a second account could reach.
  *
- * Versions up to 0.4.x installed into ~/.dyarchia\app and wrote that as the HKCU InstallLocation,
- * which an update reads as its default directory. So a location pointing there is cleared, in both
- * registry views, and the update lands in the default; the application moves the rest of
- * ~/.dyarchia on its first launch. A location anywhere else is the user's own choice and is kept.
+ * The program is one directory down rather than at the root because the uninstaller ends with
+ * `RMDir /r $INSTDIR` and an update renames everything under it: pointing either at ~/.dyarchia
+ * itself would put the boards, the corpus and the layout inside the blast radius of
+ * uninstalling. app/ is the part that is safe to delete, and deleting it is exactly what
+ * uninstalling should mean.
  */
-!macro dyarchiaForgetOldLocation
-    ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
-    ${If} $0 == "$PROFILE\.dyarchia\app"
-        DeleteRegValue HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
-    ${EndIf}
-!macroend
+!define DYARCHIA_HOME "$PROFILE\.dyarchia\app"
 
+/*
+ * The default install directory is read out of the registry before the installer decides
+ * anything, so writing it there is how it is set. HKCU only: HKLM needs elevation, and a key
+ * under it is what makes the installer offer to install for everyone.
+ *
+ * Only where there is nothing there yet. This runs in every installer, and an update is an
+ * installer: writing the default unconditionally told an update that a copy installed somewhere
+ * else belonged in ~/.dyarchia/app, which installs the new version beside the old one rather than
+ * over it and leaves the reader with two. The directory page is the user's answer to this
+ * question and it is asked once.
+ */
 !macro preInit
     SetRegView 64
-    !insertmacro dyarchiaForgetOldLocation
+    ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
+    ${If} $0 == ""
+        WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${DYARCHIA_HOME}"
+    ${EndIf}
     SetRegView 32
-    !insertmacro dyarchiaForgetOldLocation
+    ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
+    ${If} $0 == ""
+        WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${DYARCHIA_HOME}"
+    ${EndIf}
 !macroend
 
 /*

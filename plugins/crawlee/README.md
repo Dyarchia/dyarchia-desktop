@@ -27,11 +27,11 @@ uv run playwright install chromium
   subdirectory of `DYARCHIA_CRAWLEE_REPOSITORIES_DIR` holding a `profiles/` is one.
 - Unset, the tool knows the single repository named by `DYARCHIA_CRAWLEE_DATA_DIR`,
   `DYARCHIA_CRAWLEE_PROFILES_DIR` and `DYARCHIA_CRAWLEE_OUTPUT_DIR`. The desktop app defaults the
-  folder to `%APPDATA%\dyarchia\data\crawlee` unless the environment already names one.
+  folder to `~/.dyarchia/data/crawlee` unless the environment already names one.
 - A profile name defined in two repositories is refused; a crawl writes into the repository that
   defines the profile.
-- `catalog/` ships the `docs-labs` and `salesforce-ai` profile groups, which the panel's Library
-  installs without replacing a profile already on disk.
+- `catalog/` ships the `docs-labs` and `salesforce-ai` profile groups, which the panel's Profile
+  library installs without replacing a profile already on disk.
 
 ## Profiles
 
@@ -88,9 +88,8 @@ Run as `uv run dyarchia-crawlee <command>`; `--help` lists each command's flags.
 
 ## The panel
 
-Lists the corpora, runs a round over all of them, a group or one target with per-target progress, edits
-and commits profiles, and searches, opening a hit in a markdown reader or the file manager. The palette
-offers Run round, New target and Search corpus. It shells out to this package's CLI, so it
+Lists the corpora, runs a round with per-target progress, edits and commits profiles, and searches,
+opening a hit in a markdown reader or the file manager. It shells out to this package's CLI, so it
 needs `uv sync --dev` here; restart the shell after changing `main.py`.
 
 ## Tests

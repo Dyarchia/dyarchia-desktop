@@ -114,8 +114,8 @@ export function registerPluginScheme(): void {
  *
  * The bundled root is the one that ships inside the application, and it is the workspace tree in
  * development and `resources/plugins` in a packaged build: the same set either way, so what a
- * developer sees is what a user gets. The other is where a plugin nobody shipped can be dropped:
- * `plugins/` under the one root, `%APPDATA%\dyarchia`, beside everything else this application keeps.
+ * developer sees is what a user gets. `%APPDATA%` stays what it was, the place a plugin nobody
+ * shipped can be dropped: `~/.dyarchia/plugins`, beside everything else this application keeps.
  *
  * Bundled wins. In development that is the rule this project has always had — an installed copy
  * must never shadow the one being worked on — and it holds for the same reason once packaged: a

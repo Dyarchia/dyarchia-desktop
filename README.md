@@ -18,8 +18,8 @@ you cannot afford to lose.**
 
 - Download the installer from the newest GitHub prerelease.
 - It is unsigned, so Windows SmartScreen warns about an unknown publisher.
-- It installs for one user into `%LOCALAPPDATA%\Programs\dyarchia`, without elevation, and
-  later updates install over it. Only the newest prerelease exists, and nothing promises the on-disk
+- It installs for one user into `~/.dyarchia/app`, without elevation, and later updates
+  install over it. Only the newest prerelease exists, and nothing promises the on-disk
   formats survive the next one.
 
 ## 3. Build from source
@@ -60,10 +60,8 @@ node scripts/release.mjs --publish
 
 ## 6. Data
 
-- `%APPDATA%\dyarchia` is the one root this application writes to; `DYARCHIA_HOME` moves it.
-- Its `data\` holds the user's own material, such as crawlee corpus repositories.
-- A copy that kept everything in `~/.dyarchia` moves it there on first launch, except the
-  Python environments, which Setup builds again.
+- `~/.dyarchia` is the one root this application writes to; `DYARCHIA_HOME` moves it.
+- `~/.dyarchia/data/` holds the user's own material, such as crawlee corpus repositories.
 - Everything else under the root is machine state (layout, enabled plugins, Python
   environments) and can be deleted without losing anything that cannot be rebuilt.
 

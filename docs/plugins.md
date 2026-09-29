@@ -1,7 +1,7 @@
 # Writing a Dyarchia plugin
 
 A plugin is a folder holding `dyarchia-plugin.json` and its bundles. The shell discovers it at
-startup; the workspace copy wins over `%APPDATA%\dyarchia\plugins\<id>\`. The visual mandate is
+startup; the workspace copy wins over `~/.dyarchia/plugins/<id>/`. The visual mandate is
 [packages/kanon/README.md](../packages/kanon/README.md).
 
 ## Manifest
@@ -61,7 +61,7 @@ export function activate(ctx: PluginContext): void {
 ## Main module
 
 Node, ESM, exporting `activate(ctx)` with `handle`, `broadcast` and `notify({ title, body })`;
-`ctx.dataHome` is where what a plugin makes for the user goes, `%APPDATA%\dyarchia\data`.
+`ctx.dataHome` is where what a plugin makes for the user goes, `~/.dyarchia/data`.
 Channels are short names the shell prefixes: `ctx.handle('spawn')` registers `plugin:<id>:spawn`,
 which `ctx.invoke('spawn')` reaches. Never write the full name. Edits need an app restart.
 
@@ -82,7 +82,7 @@ cannot load the main module. `main.py` is copied as is.
 ## Storage
 
 Never beside the plugin's code, which is read-only once packaged. `ctx.shell.paths()` gives
-`userData` (`%APPDATA%\dyarchia`) for what can be rebuilt and `dataHome` (its `data\`, in the
+`userData` (`~/.dyarchia`) for what can be rebuilt and `dataHome` (`~/.dyarchia/data`, in the
 folder named by `data`) for what the user would miss.
 
 ## Kanon

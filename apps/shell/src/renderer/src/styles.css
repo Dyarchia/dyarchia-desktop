@@ -6,9 +6,9 @@ body,
 }
 
 /*
- * The ground the panels sit on: black, with a dark crimson light coming in at two corners, under
- * a grain blended as an overlay, so it darkens as much as it lightens and the black stays black
- * wherever the light dies. The panels are translucent, so that light shows through them and no
+ * The ground the panels sit on: black, with a cold clear light coming in at two corners and dead
+ * within a quarter of the diagonal, under a grain blended as an overlay, so it darkens as much as
+ * it lightens and the black stays black wherever the light dies. The panels are translucent, so that light shows through them and no
  * panel needs a `backdrop-filter`. Both are static images, painted once.
  */
 .shell {
@@ -143,7 +143,7 @@ body,
     --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
     --dv-tab-divider-color: transparent;
     --dv-separator-border: transparent;
-    --dv-icon-hover-background-color: var(--dya-flat-hover);
+    --dv-icon-hover-background-color: var(--dya-hover);
     --dv-border-radius: var(--dya-radius-chassis);
     --dv-tab-border-radius: 0;
     --dv-tabs-and-actions-container-height: 40px;

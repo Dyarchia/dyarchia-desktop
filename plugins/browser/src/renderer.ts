@@ -72,7 +72,7 @@ const STYLES = `
 .brw-fail {
     position: absolute;
     inset: 0;
-    background: var(--dya-chassis);
+    background: var(--dya-panel);
 }
 .brw-fail[hidden] {
     display: none;

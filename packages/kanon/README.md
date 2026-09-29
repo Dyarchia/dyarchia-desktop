@@ -22,18 +22,22 @@ is prefixed `--dya-`, every keyframe and class `dya-`. The CSS never consults `p
 ```text
 glass   the panel, and only the panel: dark metal, a smoked black a shade under the ground that
         the light passes through, no blur; a chrome rim lit from above, a black line and a shadow
-key     every control: brushed face, 3px corners, a hard 3px edge underneath; pressed, it drops 2px
+key     every control: a near-black face under a light rim, 3px corners, a hard 3px edge underneath;
+        pressed, it drops 2px
 pill    every piece of information: round, words in the sans; never pressable
 light   status, and only status: a green, yellow or red dot inside a pill or around a key
 ```
 
-Black and white, and one light. The ground is black (`#0a0a0b`) with a dark crimson light
-(`--dya-light-in`, `#7f1d1d`) coming in at two corners and dying into darker crimsons, never grey;
+Black and white, and one light. One black carries every surface in three roles: `--dya-ground`
+(`#0c0c0e`) under everything, `--dya-panel` (`#131316`) for a key's face, a tile, an entry, a menu
+and a sheet, and `--dya-field` (`#0e0e11`) for what receives input or holds a program's text; hover,
+selected, disabled and scrim are the only other steps, and none of them is absolute black. A cold,
+clear light (`--dya-light-in`) comes in at two corners and is dead within a quarter of the diagonal;
 the grain is an overlay and adds no light. The glass lets the light through, and its rim is the only
-light thing a panel carries. Crimson is that light and nothing else: never a key, a word or a line.
-The primary key is steel; the open tab's line and the focus ring are silver; plugin marks are black,
-garnet and white. Nothing glows. Text has two inks, near white and muted. Spectral is the brand;
-Inter is the interface, with tabular figures everywhere; Plex Mono is paths and code.
+light thing a panel carries. The primary key is steel; the open tab's line and the focus ring are
+silver; plugin marks are black, garnet and white. Nothing glows. Text has two inks, `--dya-text` and
+`--dya-text-muted`, and every icon and key glyph is in `--dya-text`. Spectral is the brand; Inter is
+the interface, with tabular figures everywhere; Plex Mono is paths and code.
 
 ## Colour and contrast
 
@@ -42,7 +46,7 @@ Inter is the interface, with tabular figures everywhere; Plex Mono is paths and 
   categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a glyph, never a pill's
   word, a fill or a dot inside a pill. A pill that informs is neutral. **Plugins have no hue.**
 - **An ink under 4.50 against what it sits on is not text**; above 3.00 it may be a graphical
-  object. `--dya-text-4` is 4.61 at the least. Lights are never text; `--dya-text-off` is exempt.
+  object. `--dya-text-muted` is 4.61 at the least. Lights are never text; `--dya-text-off` is exempt.
 - **Measure before committing** with `py packages/kanon/tools/contrast.py <token-suffix>`,
   `glass-peak` and `card-peak` included; the numbers go in the commit body.
 

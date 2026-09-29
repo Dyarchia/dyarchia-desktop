@@ -1,7 +1,7 @@
 """Measure a colour token against every surface it can sit on.
 
-    py packages/kanon/tools/contrast.py --dya-text-2
-    py packages/kanon/tools/contrast.py '#85857f' --against surface-1 surface-2
+    py packages/kanon/tools/contrast.py text-muted
+    py packages/kanon/tools/contrast.py '#85857f' --against panel field
 
 Every change to a text, border, surface or accent token has to be re-measured this way and
 the numbers go in the commit body. See packages/kanon/README.md for the rule and the 4.50
@@ -14,15 +14,12 @@ import re
 
 CSS = pathlib.Path(__file__).resolve().parent.parent / 'css' / 'tokens.css'
 
-SURFACES = [
-    'bg', 'sunken', 'chassis', 'surface-1', 'surface-2', 'flat-hover',
-    'raised', 'overlay', 'raised-hover', 'selected', 'disabled'
-]
+SURFACES = ['ground', 'panel', 'field', 'hover', 'selected', 'disabled']
 
 """
 Two grounds no token declares, because they only exist where translucent layers stack: the
 panel's glass over the brightest ground the system has allowed, and a card on that glass. They
-were measured over a pool of light `--dya-ground` no longer carries and are kept as a ceiling:
+sit above the corner where `--dya-light-in` is brightest (#222325) and are kept as a ceiling:
 the lightest place a panel's text could land, so every ink is measured against them too.
 """
 COMPOSITES = {

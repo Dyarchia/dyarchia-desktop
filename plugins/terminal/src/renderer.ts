@@ -130,10 +130,10 @@ export function activate(ctx: PluginContext): void {
             ...Object.fromEntries(
                 Object.entries(ANSI_TOKENS).map(([slot, name]) => [slot, ctx.token(name)])
             ),
-            background: ctx.token('sunken'),
+            background: ctx.token('field'),
             foreground: ctx.token('text'),
             cursor: ctx.token('text'),
-            cursorAccent: ctx.token('sunken'),
+            cursorAccent: ctx.token('field'),
             selectionBackground: ctx.token('accent-soft')
         })
 

@@ -1137,7 +1137,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             const label = text(value)[0]
             return slash > 0 && label === value ? value.slice(slash + 1) : label
         }
-        key.textContent = shown(current)
+        key.append(el('span', 'dya-field__label', shown(current)))
         key.title = text(current)[0]
         key.addEventListener('click', () => {
             const rows: MenuRow[] = values.map((value) => {

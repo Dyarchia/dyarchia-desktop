@@ -47,15 +47,21 @@
  *
  * A title is a size and a tracking, never a weight: hierarchy in this system comes from the type
  * scale and the ink rank, and reaching for 500 is how a screen ends up with four kinds of bold and
- * still no order.
+ * still no order. It speaks in the brand's voice, the Spectral carved into the metal, but in inks
+ * that are text: the top ink at the top of the letter and the muted ink at its foot.
  */
 .dya-title {
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-h3);
-    font-weight: var(--dya-weight);
+    font-family: var(--dya-font-serif);
+    font-size: var(--dya-size-h2);
+    font-weight: var(--dya-weight-light);
     letter-spacing: var(--dya-tracking-h3);
     line-height: var(--dya-leading-heading);
-    color: var(--dya-text);
+    color: transparent;
+    background: linear-gradient(var(--dya-text), var(--dya-text-muted));
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: var(--dya-carve-filter);
+    overflow-wrap: anywhere;
 }
 
 /*
@@ -85,7 +91,7 @@
     letter-spacing: var(--dya-tracking-label);
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
-    color: var(--dya-text-muted);
+    color: var(--dya-text);
 }
 
 .dya-key-label {
@@ -1154,6 +1160,13 @@ textarea.dya-field {
     overflow: hidden;
 }
 
+.dya-field__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .dya-select > .dya-field::picker-icon {
     display: none;
 }
@@ -1573,7 +1586,7 @@ textarea.dya-field {
     max-width: 100%;
     border-collapse: collapse;
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-xs);
+    font-size: var(--dya-size-body-sm);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text-muted);
@@ -1588,12 +1601,12 @@ textarea.dya-field {
     line-height: var(--dya-leading-tight);
     text-align: left;
     text-transform: uppercase;
-    color: var(--dya-text-muted);
+    color: var(--dya-text);
 }
 
 .dya-table td {
     padding: 10px var(--dya-space-4);
-    font-size: var(--dya-size-body-xs);
+    font-size: var(--dya-size-body-sm);
     overflow-wrap: anywhere;
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
@@ -1665,7 +1678,14 @@ textarea.dya-field {
     font-weight: var(--dya-weight-medium);
     letter-spacing: var(--dya-tracking-label);
     text-transform: uppercase;
-    color: var(--dya-text-muted);
+    color: var(--dya-text);
+}
+
+.dya-table .dya-table__section .dya-meta {
+    font-size: var(--dya-size-body-xs);
+    font-weight: var(--dya-weight);
+    letter-spacing: var(--dya-tracking-ui);
+    text-transform: none;
 }
 
 .dya-table .dya-table__section:first-child > td {
@@ -2383,6 +2403,10 @@ button.dya-step__subject {
  * figure sit on the field with a hairline, a link is the top ink underlined in the accent,
  * and a quote steps back to the muted ink behind a rule on its left.
  */
+.dya-prose {
+    max-inline-size: 72ch;
+}
+
 .dya-prose h1,
 .dya-prose h2,
 .dya-prose h3 {
@@ -2637,5 +2661,98 @@ button.dya-step__subject {
 }
 
 .dya-notice__text {
+    color: var(--dya-text-muted);
+}
+
+.dya-palette {
+    position: fixed;
+    inset: 12vh 0 auto;
+    z-index: 950;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    width: min(560px, calc(100% - 2 * var(--dya-space-4)));
+    max-height: 64vh;
+    margin-inline: auto;
+    padding: var(--dya-space-2);
+    border: var(--dya-border-width) solid var(--dya-border-menu);
+    border-radius: var(--dya-radius-chassis);
+    background: var(--dya-panel);
+    box-shadow: var(--dya-elev-overlay);
+    animation: dya-slide-up-fade var(--dya-dur-fast) var(--dya-ease-out);
+}
+
+.dya-palette > .dya-field {
+    flex: none;
+    font-size: var(--dya-size-body-sm);
+}
+
+.dya-palette__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.dya-palette__row {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-3);
+    min-height: 36px;
+    padding: 0 var(--dya-space-2);
+    border-radius: var(--dya-radius-sm);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
+    letter-spacing: var(--dya-tracking-ui);
+    color: var(--dya-text);
+    cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-palette__row:hover {
+    background-color: var(--dya-hover);
+}
+
+.dya-palette__row[aria-selected="true"] {
+    background-color: var(--dya-selected);
+}
+
+.dya-palette__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--dya-text);
+}
+
+.dya-palette__icon > svg {
+    width: 100%;
+    height: 100%;
+}
+
+.dya-palette__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dya-palette__hint {
+    flex: none;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-xs);
+    letter-spacing: var(--dya-tracking-mono);
+    color: var(--dya-text-muted);
+}
+
+.dya-palette__empty {
+    padding: var(--dya-space-3) var(--dya-space-2);
+    font-family: var(--dya-font-sans);
+    font-size: var(--dya-size-body-sm);
     color: var(--dya-text-muted);
 }

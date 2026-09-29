@@ -41,7 +41,7 @@ async function load(filePath: string): Promise<Record<string, unknown>> {
     try {
         const info = await stat(filePath)
         if (info.size > MAX_FILE_SIZE) {
-            return { error: `File too large (${Math.round(info.size / 1024)} KB)` }
+            return { error: 'Too large' }
         }
         return {
             name: basename(filePath),
@@ -56,7 +56,7 @@ async function load(filePath: string): Promise<Record<string, unknown>> {
             content: await readFile(filePath, 'utf-8')
         }
     } catch {
-        return { error: 'Cannot read that file' }
+        return { error: 'Cannot read' }
     }
 }
 
@@ -93,20 +93,20 @@ export function activate(ctx: PluginMainContext): void {
      * rather than emptied.
      */
     ctx.handle('create', async (raw: unknown) => {
-        const name = pageName(raw)
+        const untitled = raw === undefined
+        const name = untitled ? 'Untitled.md' : pageName(raw)
         if (!name) return { error: 'Not a file name' }
-        const filePath = join(pages, name)
-        try {
-            await mkdir(pages, { recursive: true })
-            await writeFile(filePath, '', { encoding: 'utf-8', flag: 'wx' })
-        } catch (error) {
-            return {
-                error: (error as NodeJS.ErrnoException).code === 'EEXIST'
-                    ? 'Already exists'
-                    : 'Cannot create that file'
+        await mkdir(pages, { recursive: true })
+        for (let n = 1; ; n++) {
+            const filePath = join(pages, n === 1 ? name : `Untitled ${n}.md`)
+            try {
+                await writeFile(filePath, '', { encoding: 'utf-8', flag: 'wx' })
+                return load(filePath)
+            } catch (error) {
+                const taken = (error as NodeJS.ErrnoException).code === 'EEXIST'
+                if (!(taken && untitled)) return { error: taken ? 'Already exists' : 'Cannot create' }
             }
         }
-        return load(filePath)
     })
 
     ctx.handle('rename', async (payload: unknown) => {
@@ -122,7 +122,7 @@ export function activate(ctx: PluginMainContext): void {
             await rename(path, next)
             return { path: next, name }
         } catch {
-            return { error: 'Cannot rename that file' }
+            return { error: 'Cannot rename' }
         }
     })
 
@@ -136,7 +136,7 @@ export function activate(ctx: PluginMainContext): void {
             await shell.trashItem(resolve(target))
             return {}
         } catch {
-            return { error: 'Cannot delete that file' }
+            return { error: 'Cannot delete' }
         }
     })
 
@@ -171,14 +171,14 @@ export function activate(ctx: PluginMainContext): void {
                 return { stale: true }
             }
         } catch {
-            return { error: 'That file is no longer there' }
+            return { error: 'File gone' }
         }
 
         try {
             await writeFile(path, content, 'utf-8')
             return { mtime: (await stat(path)).mtimeMs }
         } catch {
-            return { error: 'Cannot write to that file' }
+            return { error: 'Cannot write' }
         }
     })
 }

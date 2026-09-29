@@ -3,7 +3,7 @@ import { highlight, hues, when } from '@dyarchia/sdk'
 import { registerCommand } from '../commands'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
-import { canOpen, openFile, registerOpener } from '../panels/openers'
+import { canOpen, openFile, registerOpener, showPanel } from '../panels/openers'
 import type { OpenerDescriptor, OpenHandler, OpenRequest } from '../panels/openers'
 
 interface PluginListEntry {
@@ -38,6 +38,7 @@ interface ShellApi {
     canOpen(path: string): boolean
     open(request: OpenRequest): Promise<boolean>
     reveal(path: string): Promise<boolean>
+    show(panelId: string, options?: { fresh?: boolean }): Promise<string | undefined>
 }
 
 export interface PluginCatalogueEntry {
@@ -170,7 +171,9 @@ export async function loadPlugins(): Promise<void> {
                     canOpen,
                     open: (request: OpenRequest) => openFile(request),
                     reveal: (path: string) =>
-                        bridge.invoke('shell:app:reveal', path) as Promise<boolean>
+                        bridge.invoke('shell:app:reveal', path) as Promise<boolean>,
+                    show: async (panelId: string, options?: { fresh?: boolean }) =>
+                        showPanel(panelId, options?.fresh === true)
                 }
             })
         } catch (error) {

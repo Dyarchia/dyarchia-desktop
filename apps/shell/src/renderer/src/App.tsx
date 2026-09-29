@@ -91,18 +91,38 @@ export function App(): React.JSX.Element {
     )
 
     const handleOpen = useCallback(
-        (id: string) => {
-            if (!api) return
+        (id: string, instanceId?: string | null): string | undefined => {
+            if (!api) return undefined
             if (isModal(id)) {
                 setModal(id)
-                return
+                return id
             }
-            const instance = api.panels.find((panel) => basePanelId(panel.id) === id)
-            if (instance) {
-                instance.api.setActive()
-                return
+            const chosen = instanceId ? api.getPanel(instanceId) : undefined
+            if (chosen) {
+                chosen.api.setActive()
+                return chosen.id
             }
-            handleToggle(id)
+            const instances = api.panels.filter((panel) => basePanelId(panel.id) === id)
+            const registered = getRegisteredPanels().find((panel) => panel.descriptor.id === id)
+            if (instances.length === 0) {
+                handleToggle(id)
+                return api.getPanel(id)?.id
+            }
+            if (instanceId !== null || !registered?.descriptor.duplicable) {
+                instances[0].api.setActive()
+                return instances[0].id
+            }
+            const active = api.activePanel
+            const beside = active && basePanelId(active.id) === id ? active : instances[0]
+            let n = 2
+            while (api.getPanel(`${id}#${n}`)) n++
+            return api.addPanel({
+                id: `${id}#${n}`,
+                component: 'plugin-panel',
+                title: registered.descriptor.title,
+                position: { referencePanel: beside.id, direction: 'within' },
+                ...panelRenderer(registered.descriptor)
+            }).id
         },
         [api, handleToggle]
     )

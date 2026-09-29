@@ -109,11 +109,13 @@ export interface PluginCatalogue {
 export interface OpenRequest {
     path: string
     line?: number
+    instanceId?: string
 }
 
 export interface OpenerDescriptor {
     panelId: string
     extensions: string[]
+    route?(request: OpenRequest): string | null
 }
 
 /*
@@ -141,6 +143,7 @@ export interface ShellApi {
     canOpen(path: string): boolean
     open(request: OpenRequest): Promise<boolean>
     reveal(path: string): Promise<boolean>
+    show(panelId: string, options?: { fresh?: boolean }): Promise<string | undefined>
 }
 
 export interface PluginCommand {

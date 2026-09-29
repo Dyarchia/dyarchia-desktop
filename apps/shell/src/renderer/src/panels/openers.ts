@@ -18,11 +18,13 @@
 export interface OpenRequest {
     path: string
     line?: number
+    instanceId?: string
 }
 
 export interface OpenerDescriptor {
     panelId: string
     extensions: string[]
+    route?(request: OpenRequest): string | null
 }
 
 export type OpenHandler = (request: OpenRequest) => void | Promise<void>
@@ -30,18 +32,25 @@ export type OpenHandler = (request: OpenRequest) => void | Promise<void>
 interface RegisteredOpener {
     pluginId: string
     panelId: string
+    route?: (request: OpenRequest) => string | null
     open: OpenHandler
 }
 
+export type ShowPanel = (panelId: string, instanceId?: string | null) => string | undefined
+
 const openers = new Map<string, RegisteredOpener>()
 
-let showPanel: ((panelId: string) => void) | null = null
+let show: ShowPanel | null = null
 
-export function installOpeners(open: (panelId: string) => void): () => void {
-    showPanel = open
+export function installOpeners(open: ShowPanel): () => void {
+    show = open
     return () => {
-        if (showPanel === open) showPanel = null
+        if (show === open) show = null
     }
+}
+
+export function showPanel(panelId: string, fresh = false): string | undefined {
+    return show?.(panelId, fresh ? null : undefined)
 }
 
 function extensionOf(path: string): string {
@@ -58,7 +67,12 @@ export function registerOpener(
     for (const extension of descriptor.extensions) {
         const key = extension.toLowerCase()
         if (openers.has(key)) continue
-        openers.set(key, { pluginId, panelId: descriptor.panelId, open })
+        openers.set(key, {
+            pluginId,
+            panelId: descriptor.panelId,
+            route: descriptor.route?.bind(descriptor),
+            open
+        })
     }
 }
 
@@ -69,9 +83,11 @@ export function canOpen(path: string): boolean {
 export async function openFile(request: OpenRequest): Promise<boolean> {
     const opener = openers.get(extensionOf(request.path))
     if (!opener) return false
-    showPanel?.(opener.panelId)
+    const { path, line } = request
     try {
-        await opener.open(request)
+        const wanted = opener.route ? opener.route({ path, line }) : undefined
+        const instanceId = show?.(opener.panelId, wanted)
+        await opener.open({ path, line, ...(instanceId ? { instanceId } : {}) })
         return true
     } catch (error) {
         console.error(`[openers] "${opener.pluginId}" failed to open ${request.path}`, error)

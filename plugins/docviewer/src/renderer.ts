@@ -132,7 +132,7 @@ const CODE_ICON =
  * this panel opens is already its own source.
  */
 const MODES = [
-    { id: 'rendered', label: 'Rendered', icon: EYE_ICON, markdownOnly: true },
+    { id: 'rendered', label: 'Read', icon: EYE_ICON, markdownOnly: true },
     { id: 'source', label: 'Source', icon: CODE_ICON, markdownOnly: false },
     { id: 'edit', label: 'Edit', icon: PENCIL_ICON, markdownOnly: false }
 ] as const
@@ -158,26 +158,59 @@ const OPENS = [
     '.trigger', '.apex'
 ]
 
+function samePath(a: string, b: string): boolean {
+    return a.replaceAll('\\', '/').toLowerCase() === b.replaceAll('\\', '/').toLowerCase()
+}
+
+interface Reader {
+    held(): string | null
+    busy(): boolean
+    accept(request: OpenRequest): Promise<void>
+}
 
 export function activate(ctx: PluginContext): void {
-    /*
-     * The opener is declared now, not when a panel mounts, because a plugin that has never been
-     * opened still answers for what it can render — otherwise the offer to open a file appears
-     * only after the reader has already been opened by hand, which is backwards.
-     *
-     * The shell shows the panel and then hands the request over, and mounting is not synchronous,
-     * so a request that arrives before there is anything to show it in waits here and the panel
-     * collects it as it mounts.
-     */
-    let deliver: ((request: OpenRequest) => Promise<void>) | null = null
-    let waiting: OpenRequest | null = null
+    const readers = new Map<string, Reader>()
+    const waiting = new Map<string, OpenRequest>()
+    const fresh = new Set<string>()
 
-    ctx.registerOpener({ panelId: 'docviewer', extensions: OPENS }, async (request) => {
-        if (deliver) {
-            await deliver(request)
+    function route(request: OpenRequest): string | null {
+        let idle: string | null = null
+        for (const [id, reader] of readers) {
+            const held = reader.held()
+            if (held && samePath(held, request.path)) return id
+            if (!held && !reader.busy() && idle === null) idle = id
+        }
+        return idle
+    }
+
+    ctx.registerOpener({ panelId: 'docviewer', extensions: OPENS, route }, async (request) => {
+        const key = request.instanceId ?? ''
+        const reader = readers.get(key) ?? (request.instanceId ? undefined : [...readers.values()].at(-1))
+        if (reader) {
+            await reader.accept(request)
             return
         }
-        waiting = request
+        waiting.set(key, request)
+    })
+
+    ctx.registerCommand({
+        id: 'new-page',
+        title: 'New page',
+        run: async () => {
+            const result = (await ctx.invoke('create')) as OpenResult
+            if (!result.path) return
+            fresh.add(result.path)
+            await ctx.shell.open({ path: result.path })
+        }
+    })
+
+    ctx.registerCommand({
+        id: 'open',
+        title: 'Open file',
+        run: async () => {
+            const result = (await ctx.invoke('open')) as OpenResult
+            if (result.path) await ctx.shell.open({ path: result.path })
+        }
     })
 
     ctx.registerPanel(
@@ -206,7 +239,7 @@ export function activate(ctx: PluginContext): void {
 
             const unsaved = document.createElement('span')
             unsaved.className = 'dya-badge dya-badge--warning docviewer-dirty'
-            unsaved.textContent = 'unsaved'
+            unsaved.textContent = 'Unsaved'
             unsaved.hidden = true
 
             /*
@@ -219,10 +252,7 @@ export function activate(ctx: PluginContext): void {
             problem.hidden = true
 
             const save = document.createElement('button')
-            save.className = 'dya-key docviewer-save'
-            save.innerHTML = glyph('save')
-            save.title = 'Save'
-            save.setAttribute('aria-label', 'Save')
+            save.type = 'button'
             save.hidden = true
 
             header.append(unsaved, problem, modes, save)
@@ -264,7 +294,6 @@ export function activate(ctx: PluginContext): void {
                     })) as WriteResult
                     if (result.stale) {
                         overwrite = true
-                        say('changed on disk')
                         syncModes()
                         return
                     }
@@ -276,7 +305,7 @@ export function activate(ctx: PluginContext): void {
                     saved = current.content ?? ''
                     markDirty(false)
                 } catch {
-                    say('Cannot save that file')
+                    say('Cannot save')
                 } finally {
                     busy = false
                 }
@@ -304,8 +333,32 @@ export function activate(ctx: PluginContext): void {
                 })
                 save.hidden = mode !== 'edit'
                 save.disabled = !dirty
-                save.textContent = overwrite ? 'Overwrite' : 'Save'
-                unsaved.hidden = !dirty
+                paintSave()
+                unsaved.hidden = !dirty || overwrite
+            }
+
+            let saveShows: boolean | null = null
+
+            function paintSave(): void {
+                if (saveShows === overwrite) return
+                saveShows = overwrite
+                if (overwrite) {
+                    save.className = 'dya-button dya-button--resolve docviewer-save'
+                    save.removeAttribute('title')
+                    save.setAttribute('aria-label', 'Overwrite')
+                    const state = document.createElement('span')
+                    state.className = 'dya-button__state'
+                    state.textContent = 'Changed on disk'
+                    const answer = document.createElement('span')
+                    answer.className = 'dya-button__answer'
+                    answer.textContent = 'Overwrite'
+                    save.replaceChildren(state, answer)
+                    return
+                }
+                save.className = 'dya-key docviewer-save'
+                save.innerHTML = glyph('save')
+                save.title = 'Save'
+                save.setAttribute('aria-label', 'Save')
             }
 
             function setMode(next: Mode): void {
@@ -369,7 +422,7 @@ export function activate(ctx: PluginContext): void {
                     head.append(name)
                     const facts = document.createElement('span')
                     facts.className = 'dya-meta'
-                    facts.textContent = `${when(page.mtime)} - ${size(page.size)}`
+                    facts.textContent = page.size > 0 ? `${when(page.mtime)} - ${size(page.size)}` : when(page.mtime)
                     card.append(head, facts)
                     card.onclick = () => void openPage(page.path)
                     cards.push(card)
@@ -477,7 +530,16 @@ export function activate(ctx: PluginContext): void {
                 const wanted = find.value.trim().toLowerCase()
                 const shown = pages.filter((page) => page.name.toLowerCase().includes(wanted))
                 if (shown.length === 0) {
-                    list.replaceChildren()
+                    if (pages.length === 0 && !wanted) {
+                        list.replaceChildren()
+                        return
+                    }
+                    const none = document.createElement('div')
+                    none.className = 'dya-empty'
+                    const word = document.createElement('span')
+                    word.textContent = 'No match'
+                    none.append(word)
+                    list.replaceChildren(none)
                     return
                 }
                 const table = document.createElement('table')
@@ -499,7 +561,7 @@ export function activate(ctx: PluginContext): void {
                     row.append(
                         title,
                         cell('dya-table__fit', when(page.mtime)),
-                        cell('dya-table__num dya-table__fit', size(page.size)),
+                        cell('dya-table__num dya-table__fit', page.size > 0 ? size(page.size) : ''),
                         end
                     )
                     row.onclick = () => void openPage(page.path)
@@ -514,7 +576,7 @@ export function activate(ctx: PluginContext): void {
                     pages = (await ctx.invoke('list')) as Page[]
                 } catch {
                     pages = []
-                    complain('Cannot list the pages')
+                    complain('Cannot list pages')
                 }
                 draw()
                 if (!current) paintGallery()
@@ -565,7 +627,7 @@ export function activate(ctx: PluginContext): void {
                     closeLibrary()
                     await present(result, undefined, start)
                 } catch {
-                    complain('Cannot open that file')
+                    complain('Cannot open')
                 } finally {
                     busy = false
                 }
@@ -674,7 +736,7 @@ export function activate(ctx: PluginContext): void {
                     }
                     if (current?.path === page.path) showEmpty()
                 } catch {
-                    complain('Cannot delete that file')
+                    complain('Cannot delete')
                 }
                 await refresh()
             }
@@ -766,6 +828,44 @@ export function activate(ctx: PluginContext): void {
                 return frame
             }
 
+            function prose(source: string): HTMLElement {
+                const article = document.createElement('article')
+                article.className = 'dya-prose'
+                const tokens = marked.lexer(source)
+                let line = 1
+                for (const token of tokens) {
+                    const html = marked.parser(Object.assign([token], { links: tokens.links }))
+                    const part = DOMPurify.sanitize(html, { RETURN_DOM_FRAGMENT: true })
+                    const first = part.firstElementChild
+                    if (first instanceof HTMLElement) first.dataset.sourceLine = String(line)
+                    article.append(part)
+                    line += token.raw.split('\n').length - 1
+                }
+                for (const table of article.querySelectorAll('table')) {
+                    table.className = 'dya-table'
+                }
+                for (const row of article.querySelectorAll('tbody tr')) {
+                    row.className = 'dya-row'
+                    row.firstElementChild?.classList.add('dya-table__subject')
+                }
+                colourBlocks(article)
+                return article
+            }
+
+            function reveal(): void {
+                if (target === null) return
+                if (mode === 'source') {
+                    content.querySelector('.dya-code__line--at')?.scrollIntoView({ block: 'center' })
+                    return
+                }
+                let nearest: HTMLElement | null = null
+                for (const block of content.querySelectorAll<HTMLElement>('.dya-prose > [data-source-line]')) {
+                    if (Number(block.dataset.sourceLine) > target) break
+                    nearest = block
+                }
+                nearest?.scrollIntoView({ block: 'start' })
+            }
+
             async function renderCurrent(): Promise<void> {
                 if (!current) return
                 content.className = 'dya-text docviewer-content'
@@ -774,51 +874,22 @@ export function activate(ctx: PluginContext): void {
                     return
                 }
                 if (current.markdown && mode === 'rendered') {
-                    /*
-                     * A markdown file is somebody else's HTML. marked passes raw HTML through,
-                     * and this panel draws into the shell's own document, where window.dyarchia
-                     * can spawn a terminal: an `<img onerror>` in a downloaded README ran code
-                     * the moment it was opened. Everything marked produces is sanitised first.
-                     */
-                    const holder = document.createElement('div')
-                    holder.innerHTML = DOMPurify.sanitize(await marked.parse(current.content ?? ''))
-                    for (const table of holder.querySelectorAll('table')) {
-                        table.className = 'dya-table'
-                    }
-                    for (const row of holder.querySelectorAll('tbody tr')) {
-                        row.className = 'dya-row'
-                        row.firstElementChild?.classList.add('dya-table__subject')
-                    }
-                    colourBlocks(holder)
-                    content.classList.add('dya-prose')
-                    content.replaceChildren(...holder.childNodes)
-                    await renderDiagrams(content)
+                    const article = prose(current.content ?? '')
+                    content.replaceChildren(article)
+                    await renderDiagrams(article)
                 } else {
                     content.replaceChildren(sourceLines())
                 }
                 content.scrollTop = 0
-                if (target !== null) {
-                    const at = content.querySelector('.dya-code__line--at')
-                    at?.scrollIntoView({ block: 'center' })
-                }
+                reveal()
             }
 
             async function present(result: OpenResult, line?: number, start?: Mode): Promise<void> {
                 current = result
                 target = line ?? null
-                /*
-                 * A document asked for at a line opens on its source, because that is the only
-                 * view where a line number means anything: the rendered view is HTML and has no
-                 * lines to point at. The mode buttons are right there when the reader wants prose.
-                 */
-                mode = start ?? (line || !result.markdown ? 'source' : 'rendered')
+                mode = start ?? (result.markdown ? 'rendered' : 'source')
                 handle.setTitle(result.name ?? null)
                 header.hidden = false
-                /*
-                 * The bar used to appear for markdown alone, because reading the source of a
-                 * file that is already source says nothing. Editing does, and it is offered for
-                 * everything this panel opens.
-                 */
                 modes.hidden = false
                 saved = result.content ?? ''
                 dirty = false
@@ -865,6 +936,7 @@ export function activate(ctx: PluginContext): void {
                         )
                         const figure = document.createElement('div')
                         figure.className = 'dya-prose__figure'
+                        if (pre.dataset.sourceLine) figure.dataset.sourceLine = pre.dataset.sourceLine
                         figure.innerHTML = svg
                         pre.replaceWith(figure)
                     } catch {
@@ -878,7 +950,14 @@ export function activate(ctx: PluginContext): void {
             showEmpty()
 
             async function accept(request: OpenRequest): Promise<void> {
-                if (busy || !leave()) return
+                const again = current?.path !== undefined && samePath(current.path, request.path)
+                const start = fresh.delete(request.path) ? 'edit' : again && mode === 'edit' ? 'edit' : undefined
+                if (again && (dirty || mode === 'edit')) {
+                    target = request.line ?? null
+                    if (mode !== 'edit') reveal()
+                    return
+                }
+                if (busy || (!again && !leave())) return
                 closeLibrary()
                 busy = true
                 try {
@@ -887,23 +966,27 @@ export function activate(ctx: PluginContext): void {
                         showEmpty(result.error)
                         return
                     }
-                    await present(result, request.line)
+                    await present(result, request.line, start ?? (again ? mode : undefined))
                 } catch {
-                    showEmpty('Cannot open that file')
+                    showEmpty('Cannot open')
                 } finally {
                     busy = false
                 }
             }
 
-            deliver = accept
-            if (waiting) {
-                const request = waiting
-                waiting = null
-                void accept(request)
+            const reader: Reader = {
+                held: () => current?.path ?? null,
+                busy: () => busy,
+                accept
             }
+            readers.set(handle.instanceId, reader)
+            const key = waiting.has(handle.instanceId) ? handle.instanceId : ''
+            const pending = waiting.get(key)
+            waiting.delete(key)
+            if (pending) void accept(pending)
 
             return () => {
-                if (deliver === accept) deliver = null
+                if (readers.get(handle.instanceId) === reader) readers.delete(handle.instanceId)
                 container.replaceChildren()
             }
         }

@@ -97,19 +97,8 @@ const STYLES = `
     overflow-y: auto;
     padding: var(--dya-space-5) var(--dya-space-6);
 }
-.docviewer-invite {
-    max-width: 420px;
-    margin: auto;
-    padding: 0;
-}
-.docviewer-tile {
-    width: 100%;
-}
 .docviewer-content--empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
+    padding: var(--dya-space-4);
 }
 .docviewer-editor {
     height: 100%;
@@ -334,15 +323,60 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * A panel with nothing in it offers what to put in it.
-             *
-             * It used to be blank, on the reasoning that an offer in the middle of a panel is an
-             * advertisement for a panel the reader has already opened. That reasoning holds for a
-             * sentence and loses to what it produces: at a window's width it is a black rectangle
-             * nine hundred pixels tall with one word in a corner, which reads as a thing that does
-             * not work. The offer is a tile — the same pressable card the launcher is built from —
-             * so the panel says what it is for by giving the reader the way in.
+             * A panel with no page open shows the pages, as a gallery from the top left: a new
+             * page and a file from elsewhere first, then every page, newest first, each opened by
+             * a click. One tile in the middle of the pane was an island that told the reader
+             * nothing about what was already written.
              */
+            let gallery: HTMLElement | null = null
+            let galleryNote: string | undefined
+
+            function tile(className: string, icon: string, name: string, act: () => void): HTMLButtonElement {
+                const card = document.createElement('button')
+                card.type = 'button'
+                card.className = className
+                card.innerHTML = `<span class="dya-tile__icon">${icon}</span>`
+                const label = document.createElement('span')
+                label.className = 'dya-tile__name'
+                label.textContent = name
+                card.append(label)
+                card.onclick = act
+                return card
+            }
+
+            function paintGallery(): void {
+                if (!gallery) return
+                const cards: HTMLElement[] = []
+                if (galleryNote) {
+                    const line = document.createElement('span')
+                    line.className = 'dya-empty dya-text--danger'
+                    line.textContent = galleryNote
+                    cards.push(line)
+                }
+                cards.push(
+                    tile('dya-tile dya-tile--new', glyph('add'), 'New page', () => openLibrary()),
+                    tile('dya-tile', glyph('folder'), 'Browse', () => void browse())
+                )
+                for (const page of pages) {
+                    const card = document.createElement('button')
+                    card.type = 'button'
+                    card.className = 'dya-tile dya-tile--dense'
+                    const head = document.createElement('div')
+                    head.className = 'dya-tile__head'
+                    const name = document.createElement('span')
+                    name.className = 'dya-tile__name'
+                    name.textContent = page.name
+                    head.append(name)
+                    const facts = document.createElement('span')
+                    facts.className = 'dya-meta'
+                    facts.textContent = `${when(page.mtime)} - ${size(page.size)}`
+                    card.append(head, facts)
+                    card.onclick = () => void openPage(page.path)
+                    cards.push(card)
+                }
+                gallery.replaceChildren(...cards)
+            }
+
             function showEmpty(message?: string): void {
                 current = null
                 handle.setTitle(null)
@@ -354,29 +388,12 @@ export function activate(ctx: PluginContext): void {
                 say()
                 syncModes()
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
-
-                const invite = document.createElement('div')
-                invite.className = 'dya-empty docviewer-invite'
-
-                const tile = document.createElement('button')
-                tile.className = 'dya-tile docviewer-tile'
-                tile.type = 'button'
-                tile.innerHTML =
-                    `<span class="dya-tile__icon">${DOCS_ICON}</span>` +
-                    '<span class="dya-tile__name">Unfold a page</span>' +
-                    '<span class="dya-tile__note">Write, read, rename or delete pages. ' +
-                    'Markdown with its diagrams, JSON, YAML, code, plain text</span>'
-                tile.onclick = () => openLibrary()
-
-                if (message) {
-                    const line = document.createElement('span')
-                    line.className = 'dya-text--danger'
-                    line.textContent = message
-                    invite.append(line)
-                }
-
-                invite.append(tile)
-                content.replaceChildren(invite)
+                gallery = document.createElement('div')
+                gallery.className = 'dya-grid'
+                galleryNote = message
+                content.replaceChildren(gallery)
+                paintGallery()
+                void refresh()
             }
 
             function barKey(icon: GlyphName, label: string, act: () => void): HTMLButtonElement {
@@ -507,6 +524,7 @@ export function activate(ctx: PluginContext): void {
                     complain('Cannot list the pages')
                 }
                 draw()
+                if (!current) paintGallery()
             }
 
             function openLibrary(): void {

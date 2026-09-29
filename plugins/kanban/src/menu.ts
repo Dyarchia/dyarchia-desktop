@@ -142,7 +142,7 @@ export function openMenu(options: MenuOptions): () => void {
     root.tabIndex = -1
 
     const search = document.createElement('input')
-    search.className = 'dya-field dya-field--sm dya-menu__search'
+    search.className = 'dya-field dya-menu__search'
     search.type = 'text'
     search.placeholder = 'Search'
     search.hidden = !options.search && options.rows.length < FILTER_FROM

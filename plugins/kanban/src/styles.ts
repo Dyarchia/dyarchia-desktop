@@ -340,7 +340,7 @@ export const STYLES = `
 
 .kanban-drawer-title {
     min-width: 0;
-    padding-inline-end: calc(2 * var(--dya-size-control-sm) + var(--dya-space-2));
+    padding-inline-end: calc(2 * var(--dya-size-control) + var(--dya-space-2));
     overflow-wrap: anywhere;
 }
 

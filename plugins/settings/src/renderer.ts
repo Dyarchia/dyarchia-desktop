@@ -210,7 +210,7 @@ export function activate(ctx: PluginContext): void {
          * it, and the folders this installation keeps, a click away rather than three rows of
          * absolute paths at the top of the panel.
          */
-        const restart = el('button', 'dya-button dya-button--primary dya-button--sm', 'Restart to apply') as HTMLButtonElement
+        const restart = el('button', 'dya-button dya-button--primary', 'Restart to apply') as HTMLButtonElement
         restart.hidden = true
 
         const folders = el('button', 'dya-key')
@@ -281,7 +281,7 @@ export function activate(ctx: PluginContext): void {
             }
             const fetchable = statuses?.some((status) => !status.met && status.acquirable) ?? false
             if (fetchable && !row.install) {
-                const install = el('button', 'dya-button dya-button--sm', 'Install') as HTMLButtonElement
+                const install = el('button', 'dya-button', 'Install') as HTMLButtonElement
                 install.addEventListener('click', () => acquire(row, false))
                 row.install = install
                 row.needs.append(install)

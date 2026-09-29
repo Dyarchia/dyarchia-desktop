@@ -41,8 +41,7 @@
     --dya-size-label-sm: 10.5px;
     --dya-size-pill: 11.5px;
 
-    --dya-size-control: 34px;
-    --dya-size-control-sm: 28px;
+    --dya-size-control: 28px;
     --dya-size-bar: 40px;
 
     --dya-tracking-ui: 0;
@@ -100,12 +99,6 @@
     --dya-accent-soft: #d7dbe12e;
     --dya-on-accent: #0a0a0b;
 
-    --dya-primary: linear-gradient(180deg, #b8bec7, #9aa1ab 55%, #7f8791);
-    --dya-primary-hover: linear-gradient(180deg, #c6ccd4, #a8afb8 55%, #8c939d);
-    --dya-primary-border: #c3c8d0;
-    --dya-primary-edge: #2e3136;
-    --dya-on-primary: #0a0a0b;
-
     --dya-blue: #1970fd;
     --dya-purple: #8559f9;
     --dya-orange: #f07a35;
@@ -145,7 +138,6 @@
     --dya-danger-soft: #ec4b3a1f;
     --dya-danger-line: #ec4b3a52;
     --dya-danger-ink: #ff8472;
-    --dya-on-status: #0a0b0d;
     --dya-idle: #858b95;
 
     --dya-code-keyword: #c790fe;

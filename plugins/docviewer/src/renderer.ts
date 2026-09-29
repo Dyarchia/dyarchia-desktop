@@ -671,7 +671,7 @@ export function activate(ctx: PluginContext): void {
              */
             function renameRow(page: Page, title: HTMLTableCellElement): void {
                 const field = document.createElement('input')
-                field.className = 'dya-field dya-field--sm'
+                field.className = 'dya-field'
                 field.value = page.name
                 field.spellcheck = false
                 field.setAttribute('aria-label', `Rename ${page.name}`)

@@ -396,7 +396,7 @@
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-    min-height: 50px;
+    min-height: calc(var(--dya-size-control) + 2 * var(--dya-space-2));
     padding: var(--dya-space-2) var(--dya-space-4);
 }
 
@@ -552,7 +552,7 @@
     justify-content: center;
     gap: var(--dya-space-2);
     height: var(--dya-size-control);
-    padding: 0 14px;
+    padding: 0 var(--dya-space-3);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
     font-weight: var(--dya-weight-medium);
@@ -610,10 +610,12 @@
 }
 
 /*
- * The primary is steel, the one bright object on a black instrument: a face brushed from
- * light steel to mid steel, black words, a dark edge. It is the one action a view is about, at
- * most one per view: run, make, install, finish. Red is never a key's fill: filled red reads as
- * destroy. `--dya-on-primary` measures 10.58 at the top of the face and 5.44 at its foot.
+ * The primary is the same black key as every other, marked by its rim alone: the accent, a
+ * bright line round a black face, and the top ink for its word. A light face was a white island
+ * on a black instrument. It is the one action a view is about, at most one per view: run, make,
+ * install, finish. The rim measures 13.34 on the key's face, 12.35 on the hover step and 10.49 at
+ * glass-peak; the word is the key's own, 15.96. Red is never a key's fill: filled red reads as
+ * destroy.
  *
  * Success is lit rather than filled: a border in green and an ink mixed from it and white, with no
  * glow, because no key shines; it is approve. Danger, stop and unmake, is a plain key at rest and
@@ -622,25 +624,10 @@
  * A key that names a state which needs a person, a blocked card, stays lit red, because there the
  * light is the state's own.
  */
-.dya-button--primary {
-    border-color: var(--dya-primary-border);
-    background-image: var(--dya-primary);
-    box-shadow:
-        inset 0 1px 0 #ffffff,
-        0 3px 0 var(--dya-primary-edge);
-    color: var(--dya-on-primary);
-}
-
+.dya-button--primary,
 .dya-button--primary:hover {
-    border-color: var(--dya-primary-border);
-    background-image: var(--dya-primary-hover);
-    color: var(--dya-on-primary);
-}
-
-.dya-button--primary:active {
-    box-shadow:
-        inset 0 1px 0 #ffffffb3,
-        0 1px 0 var(--dya-primary-edge);
+    border-color: var(--dya-accent);
+    color: var(--dya-text);
 }
 
 .dya-key--success {
@@ -702,12 +689,6 @@
 .dya-winkey--close:is(:hover, :focus-visible) {
     border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
-}
-
-.dya-button--sm {
-    height: var(--dya-size-control-sm);
-    padding: 0 10px;
-    font-size: var(--dya-size-body-xs);
 }
 
 /*
@@ -822,28 +803,15 @@
 }
 
 /*
- * A toolbar is a row of controls of one size: the title bar, and every panel's actions in the dock's
- * tab row. Keys, buttons and pickers inside it are all 28px, so a row never mixes three heights.
+ * A toolbar is a row of controls: the title bar, and every panel's actions in the dock's tab row.
+ * Every single-line control in the system is `--dya-size-control` tall, so a row never mixes
+ * heights. Icon keys that stand next to each other in a toolbar are one strip, as a `join` is:
+ * a run of nine separate keys read as a wall, and one strip with dividers reads as one thing.
  */
 .dya-toolbar {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-}
-
-.dya-toolbar .dya-key {
-    width: var(--dya-size-control-sm);
-    height: var(--dya-size-control-sm);
-}
-
-.dya-toolbar .dya-button,
-.dya-toolbar .dya-field {
-    height: var(--dya-size-control-sm);
-}
-
-.dya-toolbar .dya-button {
-    padding: 0 10px;
-    font-size: var(--dya-size-body-xs);
 }
 
 [interestfor] {
@@ -852,23 +820,13 @@
 }
 
 /*
- * A tip on something that is not a control. The cursor is the only thing saying a word is
- * explained rather than pressable, and a reader who cannot tell does not hover. A key carrying a
- * tip keeps its own cursor: it is pressable and the tip is extra.
- */
-.dya-badge[interestfor],
-.dya-tag[interestfor] {
-    cursor: help;
-}
-
-/*
- * A small key: a filter to toggle, a suggestion to take. It was round once, and round is now the
+ * A word key: a filter to toggle, a suggestion to take. It was round once, and round is now the
  * shape of information; a chip is pressable, so it is square like every other key.
  */
 .dya-chip {
     display: inline-grid;
     place-items: center;
-    height: 26px;
+    height: var(--dya-size-control);
     padding: 0 var(--dya-space-3);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
@@ -877,10 +835,11 @@
 }
 
 /*
- * Keys joined into one: a state and the key that resolves it, a value and the key that clears
- * it. They share one edge and the small height, the corners between them go square, and each
- * keeps its own light, so a red state beside a green check reads as one control with two answers.
- * The small height is what lets a state and its answer stand in a form's label column.
+ * Controls joined into one: a strip of sibling keys, a field and the keys that act on it, a state
+ * and the key that resolves it. They stand edge to edge at the one height with no gap, the corners
+ * between them go square and the rim they share is the divider, so a strip is one outline with
+ * one edge under it and each key keeps its own light. A field in a join takes the key's rim,
+ * grows to fill the row, and makes the join as wide as the row it stands in.
  */
 .dya-join {
     display: inline-flex;
@@ -888,27 +847,50 @@
     flex: none;
 }
 
+.dya-join:has(> .dya-field) {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .dya-join > * {
-    height: var(--dya-size-control-sm);
+    height: var(--dya-size-control);
 }
 
-.dya-join > .dya-key {
-    width: var(--dya-size-control-sm);
+.dya-join > .dya-field {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    border-color: var(--dya-rim);
 }
 
-.dya-join > :not(:first-child) {
+.dya-join > :not(:first-child),
+.dya-join > .dya-select:not(:first-child) > .dya-field,
+.dya-toolbar > .dya-key + .dya-key {
     margin-inline-start: calc(-1 * var(--dya-border-width));
     border-start-start-radius: 0;
     border-end-start-radius: 0;
 }
 
-.dya-join > :not(:last-child) {
+.dya-toolbar > .dya-key + .dya-key {
+    margin-inline-start: calc(-1 * (var(--dya-space-2) + var(--dya-border-width)));
+}
+
+.dya-join > .dya-select:not(:first-child) > .dya-field {
+    margin-inline-start: 0;
+}
+
+.dya-join > :not(:last-child),
+.dya-join > .dya-select:not(:last-child) > .dya-field,
+.dya-toolbar > .dya-key:has(+ .dya-key) {
     border-start-end-radius: 0;
     border-end-end-radius: 0;
 }
 
 .dya-join > :hover,
-.dya-join > :focus-visible {
+.dya-join > :focus,
+.dya-toolbar > .dya-key:hover,
+.dya-toolbar > .dya-key:focus-visible {
     z-index: 1;
 }
 
@@ -942,20 +924,6 @@
     box-shadow: var(--dya-elev-focus);
 }
 
-/*
- * The small field is as tall as the small key, so a compact form lines up whether a row holds a
- * field, a list to choose from or a button.
- */
-.dya-field--sm,
-.dya-select > .dya-field.dya-field--sm {
-    height: var(--dya-size-control-sm);
-    padding-inline: var(--dya-space-2);
-}
-
-.dya-select > .dya-field.dya-field--sm {
-    padding-inline-end: var(--dya-space-6);
-}
-
 .dya-field--auto {
     width: auto;
 }
@@ -976,10 +944,6 @@ textarea.dya-field {
     font-size: var(--dya-size-body);
     line-height: var(--dya-leading-body);
     letter-spacing: normal;
-}
-
-.dya-field--sm.dya-field--prose {
-    font-size: var(--dya-size-body-sm);
 }
 
 /*
@@ -1007,10 +971,11 @@ textarea.dya-field {
  * wide as it needs up to 560px. In a pane narrower than 400px the label stands over its value.
  * Every row of a view is a row of the one form, so every value starts on the same line: a key that
  * adds a file, the pills it added and a thread with the field under it are values, never words
- * set after their label. A label stands against the first line of its value, however tall.
+ * set after their label. A label stands against the first line of its value, however tall. A
+ * label names and carries no tip: a tip is for a key that has no word.
  *
- * A label names; the sentence behind it is a tip on the label, which is where an explanation that
- * is not always needed belongs.
+ * A list inside a form is flat rows in the value column, never a box round them: a bordered
+ * region inside a form is an island, and the form's own columns already say what belongs to what.
  */
 .dya-form {
     display: grid;
@@ -1085,16 +1050,6 @@ textarea.dya-field {
     min-height: var(--dya-size-control);
 }
 
-/*
- * A label that carries a tip, wherever it is. A sentence explaining a control does not go inside
- * the control; it goes on the label, and the dotted underline is what says there is one to read.
- */
-.dya-label[interestfor] {
-    cursor: help;
-    text-decoration: underline dotted var(--dya-border-strong);
-    text-underline-offset: 3px;
-}
-
 .dya-form > .dya-form__actions {
     grid-column: 1 / -1;
     display: flex;
@@ -1107,8 +1062,8 @@ textarea.dya-field {
  * A choice from a list is a key that opens a menu, not a field: nothing is typed into it. The
  * select is the platform's own, in its customisable form, so the list it opens is drawn by this
  * system and not by the operating system: the menu's ground and hairline, rows in the sans, the
- * chosen one marked with a green check. The chevron is the wrapper's, and turns over while the
- * list is open.
+ * chosen one marked with a check in the top ink, since a choice is not an outcome. The chevron is
+ * the wrapper's, and turns over while the list is open.
  */
 .dya-select {
     position: relative;
@@ -1177,7 +1132,7 @@ textarea.dya-field {
 }
 
 .dya-select option::checkmark {
-    color: var(--dya-success);
+    color: var(--dya-text);
 }
 
 /*
@@ -1237,8 +1192,8 @@ textarea.dya-field {
 }
 
 /*
- * A box that is ticked is lit: the green of something done, with the ground's own black for the
- * tick, 6.44 over the fill.
+ * A box that is ticked is chosen, not done, so it takes no status colour: the selected step under
+ * the top ink's rim, with the tick in the top ink, 13.30 over the fill.
  */
 .dya-checkbox {
     appearance: none;
@@ -1258,15 +1213,15 @@ textarea.dya-field {
     content: "";
     width: 7px;
     height: 4px;
-    border-left: 1.5px solid var(--dya-on-status);
-    border-bottom: 1.5px solid var(--dya-on-status);
+    border-left: 1.5px solid var(--dya-text);
+    border-bottom: 1.5px solid var(--dya-text);
     transform: rotate(-45deg) translate(0.5px, -1px);
     opacity: 0;
 }
 
 .dya-checkbox:checked {
-    border-color: var(--dya-success);
-    background-color: var(--dya-success);
+    border-color: var(--dya-text);
+    background-color: var(--dya-selected);
 }
 
 .dya-checkbox:checked::after {
@@ -1460,6 +1415,18 @@ textarea.dya-field {
     align-items: center;
     gap: var(--dya-space-1);
     flex-wrap: wrap;
+}
+
+/*
+ * Lines of a thing stacked one under another: a name, its pills, the line under them. A pill row
+ * never touches the line that follows it; the stack keeps 8px between every line it holds, which
+ * is the one block gap a card, an entry's head or a drawer's meta uses under a row of pills.
+ */
+.dya-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    min-width: 0;
 }
 
 /*
@@ -1714,6 +1681,98 @@ textarea.dya-field {
 }
 
 /*
+ * The head of a sheet or a drawer: its title, what state the thing is in, and the keys that
+ * close or widen it, on one line at the control's height and centred on it. The state is a pill,
+ * never a key: nothing in a head is pressable but its end. `__end` holds the trailing strip and
+ * takes the rest of the line before it.
+ */
+.dya-sheet__head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-3);
+    min-height: var(--dya-size-control);
+    min-width: 0;
+}
+
+.dya-sheet__head > .dya-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dya-sheet__end {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    flex: none;
+    margin-inline-start: auto;
+}
+
+/*
+ * A list of files: rows, never keys. A file glyph and the name in the mono on one line, cut with
+ * an ellipsis, left aligned; the row is pressable and answers the pointer with its ground, as a
+ * menu row does, and the file being read (`aria-current`) stands on `selected`. A trailing
+ * `meta` says its size or its folder. A name wrapped and centred inside a raised key read as a
+ * column of buttons.
+ */
+.dya-files {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dya-file {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    width: 100%;
+    min-width: 0;
+    height: var(--dya-size-control);
+    padding: 0 var(--dya-space-2);
+    border: none;
+    border-radius: var(--dya-radius-sm);
+    background: transparent;
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    letter-spacing: var(--dya-tracking-mono);
+    text-align: left;
+    color: var(--dya-text);
+    cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-file:hover {
+    background-color: var(--dya-glass-press);
+}
+
+.dya-file[aria-current="true"] {
+    background-color: var(--dya-selected);
+}
+
+.dya-file > svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+}
+
+.dya-file__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dya-file > .dya-meta {
+    flex: none;
+}
+
+/*
  * What a sheet leaves behind it, and the half of modality that can be seen. The scrim says the
  * region is out of play; `inert` on the same region makes it true. Neither is optional and neither
  * is sufficient, so a sheet raises both or it is not a sheet.
@@ -1897,24 +1956,24 @@ textarea.dya-field {
 }
 
 /*
- * What a tab can do to itself: another like it, and close. Two small keys on the open tab and
- * nowhere else. On every other tab they take no room at all: kept in place but hidden, they put
- * two keys' width of nothing after every name in the strip, and shown on hover, they would push
- * every tab to the right of the pointer. Those tabs close with the middle button. The close turns
- * red under the pointer, like every key that unmakes something.
+ * What a tab can do to itself: another like it, and close. Keys of the one height, joined into
+ * one strip on the open tab and nowhere else. On every other tab they take no room at all: kept in
+ * place but hidden, they put two keys' width of nothing after every name in the strip, and shown
+ * on hover, they would push every tab to the right of the pointer. Those tabs close with the
+ * middle button. The close turns red under the pointer, like every key that unmakes something.
  */
 .dya-tab__action {
     display: none;
     place-items: center;
-    width: 22px;
-    height: 22px;
+    width: var(--dya-size-control);
+    height: var(--dya-size-control);
     padding: 0;
     color: var(--dya-text);
 }
 
 .dya-tab__action > svg {
-    width: 12px;
-    height: 12px;
+    width: 15px;
+    height: 15px;
 }
 
 .dya-tab[aria-selected="true"] .dya-tab__action {
@@ -2037,9 +2096,9 @@ textarea.dya-field {
  * Lanes: the stages of one board, as strips of it rather than cards on it. Flush and transparent,
  * so the glass and the light behind it read through the board as through every other panel, with
  * a hairline before every lane but the first, so no border doubles. A lane answers a drag with
- * its ground: the accent's soft ground where a card may land, and nothing where it may not. The
- * line is where it lands, and the drop box is the place to drop into an empty lane, drawn only
- * while dragging.
+ * its ground: the accent's soft ground where a card may land, red's soft ground where it may not,
+ * and nothing is dimmed. The line is where it lands, and the drop box is the place to drop into an
+ * empty lane, drawn only while dragging.
  */
 .dya-lanes {
     display: flex;
@@ -2058,6 +2117,10 @@ textarea.dya-field {
 
 .dya-lane--accept {
     background: var(--dya-accent-soft);
+}
+
+.dya-lane--refuse {
+    background: var(--dya-danger-soft);
 }
 
 .dya-drop-line {
@@ -2557,14 +2620,14 @@ button.dya-step__subject {
 }
 
 /*
- * The window's own keys: minimise, maximise, close. Keys like every other, at the toolbar's size;
+ * The window's own keys: minimise, maximise, close. Keys like every other, at the one height;
  * close is a danger key and turns red under the pointer.
  */
 .dya-winkey {
     display: grid;
     place-items: center;
-    width: var(--dya-size-control-sm);
-    height: var(--dya-size-control-sm);
+    width: var(--dya-size-control);
+    height: var(--dya-size-control);
     padding: 0;
     color: var(--dya-text);
     cursor: default;

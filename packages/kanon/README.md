@@ -18,76 +18,77 @@ tools/               contrast.py measures, palette.py lifts the six colours to l
 ## Materials
 
 ```text
-glass   the panel, and only the panel: dark metal, a smoked black a shade under the ground that
-        the light passes through, no blur; a chrome rim lit from above, a black line and a shadow
+glass   the panel only: dark metal a shade under the ground, the light passing through, a chrome rim
 key     every control: a near-black face under a light rim, a hard 3px edge that drops 2px pressed
 pill    every piece of information: round, words in the sans; never pressable
-light   status, and only status: a green, yellow or red dot, or a hollow ring in the top ink for
-        what is under way; still, inside a pill, beside a name or around a key
+light   status only: a green, yellow or red dot, or a hollow top-ink ring for what is under way
 ```
 
-Black and white, and one light. One black in three roles, none of them absolute: `ground` #0c0c0e,
-`panel` #131316 (a key's face, a tile, an entry, a menu, a sheet), `field` #0e0e11 (input, code, a
-log); `hover`, `selected`, `disabled` and `scrim` are the only other steps. A cold clear light
-(`--dya-light-in`) comes in at two corners and is dead within a quarter of the diagonal; the grain
-adds none. The primary is steel, the open tab's line and the focus ring silver, plugin marks black,
-garnet and white. Nothing glows. Two inks, `text` and `text-muted`; every icon and glyph is `text`.
-Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths and code.
+Black and white, and one light. One black in three roles: `ground` #0c0c0e, `panel` #131316 (a key's face,
+a tile, an entry, a menu, a sheet), `field` #0e0e11 (input, code, a log); `hover`, `selected`, `disabled`
+and `scrim` are the only other steps. A cold clear light (`--dya-light-in`) comes in at two corners and dies
+within a quarter of the diagonal. The accent is silver: the primary's rim, the open tab's line, the focus
+ring. Plugin marks are black, garnet and white. Nothing glows. Two inks, `text` and `text-muted`; every
+glyph is `text`. Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths and code.
 
 ## Colour and contrast
 
 - **Six colours and no others**: blue, purple, orange, green, yellow, red; a light `--dya-<name>`, an `-ink` for text.
-- **Green is success, yellow warning, red error, always.** Blue, purple and orange are the only
-  categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a glyph, never a pill's
-  word, a fill or a dot inside a pill. A pill that informs is neutral. **Plugins have no hue.**
+- **Green is success, yellow warning, red error, always.** Blue, purple and orange are the only categorical
+  hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a glyph, never a pill's word, a fill or a
+  dot inside a pill. A pill that informs is neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
 - **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `text-muted` is 4.61 at the least,
   `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, peaks included, into the commit body.
 
 ## Rules
 
 - **Components reference tokens, never literals**: no literal colour, radius or duration in `components.css`.
-- **Round is information, square is action; colour is status or which-one, never emphasis.**
-  **Pressable is raised, information is flat.** Every control is a key: button, key, chip, tile,
-  select, a dock tab's actions, a panel's toolbar, the window's keys. Content that opens when
-  pressed (a lifted card, an entry, a row, a step's subject, a menu row, a tab) stays flat and
-  answers with its ground; `tile--new` is a key's dashed outline.
-- **Hover changes the background and the border, never the shadow**; a transition names only
-  `transform`, `opacity` and `background-color`; the focus ring is an outline.
-- **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the
-  table head's and the section row's alone, in the top ink; a date in a section row is a `meta`.
-- **Scale**: body 15px; cells, names and rows 14px; controls, labels, meta 13px; prose 72ch wide.
-- **Five radii**: 3px key, field, menu row; 6px menu; 8px card; 12px panel, sheet; 999px pill, dot. **Weights 300, 400, 500.**
-- **Performance outranks aesthetics.** No WebGL, shaders or `backdrop-filter`; nothing animates forever.
+- **Round is information, square is action; colour is status or which-one, never emphasis.** **Pressable is
+  raised, information is flat.** Every control is a key. Content that opens when pressed (a lifted card, an
+  entry, a row, a file, a menu row, a tab) stays flat and answers with its ground.
+- **Hover changes the background and the border, never the shadow**; a transition names only `transform`,
+  `opacity` and `background-color`; the focus ring is an outline.
+- **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
+  and the section row's alone, in the top ink; a date in a section row is a `meta`.
+- **Scale** body 15, rows 14, controls and meta 13px, prose 72ch. **Radii** 3px key, field, menu row; 6px menu;
+  8px card; 12px panel, sheet; 999px pill, dot. **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
 - **A plugin's own CSS is layout only.** A new look is declared here first and measured; an unused class goes.
 
 ## Keys and layout
 
-- **One primary per view**: `--primary`, steel with black words, the action the view is about.
-  `key--success` is lit green for approve; `--danger` turns red only under the pointer or focus.
-- **A state a person answers is one key**: `button--resolve`, the state in red, its answer in green
-  under the pointer, in one cell. **A known glyph is an icon key** with a tip, never a spelled verb.
-- **A panel measures itself** as a `pane` (`@container pane`), never a media query; width changes
-  how many regions it shows, never how far things stretch. `grid` is a gallery of fixed-width
-  things from the top left, `tile--new` first. Table columns are their content's width; `form`
-  labels are as wide as the longest, values up to 560px. Actions live in `handle.toolbar`.
-- **`title`** is the brand's carved Spectral at 25px, top ink to muted (11.36, 4.61 at card-peak);
-  only a `stat` is larger. A picker's word sits in `field__label` and ends in an ellipsis.
-- **`palette`** (Ctrl+K) is the one way in: a field, rows of icon, name and key hint, the keyboard's
-  row on `selected` (13.30, hint 5.40), `No match` when empty; modal, scrim and `inert` under it.
+- **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
+  keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size.
+- **Keys side by side are one strip**: `join` sets controls edge to edge, inner corners square, the shared
+  rim as the divider, one edge under the whole. A field and its keys are a join, the field on the key's rim
+  and filling the row. Adjacent icon keys in a `toolbar` join on their own.
+- **One primary per view**: `--primary`, the black key under the accent rim (13.34 on the face, 10.49 at
+  glass-peak), top-ink word. `key--success` is lit green; `--danger` turns red only under the pointer or
+  focus. **A state a person answers is one key**: `button--resolve`, red state, green answer.
+- **A tip exists only on an icon-only key**, one or two words, never a word already on screen beside it. A
+  label, a pill and a key that spells anything have none; the SDK's `tips()` refuses them.
+- **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
+  `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
+- **A list of files is `files`**: `file` rows of glyph and mono `__name`, one line, ellipsis, flat hover,
+  `aria-current` on `selected`, never a column of keys. **A list inside a form is flat rows**, never a box.
+- **A panel measures itself** as a `pane` (`@container pane`), never a media query: width changes how many
+  regions it shows, never how far things stretch. `grid` is a gallery of fixed-width things, `tile--new`
+  first; table columns are content width; `form` values up to 560px. Actions live in `handle.toolbar`.
+- **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger.
+  **`palette`** (Ctrl+K) is the one way in: rows of icon, name and hint, the keyboard's row on `selected`.
+- **A lane answers a drag**: `--accept` the accent's soft ground, `--refuse` red's (text-muted 4.52 at peak).
 
 ## Components
 
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead carved splitter sheet (--side --modal)
-             well lanes lane (--accept) drop-line drop-box grid toolbar
-Keys         button (--primary --danger --resolve --sm __state __answer) key (--active --success --danger)
+             --pending --ghosted --carried) card__header masthead carved splitter stack
+             sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
+Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close)
-Input        field (--sm --auto --prose __label) select checkbox form (__value __stack __split __actions)
-Pills        tag badge (--success --warning --danger --busy) pills
-Lights       light (--success --warning --danger --busy) ring (--current --busy)
+Input        field (--auto --prose __label) select checkbox form (__value __stack __split __actions)
+Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
-Content      table (__num __fit __name __subject __end __prose __section) row (--selected)
+Content      table (__num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body; aria-current) notice (__body __title __text)
@@ -95,6 +96,5 @@ Content      table (__num __fit __name __subject __end __prose __section) row (-
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
              palette (__list __row __icon __name __hint __empty)
-Navigation   tabs tab (--dock __action --close)
-Absence      empty (__actions) loading
+Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading
 ```

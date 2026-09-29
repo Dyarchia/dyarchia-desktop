@@ -480,7 +480,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const WATCH_TIP = 'All boards'
     const watchButton = key('grid', 'All boards', WATCH_TIP)
     watchButton.setAttribute('aria-pressed', 'false')
-    const healthButton = el('button', 'dya-button dya-button--sm')
+    const healthButton = el('button', 'dya-button')
     healthButton.type = 'button'
     healthButton.hidden = true
     const healthMark = el('span', 'dya-text--warning kanban-health-mark')
@@ -765,7 +765,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (status === 'triage') {
             const draft = el('div', 'kanban-new')
             draft.hidden = true
-            const field = el('input', 'dya-field dya-field--sm dya-field--prose')
+            const field = el('input', 'dya-field dya-field--prose')
             field.type = 'text'
             field.placeholder = 'Title'
             const confirm = key('check', 'Add')
@@ -1334,7 +1334,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         for (const model of models) {
             modelLabels[model] = modelName(model)
         }
-        const custom = el('input', 'dya-field dya-field--sm')
+        const custom = el('input', 'dya-field')
         custom.type = 'text'
         custom.placeholder = 'Model'
         custom.disabled = disabled
@@ -1371,7 +1371,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const capField = (value: number): HTMLInputElement => {
-        const field = el('input', 'dya-field dya-field--sm kanban-cap')
+        const field = el('input', 'dya-field kanban-cap')
         field.type = 'number'
         field.min = '0'
         field.max = '10'
@@ -2208,7 +2208,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * pointer it turns green and reads `unblock`, which is what pressing it does.
          */
         const blocked = shown(card) === 'blocked'
-        const heading = el('button', 'dya-button dya-button--sm kanban-drawer-state')
+        const heading = el('button', 'dya-button kanban-drawer-state')
         heading.type = 'button'
         heading.dataset.status = shown(card)
         if (blocked) {
@@ -2585,7 +2585,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const schedule = el('div', 'dya-form__value')
         const parkable = shown(card) === 'ready' || shown(card) === 'scheduled'
         if (parkable) {
-            const at = el('input', 'dya-field dya-field--sm dya-field--auto')
+            const at = el('input', 'dya-field dya-field--auto')
             at.type = 'datetime-local'
             if (card.scheduledFor) at.value = local(card.scheduledFor)
             const park = key('clock', 'Park')

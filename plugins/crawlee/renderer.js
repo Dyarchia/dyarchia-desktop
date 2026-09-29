@@ -192,11 +192,11 @@ const STYLE = `
 }
 .crw-out-head > .dya-splitter {
     flex: 1;
-    margin-inline-start: var(--dya-size-control-sm);
+    margin-inline-start: var(--dya-size-control);
 }
 .crw-out-head > .dya-key {
-    width: var(--dya-size-control-sm);
-    height: var(--dya-size-control-sm);
+    width: var(--dya-size-control);
+    height: var(--dya-size-control);
 }
 .crw-out:has(> .dya-log[data-running]) .crw-out-head > .dya-key {
     visibility: hidden;
@@ -507,7 +507,7 @@ function arming(button, prompt) {
     const arm = () => {
         armed = true
         button.textContent = prompt
-        button.className = 'dya-button dya-button--sm dya-button--danger'
+        button.className = 'dya-button dya-button--danger'
         window.clearTimeout(timer)
         timer = window.setTimeout(reset, 5000)
     }
@@ -1422,7 +1422,7 @@ function mount(ctx, container, handle) {
             head.append(groupTag(shelf.group))
             if (!missing) head.append(el('span', 'dya-badge dya-badge--success', 'Installed'))
             if (missing) {
-                const install = el('button', 'dya-button dya-button--sm', `Install ${missing}`)
+                const install = el('button', 'dya-button', `Install ${missing}`)
                 install.addEventListener('click', () => void put(shelf.group, install))
                 head.append(install)
             }
@@ -1693,7 +1693,7 @@ function mount(ctx, container, handle) {
             snapshot.type = 'checkbox'
             snapshot.checked = true
             snapshotBox.append(snapshot, el('span', 'dya-text', 'Track'))
-            const create = el('button', 'dya-button dya-button--sm', 'Draft')
+            const create = el('button', 'dya-button', 'Draft')
             const actions = el('div', 'dya-form__actions')
             actions.append(create)
             node.append(el('span', 'dya-label', 'Changes'), snapshotBox, actions)

@@ -93,9 +93,13 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
     }
 
     const clearIndicators = (): void => {
+        for (const entry of measured) entry.column.indicator.hidden = true
+    }
+
+    const markLanes = (on: boolean): void => {
         for (const entry of measured) {
-            entry.column.indicator.hidden = true
-            entry.column.root.classList.remove('dya-lane--accept', 'dya-lane--refuse')
+            const open = on && entry.legal && entry.column.status !== sourceStatus
+            entry.column.root.classList.toggle('dya-lane--accept', open)
         }
     }
 
@@ -108,12 +112,11 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
             target = hovered
         }
 
-        if (target) {
-            target.column.root.classList.remove('dya-lane--accept', 'dya-lane--refuse')
-            target.column.root.classList.add(target.legal ? 'dya-lane--accept' : 'dya-lane--refuse')
-            if (target.legal) placeIndicator(target)
-            else target.column.indicator.hidden = true
-        }
+        const moving = target !== null && target.column.status !== sourceStatus
+        if (moving && target?.legal) placeIndicator(target)
+        else if (target) target.column.indicator.hidden = true
+        if (moving && !target?.legal) root.dataset.drop = 'refuse'
+        else delete root.dataset.drop
     }
 
     const autoscroll = (): void => {
@@ -136,6 +139,7 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
         started = true
         host.gesture(true)
         measure()
+        markLanes(true)
 
         const box = (source as HTMLElement).getBoundingClientRect()
         const copy = (source as HTMLElement).cloneNode(true) as HTMLElement
@@ -158,6 +162,8 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
 
         const landing = target
         clearIndicators()
+        markLanes(false)
+        delete root.dataset.drop
         ghost?.remove()
         ghost = null
 

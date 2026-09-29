@@ -12,6 +12,7 @@ import * as harness from './harness/index.js'
 import * as hosted from './harness/hosted.js'
 import { transcript } from './harness/claude.js'
 import { rules } from './rules.js'
+import { patch } from './worker.js'
 import * as worktrees from './worktrees.js'
 import type {
     Attachment,
@@ -280,6 +281,15 @@ export function activate(ctx: PluginMainContext): void {
                 ? join(boards.workspacesRoot(meta.slug), card.id)
                 : (card.workdir ?? meta.workdir))
         return harness.of(run).history(place, run)
+    })
+
+    ctx.handle('runDiff', async (slug, id, runId) => {
+        const { meta, card } = await liveRun(String(slug), String(id))
+        const run = runId
+            ? card.runs.find((entry) => entry.runId === String(runId))
+            : [...card.runs].reverse().find((entry) => entry.kind === 'implement' && entry.outcome === 'completed')
+        if (!run?.headBefore) return null
+        return patch(card.workdir ?? meta.workdir, run.headBefore, run.branch ?? 'HEAD')
     })
 
     ctx.handle('reveal', async (slug, id, name) => {

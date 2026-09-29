@@ -52,9 +52,9 @@ function settingsPath(): string {
 
 export function assertCap(value: unknown): number {
     const cap = typeof value === 'number' ? value : Number(value)
-    if (!Number.isInteger(cap)) throw new Refusal('a cap is a whole number of cards')
-    if (cap < 0) throw new Refusal('a cap cannot be negative; 0 pauses instead')
-    if (cap > CAP_CEILING) throw new Refusal(`${CAP_CEILING} at once is as high as this goes`)
+    if (!Number.isInteger(cap)) throw new Refusal('max running is a whole number')
+    if (cap < 0) throw new Refusal('max running is 0 or more; 0 pauses')
+    if (cap > CAP_CEILING) throw new Refusal(`max running is at most ${CAP_CEILING}`)
     return cap
 }
 

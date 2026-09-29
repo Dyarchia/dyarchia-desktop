@@ -64,6 +64,7 @@ export interface Run {
     handoff: string[]
     inputTokens: number
     outputTokens: number
+    costUsd?: number | null
     error: string | null
     headBefore: string | null
 }

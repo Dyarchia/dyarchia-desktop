@@ -1,10 +1,37 @@
 export const STYLES = `
 .kanban {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     min-height: 0;
 }
+
+.kanban-spacer { flex: 1; }
+
+.kanban-switch { max-width: 16rem; }
+
+.kanban > .dya-scrim { z-index: 21; }
+
+.kanban-settings {
+    z-index: 22;
+    overflow-y: auto;
+}
+
+.kanban-settings-title { flex: 1; min-width: 0; }
+
+.kanban-run-head { flex-wrap: wrap; }
+
+.kanban-run-head > .dya-name,
+.kanban-run-head > .dya-tag { flex: none; }
+
+.kanban-diff {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    min-width: 0;
+}
+
 
 .kanban-bar {
     display: flex;
@@ -52,16 +79,16 @@ export const STYLES = `
     padding-inline-start: var(--dya-space-4);
 }
 
-.kanban-outcome-json > summary {
+.kanban-more > summary {
     cursor: pointer;
     list-style: none;
 }
 
-.kanban-outcome-json > summary::-webkit-details-marker {
+.kanban-more > summary::-webkit-details-marker {
     display: none;
 }
 
-.kanban-outcome-json > .dya-code {
+.kanban-more > .dya-code {
     margin-top: var(--dya-space-2);
     max-height: 320px;
     overflow: auto;
@@ -108,6 +135,10 @@ export const STYLES = `
     min-width: 168px;
 }
 
+.kanban-main:has(> .kanban-drawer[data-size='half']:not([hidden])) > .kanban-board {
+    margin-inline-end: calc(50% + var(--dya-space-3));
+}
+
 .kanban-column[data-collapsed='true'] {
     flex: 0 0 36px;
     min-width: 36px;
@@ -138,8 +169,7 @@ export const STYLES = `
 }
 
 /* Adding a card is not something you do to a stage you have put away. */
-.kanban-column[data-collapsed='true'] .kanban-list,
-.kanban-column[data-collapsed='true'] .kanban-empty {
+.kanban-column[data-collapsed='true'] .kanban-list {
     display: none;
 }
 
@@ -205,6 +235,16 @@ export const STYLES = `
 
 .kanban-board[data-dragging='true'] .kanban-drop {
     display: block;
+}
+
+.kanban-board[data-dragging='true'],
+.kanban-board[data-dragging='true'] * {
+    cursor: grabbing;
+}
+
+.kanban-board[data-drop='refuse'],
+.kanban-board[data-drop='refuse'] * {
+    cursor: not-allowed;
 }
 
 .kanban-card {
@@ -427,12 +467,6 @@ export const STYLES = `
     overflow-y: auto;
 }
 
-/*
- * The two forms want opposite things. Settings is a page you came to on purpose, so it starts at
- * the top where a page starts. The first-run form is the whole window and the only thing to do in
- * it, so it sits in the middle and wears a card: pinned to the top of an empty panel it reads as
- * a fragment of a screen that failed to load the rest.
- */
 .kanban-setup[data-mode='welcome'] {
     align-items: center;
 }
@@ -453,13 +487,6 @@ export const STYLES = `
     flex-direction: column;
     gap: var(--dya-space-4);
     width: min(760px, 100%);
-}
-
-.kanban-setup-head {
-    display: flex;
-    align-items: baseline;
-    gap: var(--dya-space-3);
-    flex-wrap: wrap;
 }
 
 .kanban-stage {

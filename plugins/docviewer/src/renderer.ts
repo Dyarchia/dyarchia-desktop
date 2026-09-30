@@ -43,52 +43,28 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.docviewer-library-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-}
-.docviewer-library-head .dya-field {
-    flex: 1;
-    min-width: 0;
-}
 .docviewer-library-list {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
 }
-.docviewer-library-list .dya-table {
-    width: 100%;
-}
-.docviewer-library-list .dya-row {
-    cursor: pointer;
-}
-.docviewer-library-list .dya-table td:first-child {
-    padding-inline-start: calc(var(--dya-space-3) + var(--dya-border-width));
-}
-.docviewer-library-list .dya-table td:last-child {
-    padding-inline-end: 0;
-}
-.docviewer-row-keys {
-    display: inline-flex;
+.docviewer-page {
+    display: flex;
+    align-items: center;
     gap: var(--dya-space-2);
+    min-width: 0;
+}
+.docviewer-page > .dya-file,
+.docviewer-page > .dya-field {
+    flex: 1;
+}
+.docviewer-page:not(:hover, :focus-within) > .dya-join {
+    visibility: hidden;
 }
 .docviewer-header {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-}
-.docviewer-modes {
-    display: flex;
-    gap: var(--dya-space-1);
-}
-.docviewer-modes[hidden] {
-    display: none;
-}
-.docviewer-mode svg {
-    display: block;
-    width: 13px;
-    height: 13px;
 }
 .docviewer-content {
     flex: 1;
@@ -103,10 +79,6 @@ const STYLES = `
 .docviewer-editor {
     height: 100%;
 }
-.docviewer-save[hidden],
-.docviewer-dirty[hidden] {
-    display: none;
-}
 `
 
 /*
@@ -118,12 +90,12 @@ const DOCS_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1.6 20.4 6.6H3.6z" fill="#eceef2"/><circle cx="3.6" cy="6" r="1.1" fill="#eceef2"/><circle cx="20.4" cy="6" r="1.1" fill="#eceef2"/><rect x="4.6" y="7.8" width="14.8" height="12.6" fill="#eceef2"/><rect x="3" y="20.4" width="18" height="2.2" rx=".4" fill="#eceef2"/><text x="12" y="11.9" text-anchor="middle" font-family="Spectral, Georgia, serif" font-weight="500" font-size="3.6" fill="#0a0a0b">RETRA</text><path d="M7 14.4h10M7 16.6h10M7 18.8h6.4" stroke="#0a0a0b" stroke-width=".9" stroke-linecap="round"/></svg>'
 
 const EYE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
 const PENCIL_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 
 const CODE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
 
 /*
  * The pencil used to mean "show me the markdown", which is not what a pencil means anywhere
@@ -196,6 +168,7 @@ export function activate(ctx: PluginContext): void {
     ctx.registerCommand({
         id: 'new-page',
         title: 'New page',
+        icon: glyph('new-file'),
         run: async () => {
             const result = (await ctx.invoke('create')) as OpenResult
             if (!result.path) return
@@ -207,6 +180,7 @@ export function activate(ctx: PluginContext): void {
     ctx.registerCommand({
         id: 'open',
         title: 'Open file',
+        icon: glyph('folder'),
         run: async () => {
             const result = (await ctx.invoke('open')) as OpenResult
             if (result.path) await ctx.shell.open({ path: result.path })
@@ -229,18 +203,18 @@ export function activate(ctx: PluginContext): void {
             const withTip = tips(tipHolder)
 
             /*
-             * The file's name is the tab's title, and what can be done to it sits in the tab row:
-             * the views, save, and the pages. With nothing open the tile in the middle of the
-             * panel is the way in, and the row is empty.
+             * The file's name is the tab's title, and what can be done to it sits in the tab row
+             * as one strip: the views, save while editing, and the pages, which puts this tab back
+             * on its gallery. Closing the tab is the dock's key and only the dock's. With nothing
+             * open the gallery is the way in, and the row is empty.
              */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
-            const modes = document.createElement('div')
-            modes.className = 'docviewer-modes'
-            modes.hidden = true
+            const strip = document.createElement('div')
+            strip.className = 'dya-join'
 
             const unsaved = document.createElement('span')
-            unsaved.className = 'dya-badge dya-badge--warning docviewer-dirty'
+            unsaved.className = 'dya-badge dya-badge--warning'
             unsaved.textContent = 'Unsaved'
             unsaved.hidden = true
 
@@ -250,14 +224,14 @@ export function activate(ctx: PluginContext): void {
              * with the reason they cannot keep it, which is the worst moment to lose it.
              */
             const problem = document.createElement('span')
-            problem.className = 'dya-text--danger docviewer-dirty'
+            problem.className = 'dya-text--danger'
             problem.hidden = true
 
             const save = document.createElement('button')
             save.type = 'button'
-            save.hidden = true
 
-            header.append(unsaved, problem, modes, save)
+            header.append(unsaved, problem, strip)
+            header.hidden = true
 
             const content = document.createElement('div')
             handle.toolbar.append(header)
@@ -319,23 +293,42 @@ export function activate(ctx: PluginContext): void {
                 const button = document.createElement('button')
                 withTip(button, entry.label)
                 button.setAttribute('aria-label', entry.label)
-                button.innerHTML = `<span class="docviewer-mode">${entry.icon}</span>`
+                button.type = 'button'
+                button.innerHTML = entry.icon
                 button.onclick = () => setMode(entry.id)
                 return button
             })
-            modes.append(...modeButtons)
 
+            const pagesKey = document.createElement('button')
+            pagesKey.type = 'button'
+            pagesKey.className = 'dya-key'
+            pagesKey.innerHTML = glyph('grid')
+            pagesKey.setAttribute('aria-label', 'Pages')
+            withTip(pagesKey, 'Pages')
+            pagesKey.onclick = () => {
+                if (!busy && leave()) showEmpty()
+            }
+
+            /*
+             * A strip is drawn from what applies, never from hidden members: a hidden key is
+             * still the first or last child, and the corners of the strip would be cut wrong.
+             * The refusal to overwrite is a state and its answer, so it stands before the strip.
+             */
             function syncModes(): void {
+                const shown: HTMLElement[] = []
                 modeButtons.forEach((button, index) => {
                     const entry = MODES[index]
                     const active = entry.id === mode
-                    button.hidden = entry.markdownOnly && !current?.markdown
                     button.className = active ? 'dya-key dya-key--active' : 'dya-key'
                     button.setAttribute('aria-pressed', String(active))
+                    if (!entry.markdownOnly || current?.markdown) shown.push(button)
                 })
-                save.hidden = mode !== 'edit'
                 save.disabled = !dirty
                 paintSave()
+                if (mode === 'edit' && !overwrite) shown.push(save)
+                strip.replaceChildren(...shown, pagesKey)
+                if (mode === 'edit' && overwrite) header.insertBefore(save, strip)
+                else if (save.parentElement === header) save.remove()
                 unsaved.hidden = !dirty || overwrite
             }
 
@@ -345,7 +338,7 @@ export function activate(ctx: PluginContext): void {
                 if (saveShows === overwrite) return
                 saveShows = overwrite
                 if (overwrite) {
-                    save.className = 'dya-button dya-button--resolve docviewer-save'
+                    save.className = 'dya-button dya-button--resolve'
                     withTip(save, '')
                     save.setAttribute('aria-label', 'Overwrite')
                     const state = document.createElement('span')
@@ -357,7 +350,7 @@ export function activate(ctx: PluginContext): void {
                     save.replaceChildren(state, answer)
                     return
                 }
-                save.className = 'dya-key docviewer-save'
+                save.className = 'dya-key'
                 save.innerHTML = glyph('save')
                 withTip(save, 'Save')
                 save.setAttribute('aria-label', 'Save')
@@ -435,7 +428,6 @@ export function activate(ctx: PluginContext): void {
             function showEmpty(message?: string): void {
                 current = null
                 handle.setTitle(null)
-                modes.hidden = true
                 header.hidden = true
                 saved = ''
                 overwrite = false
@@ -469,8 +461,9 @@ export function activate(ctx: PluginContext): void {
              * The pages: every file in the data home's docs folder, in a sheet over the panel.
              * It is the whole of what can be done to a page. The one field finds a page as it is
              * typed and makes one of that name on Enter when none matches, a row opens on a click,
-             * and each row carries its rename and its delete. Browse is the way to a file kept
-             * anywhere else. The sheet covers, so it is modal: a scrim, the rest inert, Escape out.
+             * and the row under the pointer or the focus shows its rename and its delete. A file
+             * kept anywhere else is the gallery's Browse. The sheet covers, so it is modal: a
+             * scrim, the rest inert, Escape out.
              */
             const scrim = document.createElement('div')
             scrim.className = 'dya-scrim'
@@ -485,18 +478,19 @@ export function activate(ctx: PluginContext): void {
 
             const find = document.createElement('input')
             find.className = 'dya-field'
-            find.placeholder = 'Find or name a page'
+            find.placeholder = 'Find or name'
             find.setAttribute('aria-label', 'Find or name a page')
             find.spellcheck = false
 
+            const naming = document.createElement('div')
+            naming.className = 'dya-join'
+            naming.append(find, barKey('new-file', 'New', () => void makePage()))
+            const libraryEnd = document.createElement('div')
+            libraryEnd.className = 'dya-sheet__end'
+            libraryEnd.append(barKey('close', 'Close', closeLibrary))
             const libraryHead = document.createElement('div')
-            libraryHead.className = 'docviewer-library-head'
-            libraryHead.append(
-                find,
-                barKey('new-file', 'New', () => void makePage()),
-                barKey('folder', 'Browse', () => void browse()),
-                barKey('close', 'Close', closeLibrary)
-            )
+            libraryHead.className = 'dya-sheet__head'
+            libraryHead.append(naming, libraryEnd)
 
             const complaint = document.createElement('span')
             complaint.className = 'dya-problem'
@@ -521,13 +515,6 @@ export function activate(ctx: PluginContext): void {
                 return `${(bytes / 1024 / 1024).toFixed(1)} MB`
             }
 
-            function cell(className: string, text: string): HTMLTableCellElement {
-                const td = document.createElement('td')
-                td.className = className
-                td.textContent = text
-                return td
-            }
-
             function draw(): void {
                 const wanted = find.value.trim().toLowerCase()
                 const shown = pages.filter((page) => page.name.toLowerCase().includes(wanted))
@@ -544,33 +531,34 @@ export function activate(ctx: PluginContext): void {
                     list.replaceChildren(none)
                     return
                 }
-                const table = document.createElement('table')
-                table.className = 'dya-table'
-                const body = document.createElement('tbody')
+                const files = document.createElement('ul')
+                files.className = 'dya-files'
                 for (const page of shown) {
-                    const row = document.createElement('tr')
-                    row.className = 'dya-row'
-                    const title = cell('dya-table__subject', page.name)
-                    const end = document.createElement('td')
-                    end.className = 'dya-table__end'
+                    const item = document.createElement('li')
+                    item.className = 'docviewer-page'
+                    const row = document.createElement('button')
+                    row.type = 'button'
+                    row.className = 'dya-file'
+                    row.setAttribute('aria-current', String(current?.path === page.path))
+                    row.innerHTML = glyph('file')
+                    const name = document.createElement('span')
+                    name.className = 'dya-file__name'
+                    name.textContent = page.name
+                    const facts = document.createElement('span')
+                    facts.className = 'dya-meta'
+                    facts.textContent = when(page.mtime)
+                    row.append(name, facts)
+                    row.onclick = () => void openPage(page.path)
                     const keys = document.createElement('span')
-                    keys.className = 'docviewer-row-keys'
+                    keys.className = 'dya-join'
                     keys.append(
-                        barKey('rename', 'Rename', () => renameRow(page, title)),
+                        barKey('rename', 'Rename', () => renameRow(page, row)),
                         barKey('delete', 'Delete', () => void deletePage(page))
                     )
-                    end.append(keys)
-                    row.append(
-                        title,
-                        cell('dya-table__fit', when(page.mtime)),
-                        cell('dya-table__num dya-table__fit', page.size > 0 ? size(page.size) : ''),
-                        end
-                    )
-                    row.onclick = () => void openPage(page.path)
-                    body.append(row)
+                    item.append(row, keys)
+                    files.append(item)
                 }
-                table.append(body)
-                list.replaceChildren(table)
+                list.replaceChildren(files)
             }
 
             async function refresh(): Promise<void> {
@@ -666,10 +654,10 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * A rename is the name cell turned into a field. Enter or clicking away keeps the new
-             * name, Escape keeps the old one.
+             * A rename is the row turned into a field. Enter or clicking away keeps the new name,
+             * Escape keeps the old one.
              */
-            function renameRow(page: Page, title: HTMLTableCellElement): void {
+            function renameRow(page: Page, row: HTMLElement): void {
                 const field = document.createElement('input')
                 field.className = 'dya-field'
                 field.value = page.name
@@ -721,7 +709,7 @@ export function activate(ctx: PluginContext): void {
                 }
                 field.onblur = () => void commit()
 
-                title.replaceChildren(field)
+                row.replaceWith(field)
                 field.focus()
                 const dot = page.name.lastIndexOf('.')
                 field.setSelectionRange(0, dot > 0 ? dot : page.name.length)
@@ -892,7 +880,6 @@ export function activate(ctx: PluginContext): void {
                 mode = start ?? (result.markdown ? 'rendered' : 'source')
                 handle.setTitle(result.name ?? null)
                 header.hidden = false
-                modes.hidden = false
                 saved = result.content ?? ''
                 dirty = false
                 overwrite = false
@@ -947,7 +934,6 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
-            header.append(barKey('file', 'Pages', openLibrary))
             root.append(scrim, library)
             showEmpty()
 

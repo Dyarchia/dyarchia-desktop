@@ -1,4 +1,4 @@
-import { glyph, injectStyles, ownIds, tips } from '@dyarchia/sdk'
+import { glyph, injectStyles, ownIds } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import { needLabels } from './needs.js'
 import type { Requirement, Status } from './needs.js'
@@ -12,10 +12,10 @@ import type { Requirement, Status } from './needs.js'
  * outside for something: an agent CLI that spends money, and an interpreter with a browser behind
  * it. Those are a decision, and this panel exists to make that decision legible.
  *
- * Legible means three things per plugin, in this order: what it does, what it will go and get, and
- * where what it produces ends up. What a reader needs at rest is the name, the state and the one
- * action; the paths are a menu one press away, and a reason is said only when a person has to act
- * on it by hand.
+ * Legible means one table: a row per plugin, and the same columns in every row, so the switch, the
+ * mark, the name, what it is, what it needs and whether it waits for a restart each stand in one
+ * column the eye can run down. A reason is said only when a person has to act on it by hand, and
+ * the folders this installation keeps are palette commands, not keys.
  *
  * And still. The sheet is modal and sized by its content, so every row is drawn in its final shape
  * in the first frame, from the manifest, and what the disk says later only repaints it in place.
@@ -50,11 +50,12 @@ interface Paths {
 
 interface Row {
     entry: CatalogueEntry
-    item: HTMLElement
+    rows: HTMLTableRowElement[]
     tick: HTMLInputElement | null
     pending: HTMLElement | null
-    needs: HTMLElement | null
+    end: HTMLElement
     log: HTMLPreElement | null
+    logRow: HTMLTableRowElement | null
     install: HTMLButtonElement | null
     why: HTMLElement | null
     chips: HTMLElement[]
@@ -69,86 +70,25 @@ const GEAR_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="#eceef2"/><path d="M12 5.6 17.9 17.2H6.1z" fill="none" stroke="#0a0a0b" stroke-width="2.3" stroke-linejoin="round"/></svg>'
 
 const STYLES = `
-.set {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
+.set-list td {
+    vertical-align: middle;
 }
-.set-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+.set-switch {
+    text-align: center;
 }
-/*
- * One grid for every row, so the switch, the mark, the name and the pending pill of each plugin
- * stand in the same columns: a row is a subgrid of the list. The first column is as wide as the
- * core pill, and a switch is centred in it.
- */
-.set-list {
-    display: grid;
-    grid-template-columns: max-content 28px minmax(0, 1fr) auto;
-    column-gap: var(--dya-space-4);
-    row-gap: var(--dya-space-2);
-}
-.set-plugin {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: subgrid;
-    row-gap: var(--dya-space-3);
-    align-items: start;
-    padding: var(--dya-space-4);
-    border: var(--dya-border-width) solid var(--dya-hairline);
-    border-radius: var(--dya-radius-card);
-    background: var(--dya-glass-card);
-}
-.set-toggle,
-.set-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 28px;
-}
-.set-mark {
-    width: 28px;
-    height: 28px;
-}
-.set-mark > svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-.set-text {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-1);
-    min-width: 0;
-}
-.set-name {
-    font-size: var(--dya-size-h4);
-    color: var(--dya-text);
+.set-switch > .dya-checkbox {
+    display: inline-grid;
+    vertical-align: middle;
 }
 .set-later {
     visibility: hidden;
 }
-.set-needs {
-    grid-column: 3 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--dya-space-2);
-    min-height: 28px;
+.set-log-row > td {
+    padding-top: 0;
 }
 .set-log {
-    grid-column: 3 / -1;
     max-height: 160px;
     margin: 0;
-}
-.set-folders {
-    position-area: bottom span-left;
-    inset: auto;
-    margin: var(--dya-space-2) 0 0;
-    min-width: 280px;
 }
 `
 
@@ -167,6 +107,13 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
     return node
 }
 
+function cell(className?: string, ...children: (Node | string)[]): HTMLTableCellElement {
+    const td = document.createElement('td')
+    if (className) td.className = className
+    td.append(...children)
+    return td
+}
+
 export function activate(ctx: PluginContext): void {
     injectStyles(ctx.pluginId, STYLES)
     known = ctx.shell.catalogue() as Promise<Catalogue>
@@ -178,6 +125,15 @@ export function activate(ctx: PluginContext): void {
         run: async () => {
             const paths = (await ctx.shell.paths()) as Paths
             await ctx.shell.reveal(paths.dataHome)
+        }
+    })
+    ctx.registerCommand({
+        id: 'settings.state',
+        title: 'Settings folder',
+        icon: glyph('folder'),
+        run: async () => {
+            const paths = (await ctx.shell.paths()) as Paths
+            await ctx.shell.reveal(paths.userData)
         }
     })
     ctx.registerCommand({
@@ -195,40 +151,18 @@ export function activate(ctx: PluginContext): void {
             modal: true
         },
         (container, handle) => {
-        const root = el('div', 'set')
-        const scope = handle.instanceId.replace(/[^a-zA-Z0-9_-]/g, '')
-
-        const tipHolder = el('div')
-        const withTip = tips(tipHolder)
-
-        const scroll = el('div', 'set-scroll')
-        const list = el('div', 'set-list')
-        scroll.append(list)
+        const table = document.createElement('table')
+        table.className = 'dya-table set-list'
+        const body = document.createElement('tbody')
+        table.append(body)
 
         /*
-         * The panel's two actions sit in the tab row: restart, only while a choice is waiting for
-         * it, and the folders this installation keeps, a click away rather than three rows of
-         * absolute paths at the top of the panel.
+         * The panel's one action sits in the tab row, and only while a choice is waiting for it.
          */
-        const restart = el('button', 'dya-button dya-button--primary', 'Restart to apply') as HTMLButtonElement
+        const restart = el('button', 'dya-button dya-button--primary', 'Restart') as HTMLButtonElement
         restart.hidden = true
-
-        const folders = el('button', 'dya-key')
-        folders.innerHTML = glyph('folder')
-        folders.setAttribute('aria-label', 'Folders')
-        withTip(folders, 'Folders')
-        const menu = el('div', 'dya-menu set-folders')
-        menu.id = `set-folders-${scope}`
-        menu.setAttribute('popover', 'auto')
-        menu.setAttribute('role', 'menu')
-        const anchor = `--${menu.id}`
-        folders.style.setProperty('anchor-name', anchor)
-        menu.style.setProperty('position-anchor', anchor)
-        folders.setAttribute('popovertarget', menu.id)
-
-        handle.toolbar.append(restart, folders, menu)
-        root.append(scroll, tipHolder)
-        container.append(root)
+        handle.toolbar.append(restart)
+        container.append(table)
 
         const wanted = new Set<string>()
         const rows = new Map<string, Row>()
@@ -255,19 +189,18 @@ export function activate(ctx: PluginContext): void {
 
         function say(line: string): void {
             const row = installing ? rows.get(installing) : undefined
-            if (!row?.log) return
-            row.log.hidden = false
+            if (!row?.log || !row.logRow) return
+            row.logRow.hidden = false
             row.log.append(line + '\n')
             row.log.scrollTop = row.log.scrollHeight
         }
 
         /*
          * Every pill a plugin needs is drawn from its manifest at once, neutral, and the inspection
-         * repaints each in place: a warning when it is missing, Install at the end of the line when
+         * repaints each in place: a warning when it is missing, Install at the end of the row when
          * something missing can be fetched, and the reason, once, when it cannot.
          */
         function paintNeeds(row: Row, statuses: Status[] | undefined): void {
-            if (!row.needs) return
             statuses?.forEach((status, index) => {
                 const chip = row.chips[index]
                 if (!chip) return
@@ -284,7 +217,7 @@ export function activate(ctx: PluginContext): void {
                 const install = el('button', 'dya-button', 'Install') as HTMLButtonElement
                 install.addEventListener('click', () => acquire(row, false))
                 row.install = install
-                row.needs.append(install)
+                row.end.append(install)
             }
             if (row.install) {
                 const busy = installing === row.entry.manifest.id
@@ -292,6 +225,7 @@ export function activate(ctx: PluginContext): void {
                 row.install.disabled = busy
                 row.install.textContent = busy ? 'Installing…' : 'Install'
             }
+            if (row.pending) row.pending.hidden = row.install ? !row.install.hidden : false
         }
 
         function inspect(row: Row): void {
@@ -325,26 +259,35 @@ export function activate(ctx: PluginContext): void {
         }
 
         /*
-         * Every plugin is one row: a switch when it is a choice and a core pill when it is not, its
-         * face and name, what it is, and at the end whether a change waits for a restart.
+         * Every plugin is one row of six columns: a switch when it is a choice and a core pill when
+         * it is not, its mark, its name, what it is, what it needs, and at the end Install or
+         * whether a change waits for a restart. An install's log is a second row under it.
          */
         function build(entry: CatalogueEntry): Row {
-            const item = el('div', 'set-plugin')
-            const toggleCell = el('div', 'set-toggle')
-            const mark = el('span', 'set-mark')
+            const tr = document.createElement('tr')
+            const mark = el('span', 'dya-glyph dya-glyph--mark')
             if (entry.icon?.startsWith('<svg')) mark.innerHTML = ownIds(entry.icon)
-
-            const text = el('div', 'set-text')
-            text.append(el('span', 'set-name', entry.manifest.name))
-            if (entry.manifest.description && entry.manifest.description !== entry.manifest.name) {
-                text.append(el('span', 'dya-text set-desc', entry.manifest.description))
+            const description =
+                entry.manifest.description && entry.manifest.description !== entry.manifest.name
+                    ? entry.manifest.description
+                    : ''
+            const end = cell('dya-table__end')
+            const row: Row = {
+                entry,
+                rows: [tr],
+                tick: null,
+                pending: null,
+                end,
+                log: null,
+                logRow: null,
+                install: null,
+                why: null,
+                chips: []
             }
 
-            const row: Row = { entry, item, tick: null, pending: null, needs: null, log: null, install: null, why: null, chips: [] }
-            const state = el('div', 'set-state')
-
+            const switchCell = cell('dya-table__fit set-switch')
             if (entry.core) {
-                toggleCell.append(el('span', 'dya-tag', 'Core'))
+                switchCell.append(el('span', 'dya-tag', 'Core'))
             } else {
                 const tick = el('input', 'dya-checkbox') as HTMLInputElement
                 tick.type = 'checkbox'
@@ -359,57 +302,52 @@ export function activate(ctx: PluginContext): void {
                     paintPending(row)
                     void persist()
                 })
-                toggleCell.append(tick)
+                switchCell.append(tick)
                 row.tick = tick
                 row.pending = el('span', 'dya-badge dya-badge--warning', 'Next launch')
-                state.append(row.pending)
+                end.append(row.pending)
             }
-            item.append(toggleCell, mark, text, state)
 
+            const needs = el('div', 'dya-pills')
             const requires = entry.manifest.requires ?? []
+            for (const label of requires.flatMap(needLabels)) {
+                const chip = el('span', 'dya-tag', label)
+                row.chips.push(chip)
+                needs.append(chip)
+            }
+            const size = requires.find((requirement) => requirement.note)?.note
+            if (size) needs.append(el('span', 'dya-meta', size))
             if (requires.length > 0) {
-                const needs = el('div', 'set-needs')
-                for (const label of requires.flatMap(needLabels)) {
-                    const chip = el('span', 'dya-tag', label)
-                    row.chips.push(chip)
-                    needs.append(chip)
-                }
-                const size = requires.find((requirement) => requirement.note)?.note
-                if (size) needs.append(el('span', 'dya-meta', size))
                 const why = el('span', 'dya-meta')
                 why.hidden = true
                 needs.append(why)
                 row.why = why
+            }
+
+            tr.append(
+                switchCell,
+                cell('dya-table__fit', mark),
+                cell('dya-table__name', entry.manifest.name),
+                cell(undefined, description),
+                cell(undefined, needs),
+                end
+            )
+
+            if (requires.length > 0) {
+                const logRow = document.createElement('tr')
+                logRow.className = 'set-log-row'
+                logRow.hidden = true
                 const log = el('pre', 'dya-log set-log') as HTMLPreElement
-                log.hidden = true
-                item.append(needs, log)
-                row.needs = needs
+                const logCell = cell(undefined, log)
+                logCell.colSpan = 4
+                logRow.append(cell(), cell(), logCell)
+                row.rows.push(logRow)
                 row.log = log
+                row.logRow = logRow
             }
             paintPending(row)
             paintNeeds(row, inspected.get(entry.manifest.id))
             return row
-        }
-
-        function renderFolders(paths: Paths): void {
-            menu.replaceChildren()
-            const places: [string, string][] = [
-                ['Your files', paths.dataHome],
-                ['This installation', paths.application],
-                ['Settings and state', paths.userData]
-            ]
-            for (const [label, value] of places) {
-                const item = el('button', 'dya-menu__item dya-menu__item--tall')
-                item.setAttribute('role', 'menuitem')
-                const text = el('span', 'dya-menu__text')
-                text.append(el('span', undefined, label), el('span', 'dya-menu__note dya-mono', value))
-                item.append(text)
-                item.addEventListener('click', () => {
-                    menu.hidePopover()
-                    void ctx.shell.reveal(value)
-                })
-                menu.append(item)
-            }
         }
 
         /*
@@ -434,11 +372,11 @@ export function activate(ctx: PluginContext): void {
                 }
             } else {
                 rows.clear()
-                list.replaceChildren(
-                    ...ordered.map((entry) => {
+                body.replaceChildren(
+                    ...ordered.flatMap((entry) => {
                         const row = build(entry)
                         rows.set(entry.manifest.id, row)
-                        return row.item
+                        return row.rows
                     })
                 )
                 for (const row of rows.values()) inspect(row)
@@ -455,7 +393,7 @@ export function activate(ctx: PluginContext): void {
             if (!ok) say('Failed')
             installing = null
             if (!row) return
-            if (ok && row.log) row.log.hidden = true
+            if (ok && row.logRow) row.logRow.hidden = true
             paintNeeds(row, inspected.get(pluginId))
             inspect(row)
         })
@@ -468,14 +406,12 @@ export function activate(ctx: PluginContext): void {
                 if (!disposed) apply(fresh)
             })
         })
-        void (ctx.shell.paths() as Promise<Paths>).then((paths) => {
-            if (!disposed) renderFolders(paths)
-        })
 
         return () => {
             disposed = true
             offLine()
             offDone()
+            container.replaceChildren()
         }
     })
 }

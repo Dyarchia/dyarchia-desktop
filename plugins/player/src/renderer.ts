@@ -42,18 +42,13 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.player-stage.player-stage--empty {
-    display: block;
-    padding: var(--dya-space-4);
-}
 .player-stage {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--dya-space-3);
+    padding: var(--dya-space-4);
+    overflow-y: auto;
 }
 .player-stage audio,
 .player-stage video {
@@ -62,9 +57,13 @@ const STYLES = `
 /*
  * The video takes the whole stage and the picture is fitted inside it: contain scales it up or
  * down to the largest size that keeps its proportion, and whatever the panel's shape leaves over
- * is bare glass on the two short sides rather than a stretched frame. Only a card with a radius
- * of its own would show where the letterbox ends, so the element has none.
+ * is bare glass on the two short sides rather than a stretched frame. Audio has no picture, so its
+ * controls stand at the top left, where the gallery's first tile stood, never an island mid-pane.
  */
+.player-stage--video {
+    padding: var(--dya-space-3);
+    overflow: hidden;
+}
 .player-stage video {
     flex: 1;
     min-height: 0;
@@ -75,13 +74,24 @@ const STYLES = `
     outline: none;
 }
 .player-stage audio {
-    width: min(420px, 90%);
+    width: min(420px, 100%);
 }
 `
 
-
+/*
+ * What played last, as the main process last said it, shared by every mounted player. A gallery
+ * paints from it at once and repaints when a play anywhere changes it, so a tab that was mounted
+ * behind another, or that sat on its gallery while another tab played, is never out of date.
+ */
+let recents: Recent[] = []
+const galleries = new Set<() => void>()
 
 export function activate(ctx: PluginContext): void {
+    ctx.on('recent', (list) => {
+        recents = list as Recent[]
+        for (const repaint of galleries) repaint()
+    })
+
     ctx.registerOpener(
         {
             panelId: 'player',
@@ -118,11 +128,6 @@ export function activate(ctx: PluginContext): void {
 
             const root = document.createElement('div')
             root.className = 'player'
-
-            /*
-             * What is playing is the tab's title, and the key that opens another sits in the tab
-             * row once something is open. With nothing open the gallery is the way in.
-             */
             const stage = document.createElement('div')
             stage.className = 'player-stage'
             const tipHolder = document.createElement('div')
@@ -133,16 +138,22 @@ export function activate(ctx: PluginContext): void {
             let busy = false
             let playing = false
             let disposed = false
+            let gallery: HTMLElement | null = null
+            let failure: string | undefined
 
-            function openButton(): HTMLButtonElement {
-                const button = document.createElement('button')
-                button.className = 'dya-key'
-                button.innerHTML = glyph('folder')
-                withTip(button, 'Open')
-                button.setAttribute('aria-label', 'Open')
-                button.onclick = () => void pick()
-                return button
-            }
+            /*
+             * What is playing is the tab's title, and the one key in the tab row takes the panel
+             * back to its gallery. Open lives in the gallery and in the palette.
+             */
+            const back = document.createElement('button')
+            back.type = 'button'
+            back.className = 'dya-key'
+            back.innerHTML = glyph('grid')
+            back.setAttribute('aria-label', 'Library')
+            withTip(back, 'Library')
+            back.onclick = () => showEmpty()
+            back.hidden = true
+            handle.toolbar.append(back)
 
             function tile(icon: string, name: string, act: () => void): HTMLButtonElement {
                 const card = document.createElement('button')
@@ -176,34 +187,40 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * A panel with nothing in it shows what it can play, as a gallery from the top left,
-             * the way the reader shows its pages: Open first, then what played last, newest first,
-             * each a click from playing again. A failure is said over the same gallery, because
-             * the gallery is still what to do next.
+             * A panel with nothing in it shows what it can play, as a gallery from the top left:
+             * Open first, then what played last, newest first, each a click from playing again.
+             * A failure is said over the same gallery, because the gallery is still what to do.
              */
-            function showEmpty(message?: string): void {
-                playing = false
-                handle.setTitle(null)
-                open.hidden = true
-
-                const gallery = document.createElement('div')
-                gallery.className = 'dya-grid'
-                const head: HTMLElement[] = []
-                if (message) {
+            function paintGallery(): void {
+                if (!gallery || disposed || playing) return
+                const cards: HTMLElement[] = []
+                if (failure) {
                     const line = document.createElement('span')
                     line.className = 'dya-empty dya-text--danger'
-                    line.textContent = message
-                    head.push(line)
+                    line.textContent = failure
+                    cards.push(line)
                 }
-                head.push(tile(glyph('folder'), 'Open', () => void pick()))
-                gallery.replaceChildren(...head)
-                stage.classList.add('player-stage--empty')
-                stage.replaceChildren(gallery)
+                cards.push(tile(glyph('folder'), 'Open', () => void pick()), ...recents.map(recentTile))
+                gallery.replaceChildren(...cards)
+            }
 
-                void (ctx.invoke('recent') as Promise<Recent[]>).then((recent) => {
-                    if (disposed || playing || !gallery.isConnected) return
-                    gallery.replaceChildren(...head, ...recent.map(recentTile))
-                })
+            function showEmpty(message?: string): void {
+                playing = false
+                failure = message
+                handle.setTitle(null)
+                back.hidden = true
+                gallery = document.createElement('div')
+                gallery.className = 'dya-grid'
+                stage.className = 'player-stage'
+                stage.replaceChildren(gallery)
+                paintGallery()
+                void (ctx.invoke('recent') as Promise<Recent[]>).then(
+                    (list) => {
+                        recents = list
+                        for (const repaint of galleries) repaint()
+                    },
+                    () => undefined
+                )
             }
 
             async function play(path: string): Promise<void> {
@@ -216,14 +233,15 @@ export function activate(ctx: PluginContext): void {
                     element.controls = true
                     element.autoplay = true
                     element.src = media.src
-                    element.onerror = () => showEmpty('Cannot play that file')
+                    element.onerror = () => showEmpty('Cannot play')
                     playing = true
+                    gallery = null
                     handle.setTitle(media.name)
-                    open.hidden = false
-                    stage.classList.remove('player-stage--empty')
+                    back.hidden = false
+                    stage.className = media.kind === 'video' ? 'player-stage player-stage--video' : 'player-stage'
                     stage.replaceChildren(element)
                 } catch {
-                    showEmpty('Cannot open that file')
+                    showEmpty('Cannot open')
                 } finally {
                     busy = false
                 }
@@ -234,8 +252,7 @@ export function activate(ctx: PluginContext): void {
                 if (path) await play(path)
             }
 
-            const open = openButton()
-            handle.toolbar.append(open)
+            galleries.add(paintGallery)
             showEmpty()
 
             instances.set(handle.instanceId, { idle: () => !playing && !busy, play })
@@ -248,6 +265,7 @@ export function activate(ctx: PluginContext): void {
 
             return () => {
                 disposed = true
+                galleries.delete(paintGallery)
                 instances.delete(handle.instanceId)
                 container.replaceChildren()
             }

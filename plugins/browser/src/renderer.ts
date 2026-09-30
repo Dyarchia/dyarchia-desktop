@@ -25,7 +25,6 @@ const BACK_ICON = svg('<path d="m15 18-6-6 6-6"/>')
 const FORWARD_ICON = svg('<path d="m9 18 6-6-6-6"/>')
 const RELOAD_ICON = glyph('refresh')
 const STOP_ICON = glyph('close')
-const HOME_ICON = svg('<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>')
 const STAR_ICON = svg(
     '<polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/>'
 )
@@ -41,10 +40,6 @@ const STYLES = `
     flex: none;
     min-height: 0;
     padding: var(--dya-space-2) var(--dya-space-3);
-}
-.brw-address {
-    flex: 1;
-    min-width: 0;
 }
 .brw-marks {
     flex: none;
@@ -109,7 +104,25 @@ function el<K extends keyof HTMLElementTagNameMap>(
     return node
 }
 
+/*
+ * The browser a person last worked in, so a palette command acts on the page they were looking at.
+ */
+let focused: WebviewTag | null = null
+
 export function activate(ctx: PluginContext): void {
+    ctx.registerCommand({
+        id: 'browser.external',
+        title: 'Open outside',
+        icon: glyph('open'),
+        run: async () => {
+            let url = ''
+            try {
+                url = focused?.getURL() ?? ''
+            } catch {}
+            if (url) await ctx.invoke('external', url)
+        }
+    })
+
     ctx.registerCommand({
         id: 'browser.new',
         title: 'New tab',
@@ -144,20 +157,23 @@ export function activate(ctx: PluginContext): void {
                 return button
             }
 
+            /*
+             * One strip: the three keys that move through the history, the address, and the star
+             * that keeps it. Home is an empty address and Enter; opening the page outside is a
+             * palette command.
+             */
             const bar = el('div', 'dya-bar brw-bar')
+            const strip = el('div', 'dya-join')
             const back = key(BACK_ICON, 'Back', () => view.goBack())
             const forward = key(FORWARD_ICON, 'Forward', () => view.goForward())
             const reload = key(RELOAD_ICON, 'Reload', () => (loading ? view.stop() : view.reload()))
-            const home = key(HOME_ICON, 'Home', () => go(HOME))
-            const address = el('input', 'dya-field brw-address')
+            const address = el('input', 'dya-field')
             address.type = 'text'
             address.setAttribute('aria-label', 'Address')
             address.placeholder = 'Search or address'
             const star = key(STAR_ICON, 'Bookmark', () => void toggleBookmark())
-            const external = key(glyph('open'), 'Open outside', () => {
-                if (ready) void ctx.invoke('external', view.getURL())
-            })
-            bar.append(back, forward, reload, home, address, star, external)
+            strip.append(back, forward, reload, address, star)
+            bar.append(strip)
 
             const marks = el('div', 'brw-marks')
             marks.hidden = true
@@ -170,6 +186,9 @@ export function activate(ctx: PluginContext): void {
             view.setAttribute('partition', PARTITION)
             view.setAttribute('allowpopups', '')
             view.src = HOME
+            root.addEventListener('focusin', () => (focused = view))
+            root.addEventListener('pointerdown', () => (focused = view))
+            focused = view
 
             const fail = el('div', 'dya-empty brw-fail')
             fail.hidden = true
@@ -285,7 +304,8 @@ export function activate(ctx: PluginContext): void {
                 const actions = el('div', 'dya-empty__actions')
                 actions.append(retry)
                 fail.replaceChildren(
-                    el('span', 'dya-title', `${hostOf(event.validatedURL)} did not answer`),
+                    el('span', 'dya-title', hostOf(event.validatedURL)),
+                    el('span', 'dya-mono', event.errorDescription || String(event.errorCode)),
                     actions
                 )
                 fail.hidden = false
@@ -306,6 +326,7 @@ export function activate(ctx: PluginContext): void {
             address.value = HOME
 
             return () => {
+                if (focused === view) focused = null
                 offMarks()
                 container.replaceChildren()
             }

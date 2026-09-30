@@ -28,7 +28,7 @@ Black and white, and one light. One black in three roles: `ground` #0c0c0e, `pan
 a tile, an entry, a menu, a sheet), `field` #0e0e11 (input, code, a log); `hover`, `selected`, `disabled`
 and `scrim` are the only other steps. A cold clear light (`--dya-light-in`) comes in at two corners and dies
 within a quarter of the diagonal. The accent is silver: the primary's rim, the open tab's line, the focus
-ring. Plugin marks are black, garnet and white. Nothing glows. Two inks, `text` and `text-muted`; every
+ring. A plugin's mark keeps its brand's original colours. Nothing glows. Two inks, `text` and `text-muted`; every
 glyph is `text`. Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths and code.
 
 ## Colour and contrast

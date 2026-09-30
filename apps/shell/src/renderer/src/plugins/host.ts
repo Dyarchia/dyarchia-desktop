@@ -1,8 +1,12 @@
 import { token } from '@dyarchia/kanon'
-import { highlight, hues } from '@dyarchia/sdk'
+import { glyph, highlight, hues, when } from '@dyarchia/sdk'
+import type { GlyphName } from '@dyarchia/sdk'
+import { registerCommand } from '../commands'
+import { registerSearch } from '../searches'
+import type { Search } from '../searches'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
-import { canOpen, openFile, registerOpener } from '../panels/openers'
+import { canOpen, openFile, registerOpener, showPanel } from '../panels/openers'
 import type { OpenerDescriptor, OpenHandler, OpenRequest } from '../panels/openers'
 
 interface PluginListEntry {
@@ -37,6 +41,7 @@ interface ShellApi {
     canOpen(path: string): boolean
     open(request: OpenRequest): Promise<boolean>
     reveal(path: string): Promise<boolean>
+    show(panelId: string, options?: { fresh?: boolean }): Promise<string | undefined>
 }
 
 export interface PluginCatalogueEntry {
@@ -64,16 +69,27 @@ export interface PluginCatalogue {
     entries: PluginCatalogueEntry[]
 }
 
+interface PluginCommand {
+    id: string
+    title: string
+    icon?: string
+    run: () => void | Promise<void>
+}
+
 interface PluginModule {
     activate(ctx: {
         pluginId: string
         token(name: string): string
         registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
         registerOpener(descriptor: OpenerDescriptor, open: OpenHandler): void
+        registerCommand(command: PluginCommand): () => void
+        registerSearch(search: Search): () => void
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         highlight(source: string, language?: string): string
         hues(keys: Iterable<string>): Record<string, string>
+        when(value: Date | number | string | null | undefined): string
+        glyph(name: GlyphName): string
         shell: ShellApi
     }): void | Promise<void>
 }
@@ -115,6 +131,10 @@ async function invokeFor(id: string, channel: string, args: unknown[]): Promise<
  */
 const pluginIcons = new Map<string, string>()
 
+export function pluginIcon(id: string): string | undefined {
+    return pluginIcons.get(id)
+}
+
 async function catalogue(): Promise<PluginCatalogue> {
     const found = (await window.dyarchia!.invoke('shell:plugins:catalogue')) as PluginCatalogue
     return {
@@ -137,14 +157,19 @@ export async function loadPlugins(): Promise<void> {
                 token,
                 registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) => {
                     if (!pluginIcons.has(id)) pluginIcons.set(id, descriptor.icon)
-                    registerPanel({ ...descriptor, toolbar }, mount)
+                    registerPanel({ ...descriptor, toolbar, owner: id }, mount)
                 },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),
+                registerCommand: (command: PluginCommand) =>
+                    registerCommand({ ...command, id: `${id}:${command.id}`, owner: id }),
+                registerSearch: (search: Search) => registerSearch(id, search),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 highlight,
                 hues,
+                when,
+                glyph,
                 shell: {
                     catalogue,
                     paths: () => bridge.invoke('shell:app:paths') as Promise<ShellPaths>,
@@ -153,7 +178,9 @@ export async function loadPlugins(): Promise<void> {
                     canOpen,
                     open: (request: OpenRequest) => openFile(request),
                     reveal: (path: string) =>
-                        bridge.invoke('shell:app:reveal', path) as Promise<boolean>
+                        bridge.invoke('shell:app:reveal', path) as Promise<boolean>,
+                    show: async (panelId: string, options?: { fresh?: boolean }) =>
+                        showPanel(panelId, options?.fresh === true)
                 }
             })
         } catch (error) {

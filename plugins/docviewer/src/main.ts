@@ -4,6 +4,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
+const FIND_LIMIT = 8
 
 const TEXT_EXTENSIONS = [
     'md', 'txt', 'json', 'yaml', 'yml', 'js', 'ts', 'css', 'html',
@@ -41,7 +42,7 @@ async function load(filePath: string): Promise<Record<string, unknown>> {
     try {
         const info = await stat(filePath)
         if (info.size > MAX_FILE_SIZE) {
-            return { error: `File too large (${Math.round(info.size / 1024)} KB)` }
+            return { error: 'Too large' }
         }
         return {
             name: basename(filePath),
@@ -56,7 +57,7 @@ async function load(filePath: string): Promise<Record<string, unknown>> {
             content: await readFile(filePath, 'utf-8')
         }
     } catch {
-        return { error: 'Cannot read that file' }
+        return { error: 'Cannot read' }
     }
 }
 
@@ -89,24 +90,50 @@ export function activate(ctx: PluginMainContext): void {
     })
 
     /*
+     * The pages whose name or text holds the palette's words: the name first, then the first line
+     * that holds them, cut to a line's worth.
+     */
+    ctx.handle('find', async (raw: unknown) => {
+        const words = typeof raw === 'string' ? raw.trim().toLowerCase() : ''
+        if (!words) return []
+        await mkdir(pages, { recursive: true })
+        const entries = await readdir(pages, { withFileTypes: true })
+        const found: { path: string; name: string; line?: number; text?: string }[] = []
+        for (const entry of entries) {
+            if (!entry.isFile() || found.length >= FIND_LIMIT) continue
+            const path = join(pages, entry.name)
+            if (entry.name.toLowerCase().includes(words)) {
+                found.push({ path, name: entry.name })
+                continue
+            }
+            const info = await stat(path)
+            if (info.size > MAX_FILE_SIZE) continue
+            const lines = (await readFile(path, 'utf-8')).split(/\r?\n/)
+            const at = lines.findIndex((line) => line.toLowerCase().includes(words))
+            if (at >= 0) found.push({ path, name: entry.name, line: at + 1, text: lines[at].trim().slice(0, 120) })
+        }
+        return found
+    })
+
+    /*
      * A new page is created empty and then read like any other. A name already taken is refused
      * rather than emptied.
      */
     ctx.handle('create', async (raw: unknown) => {
-        const name = pageName(raw)
+        const untitled = raw === undefined
+        const name = untitled ? 'Untitled.md' : pageName(raw)
         if (!name) return { error: 'Not a file name' }
-        const filePath = join(pages, name)
-        try {
-            await mkdir(pages, { recursive: true })
-            await writeFile(filePath, '', { encoding: 'utf-8', flag: 'wx' })
-        } catch (error) {
-            return {
-                error: (error as NodeJS.ErrnoException).code === 'EEXIST'
-                    ? 'Already exists'
-                    : 'Cannot create that file'
+        await mkdir(pages, { recursive: true })
+        for (let n = 1; ; n++) {
+            const filePath = join(pages, n === 1 ? name : `Untitled ${n}.md`)
+            try {
+                await writeFile(filePath, '', { encoding: 'utf-8', flag: 'wx' })
+                return load(filePath)
+            } catch (error) {
+                const taken = (error as NodeJS.ErrnoException).code === 'EEXIST'
+                if (!(taken && untitled)) return { error: taken ? 'Already exists' : 'Cannot create' }
             }
         }
-        return load(filePath)
     })
 
     ctx.handle('rename', async (payload: unknown) => {
@@ -122,7 +149,7 @@ export function activate(ctx: PluginMainContext): void {
             await rename(path, next)
             return { path: next, name }
         } catch {
-            return { error: 'Cannot rename that file' }
+            return { error: 'Cannot rename' }
         }
     })
 
@@ -136,7 +163,7 @@ export function activate(ctx: PluginMainContext): void {
             await shell.trashItem(resolve(target))
             return {}
         } catch {
-            return { error: 'Cannot delete that file' }
+            return { error: 'Cannot delete' }
         }
     })
 
@@ -171,14 +198,14 @@ export function activate(ctx: PluginMainContext): void {
                 return { stale: true }
             }
         } catch {
-            return { error: 'That file is no longer there' }
+            return { error: 'File gone' }
         }
 
         try {
             await writeFile(path, content, 'utf-8')
             return { mtime: (await stat(path)).mtimeMs }
         } catch {
-            return { error: 'Cannot write to that file' }
+            return { error: 'Cannot write' }
         }
     })
 }

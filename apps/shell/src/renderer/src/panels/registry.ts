@@ -3,8 +3,9 @@ export interface PanelDescriptor {
     title: string
     icon: string
     duplicable?: boolean
-    /* Where this panel's key sits in the title bar, from the plugin's manifest; absent is the menu. */
+    /* Where this panel's tile sits in the launcher, from the plugin's manifest; absent is last. */
     toolbar?: number
+    owner?: string
     keepAlive?: boolean
     width?: number
     maxWidth?: number
@@ -52,8 +53,8 @@ export function registerPanel(descriptor: PanelDescriptor, mount: PanelMount): v
 
 /*
  * By title, because the order plugins register in is the order a directory listing happened to
- * come back in, and nothing the reader can see explains it. Both the top bar and the launcher
- * read this, so they agree, and a key does not move because a plugin loaded a moment sooner.
+ * come back in, and nothing the reader can see explains it. Everything that lists panels reads
+ * this, so the lists agree, and a tile does not move because a plugin loaded a moment sooner.
  */
 export function getRegisteredPanels(): RegisteredPanel[] {
     return [...panels.values()].sort((a, b) =>

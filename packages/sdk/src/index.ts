@@ -2,12 +2,16 @@ export { highlight, highlightLines } from './highlight.js'
 export { renderMarkdown } from './markdown.js'
 export { texToUnicode } from './math.js'
 export { hues } from './hues.js'
+export { when } from './when.js'
 export { brandIcon, ownIds } from './brands.js'
 export { glyph } from './glyphs.js'
+export { tips } from './tips.js'
+export type { Tip } from './tips.js'
 export type { GlyphName } from './glyphs.js'
 export type { Hue } from './hues.js'
 
 import type { Hue } from './hues.js'
+import type { GlyphName } from './glyphs.js'
 
 export interface PanelDescriptor {
     id: string
@@ -108,11 +112,13 @@ export interface PluginCatalogue {
 export interface OpenRequest {
     path: string
     line?: number
+    instanceId?: string
 }
 
 export interface OpenerDescriptor {
     panelId: string
     extensions: string[]
+    route?(request: OpenRequest): string | null
 }
 
 /*
@@ -140,7 +146,28 @@ export interface ShellApi {
     canOpen(path: string): boolean
     open(request: OpenRequest): Promise<boolean>
     reveal(path: string): Promise<boolean>
+    show(panelId: string, options?: { fresh?: boolean }): Promise<string | undefined>
 }
+
+export interface PluginCommand {
+    id: string
+    title: string
+    icon?: string
+    run(): void | Promise<void>
+}
+
+/*
+ * One thing a plugin found for what is typed in the palette: a page, a card, a crawled document.
+ * The title is the thing's own name and the detail where it lives or the line that matched.
+ */
+export interface SearchHit {
+    id: string
+    title: string
+    detail?: string
+    run(): void | Promise<void>
+}
+
+export type PluginSearch = (query: string) => Promise<SearchHit[]>
 
 export interface PluginContext {
     readonly pluginId: string
@@ -151,6 +178,12 @@ export interface PluginContext {
      * shell shows that panel before handing the request over, so a reader only has to read.
      */
     registerOpener(descriptor: OpenerDescriptor, open: (request: OpenRequest) => void | Promise<void>): void
+    registerCommand(command: PluginCommand): () => void
+    /*
+     * What this plugin holds that matches the palette's words. The shell asks once the typing
+     * pauses, every plugin at once, and drops an answer to words no longer typed.
+     */
+    registerSearch(search: PluginSearch): () => void
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
     /*
@@ -166,6 +199,8 @@ export interface PluginContext {
      * the plugin with no build step, like `highlight`.
      */
     hues(keys: Iterable<string>): Record<string, Hue>
+    when(value: Date | number | string | null | undefined): string
+    glyph(name: GlyphName): string
     shell: ShellApi
 }
 

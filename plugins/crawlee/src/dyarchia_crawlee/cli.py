@@ -140,15 +140,20 @@ def render_recon(recon: Recon) -> None:
     table = Table(title=f'inspect: {recon.url}', title_style='bold', show_header=False, box=None)
     table.add_row('status', str(recon.status_code))
     table.add_row('content type', recon.content_type or 'unknown')
-    table.add_row('title', recon.title or '-')
-    table.add_row('html size', f'{recon.html_bytes:,} bytes')
-    table.add_row('links found', str(recon.link_count))
+    if recon.sitemap_kind is None:
+        table.add_row('title', recon.title or '-')
+        table.add_row('html size', f'{recon.html_bytes:,} bytes')
+        table.add_row('links found', str(recon.link_count))
+    else:
+        noun = 'sitemaps' if recon.sitemap_kind == 'sitemapindex' else 'pages'
+        table.add_row('sitemap', f'{recon.sitemap_kind}, {recon.sitemap_entries:,} {noun}')
     table.add_row('robots allows', 'yes' if recon.robots_allows else 'no')
     if recon.crawl_delay is not None:
         table.add_row('crawl delay', f'{recon.crawl_delay}s')
     table.add_row('sitemaps', '\n'.join(recon.sitemaps) if recon.sitemaps else '-')
-    table.add_row('markdown variant', recon.markdown_url or '-')
-    table.add_row('static content', f'{recon.static_content_chars:,} chars')
+    if recon.sitemap_kind is None:
+        table.add_row('markdown variant', recon.markdown_url or '-')
+        table.add_row('static content', f'{recon.static_content_chars:,} chars')
     if recon.rendered_content_chars is not None:
         table.add_row('rendered content', f'{recon.rendered_content_chars:,} chars')
     if recon.spa_markers:

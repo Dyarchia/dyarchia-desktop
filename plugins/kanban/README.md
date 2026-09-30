@@ -94,4 +94,3 @@ pnpm --filter @dyarchia/plugin-kanban probe
 ```
 
 - The probe runs every check that needs no real agent, headless, against a temporary userData.
-- `scripts/panel-harness.html`, served from the repo root, mounts the built panel against a fake context.

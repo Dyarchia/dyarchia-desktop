@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import httpx
+import pytest
 
-from dyarchia_crawlee.recon import Recon, _check_markdown_variant
+from dyarchia_crawlee.recon import Recon, _check_markdown_variant, inspect_url, read_sitemap
 
 URL = 'https://site.example/page'
 
@@ -98,3 +99,63 @@ async def test_a_page_without_a_twin_reports_none() -> None:
 async def test_a_page_that_is_already_markdown_is_not_probed() -> None:
     served = _serving_markdown_at('https://site.example/page.md')
     assert await _variant_of('https://site.example/page.md', served) is None
+
+
+URLSET = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://site.example/a</loc></url>
+  <url><loc>https://site.example/b</loc></url>
+  <url><loc>https://site.example/c</loc></url>
+</urlset>
+"""
+
+SITEMAP_INDEX = """<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap><loc>https://site.example/docs.xml</loc></sitemap>
+  <sitemap><loc>https://site.example/blog.xml</loc></sitemap>
+</sitemapindex>
+"""
+
+
+def test_a_urlset_is_read_as_a_sitemap_of_pages() -> None:
+    recon = Recon(url='https://site.example/sitemap.xml')
+    assert read_sitemap(URLSET, recon) is True
+    assert (recon.sitemap_kind, recon.sitemap_entries) == ('urlset', 3)
+    assert 'sitemap_urls' in recon.recommendation
+    assert 'in the HTML' not in recon.recommendation
+
+
+def test_a_sitemap_index_counts_its_sitemaps() -> None:
+    recon = Recon(url='https://site.example/sitemap.xml')
+    assert read_sitemap(SITEMAP_INDEX, recon) is True
+    assert (recon.sitemap_kind, recon.sitemap_entries) == ('sitemapindex', 2)
+    assert 'sitemap index of 2 sitemaps' in recon.recommendation
+
+
+def test_a_page_is_not_mistaken_for_a_sitemap() -> None:
+    recon = Recon(url=URL)
+    assert read_sitemap('<html><body><p>urlset</p></body></html>', recon) is False
+    assert recon.sitemap_kind is None
+
+
+async def test_inspecting_a_sitemap_recommends_seeding_from_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An XML sitemap is a seed list, not a page, and was advised as if its content were HTML.
+
+    Only HTML was analysed, so a sitemap URL fell through every heuristic to the last line and was
+    told its content is in the HTML, which is the one thing a sitemap is not.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == '/sitemap.xml':
+            return httpx.Response(200, text=URLSET, headers={'content-type': 'application/xml'})
+        return httpx.Response(404)
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, 'AsyncClient', lambda **options: real(transport=httpx.MockTransport(handler), **options)
+    )
+
+    recon = await inspect_url('https://site.example/sitemap.xml')
+    assert recon.sitemap_kind == 'urlset'
+    assert recon.sitemaps[0] == 'https://site.example/sitemap.xml'
+    assert 'sitemap of 3 pages' in recon.recommendation

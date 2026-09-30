@@ -11,7 +11,10 @@ const PATHS = {
     check: '<path d="M20 6 9 17l-5-5"/>',
     close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     delete: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/>',
-    folder: '<path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+    grid: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    launcher: '<circle cx="5" cy="5" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="19" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/>',
+    pin: '<path d="M12 17v5"/><path d="M8 3h8"/><path d="M9 3v6l-3 4v2h12v-2l-3-4V3"/>',
+    folder: '<path d="M4 20h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-8.5L9.3 4.4A1 1 0 0 0 8.5 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1z"/>',
     open: '<path d="M14 4h6v6"/><path d="m20 4-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5"/>',
@@ -28,7 +31,12 @@ const PATHS = {
     stop: '<rect x="6" y="6" width="12" height="12" rx="1"/>',
     move: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
     fold: '<path d="M2 12h6"/><path d="m5 9 3 3-3 3"/><path d="M22 12h-6"/><path d="m19 9-3 3 3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>',
-    unfold: '<path d="M9 12H3"/><path d="m6 9-3 3 3 3"/><path d="M15 12h6"/><path d="m18 9 3 3-3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>'
+    unfold: '<path d="M9 12H3"/><path d="m6 9-3 3 3 3"/><path d="M15 12h6"/><path d="m18 9 3 3-3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>',
+    terminal: '<path d="m5 7 5 5-5 5"/><path d="M12 18h7"/>',
+    expand: '<path d="M15 4h5v5"/><path d="M9 20H4v-5"/><path d="m20 4-6 6"/><path d="m4 20 6-6"/>',
+    contract: '<path d="M4 10h5V5"/><path d="M20 14h-5v5"/><path d="M9 10 3 4"/><path d="m15 14 6 6"/>',
+    chevron: '<path d="m9 6 6 6-6 6"/>',
+    book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>'
 }
 
 export type GlyphName = keyof typeof PATHS

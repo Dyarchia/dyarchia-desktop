@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { glyph } from '@dyarchia/sdk'
 import { Svg } from '../components/Svg'
+import { Tip, useTipId } from '../components/Tip'
 import { getPanel, setToolbar } from './registry'
 
-const CLOSE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
+const CLOSE_ICON = glyph('close')
 
 interface ModalPanelProps {
     id: string
@@ -21,6 +22,7 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
     const tools = useRef<HTMLDivElement>(null)
     const registered = getPanel(id)
     const [title, setTitle] = useState(registered?.descriptor.title ?? '')
+    const closeTip = useTipId()
 
     useEffect(() => {
         const container = body.current
@@ -60,18 +62,21 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
                 aria-modal="true"
                 aria-label={title}
             >
-                <header className="dya-toolbar shell-modal-head">
+                <header className="dya-sheet__head">
                     <Svg className="dya-glyph shell-modal-mark" svg={registered.descriptor.icon} />
                     <span className="dya-title">{title}</span>
-                    <div className="shell-modal-tools" ref={tools} />
-                    <button
-                        type="button"
-                        className="dya-key"
-                        aria-label="Close"
-                        title="Close"
-                        onClick={onClose}
-                        dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
-                    />
+                    <div className="dya-sheet__end">
+                        <div ref={tools} />
+                        <button
+                            type="button"
+                            className="dya-key"
+                            aria-label="Close"
+                            interestfor={closeTip}
+                            onClick={onClose}
+                            dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
+                        />
+                    </div>
+                    <Tip id={closeTip} label="Close" />
                 </header>
                 <div ref={body} className="dya-pane shell-modal-body" />
             </section>

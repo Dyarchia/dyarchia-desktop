@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DockviewReact, themeAbyssSpaced } from 'dockview-react'
+import { glyph } from '@dyarchia/sdk'
 import type {
     DockviewApi,
     DockviewReadyEvent,
@@ -10,6 +11,7 @@ import type {
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
 import { Svg } from '../components/Svg'
+import { Tip, useTipId } from '../components/Tip'
 import { PluginPanel } from '../panels/PluginPanel'
 import {
     basePanelId,
@@ -29,10 +31,14 @@ const dyarchiaTheme: DockviewTheme = {
     tabGroupIndicator: 'none'
 }
 
-const ANOTHER_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>'
-const CLOSE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
+const ANOTHER_ICON = glyph('add')
+const CLOSE_ICON = glyph('close')
+
+const titleListeners = new Set<() => void>()
+
+function titlesChanged(): void {
+    for (const listener of titleListeners) listener()
+}
 
 function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
     /*
@@ -45,12 +51,35 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 
     useEffect(() => {
         const activity = props.api.onDidVisibilityChange((event) => setActive(event.isVisible))
-        const naming = props.api.onDidTitleChange((event) => setTitle(event.title))
+        const naming = props.api.onDidTitleChange((event) => {
+            setTitle(event.title)
+            titlesChanged()
+        })
         return () => {
             activity.dispose()
             naming.dispose()
         }
     }, [props.api])
+
+    const [, setRevision] = useState(0)
+    useEffect(() => {
+        const bump = (): void => setRevision((value) => value + 1)
+        titleListeners.add(bump)
+        const added = props.containerApi.onDidAddPanel(bump)
+        const removed = props.containerApi.onDidRemovePanel(bump)
+        return () => {
+            titleListeners.delete(bump)
+            added.dispose()
+            removed.dispose()
+        }
+    }, [props.containerApi])
+
+    const base = basePanelId(props.api.id)
+    const twins = props.containerApi.panels.filter(
+        (panel) => basePanelId(panel.id) === base && panel.title === title
+    )
+    const place = twins.findIndex((panel) => panel.id === props.api.id)
+    const shown = place > 0 ? `${title} ${place + 1}` : title
 
     const [mark, setMark] = useState(() => getTabIcon(props.api.id))
     useEffect(
@@ -63,6 +92,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 
     const descriptor = getPanel(props.api.id)?.descriptor
     const icon = mark ?? descriptor?.icon
+    const anotherTip = useTipId()
+    const closeTip = useTipId()
     const glyph = mark ? 'dya-glyph dya-glyph--mark' : 'dya-glyph'
 
     /*
@@ -76,7 +107,6 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
      */
     const another = (): void => {
         if (!descriptor) return
-        const base = basePanelId(props.api.id)
         let n = 2
         while (props.containerApi.getPanel(`${base}#${n}`)) n++
         props.containerApi.addPanel({
@@ -103,34 +133,37 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
             }}
         >
             {icon && <Svg className={glyph} svg={icon} />}
-            {title}
+            <span className="panel-tab-title">{shown}</span>
             <span className="panel-tab-actions">
-                {descriptor?.duplicable ? (
+                {!descriptor?.duplicable && <span className="panel-tab-slot" aria-hidden="true" />}
+                <span className="dya-join">
+                    {descriptor?.duplicable && (
+                        <button
+                            className="dya-tab__action"
+                            aria-label={`Another ${descriptor.title}`}
+                            interestfor={anotherTip}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                                event.stopPropagation()
+                                another()
+                            }}
+                            dangerouslySetInnerHTML={{ __html: ANOTHER_ICON }}
+                        />
+                    )}
                     <button
-                        className="dya-tab__action"
-                        title={`Another ${descriptor.title}`}
-                        aria-label={`Another ${descriptor.title}`}
+                        className="dya-tab__action dya-tab__action--close"
+                        aria-label={`Close ${shown}`}
+                        interestfor={closeTip}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
                             event.stopPropagation()
-                            another()
+                            props.api.close()
                         }}
-                        dangerouslySetInnerHTML={{ __html: ANOTHER_ICON }}
+                        dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
                     />
-                ) : (
-                    <span className="panel-tab-slot" aria-hidden="true" />
-                )}
-                <button
-                    className="dya-tab__action dya-tab__action--close"
-                    title={`Close ${title}`}
-                    aria-label={`Close ${title}`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                        event.stopPropagation()
-                        props.api.close()
-                    }}
-                    dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
-                />
+                </span>
+                {descriptor?.duplicable && <Tip id={anotherTip} label="Another" />}
+                <Tip id={closeTip} label="Close" />
             </span>
         </div>
     )

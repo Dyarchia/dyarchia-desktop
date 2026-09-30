@@ -2,6 +2,7 @@
     "id": "settings",
     "name": "Setup",
     "version": "0.1.0",
+    "toolbar": 7,
     "description": "Plugins and what they need",
     "renderer": "dist/renderer.js",
     "main": "dist/main.js"

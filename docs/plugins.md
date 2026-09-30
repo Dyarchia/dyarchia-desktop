@@ -16,7 +16,7 @@ startup; the workspace copy wins over `~/.dyarchia/plugins/<id>/`. The visual ma
     boot          start the Python interpreter at launch instead of on first invoke
     schemes       custom protocol schemes the plugin serves; reserved names are rejected
     description   one line shown in the Setup panel
-    toolbar       its place among the three title-bar keys, 1 to 3; omit for the overflow
+    toolbar       its tile's place in the launcher, from 1; omitted, it goes last
     data          one folder name under the data home, shown by Setup before install
     requires      command, binary or python requirements Setup checks or installs
     files         anything else needed at runtime, copied by stage-plugins.mjs
@@ -49,14 +49,15 @@ export function activate(ctx: PluginContext): void {
 }
 ```
 
-- `icon` is a black and white mark, solid shapes, `aria-hidden`; a brand keeps its own. Icon keys
-  draw their glyph with `glyph()` from `@dyarchia/sdk`, never a local SVG or a spelled verb.
+- `icon` is a black and white mark, solid shapes, `aria-hidden`; a brand keeps its own. An icon key
+  is `glyph()` plus a tip from `tips(holder)`, never a local SVG, a spelled verb or a `title`.
 - `duplicable` allows `<id>#<n>` instances, `keepAlive` keeps a covered panel mounted, `width` and
   `maxWidth` size its column and content, `modal` opens it over the window instead of the dock.
-- The panel's actions go in `handle.toolbar`, shown in the tab row or a modal's head at one size.
-- `registerOpener` goes in `activate`; the shell keeps the first opener per extension. A finder
-  never names the reader: it asks `ctx.shell.canOpen` and falls back to `reveal`.
-- `ctx.token(name)` resolves a `--dya-*` value for a canvas; `highlight` and `hues` are in the SDK.
+- Actions go in `handle.toolbar`. `registerOpener` goes in `activate`; the first opener per
+  extension wins. A finder never names the reader: it asks `ctx.shell.canOpen`, else `reveal`.
+- `ctx.registerCommand({ id, title, icon?, run })` joins the Ctrl+K palette and returns its removal.
+- `ctx.registerSearch(query => hits)` answers the palette's words with `{ id, title, detail?, run }`.
+  `ctx.token(name)` resolves a `--dya-*` value; `ctx` also has `highlight`, `hues`, `when` and `glyph`.
 
 ## Main module
 

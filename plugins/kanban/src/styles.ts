@@ -18,36 +18,11 @@ export const STYLES = `
     overflow-y: auto;
 }
 
-.kanban-settings-title { flex: 1; min-width: 0; }
-
-.kanban-run-head { flex-wrap: wrap; }
-
-.kanban-run-head > .dya-name,
-.kanban-run-head > .dya-tag { flex: none; }
-
 .kanban-diff {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-2);
     min-width: 0;
-}
-
-
-.kanban-bar {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-}
-
-.kanban-health-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--dya-space-1);
-}
-
-.kanban-health-mark > svg {
-    width: 14px;
-    height: 14px;
 }
 
 .kanban-decided {
@@ -59,18 +34,7 @@ export const STYLES = `
     padding-bottom: var(--dya-space-1);
 }
 
-.kanban-outcome {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-2);
-    white-space: normal;
-}
-
-.kanban-outcome-files {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dya-space-2);
-}
+.kanban-outcome { white-space: normal; }
 
 .kanban-outcome-list {
     margin: 0;
@@ -94,7 +58,8 @@ export const STYLES = `
 
 /*
  * Folding is there when a column is being looked at, not eight times over at rest. A folded
- * column keeps its key, because it is the only way back.
+ * column keeps its key, because it is the only way back, and so does triage, whose fold stands in
+ * one strip with the add key that is always there.
  */
 .kanban-fold {
     opacity: 0;
@@ -103,7 +68,22 @@ export const STYLES = `
 
 .kanban-column:hover .kanban-fold,
 .kanban-fold:focus-visible,
+.kanban-column[data-status='triage'] .kanban-fold,
 .kanban-column[data-collapsed='true'] .kanban-fold {
+    opacity: 1;
+}
+
+/*
+ * A key that acts on one row of a list, removing a file or a note, is there when that row is
+ * being looked at, the way a column's fold is.
+ */
+.kanban-reveal {
+    opacity: 0;
+    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+}
+
+.kanban-file:is(:hover, :focus-within) .kanban-reveal,
+.kanban-note:is(:hover, :focus-within) .kanban-reveal {
     opacity: 1;
 }
 
@@ -139,16 +119,23 @@ export const STYLES = `
 
 /*
  * The header, not the name, carries the measure. Its height is the longest stage name on this
- * board — one character being 1ch plus the label tracking — plus room for the two controls, and
- * the controls are pushed to the bottom of it. So the count and the fold key of every folded
- * stage land on one line across the board, which is the only way a row of folded stages reads as
- * a row, and no name is stretched, padded or otherwise touched to get there.
+ * board, one character being 1ch plus the label tracking, plus room for the controls, and the
+ * controls are pushed to the bottom of it, so the count and the keys of every folded stage land
+ * on one line across the board.
  */
 .kanban-column[data-collapsed='true'] .kanban-column-head {
     flex-direction: column;
     height: calc(var(--kanban-stage-chars, 9) * (1ch + var(--dya-tracking-label)) + var(--dya-space-12));
     padding: var(--dya-space-2) 0;
     gap: var(--dya-space-2);
+}
+
+.kanban-column[data-collapsed='true'] .kanban-column-keys {
+    flex-direction: column;
+}
+
+.kanban-column[data-collapsed='true'] .kanban-column-keys > .dya-key:not(.kanban-fold) {
+    display: none;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-count {
@@ -161,25 +148,17 @@ export const STYLES = `
     transform: rotate(180deg);
 }
 
-/* Adding a card is not something you do to a stage you have put away. */
-.kanban-column[data-collapsed='true'] .kanban-list {
+.kanban-column[data-collapsed='true'] .kanban-list,
+.kanban-column[data-collapsed='true'] .kanban-new {
     display: none;
 }
 
 .kanban-new {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
     margin-bottom: var(--dya-space-2);
 }
 
 .kanban-new[hidden] {
     display: none;
-}
-
-.kanban-new > .dya-field {
-    flex: 1;
-    min-width: 0;
 }
 
 .kanban-column-head {
@@ -194,6 +173,8 @@ export const STYLES = `
 .kanban-column-title { flex: 1; min-width: 0; }
 
 .kanban-count { flex: none; }
+
+.kanban-column-keys { flex: none; }
 
 .kanban-scroll {
     position: relative;
@@ -218,9 +199,8 @@ export const STYLES = `
 }
 
 /*
- * The drop target, and it exists while something is being dropped. A dashed box in every empty
- * column is seven boxes of nothing across the widest part of the screen on a board at rest, which
- * is the same sentence the column used to say, drawn instead of written.
+ * The drop target exists while something is being dropped: a dashed box in every empty column at
+ * rest is the sentence "nothing here", drawn instead of written.
  */
 .kanban-drop {
     display: none;
@@ -241,9 +221,6 @@ export const STYLES = `
 }
 
 .kanban-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-1);
     padding: var(--dya-space-2);
     cursor: grab;
     touch-action: none;
@@ -277,10 +254,6 @@ export const STYLES = `
 .kanban-card > .dya-pills[hidden],
 .kanban-card-foot[hidden] { display: none; }
 
-.kanban-danger {
-    margin-top: var(--dya-space-2);
-}
-
 .kanban-card-note {
     flex: 1;
     min-width: 0;
@@ -310,38 +283,16 @@ export const STYLES = `
     width: auto;
 }
 
-/*
- * The head is the form's first row: the state in the label column, the title where the values
- * start. It repeats the body's columns, so beside the stage the form's half is the head's half,
- * and its lead keeps the form's padding and the gutter the form's scrollbar takes, so every
- * column lands where the form's does. The keys stand over the end of the title's row.
- */
 .kanban-drawer-head {
     flex: none;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    padding: 0;
+    padding: var(--dya-space-3);
 }
 
-.kanban-drawer-lead {
-    grid-area: 1 / 1;
-    padding: var(--dya-space-2) calc(var(--dya-space-3) + 8px) var(--dya-space-2) var(--dya-space-3);
-}
+.kanban-drawer-title { cursor: text; }
 
-.kanban-drawer-keys {
-    grid-area: 1 / 1;
-    justify-self: end;
-    align-self: center;
-    display: flex;
-    gap: var(--dya-space-2);
-    padding-inline-end: calc(var(--dya-space-3) + 8px);
-}
-
-.kanban-drawer-title {
+.kanban-drawer-rename {
+    flex: 1;
     min-width: 0;
-    padding-inline-end: calc(2 * var(--dya-size-control) + var(--dya-space-2));
-    overflow-wrap: anywhere;
 }
 
 .kanban-drawer-body {
@@ -362,28 +313,16 @@ export const STYLES = `
     gap: var(--dya-space-3);
 }
 
-@container (min-width: 720px) {
+@container (min-width: 1040px) {
     .kanban-drawer[data-stage='true'] .kanban-drawer-body {
         display: grid;
-        grid-template-columns: minmax(360px, 1fr) minmax(0, 1fr);
+        grid-template-columns: minmax(480px, 1fr) minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
     }
 
     .kanban-drawer[data-stage='true'] .kanban-form {
         grid-column: 1;
         grid-row: 1;
-    }
-
-    .kanban-drawer[data-stage='true'] .kanban-drawer-head {
-        grid-template-columns: minmax(360px, 1fr) minmax(0, 1fr);
-    }
-
-    .kanban-drawer[data-stage='true'] .kanban-drawer-keys {
-        grid-area: 1 / 2;
-    }
-
-    .kanban-drawer[data-stage='true'] .kanban-drawer-title {
-        padding-inline-end: 0;
     }
 
     .kanban-drawer[data-stage='true'] .kanban-stage {
@@ -406,8 +345,6 @@ export const STYLES = `
     gap: var(--dya-space-2);
 }
 
-.kanban-row--top { align-items: flex-start; }
-
 .kanban-row > .dya-field { flex: 1; min-width: 0; }
 
 .kanban-row > .kanban-cap { flex: 0 0 4rem; }
@@ -428,6 +365,23 @@ export const STYLES = `
     min-width: 0;
 }
 
+.kanban-file {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+.kanban-file > .dya-file { flex: 1; }
+
+.kanban-clip {
+    display: block;
+    max-width: 20rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .kanban-menu {
     position: fixed;
     z-index: 9000;
@@ -445,10 +399,17 @@ export const STYLES = `
     overflow-y: auto;
 }
 
+.kanban-foot {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-3);
+    padding: var(--dya-space-2) var(--dya-space-3);
+}
+
 /*
- * A form sits near the top of the panel, not in the middle of it. Centred vertically it floats in
- * whatever height the panel happens to have, which at full height is a small box adrift in an
- * empty screen — and that is what this looked like.
+ * A form sits near the top of the panel, not in the middle of it: centred vertically it floats in
+ * whatever height the panel happens to have.
  */
 .kanban-setup {
     flex: 1;
@@ -482,22 +443,40 @@ export const STYLES = `
     width: min(760px, 100%);
 }
 
+/*
+ * The review of a card's work, in one place: the index of its history on top, what the chosen
+ * run did under it. The index is kept to two fifths of the stage and scrolls; the steps take the
+ * rest.
+ */
 .kanban-stage {
     flex: none;
-    height: 44%;
-    min-height: 160px;
+    height: 50%;
+    min-height: 200px;
     display: flex;
     flex-direction: column;
+    gap: var(--dya-space-2);
+    padding: var(--dya-space-2) calc(var(--dya-space-3) + 8px) 0 var(--dya-space-3);
 }
 
-/*
- * The stage keeps the form's edges: its tabs, its head and its steps start where the form's labels
- * do and end where its fields do, the end holding the gutter the form's scrollbar takes.
- */
+.kanban-index-scroll {
+    flex: none;
+    max-height: 40%;
+    overflow-y: auto;
+}
+
+.kanban-index .dya-row { cursor: pointer; }
+
+.kanban-run-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+
 .kanban-stage-body {
     flex: 1;
     min-height: 0;
-    padding: var(--dya-space-2) calc(var(--dya-space-3) + 8px) 0 var(--dya-space-3);
+    display: flex;
+    flex-direction: column;
 }
 
 .kanban-terminal { height: 100%; }
@@ -518,27 +497,6 @@ export const STYLES = `
     gap: var(--dya-space-4);
     width: 100%;
     max-width: 96rem;
-}
-
-.kanban-tabs {
-    flex: none;
-    padding: var(--dya-space-3) calc(var(--dya-space-3) + 8px) 0 var(--dya-space-3);
-}
-
-.kanban-history {
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--dya-space-2);
-}
-
-.kanban-activity-head {
-    flex: none;
-}
-
-.kanban-activity-head > .dya-select {
-    min-width: 0;
 }
 
 .kanban-steps {

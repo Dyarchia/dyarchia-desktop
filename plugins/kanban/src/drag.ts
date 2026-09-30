@@ -19,7 +19,6 @@ export interface DragHost {
     statusOf(card: HTMLElement): Status
     canDrop(id: string, to: Status): boolean
     commit(id: string, to: Status): void
-    refuse(id: string, to: Status): void
     gesture(active: boolean): void
 }
 
@@ -98,9 +97,25 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
 
     const markLanes = (on: boolean): void => {
         for (const entry of measured) {
-            const open = on && entry.legal && entry.column.status !== sourceStatus
-            entry.column.root.classList.toggle('dya-lane--accept', open)
+            const other = on && entry.column.status !== sourceStatus
+            entry.column.root.classList.toggle('dya-lane--accept', other && entry.legal)
+            entry.column.root.classList.toggle('dya-lane--refuse', other && !entry.legal)
         }
+    }
+
+    /*
+     * A drag ends with the pointer released over a card, and the browser follows the release with
+     * a click on it. That click is the drag's, not a request to open the card, so the one that
+     * follows a gesture is swallowed before anything sees it.
+     */
+    const swallowClick = (): void => {
+        const swallow = (event: MouseEvent): void => {
+            event.preventDefault()
+            event.stopPropagation()
+            window.removeEventListener('click', swallow, true)
+        }
+        window.addEventListener('click', swallow, true)
+        window.setTimeout(() => window.removeEventListener('click', swallow, true), 0)
     }
 
     const paint = (): void => {
@@ -170,11 +185,13 @@ export function installDrag(root: HTMLElement, host: DragHost): () => void {
         if (source) source.classList.remove('dya-card--ghosted')
         delete root.dataset.dragging
 
-        if (started) host.gesture(false)
+        if (started) {
+            host.gesture(false)
+            swallowClick()
+        }
 
-        if (commit && started && landing && landing.column.status !== sourceStatus) {
-            if (landing.legal) host.commit(sourceId, landing.column.status)
-            else host.refuse(sourceId, landing.column.status)
+        if (commit && started && landing?.legal && landing.column.status !== sourceStatus) {
+            host.commit(sourceId, landing.column.status)
         }
 
         pointer = -1

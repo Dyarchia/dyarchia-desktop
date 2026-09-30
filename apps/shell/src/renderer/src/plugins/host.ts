@@ -152,7 +152,7 @@ export async function loadPlugins(): Promise<void> {
                 token,
                 registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) => {
                     if (!pluginIcons.has(id)) pluginIcons.set(id, descriptor.icon)
-                    registerPanel({ ...descriptor, toolbar }, mount)
+                    registerPanel({ ...descriptor, toolbar, owner: id }, mount)
                 },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),

@@ -16,7 +16,7 @@ startup; the workspace copy wins over `~/.dyarchia/plugins/<id>/`. The visual ma
     boot          start the Python interpreter at launch instead of on first invoke
     schemes       custom protocol schemes the plugin serves; reserved names are rejected
     description   one line shown in the Setup panel
-    toolbar       its key's place in the title bar, from 1; omitted, it goes last
+    toolbar       its tile's place in the launcher, from 1; omitted, it goes last
     data          one folder name under the data home, shown by Setup before install
     requires      command, binary or python requirements Setup checks or installs
     files         anything else needed at runtime, copied by stage-plugins.mjs

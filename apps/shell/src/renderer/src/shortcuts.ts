@@ -7,8 +7,6 @@ export interface ShortcutActions {
 
 const SETTINGS_PANEL = 'settings'
 
-export const PANEL_KEYS: Record<string, string> = { [SETTINGS_PANEL]: 'Ctrl+,' }
-
 function insideTerminal(target: EventTarget | null): boolean {
     return target instanceof Element && target.closest('.xterm') !== null
 }

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'node:path'
+import { registerLauncherStore } from './launcherStore'
 import { registerLayoutStore } from './layoutStore'
 import { adoptUserData, registerPaths } from './paths'
 import { registerWindowControls } from './windowControls'
@@ -136,6 +137,7 @@ app.whenReady().then(async () => {
     app.setAppUserModelId(APP_ID)
     Menu.setApplicationMenu(null)
     registerLayoutStore()
+    registerLauncherStore()
     registerWindowControls()
     registerPaths()
     registerUpdates()

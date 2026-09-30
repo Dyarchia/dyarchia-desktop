@@ -1,3 +1,4 @@
+import { orderApps, useApps } from '../apps'
 import type { PanelDescriptor } from '../panels/registry'
 import { Svg } from './Svg'
 
@@ -25,13 +26,14 @@ interface LauncherProps {
 }
 
 export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
+    useApps()
     return (
         <div className="dya-pane launcher">
             <div className="launcher-head">
                 <span className="dya-carved">Dyarchia desktop</span>
             </div>
             <div className="dya-grid launcher-grid">
-                {panels.map((panel) => (
+                {orderApps(panels).map((panel) => (
                     <button
                         key={panel.id}
                         className="dya-tile"

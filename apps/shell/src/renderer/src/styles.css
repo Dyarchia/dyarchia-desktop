@@ -31,8 +31,8 @@ body,
 }
 
 /*
- * The title bar is 40px: the build on the left, a key for every plugin in manifest order and the
- * window's own keys on the right. The wordmark lives only on the empty window.
+ * The title bar is 40px: the build on the left, the launcher key and the window's own keys on the
+ * right. The wordmark lives only on the empty window.
  */
 .topbar {
     position: relative;
@@ -67,13 +67,6 @@ body,
     padding-right: var(--dya-space-3);
     padding-bottom: 3px;
     -webkit-app-region: no-drag;
-}
-
-.topbar-icon,
-.topbar-icon svg {
-    display: block;
-    width: 18px;
-    height: 18px;
 }
 
 .topbar-window-controls {

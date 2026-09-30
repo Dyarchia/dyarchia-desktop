@@ -1482,8 +1482,8 @@ textarea.dya-field {
     --dya-ring-n: 12;
     --dya-ring-done: 0;
     --dya-ring-step: calc(1turn / var(--dya-ring-n));
-    width: 32px;
-    height: 32px;
+    width: var(--dya-size-control);
+    height: var(--dya-size-control);
     flex: none;
     border-radius: var(--dya-radius-full);
     background: conic-gradient(
@@ -2681,6 +2681,14 @@ button.dya-step__subject {
     color: var(--dya-text-muted);
 }
 
+/*
+ * The palette is the one way in: the field on top, then the apps as a grid of tiles, then the
+ * commands as rows, which scroll on their own so the tiles never leave. The grid's columns are
+ * equal and its rows one height, so every tile lines up with the one above it. The keyboard's place
+ * is the selected face, on a tile or a row; an open app wears a green light at its top left, and
+ * its pin is a key at its top right, shown under the pointer, under the keyboard, or held down
+ * while pinned.
+ */
 .dya-palette {
     position: fixed;
     inset: 12vh 0 auto;
@@ -2704,14 +2712,94 @@ button.dya-step__subject {
     font-size: var(--dya-size-body-sm);
 }
 
+.dya-palette__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-2);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.dya-palette__apps {
+    display: grid;
+    flex: none;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    grid-auto-rows: 1fr;
+    gap: var(--dya-space-2);
+    max-height: 40vh;
+    margin: 0;
+    padding: 0 0 var(--dya-space-1);
+    overflow-y: auto;
+    list-style: none;
+}
+
+.dya-palette__app {
+    position: relative;
+    display: grid;
+    min-width: 0;
+}
+
+.dya-palette__app > .dya-tile {
+    align-items: center;
+    justify-content: center;
+    gap: var(--dya-space-2);
+    min-width: 0;
+    padding: var(--dya-space-4) var(--dya-space-2) var(--dya-space-3);
+    text-align: center;
+}
+
+.dya-palette__app > .dya-tile > .dya-tile__icon {
+    width: 24px;
+    height: 24px;
+}
+
+.dya-palette__app > .dya-tile > .dya-tile__name {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: var(--dya-size-body-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dya-palette__app[aria-selected="true"] > .dya-tile {
+    background-color: var(--dya-selected);
+    border-color: var(--dya-rim-hover);
+}
+
+.dya-palette__app > .dya-tile > .dya-light {
+    position: absolute;
+    top: var(--dya-space-2);
+    left: var(--dya-space-2);
+}
+
+.dya-palette__pin {
+    position: absolute;
+    top: var(--dya-space-1);
+    right: var(--dya-space-1);
+    opacity: 0;
+}
+
+.dya-palette__app:hover > .dya-palette__pin,
+.dya-palette__app[aria-selected="true"] > .dya-palette__pin,
+.dya-palette__pin:focus-visible,
+.dya-palette__pin.dya-key--active {
+    opacity: 1;
+}
+
 .dya-palette__list {
     display: flex;
     flex-direction: column;
     gap: 2px;
     margin: 0;
     padding: 0;
+    min-height: 0;
     overflow-y: auto;
     list-style: none;
+}
+
+.dya-palette__apps + .dya-palette__list {
+    padding-top: var(--dya-space-2);
+    border-top: var(--dya-border-width) solid var(--dya-hairline);
 }
 
 .dya-palette__row {
@@ -2757,14 +2845,6 @@ button.dya-step__subject {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.dya-palette__hint {
-    flex: none;
-    font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-mono-xs);
-    letter-spacing: var(--dya-tracking-mono);
-    color: var(--dya-text-muted);
 }
 
 .dya-palette__empty {

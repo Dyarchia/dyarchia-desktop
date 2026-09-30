@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { DockviewApi } from 'dockview-react'
+import { loadApps, touchApp } from './apps'
 import { DockLayout } from './layout/DockLayout'
 import { Notices } from './components/Notices'
 import { Palette } from './components/Palette'
 import { TopBar } from './components/TopBar'
 import { ModalPanel } from './panels/ModalPanel'
-import { basePanelId, getRegisteredPanels, onRegistryChange, panelRenderer } from './panels/registry'
+import { basePanelId, getPanel, getRegisteredPanels, onRegistryChange, panelRenderer } from './panels/registry'
 import { installOpeners } from './panels/openers'
 import { loadPlugins } from './plugins/host'
 import { installShortcuts } from './shortcuts'
@@ -17,11 +18,13 @@ export function App(): React.JSX.Element {
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
     const [modal, setModal] = useState<string | null>(null)
     const [palette, setPalette] = useState(false)
+    const [activeId, setActiveId] = useState<string | null>(null)
     const isModal = (id: string): boolean =>
         getRegisteredPanels().some((panel) => panel.descriptor.id === id && panel.descriptor.modal)
 
     useEffect(() => {
         const unsubscribe = onRegistryChange(() => setRevision((r) => r + 1))
+        void loadApps()
         loadPlugins().finally(() => setPluginsReady(true))
         return unsubscribe
     }, [])
@@ -52,22 +55,19 @@ export function App(): React.JSX.Element {
             refreshOpenPanels(dockApi)
             dockApi.onDidAddPanel(() => refreshOpenPanels(dockApi))
             dockApi.onDidRemovePanel(() => refreshOpenPanels(dockApi))
+            setActiveId(dockApi.activePanel ? basePanelId(dockApi.activePanel.id) : null)
+            dockApi.onDidActivePanelChange(({ panel }) => {
+                const id = panel ? basePanelId(panel.id) : null
+                setActiveId(id)
+                if (id) touchApp(id)
+            })
         },
         [refreshOpenPanels]
     )
 
-    const handleToggle = useCallback(
+    const place = useCallback(
         (id: string) => {
             if (!api) return
-            if (isModal(id)) {
-                setModal((current) => (current === id ? null : id))
-                return
-            }
-            const instances = api.panels.filter((panel) => basePanelId(panel.id) === id)
-            if (instances.length > 0) {
-                for (const panel of instances) api.removePanel(panel)
-                return
-            }
             const registered = getRegisteredPanels().find(
                 (panel) => panel.descriptor.id === id
             )
@@ -95,6 +95,7 @@ export function App(): React.JSX.Element {
             if (!api) return undefined
             if (isModal(id)) {
                 setModal(id)
+                touchApp(id)
                 return id
             }
             const chosen = instanceId ? api.getPanel(instanceId) : undefined
@@ -105,7 +106,7 @@ export function App(): React.JSX.Element {
             const instances = api.panels.filter((panel) => basePanelId(panel.id) === id)
             const registered = getRegisteredPanels().find((panel) => panel.descriptor.id === id)
             if (instances.length === 0) {
-                handleToggle(id)
+                place(id)
                 return api.getPanel(id)?.id
             }
             if (instanceId !== null || !registered?.descriptor.duplicable) {
@@ -124,7 +125,7 @@ export function App(): React.JSX.Element {
                 ...panelRenderer(registered.descriptor)
             }).id
         },
-        [api, handleToggle]
+        [api, place]
     )
 
     useEffect(() => {
@@ -143,11 +144,7 @@ export function App(): React.JSX.Element {
     return (
         <div className="shell">
             <div className="shell-top" inert={palette}>
-                <TopBar
-                    panels={getRegisteredPanels().map((panel) => panel.descriptor)}
-                    openPanelIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
-                    onToggle={handleToggle}
-                />
+                <TopBar palette={palette} onLauncher={() => setPalette((open) => !open)} />
             </div>
             <div className="shell-body" inert={modal !== null || palette}>
                 {pluginsReady ? (
@@ -167,6 +164,8 @@ export function App(): React.JSX.Element {
             {palette && (
                 <Palette
                     panels={getRegisteredPanels().map((panel) => panel.descriptor)}
+                    openIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
+                    activeOwner={getPanel(modal ?? activeId ?? '')?.descriptor.owner ?? null}
                     onOpen={handleOpen}
                     onClose={() => setPalette(false)}
                 />

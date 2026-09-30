@@ -1,23 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { glyph } from '@dyarchia/sdk'
+import { orderApps, togglePin, useApps } from '../apps'
 import { getCommands, onCommandsChange } from '../commands'
 import type { PanelDescriptor } from '../panels/registry'
 import { pluginIcon } from '../plugins/host'
-import { PANEL_KEYS } from '../shortcuts'
 import { Svg } from './Svg'
+import { Tip, useTipId } from './Tip'
 
 interface PaletteProps {
     panels: PanelDescriptor[]
+    openIds: Set<string>
+    activeOwner: string | null
     onOpen: (id: string) => void
     onClose: () => void
 }
 
-interface Entry {
+interface Row {
     key: string
     name: string
     icon?: string
-    hint?: string
     run: () => void | Promise<void>
 }
+
+const PIN = glyph('pin')
 
 function score(name: string, query: string): number | null {
     if (!query) return 0
@@ -35,12 +40,70 @@ function score(name: string, query: string): number | null {
     return 1000 + gaps
 }
 
-export function Palette({ panels, onOpen, onClose }: PaletteProps): React.JSX.Element {
+function ranked<T>(items: T[], name: (item: T) => string, query: string): T[] {
+    return items
+        .map((item, order) => ({ item, order, rank: score(name(item), query) }))
+        .filter((scored): scored is { item: T; order: number; rank: number } => scored.rank !== null)
+        .sort((a, b) => a.rank - b.rank || a.order - b.order)
+        .map((scored) => scored.item)
+}
+
+function Icon({ icon, className }: { icon?: string; className: string }): React.JSX.Element {
+    return icon?.trim().startsWith('<svg') ? (
+        <Svg className={className} svg={icon} />
+    ) : (
+        <span className={className} aria-hidden="true" />
+    )
+}
+
+interface AppProps {
+    panel: PanelDescriptor
+    position: number
+    selected: boolean
+    open: boolean
+    pinned: boolean
+    onPoint: () => void
+    onRun: () => void
+}
+
+function App({ panel, position, selected, open, pinned, onPoint, onRun }: AppProps): React.JSX.Element {
+    const tip = useTipId()
+    const label = pinned ? 'Unpin' : 'Pin'
+    return (
+        <li
+            id={`palette-${position}`}
+            className="dya-palette__app"
+            role="option"
+            aria-selected={selected}
+            onPointerMove={onPoint}
+        >
+            <button className="dya-tile" tabIndex={-1} onClick={onRun}>
+                {open && <span className="dya-light" role="img" aria-label="Open" />}
+                <Icon icon={panel.icon} className="dya-tile__icon" />
+                <span className="dya-tile__name">{panel.title}</span>
+            </button>
+            <button
+                className={`dya-key dya-palette__pin${pinned ? ' dya-key--active' : ''}`}
+                tabIndex={-1}
+                aria-label={label}
+                aria-pressed={pinned}
+                interestfor={tip}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => togglePin(panel.id)}
+                dangerouslySetInnerHTML={{ __html: PIN }}
+            />
+            <Tip id={tip} label={label} />
+        </li>
+    )
+}
+
+export function Palette({ panels, openIds, activeOwner, onOpen, onClose }: PaletteProps): React.JSX.Element {
     const [query, setQuery] = useState('')
     const [index, setIndex] = useState(0)
     const [commands, setCommands] = useState(getCommands)
+    const apps = useApps()
     const field = useRef<HTMLInputElement>(null)
-    const list = useRef<HTMLUListElement>(null)
+    const grid = useRef<HTMLUListElement>(null)
 
     useEffect(() => onCommandsChange(() => setCommands(getCommands())), [])
 
@@ -50,53 +113,93 @@ export function Palette({ panels, onOpen, onClose }: PaletteProps): React.JSX.El
         return () => opener?.focus()
     }, [])
 
-    const entries = useMemo<Entry[]>(() => {
-        const all: Entry[] = [
-            ...panels.map((panel) => ({
-                key: `panel:${panel.id}`,
-                name: panel.title,
-                icon: panel.icon,
-                hint: PANEL_KEYS[panel.id],
-                run: () => onOpen(panel.id)
-            })),
-            ...commands.map((command) => ({
-                key: `command:${command.id}`,
-                name: command.title,
-                icon: command.icon ?? (command.owner ? pluginIcon(command.owner) : undefined),
-                run: command.run
-            }))
-        ]
-        const wanted = query.trim().toLowerCase()
-        return all
-            .map((entry) => ({ entry, rank: score(entry.name, wanted) }))
-            .filter((scored): scored is { entry: Entry; rank: number } => scored.rank !== null)
-            .sort((a, b) => a.rank - b.rank)
-            .map((scored) => scored.entry)
-    }, [panels, commands, query, onOpen])
+    const wanted = query.trim().toLowerCase()
+
+    const [order] = useState(() => orderApps(panels).map((panel) => panel.id))
+
+    /*
+     * The order is taken once, when the palette opens: a tile that jumped to the front the moment
+     * its pin was pressed would leave the pointer on another tile. A pin takes its place next time.
+     */
+    const tiles = useMemo(() => {
+        const at = (id: string): number => {
+            const found = order.indexOf(id)
+            return found === -1 ? Infinity : found
+        }
+        const sorted = [...panels].sort((a, b) => at(a.id) - at(b.id) || a.title.localeCompare(b.title))
+        return ranked(sorted, (panel) => panel.title, wanted)
+    }, [panels, order, wanted])
+
+    const rows = useMemo<Row[]>(() => {
+        const mine = commands.filter((command) => activeOwner && command.owner === activeOwner)
+        const rest = commands.filter((command) => !activeOwner || command.owner !== activeOwner)
+        const all = [...mine, ...rest].map((command) => ({
+            key: command.id,
+            name: command.title,
+            icon: command.icon ?? (command.owner ? pluginIcon(command.owner) : undefined),
+            run: command.run
+        }))
+        return ranked(all, (row) => row.name, wanted)
+    }, [commands, activeOwner, wanted])
+
+    const count = tiles.length + rows.length
 
     useEffect(() => setIndex(0), [query])
 
     useEffect(() => {
-        list.current?.children[index]?.scrollIntoView({ block: 'nearest' })
+        document.getElementById(`palette-${index}`)?.scrollIntoView({ block: 'nearest' })
     }, [index])
 
-    const run = (entry: Entry | undefined): void => {
-        if (!entry) return
+    const run = (position: number): void => {
+        if (position < tiles.length) {
+            const panel = tiles[position]
+            onClose()
+            onOpen(panel.id)
+            return
+        }
+        const row = rows[position - tiles.length]
+        if (!row) return
         onClose()
-        void entry.run()
+        void row.run()
+    }
+
+    const columns = (): number => {
+        const template = grid.current ? getComputedStyle(grid.current).gridTemplateColumns : ''
+        return Math.max(1, template.split(' ').filter(Boolean).length)
+    }
+
+    const vertical = (current: number, down: boolean): number => {
+        const cols = columns()
+        const inGrid = current < tiles.length
+        if (down) {
+            if (inGrid && current + cols < tiles.length) return current + cols
+            if (inGrid && Math.floor(current / cols) < Math.floor((tiles.length - 1) / cols)) {
+                return tiles.length - 1
+            }
+            if (inGrid) return tiles.length < count ? tiles.length : 0
+            return (current + 1) % count
+        }
+        if (inGrid && current - cols < 0) return count - 1
+        if (inGrid && current - cols >= 0) return current - cols
+        if (current === tiles.length && tiles.length > 0) {
+            const lastRow = Math.floor((tiles.length - 1) / cols) * cols
+            return Math.min(lastRow, tiles.length - 1)
+        }
+        return (current - 1 + count) % count
     }
 
     const onKeyDown = (event: React.KeyboardEvent): void => {
-        const count = entries.length
-        if (event.key === 'ArrowDown' && count > 0) {
+        const inGrid = index < tiles.length
+        if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && count > 0) {
             event.preventDefault()
-            setIndex((current) => (current + 1) % count)
-        } else if (event.key === 'ArrowUp' && count > 0) {
+            setIndex((current) => vertical(current, event.key === 'ArrowDown'))
+        } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && inGrid && !event.shiftKey) {
             event.preventDefault()
-            setIndex((current) => (current - 1 + count) % count)
+            const step = event.key === 'ArrowRight' ? 1 : -1
+            setIndex((current) => Math.min(tiles.length - 1, Math.max(0, current + step)))
         } else if (event.key === 'Enter') {
             event.preventDefault()
-            run(entries[index])
+            run(index)
         } else if (event.key === 'Escape') {
             event.preventDefault()
             event.stopPropagation()
@@ -113,8 +216,8 @@ export function Palette({ panels, onOpen, onClose }: PaletteProps): React.JSX.El
                     className="dya-field"
                     role="combobox"
                     aria-expanded="true"
-                    aria-controls="shell-palette-list"
-                    aria-activedescendant={entries[index] ? `palette-${index}` : undefined}
+                    aria-controls="shell-palette-body"
+                    aria-activedescendant={count > 0 ? `palette-${index}` : undefined}
                     aria-label="Search"
                     placeholder="Search"
                     spellCheck={false}
@@ -122,30 +225,48 @@ export function Palette({ panels, onOpen, onClose }: PaletteProps): React.JSX.El
                     onChange={(event) => setQuery(event.target.value)}
                     onKeyDown={onKeyDown}
                 />
-                {entries.length === 0 ? (
+                {count === 0 ? (
                     <div className="dya-palette__empty">No match</div>
                 ) : (
-                    <ul ref={list} id="shell-palette-list" className="dya-palette__list" role="listbox">
-                        {entries.map((entry, position) => (
-                            <li
-                                key={entry.key}
-                                id={`palette-${position}`}
-                                className="dya-palette__row"
-                                role="option"
-                                aria-selected={position === index}
-                                onPointerMove={() => setIndex(position)}
-                                onClick={() => run(entry)}
-                            >
-                                {entry.icon?.trim().startsWith('<svg') ? (
-                                    <Svg className="dya-palette__icon" svg={entry.icon} />
-                                ) : (
-                                    <span className="dya-palette__icon" aria-hidden="true" />
-                                )}
-                                <span className="dya-palette__name">{entry.name}</span>
-                                {entry.hint && <kbd className="dya-palette__hint">{entry.hint}</kbd>}
-                            </li>
-                        ))}
-                    </ul>
+                    <div id="shell-palette-body" className="dya-palette__body" role="listbox">
+                        {tiles.length > 0 && (
+                            <ul ref={grid} className="dya-palette__apps" role="group" aria-label="Apps">
+                                {tiles.map((panel, position) => (
+                                    <App
+                                        key={panel.id}
+                                        panel={panel}
+                                        position={position}
+                                        selected={position === index}
+                                        open={openIds.has(panel.id)}
+                                        pinned={apps.pinned.includes(panel.id)}
+                                        onPoint={() => setIndex(position)}
+                                        onRun={() => run(position)}
+                                    />
+                                ))}
+                            </ul>
+                        )}
+                        {rows.length > 0 && (
+                            <ul className="dya-palette__list" role="group" aria-label="Commands">
+                                {rows.map((row, offset) => {
+                                    const position = tiles.length + offset
+                                    return (
+                                        <li
+                                            key={row.key}
+                                            id={`palette-${position}`}
+                                            className="dya-palette__row"
+                                            role="option"
+                                            aria-selected={position === index}
+                                            onPointerMove={() => setIndex(position)}
+                                            onClick={() => run(position)}
+                                        >
+                                            <Icon icon={row.icon} className="dya-palette__icon" />
+                                            <span className="dya-palette__name">{row.name}</span>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        )}
+                    </div>
                 )}
             </div>
         </>

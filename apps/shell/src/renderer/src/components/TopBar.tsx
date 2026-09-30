@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
+import { glyph } from '@dyarchia/sdk'
 import { registerCommand } from '../commands'
-import type { PanelDescriptor } from '../panels/registry'
-import { Svg } from './Svg'
 import { Tip, useTipId } from './Tip'
 
 interface TopBarProps {
-    panels: PanelDescriptor[]
-    openPanelIds: Set<string>
-    onToggle: (id: string) => void
+    palette: boolean
+    onLauncher: () => void
 }
+
+const LAUNCHER_ICON = glyph('launcher')
 
 const MINIMIZE_ICON =
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><line x1="2" y1="6" x2="10" y2="6"/></svg>'
@@ -17,34 +17,20 @@ const MAXIMIZE_ICON =
 const CLOSE_ICON =
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><line x1="2.5" y1="2.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="2.5" x2="2.5" y2="9.5"/></svg>'
 
-function PanelIcon({ icon }: { icon: string }): React.JSX.Element {
-    if (icon.trim().startsWith('<svg')) {
-        return <Svg className="topbar-icon" svg={icon} />
-    }
-    return <span>{icon}</span>
-}
-
-interface KeyProps {
-    label: string
-    active?: boolean
-    onClick: () => void
-    children: React.ReactNode
-}
-
-function TipKey({ label, active, onClick, children }: KeyProps): React.JSX.Element {
+function LauncherKey({ active, onClick }: { active: boolean; onClick: () => void }): React.JSX.Element {
     const id = useTipId()
     return (
         <>
             <button
                 className={`dya-key${active ? ' dya-key--active' : ''}`}
-                aria-label={label}
-                aria-pressed={active}
+                aria-label="Apps"
+                aria-haspopup="dialog"
+                aria-expanded={active}
                 interestfor={id}
                 onClick={onClick}
-            >
-                {children}
-            </button>
-            <Tip id={id} label={label} />
+                dangerouslySetInnerHTML={{ __html: LAUNCHER_ICON }}
+            />
+            <Tip id={id} label="Apps" />
         </>
     )
 }
@@ -155,17 +141,11 @@ function Build(): React.JSX.Element {
     )
 }
 
-function byToolbar(a: PanelDescriptor, b: PanelDescriptor): number {
-    return (a.toolbar ?? Infinity) - (b.toolbar ?? Infinity) || a.title.localeCompare(b.title)
-}
-
 function windowAction(action: string): void {
     void window.dyarchia?.invoke(`shell:window:${action}`)
 }
 
-export function TopBar({ panels, openPanelIds, onToggle }: TopBarProps): React.JSX.Element {
-    const ordered = [...panels].sort(byToolbar)
-
+export function TopBar({ palette, onLauncher }: TopBarProps): React.JSX.Element {
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="dya-toolbar topbar-build">
@@ -173,16 +153,7 @@ export function TopBar({ panels, openPanelIds, onToggle }: TopBarProps): React.J
             </div>
             <div className="topbar-right">
                 <div className="dya-toolbar topbar-actions">
-                    {ordered.map((panel) => (
-                        <TipKey
-                            key={panel.id}
-                            label={panel.title}
-                            active={openPanelIds.has(panel.id)}
-                            onClick={() => onToggle(panel.id)}
-                        >
-                            <PanelIcon icon={panel.icon} />
-                        </TipKey>
-                    ))}
+                    <LauncherKey active={palette} onClick={onLauncher} />
                 </div>
                 <div className="dya-join topbar-window-controls">
                     <button

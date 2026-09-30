@@ -2610,7 +2610,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                         if (change.text.trim()) {
                             const more = el('details', 'kanban-more')
                             const summary = el('summary', 'dya-label', change.truncated ? 'Diff, cut' : 'Diff')
-                            const code = el('pre', 'dya-code')
+                            const code = el('pre', 'dya-code dya-code--wrap')
                             code.innerHTML = highlight(change.text, 'diff')
                             more.append(summary, code)
                             holder.append(more)

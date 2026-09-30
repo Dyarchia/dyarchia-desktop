@@ -176,6 +176,15 @@
     tab-size: 4;
 }
 
+/*
+ * Text that happens to be in a code block, a diff of a crawled page or of a run, wraps at the
+ * block's edge: a line longer than the panel is read, never scrolled sideways for.
+ */
+.dya-code--wrap {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .dya-code code {
     font: inherit;
     letter-spacing: inherit;
@@ -2217,8 +2226,6 @@ button.dya-entry__head {
 
 .dya-entry__body {
     margin: 0;
-    max-height: 320px;
-    overflow-y: auto;
     padding: var(--dya-space-2);
     border-radius: var(--dya-radius);
     background: var(--dya-field);

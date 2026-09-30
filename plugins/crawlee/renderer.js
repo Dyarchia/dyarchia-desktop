@@ -113,10 +113,6 @@ const STYLE = `
     flex: 1;
     min-width: 0;
 }
-.crw-diff {
-    max-height: 420px;
-    overflow: auto;
-}
 /*
  * The console and the handle that sizes it. The handle sits inside the region so that one :has()
  * rule hides both when there is no output.
@@ -397,7 +393,7 @@ function stateBadge(corpus) {
  * A unified diff with its added lines in green and its removed lines in red, one element per line.
  */
 function diffBlock(text) {
-    const pre = el('pre', 'dya-code crw-diff')
+    const pre = el('pre', 'dya-code dya-code--wrap')
     for (const line of String(text).split('\n')) {
         const tone = line.startsWith('+') && !line.startsWith('+++')
             ? 'dya-code__addition'
@@ -711,10 +707,12 @@ function mount(ctx, container, handle) {
         }
         head.append(tally)
         const changes = el('div', 'crw-changes')
+        const mixed = new Set(pages.map((page) => page.kind)).size > 1
         for (const page of pages) {
             const item = el('details', 'crw-change')
             const line = el('summary', 'crw-change-head')
-            line.append(el('span', 'dya-name', page.title || page.url), el('span', 'dya-tag', KINDS[page.kind] ?? page.kind))
+            line.append(el('span', 'dya-name', page.title || page.url))
+            if (mixed) line.append(el('span', 'dya-tag', KINDS[page.kind] ?? page.kind))
             item.append(line)
             if (page.diff) item.append(diffBlock(page.diff))
             changes.append(item)

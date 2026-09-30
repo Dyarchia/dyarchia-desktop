@@ -52,8 +52,6 @@ export const STYLES = `
 
 .kanban-more > .dya-code {
     margin-top: var(--dya-space-2);
-    max-height: 320px;
-    overflow: auto;
 }
 
 /*

@@ -63,6 +63,10 @@ textarea {
     border-radius: var(--dya-radius-full);
 }
 
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

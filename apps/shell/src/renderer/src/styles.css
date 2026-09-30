@@ -6,9 +6,9 @@ body,
 }
 
 /*
- * The ground the panels sit on: black, with a dark crimson light coming in at two corners, under
- * a grain blended as an overlay, so it darkens as much as it lightens and the black stays black
- * wherever the light dies. The panels are translucent, so that light shows through them and no
+ * The ground the panels sit on: black, with a cold clear light coming in at two corners and dead
+ * within a quarter of the diagonal, under a grain blended as an overlay, so it darkens as much as
+ * it lightens and the black stays black wherever the light dies. The panels are translucent, so that light shows through them and no
  * panel needs a `backdrop-filter`. Both are static images, painted once.
  */
 .shell {
@@ -31,9 +31,8 @@ body,
 }
 
 /*
- * The title bar is 40px and holds three things: the build on the left, the wordmark on the centre
- * of the window whatever the sides hold, the panel keys and the window's own keys on the right.
- * On the empty window the launcher carries the large wordmark and the bar leaves the centre empty.
+ * The title bar is 40px: the build on the left, the launcher key and the window's own keys on the
+ * right. The wordmark lives only on the empty window.
  */
 .topbar {
     position: relative;
@@ -52,24 +51,6 @@ body,
     min-width: 0;
 }
 
-.topbar-brand {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    pointer-events: none;
-}
-
-/*
- * The wordmark is decoration, so it is what gives way when the window is narrow. The title bar is
- * the window, so here the window's width is the right question.
- */
-@media (max-width: 1000px) {
-    .topbar-brand {
-        display: none;
-    }
-}
-
-.topbar-alpha,
 .topbar-update {
     flex: none;
     white-space: nowrap;
@@ -88,42 +69,24 @@ body,
     -webkit-app-region: no-drag;
 }
 
-.topbar-overflow {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.topbar-menu {
-    position: absolute;
-    top: calc(100% + var(--dya-space-2));
-    right: 0;
-    z-index: 20;
-    min-width: 168px;
-}
-
-.topbar-menu .topbar-icon,
-.topbar-menu .topbar-icon svg {
-    width: 18px;
-    height: 18px;
-}
-
-.topbar-icon,
-.topbar-icon svg {
-    display: block;
-    width: 18px;
-    height: 18px;
-}
-
 .topbar-window-controls {
-    display: flex;
-    height: 100%;
+    padding-right: var(--dya-space-3);
+    padding-bottom: 3px;
     -webkit-app-region: no-drag;
+}
+
+.shell-top {
+    display: contents;
 }
 
 .shell-body {
     flex: 1;
     min-height: 0;
+}
+
+.shell-palette-scrim {
+    position: fixed;
+    z-index: 949;
 }
 
 .shell-loading {
@@ -143,7 +106,7 @@ body,
     --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
     --dv-tab-divider-color: transparent;
     --dv-separator-border: transparent;
-    --dv-icon-hover-background-color: var(--dya-flat-hover);
+    --dv-icon-hover-background-color: var(--dya-hover);
     --dv-border-radius: var(--dya-radius-chassis);
     --dv-tab-border-radius: 0;
     --dv-tabs-and-actions-container-height: 40px;
@@ -248,10 +211,15 @@ body,
     box-shadow: inset 0 -2px 0 var(--dya-accent);
 }
 
+.panel-tab-title {
+    max-inline-size: 28ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .panel-tab-actions {
     display: flex;
     align-items: center;
-    gap: 2px;
     margin-inline-start: var(--dya-space-1);
 }
 
@@ -262,10 +230,11 @@ body,
 /*
  * A panel that cannot be duplicated keeps the place of the key that would, so the open tab ends
  * the same distance after its name whichever plugin it is and its close key sits at one offset.
+ * The strip overlaps its two keys by their shared rim, and the slot is that much narrower.
  */
 .panel-tab-slot {
-    width: 22px;
-    height: 22px;
+    width: calc(var(--dya-size-control) - var(--dya-border-width));
+    height: var(--dya-size-control);
 }
 
 .plugin-panel-container {
@@ -301,19 +270,9 @@ body,
     gap: var(--dya-space-4);
 }
 
-.shell-modal-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
-}
-
 .shell-modal-mark {
     width: 22px;
     height: 22px;
-}
-
-.shell-modal-tools {
-    margin-inline-start: auto;
 }
 
 .shell-modal-body {

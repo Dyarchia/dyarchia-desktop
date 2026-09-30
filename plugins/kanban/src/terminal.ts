@@ -44,10 +44,10 @@ export function openTerminal(
 ): Attached {
     const theme = (): ITheme => ({
         ...ANSI,
-        background: ctx.token('sunken'),
+        background: ctx.token('field'),
         foreground: ctx.token('text'),
         cursor: ctx.token('text'),
-        cursorAccent: ctx.token('sunken'),
+        cursorAccent: ctx.token('field'),
         selectionBackground: ctx.token('accent-soft')
     })
 

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { DockviewApi } from 'dockview-react'
+import { loadApps } from './apps'
 import { DockLayout } from './layout/DockLayout'
 import { Notices } from './components/Notices'
+import { Palette } from './components/Palette'
 import { TopBar } from './components/TopBar'
 import { ModalPanel } from './panels/ModalPanel'
 import { basePanelId, getRegisteredPanels, onRegistryChange, panelRenderer } from './panels/registry'
@@ -15,11 +17,13 @@ export function App(): React.JSX.Element {
     const [, setRevision] = useState(0)
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
     const [modal, setModal] = useState<string | null>(null)
+    const [palette, setPalette] = useState(false)
     const isModal = (id: string): boolean =>
         getRegisteredPanels().some((panel) => panel.descriptor.id === id && panel.descriptor.modal)
 
     useEffect(() => {
         const unsubscribe = onRegistryChange(() => setRevision((r) => r + 1))
+        void loadApps()
         loadPlugins().finally(() => setPluginsReady(true))
         return unsubscribe
     }, [])
@@ -54,18 +58,9 @@ export function App(): React.JSX.Element {
         [refreshOpenPanels]
     )
 
-    const handleToggle = useCallback(
+    const place = useCallback(
         (id: string) => {
             if (!api) return
-            if (isModal(id)) {
-                setModal((current) => (current === id ? null : id))
-                return
-            }
-            const instances = api.panels.filter((panel) => basePanelId(panel.id) === id)
-            if (instances.length > 0) {
-                for (const panel of instances) api.removePanel(panel)
-                return
-            }
             const registered = getRegisteredPanels().find(
                 (panel) => panel.descriptor.id === id
             )
@@ -89,25 +84,48 @@ export function App(): React.JSX.Element {
     )
 
     const handleOpen = useCallback(
-        (id: string) => {
-            if (!api) return
+        (id: string, instanceId?: string | null): string | undefined => {
+            if (!api) return undefined
             if (isModal(id)) {
                 setModal(id)
-                return
+                return id
             }
-            const instance = api.panels.find((panel) => basePanelId(panel.id) === id)
-            if (instance) {
-                instance.api.setActive()
-                return
+            const chosen = instanceId ? api.getPanel(instanceId) : undefined
+            if (chosen) {
+                chosen.api.setActive()
+                return chosen.id
             }
-            handleToggle(id)
+            const instances = api.panels.filter((panel) => basePanelId(panel.id) === id)
+            const registered = getRegisteredPanels().find((panel) => panel.descriptor.id === id)
+            if (instances.length === 0) {
+                place(id)
+                return api.getPanel(id)?.id
+            }
+            if (instanceId !== null || !registered?.descriptor.duplicable) {
+                instances[0].api.setActive()
+                return instances[0].id
+            }
+            const active = api.activePanel
+            const beside = active && basePanelId(active.id) === id ? active : instances[0]
+            let n = 2
+            while (api.getPanel(`${id}#${n}`)) n++
+            return api.addPanel({
+                id: `${id}#${n}`,
+                component: 'plugin-panel',
+                title: registered.descriptor.title,
+                position: { referencePanel: beside.id, direction: 'within' },
+                ...panelRenderer(registered.descriptor)
+            }).id
         },
-        [api, handleToggle]
+        [api, place]
     )
 
     useEffect(() => {
         if (!api) return
-        return installShortcuts(api, { openPanel: handleOpen })
+        return installShortcuts(api, {
+            openPanel: handleOpen,
+            togglePalette: () => setPalette((open) => !open)
+        })
     }, [api, handleOpen])
 
     useEffect(() => {
@@ -117,24 +135,32 @@ export function App(): React.JSX.Element {
 
     return (
         <div className="shell">
-            <TopBar
-                panels={getRegisteredPanels().map((panel) => panel.descriptor)}
-                openPanelIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
-                onToggle={handleToggle}
-                brand={pluginsReady && (openPanelIds.size > 0 || modal !== null)}
-            />
-            <div className="shell-body" inert={modal !== null}>
+            <div className="shell-top" inert={palette}>
+                <TopBar palette={palette} onLauncher={() => setPalette((open) => !open)} />
+            </div>
+            <div className="shell-body" inert={modal !== null || palette}>
                 {pluginsReady ? (
                     <DockLayout onReady={handleReady} onOpen={handleOpen} />
                 ) : (
-                    <div className="dya-loading shell-loading">
+                    <div className="dya-loading shell-loading" role="status" aria-label="Loading">
                         <span className="dya-carved">Dyarchia desktop</span>
                         <span className="dya-ring dya-ring--busy" />
-                        <span>Loading plugins…</span>
                     </div>
                 )}
             </div>
-            {modal && <ModalPanel key={modal} id={modal} onClose={() => setModal(null)} />}
+            {modal && (
+                <div className="shell-top" inert={palette}>
+                    <ModalPanel key={modal} id={modal} onClose={() => setModal(null)} />
+                </div>
+            )}
+            {palette && (
+                <Palette
+                    panels={getRegisteredPanels().map((panel) => panel.descriptor)}
+                    openIds={modal ? new Set([...openPanelIds, modal]) : openPanelIds}
+                    onOpen={handleOpen}
+                    onClose={() => setPalette(false)}
+                />
+            )}
             <Notices />
         </div>
     )

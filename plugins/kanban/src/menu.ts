@@ -24,7 +24,6 @@ export interface MenuRow {
 export interface MenuOptions {
     anchor: HTMLElement
     rows: MenuRow[]
-    filter?: string
     search?: boolean
     onPick(row: MenuRow, leaf: MenuLeaf): void
 }
@@ -143,9 +142,9 @@ export function openMenu(options: MenuOptions): () => void {
     root.tabIndex = -1
 
     const search = document.createElement('input')
-    search.className = 'dya-field dya-field--sm dya-menu__search'
+    search.className = 'dya-field dya-menu__search'
     search.type = 'text'
-    search.placeholder = options.filter ?? 'filter'
+    search.placeholder = 'Search'
     search.hidden = !options.search && options.rows.length < FILTER_FROM
 
     const list = document.createElement('div')
@@ -257,7 +256,7 @@ export function openMenu(options: MenuOptions): () => void {
         if (!rendered.length) {
             const empty = document.createElement('div')
             empty.className = 'dya-empty dya-menu__empty'
-            empty.textContent = 'no match'
+            empty.textContent = 'No match'
             list.appendChild(empty)
         }
     }

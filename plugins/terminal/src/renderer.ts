@@ -115,6 +115,15 @@ function commandOf(line: string): { name: string; shape: number } | null {
 }
 
 export function activate(ctx: PluginContext): void {
+    ctx.registerCommand({
+        id: 'terminal.new',
+        title: 'New CLI',
+        icon: TERMINAL_ICON,
+        run: async () => {
+            await ctx.shell.show('terminal', { fresh: true })
+        }
+    })
+
     ctx.registerPanel(
         {
             id: 'terminal',
@@ -130,10 +139,10 @@ export function activate(ctx: PluginContext): void {
             ...Object.fromEntries(
                 Object.entries(ANSI_TOKENS).map(([slot, name]) => [slot, ctx.token(name)])
             ),
-            background: ctx.token('sunken'),
+            background: ctx.token('field'),
             foreground: ctx.token('text'),
             cursor: ctx.token('text'),
-            cursorAccent: ctx.token('sunken'),
+            cursorAccent: ctx.token('field'),
             selectionBackground: ctx.token('accent-soft')
         })
 
@@ -162,16 +171,16 @@ export function activate(ctx: PluginContext): void {
         /*
          * The pty lives in its own process and starting it is not instant. A terminal that shows a
          * black rectangle while that happens reads as a terminal that is broken, which is what the
-         * first open of a session looked like. It says it is attaching until the channel exists,
-         * and stops saying it on the frame the channel arrives rather than on a timer.
+         * first open of a session looked like. A turning ring shows until the channel exists, and
+         * goes on the frame the channel arrives rather than on a timer.
          */
         const connecting = document.createElement('div')
         connecting.className = 'dya-loading dyarchia-terminal-connecting'
-        const connectingText = document.createElement('span')
-        connectingText.textContent = 'attaching'
+        connecting.setAttribute('role', 'status')
+        connecting.setAttribute('aria-label', 'Starting')
         const connectingRing = document.createElement('span')
         connectingRing.className = 'dya-ring dya-ring--busy'
-        connecting.append(connectingRing, connectingText)
+        connecting.append(connectingRing)
         container.appendChild(connecting)
 
         let port: MessagePort | null = null

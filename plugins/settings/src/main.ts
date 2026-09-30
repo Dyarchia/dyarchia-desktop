@@ -5,6 +5,8 @@ import { chmod, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { delimiter, join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import { needLabels } from './needs.js'
+import type { Requirement, Status } from './needs.js'
 
 /*
  * What each plugin needs before it can run, and how to go and get it.
@@ -25,26 +27,6 @@ import { pipeline } from 'node:stream/promises'
  * reaches the network, writes hundreds of megabytes and runs a binary this application did not
  * ship: the Install button, or the tick on a plugin whose requirement says it comes with it.
  */
-
-interface Requirement {
-    kind: string
-    label: string
-    name?: string
-    hint?: string
-    project?: string
-    note?: string
-    postInstall?: string[][]
-    verify?: string[]
-    assets?: Record<string, string>
-    withPlugin?: boolean
-}
-
-interface Status {
-    label: string
-    met: boolean
-    acquirable: boolean
-    detail: string
-}
 
 const UV_ASSETS: Record<string, string> = {
     'win32-x64': 'uv-x86_64-pc-windows-msvc.zip',
@@ -155,7 +137,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: requirement.label,
                 met: found !== null,
                 acquirable: false,
-                detail: requirement.hint ?? 'not on PATH'
+                detail: requirement.hint ?? 'Not on PATH'
             }
         ]
     }
@@ -166,44 +148,17 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
         const built = await exists(python)
         const verdict = built && requirement.verify ? await verify(pluginId, requirement.verify) : null
         const done = verdict === null ? built : verdict.ok
-
-        const parts: Status[] = [
+        const [, environment, ...steps] = needLabels(requirement)
+        return [
+            { label: 'uv', met: uv !== null, acquirable: true, detail: 'Not downloaded' },
             {
-                label: 'uv',
-                met: uv !== null,
+                label: environment,
+                met: done,
                 acquirable: true,
-                detail: 'downloaded first'
+                detail: verdict && !verdict.ok ? `Check exited ${verdict.code}` : 'Not built'
             },
-            {
-                label: requirement.label,
-                met: done,
-                acquirable: true,
-                detail: 'not built'
-            }
+            ...steps.map((label) => ({ label, met: done, acquirable: true, detail: 'Not fetched' }))
         ]
-
-        /* The step is named by what it fetches, not by the argv that fetches it: the command is the
-         * detail, one hover away, and `uv playwright install chromium` as a label is a chip wider
-         * than the card it sits in. */
-        for (const step of requirement.postInstall ?? []) {
-            parts.push({
-                label: step[step.length - 1] ?? step.join(' '),
-                met: done,
-                acquirable: true,
-                detail: 'after the packages'
-            })
-        }
-
-        if (requirement.verify) {
-            const command = requirement.verify.join(' ')
-            parts.push({
-                label: 'verified',
-                met: done,
-                acquirable: true,
-                detail: verdict ? `${command} exited ${verdict.code}` : 'after the build'
-            })
-        }
-        return parts
     }
 
     if (requirement.kind === 'binary' && requirement.name) {
@@ -214,7 +169,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: requirement.label,
                 met: found !== null,
                 acquirable: found === null && asset !== undefined,
-                detail: asset ? `from ${new URL(asset).host}` : `no download for ${platformKey()}`
+                detail: asset ? `From ${new URL(asset).host}` : `No download for ${platformKey()}`
             }
         ]
     }
@@ -224,7 +179,7 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
             label: requirement.label,
             met: false,
             acquirable: false,
-            detail: `unknown kind ${requirement.kind}`
+            detail: `Unknown kind ${requirement.kind}`
         }
     ]
 }

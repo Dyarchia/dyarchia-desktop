@@ -36,6 +36,7 @@ export interface Progress {
     tool: string | null
     inputTokens: number
     outputTokens: number
+    costUsd?: number | null
     ended: boolean
     lastText: string
     terminal: TerminalBlock | null

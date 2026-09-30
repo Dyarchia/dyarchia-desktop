@@ -2,6 +2,7 @@ import type { DockviewApi } from 'dockview-react'
 
 export interface ShortcutActions {
     openPanel: (id: string) => void
+    togglePalette: () => void
 }
 
 const SETTINGS_PANEL = 'settings'
@@ -19,8 +20,8 @@ function cycle(api: DockviewApi, offset: number): void {
 }
 
 /*
- * Ctrl+W is left alone while a terminal has the focus: there it is the shell's own word
- * erase, and a panel that closes under a typist's fingers is worse than one that needs the
+ * Ctrl+W and Ctrl+K are left alone while a terminal has the focus: there they are the shell's
+ * own word erase and kill to the end of the line, and a panel that closes under a typist's fingers is worse than one that needs the
  * mouse. Zoom lives in the main process, because the application menu is null and the
  * page never sees those keys.
  */
@@ -35,6 +36,11 @@ export function installShortcuts(api: DockviewApi, actions: ShortcutActions): ()
         }
         if (event.shiftKey) return
 
+        if (event.key === 'k' && !insideTerminal(event.target)) {
+            event.preventDefault()
+            actions.togglePalette()
+            return
+        }
         if (event.key === 'w' && !insideTerminal(event.target)) {
             event.preventDefault()
             api.activePanel?.api.close()

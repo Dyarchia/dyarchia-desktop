@@ -358,6 +358,7 @@ async function resolveReview(
     if (progress) {
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
+        run.costUsd = progress.costUsd ?? run.costUsd ?? null
     }
 
     const say = (outcome: string): void => {
@@ -479,6 +480,7 @@ async function resolve(
         run.artifacts = declared.artifacts
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
+        run.costUsd = progress.costUsd ?? run.costUsd ?? null
 
         const picked = await harvest(
             meta.slug,
@@ -564,6 +566,7 @@ async function resolve(
         close(run, 'violation', events.clip(progress.lastText, 400) || null, 'no terminal block')
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
+        run.costUsd = progress.costUsd ?? run.costUsd ?? null
         if (card.protocolViolations >= VIOLATIONS) block(meta.slug, card, 'capability', 'ready')
         else land(card, 'ready')
         void events.record(meta.slug, card.id, 'violation', 'the turn ended with no terminal block', run.runId)
@@ -577,6 +580,7 @@ async function resolve(
     if (progress) {
         run.inputTokens = progress.inputTokens
         run.outputTokens = progress.outputTokens
+        run.costUsd = progress.costUsd ?? run.costUsd ?? null
     }
 
     const said = progress?.error ?? null
@@ -645,6 +649,7 @@ async function reconcile(
         if (progress) {
             run.inputTokens = progress.inputTokens
             run.outputTokens = progress.outputTokens
+            run.costUsd = progress.costUsd ?? run.costUsd ?? null
         }
 
         const finished = progress?.ended === true

@@ -297,7 +297,8 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
         terminal: null,
         error: null,
         modifiedAt: info.mtimeMs,
-        permissionMode: null
+        permissionMode: null,
+        costUsd: null
     }
 
     const texts: string[] = []
@@ -316,6 +317,16 @@ async function progress(place: string, run: Run): Promise<Progress | null> {
         if (entry.type !== 'assistant') {
             for (const match of line.matchAll(LAUNCHED)) launched.add(match[1])
             for (const match of line.matchAll(SETTLED)) settled.add(match[1])
+        }
+
+        if (entry.type === 'cost-state' && typeof entry.totalCostUSD === 'number') {
+            result.costUsd = entry.totalCostUSD
+            continue
+        }
+
+        if (entry.type === 'result' && typeof entry.total_cost_usd === 'number') {
+            result.costUsd = entry.total_cost_usd
+            continue
         }
 
         if (entry.type === 'system') {

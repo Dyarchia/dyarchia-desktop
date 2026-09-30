@@ -1,12 +1,26 @@
-import { glyph, injectStyles } from '@dyarchia/sdk'
+import { glyph, injectStyles, tips } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
+import { MIME_TYPES } from './media.js'
 
-interface OpenResult {
-    canceled?: boolean
-    name?: string
-    kind?: 'audio' | 'video'
-    src?: string
+interface Media {
+    path: string
+    name: string
+    kind: 'audio' | 'video'
+    src: string
 }
+
+interface Instance {
+    idle(): boolean
+    play(path: string): Promise<void>
+}
+
+/*
+ * Every mounted player, so a file another plugin opens reaches one: the one showing nothing if
+ * there is one, otherwise a new tab. A request for a tab that has not mounted yet waits here and
+ * is played the moment it does.
+ */
+const instances = new Map<string, Instance>()
+const waiting = new Map<string, string>()
 
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
@@ -22,18 +36,13 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
-.player-stage.player-stage--empty {
-    display: block;
-    padding: var(--dya-space-4);
-}
 .player-stage {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--dya-space-3);
+    padding: var(--dya-space-4);
+    overflow-y: auto;
 }
 .player-stage audio,
 .player-stage video {
@@ -42,9 +51,13 @@ const STYLES = `
 /*
  * The video takes the whole stage and the picture is fitted inside it: contain scales it up or
  * down to the largest size that keeps its proportion, and whatever the panel's shape leaves over
- * is bare glass on the two short sides rather than a stretched frame. Only a card with a radius
- * of its own would show where the letterbox ends, so the element has none.
+ * is bare glass on the two short sides rather than a stretched frame. Audio has no picture, so its
+ * controls stand at the top left, where the gallery's first tile stood, never an island mid-pane.
  */
+.player-stage--video {
+    padding: var(--dya-space-3);
+    overflow: hidden;
+}
 .player-stage video {
     flex: 1;
     min-height: 0;
@@ -55,12 +68,35 @@ const STYLES = `
     outline: none;
 }
 .player-stage audio {
-    width: min(420px, 90%);
+    width: min(420px, 100%);
 }
 `
 
-
 export function activate(ctx: PluginContext): void {
+    ctx.registerOpener(
+        {
+            panelId: 'player',
+            extensions: Object.keys(MIME_TYPES),
+            route: () => [...instances.entries()].find(([, instance]) => instance.idle())?.[0] ?? null
+        },
+        async (request) => {
+            const target = request.instanceId ?? [...instances.keys()][0]
+            const instance = target ? instances.get(target) : undefined
+            if (instance) await instance.play(request.path)
+            else waiting.set(target ?? '', request.path)
+        }
+    )
+
+    ctx.registerCommand({
+        id: 'player.open',
+        title: 'Open media',
+        icon: PLAYER_ICON,
+        run: async () => {
+            const path = (await ctx.invoke('pick')) as string | null
+            if (path) await ctx.shell.open({ path })
+        }
+    })
+
     ctx.registerPanel(
         {
             id: 'player',
@@ -73,96 +109,118 @@ export function activate(ctx: PluginContext): void {
 
             const root = document.createElement('div')
             root.className = 'player'
-
-            /*
-             * What is playing is the tab's title, and the key that opens another sits in the tab
-             * row once something is open. With nothing open the tile in the panel is the way in.
-             */
             const stage = document.createElement('div')
             stage.className = 'player-stage'
-            root.append(stage)
+            const tipHolder = document.createElement('div')
+            const withTip = tips(tipHolder)
+            root.append(stage, tipHolder)
             container.appendChild(root)
 
             let busy = false
+            let playing = false
+            let disposed = false
+            let gallery: HTMLElement | null = null
+            let failure: string | undefined
 
             /*
-             * Opening is an icon key in the bar, as in the reader: the empty panel's tile is what
-             * says what the panel is for.
+             * What is playing is the tab's title, and the one key in the tab row takes the panel
+             * back to its gallery. Open lives in the gallery and in the palette.
              */
-            function openButton(): HTMLButtonElement {
-                const button = document.createElement('button')
-                button.className = 'dya-key'
-                button.innerHTML = glyph('folder')
-                button.title = 'Open'
-                button.setAttribute('aria-label', 'Open a file')
-                button.onclick = () => void openMedia()
-                return button
+            const back = document.createElement('button')
+            back.type = 'button'
+            back.className = 'dya-key'
+            back.innerHTML = glyph('grid')
+            back.setAttribute('aria-label', 'Library')
+            withTip(back, 'Library')
+            back.onclick = () => showEmpty()
+            back.hidden = true
+            handle.toolbar.append(back)
+
+            function tile(icon: string, name: string, act: () => void): HTMLButtonElement {
+                const card = document.createElement('button')
+                card.type = 'button'
+                card.className = 'dya-tile'
+                card.innerHTML = `<span class="dya-tile__icon">${icon}</span>`
+                const label = document.createElement('span')
+                label.className = 'dya-tile__name'
+                label.textContent = name
+                card.append(label)
+                card.onclick = act
+                return card
             }
 
             /*
-             * A panel with nothing in it offers what to put in it. It used to be empty on the
-             * reasoning that its bar already carries the one control that matters, and at a
-             * window's width that reasoning produces a black rectangle nine hundred pixels tall
-             * with a word in the corner — which is what a reader opens once and never again.
-             * A failure is said here too, over the same offer, because the offer is still what
-             * to do next. The offer starts at the top left, where every gallery of tiles starts.
+             * A panel with nothing in it shows what it can play, as a gallery from the top left:
+             * Open, and nothing it has played: the player keeps no history.
+             * A failure is said over the same gallery, because the gallery is still what to do.
              */
-            function showEmpty(message?: string): void {
-                handle.setTitle(null)
-                open.hidden = true
-
-                const invite = document.createElement('div')
-                invite.className = 'dya-grid'
-
-                if (message) {
+            function paintGallery(): void {
+                if (!gallery || disposed || playing) return
+                const cards: HTMLElement[] = []
+                if (failure) {
                     const line = document.createElement('span')
                     line.className = 'dya-empty dya-text--danger'
-                    line.textContent = message
-                    invite.append(line)
+                    line.textContent = failure
+                    cards.push(line)
                 }
-
-                const tile = document.createElement('button')
-                tile.className = 'dya-tile'
-                tile.type = 'button'
-                tile.innerHTML =
-                    `<span class="dya-tile__icon">${PLAYER_ICON}</span>` +
-                    '<span class="dya-tile__name">Cue a file</span>'
-                tile.onclick = () => void openMedia()
-
-                invite.append(tile)
-                stage.classList.add('player-stage--empty')
-                stage.replaceChildren(invite)
+                cards.push(tile(glyph('folder'), 'Open', () => void pick()))
+                gallery.replaceChildren(...cards)
             }
 
-            async function openMedia(): Promise<void> {
+            function showEmpty(message?: string): void {
+                playing = false
+                failure = message
+                handle.setTitle(null)
+                back.hidden = true
+                gallery = document.createElement('div')
+                gallery.className = 'dya-grid'
+                stage.className = 'player-stage'
+                stage.replaceChildren(gallery)
+                paintGallery()
+            }
+
+            async function play(path: string): Promise<void> {
                 if (busy) return
                 busy = true
                 try {
-                    const result = (await ctx.invoke('open')) as OpenResult
-                    if (result.canceled || !result.src) return
-                    const media = document.createElement(
-                        result.kind === 'video' ? 'video' : 'audio'
-                    )
-                    media.controls = true
-                    media.autoplay = true
-                    media.src = result.src
-                    media.onerror = () => showEmpty('Cannot play that file')
-                    handle.setTitle(result.name ?? null)
-                    open.hidden = false
-                    stage.classList.remove('player-stage--empty')
-                    stage.replaceChildren(media)
+                    const media = (await ctx.invoke('media', path)) as Media
+                    if (disposed) return
+                    const element = document.createElement(media.kind === 'video' ? 'video' : 'audio')
+                    element.controls = true
+                    element.autoplay = true
+                    element.src = media.src
+                    element.onerror = () => showEmpty('Cannot play')
+                    playing = true
+                    gallery = null
+                    handle.setTitle(media.name)
+                    back.hidden = false
+                    stage.className = media.kind === 'video' ? 'player-stage player-stage--video' : 'player-stage'
+                    stage.replaceChildren(element)
                 } catch {
-                    showEmpty('Cannot open that file')
+                    showEmpty('Cannot open')
                 } finally {
                     busy = false
                 }
             }
 
-            const open = openButton()
-            handle.toolbar.append(open)
+            async function pick(): Promise<void> {
+                const path = (await ctx.invoke('pick')) as string | null
+                if (path) await play(path)
+            }
+
             showEmpty()
 
+            instances.set(handle.instanceId, { idle: () => !playing && !busy, play })
+            const queued = waiting.get(handle.instanceId) ?? waiting.get('')
+            if (queued) {
+                waiting.delete(handle.instanceId)
+                waiting.delete('')
+                void play(queued)
+            }
+
             return () => {
+                disposed = true
+                instances.delete(handle.instanceId)
                 container.replaceChildren()
             }
         }

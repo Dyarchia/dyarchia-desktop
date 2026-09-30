@@ -73,6 +73,8 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
 - **A panel measures itself** as a `pane` (`@container pane`), never a media query: width changes how many
   regions it shows, never how far things stretch. `grid` is a gallery of fixed-width things, `tile--new`
   first; table columns are content width; `form` values up to 560px. Actions live in `handle.toolbar`.
+- **What opens in place is a `fold`**: `details.fold` with a `__head` summary led by `__mark`, the SDK
+  chevron, turned down while open. Only where nothing else says it opens.
 - **One scroller per region**: nothing inside a region that scrolls scrolls again, and text in a code
   block wraps (`code--wrap`) rather than scrolling sideways. A live log is the exception, sized by a handle.
 - **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger.

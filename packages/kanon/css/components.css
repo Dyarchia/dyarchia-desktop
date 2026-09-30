@@ -2257,6 +2257,51 @@ button.dya-entry__head {
     list-style: none;
 }
 
+/*
+ * A fold: something that opens in place, a changed page, a run's diff, a step's detail. Its head
+ * is a row that answers the pointer with its ground and leads with a chevron, on the edge of the
+ * text above it, pointing along the head while closed and down while open.
+ */
+.dya-fold > .dya-fold__head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+    min-height: var(--dya-size-control);
+    margin-inline: calc(-1 * var(--dya-space-2));
+    padding: 0 var(--dya-space-2);
+    border-radius: var(--dya-radius-sm);
+    list-style: none;
+    cursor: pointer;
+    transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-fold > .dya-fold__head::-webkit-details-marker {
+    display: none;
+}
+
+.dya-fold > .dya-fold__head:hover {
+    background-color: var(--dya-glass-hover);
+}
+
+.dya-fold__mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    color: var(--dya-text);
+    transition: transform var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-fold__mark > svg {
+    width: 100%;
+    height: 100%;
+}
+
+.dya-fold[open] > .dya-fold__head > .dya-fold__mark {
+    transform: rotate(90deg);
+}
+
 .dya-step {
     display: grid;
     grid-template-columns: 8ch 13ch minmax(0, 1fr);

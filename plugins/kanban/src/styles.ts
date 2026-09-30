@@ -41,15 +41,6 @@ export const STYLES = `
     padding-inline-start: var(--dya-space-4);
 }
 
-.kanban-more > summary {
-    cursor: pointer;
-    list-style: none;
-}
-
-.kanban-more > summary::-webkit-details-marker {
-    display: none;
-}
-
 .kanban-more > .dya-code {
     margin-top: var(--dya-space-2);
 }

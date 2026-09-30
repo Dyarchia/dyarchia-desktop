@@ -223,6 +223,23 @@ const WORKSPACES: [string, string][] = [
 
 const PIN = 'kanban:board:'
 
+function foldMark(): HTMLElement {
+    const mark = document.createElement('span')
+    mark.className = 'dya-fold__mark'
+    mark.innerHTML = glyph('chevron')
+    return mark
+}
+
+function foldHead(text: string): HTMLElement {
+    const head = document.createElement('summary')
+    head.className = 'dya-fold__head'
+    const word = document.createElement('span')
+    word.className = 'dya-label'
+    word.textContent = text
+    head.append(foldMark(), word)
+    return head
+}
+
 interface CardNode {
     root: HTMLElement
     title: HTMLElement
@@ -1966,8 +1983,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         } catch {
             pretty = json
         }
-        const more = el('details', 'kanban-more')
-        const summary = el('summary', 'dya-label', 'JSON')
+        const more = el('details', 'dya-fold kanban-more')
+        const summary = foldHead('JSON')
         const code = el('pre', 'dya-code')
         code.innerHTML = highlight(pretty, 'json')
         more.append(summary, code)
@@ -2608,8 +2625,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                         table.append(body)
                         holder.append(table, el('span', 'dya-meta dya-meta--wrap', total))
                         if (change.text.trim()) {
-                            const more = el('details', 'kanban-more')
-                            const summary = el('summary', 'dya-label', change.truncated ? 'Diff, cut' : 'Diff')
+                            const more = el('details', 'dya-fold kanban-more')
+                            const summary = foldHead(change.truncated ? 'Diff, cut' : 'Diff')
                             const code = el('pre', 'dya-code dya-code--wrap')
                             code.innerHTML = highlight(change.text, 'diff')
                             more.append(summary, code)

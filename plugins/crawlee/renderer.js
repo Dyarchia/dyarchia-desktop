@@ -98,17 +98,6 @@ const STYLE = `
     gap: 2px;
     min-width: 0;
 }
-.crw-change-head {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-3);
-    min-height: var(--dya-size-control);
-    cursor: pointer;
-    list-style: none;
-}
-.crw-change-head::-webkit-details-marker {
-    display: none;
-}
 .crw-change-head > .dya-name {
     flex: 1;
     min-width: 0;
@@ -709,9 +698,11 @@ function mount(ctx, container, handle) {
         const changes = el('div', 'crw-changes')
         const mixed = new Set(pages.map((page) => page.kind)).size > 1
         for (const page of pages) {
-            const item = el('details', 'crw-change')
-            const line = el('summary', 'crw-change-head')
-            line.append(el('span', 'dya-name', page.title || page.url))
+            const item = el('details', 'dya-fold')
+            const line = el('summary', 'dya-fold__head crw-change-head')
+            const mark = el('span', 'dya-fold__mark')
+            mark.innerHTML = ctx.glyph('chevron')
+            line.append(mark, el('span', 'dya-name', page.title || page.url))
             if (mixed) line.append(el('span', 'dya-tag', KINDS[page.kind] ?? page.kind))
             item.append(line)
             if (page.diff) item.append(diffBlock(page.diff))

@@ -2,6 +2,8 @@ import { token } from '@dyarchia/kanon'
 import { glyph, highlight, hues, when } from '@dyarchia/sdk'
 import type { GlyphName } from '@dyarchia/sdk'
 import { registerCommand } from '../commands'
+import { registerSearch } from '../searches'
+import type { Search } from '../searches'
 import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import { canOpen, openFile, registerOpener, showPanel } from '../panels/openers'
@@ -81,6 +83,7 @@ interface PluginModule {
         registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
         registerOpener(descriptor: OpenerDescriptor, open: OpenHandler): void
         registerCommand(command: PluginCommand): () => void
+        registerSearch(search: Search): () => void
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
         highlight(source: string, language?: string): string
@@ -160,6 +163,7 @@ export async function loadPlugins(): Promise<void> {
                     registerOpener(id, descriptor, open),
                 registerCommand: (command: PluginCommand) =>
                     registerCommand({ ...command, id: `${id}:${command.id}`, owner: id }),
+                registerSearch: (search: Search) => registerSearch(id, search),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
                 highlight,

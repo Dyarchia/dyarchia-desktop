@@ -2850,6 +2850,20 @@ button.dya-step__subject {
     white-space: nowrap;
 }
 
+/*
+ * Where a found thing lives, or the line of it that matched: the muted ink after the name, cut
+ * before it can crowd the name out.
+ */
+.dya-palette__meta {
+    flex: 0 1 auto;
+    max-width: 50%;
+    overflow: hidden;
+    font-size: var(--dya-size-body-xs);
+    color: var(--dya-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .dya-palette__empty {
     padding: var(--dya-space-3) var(--dya-space-2);
     font-family: var(--dya-font-sans);

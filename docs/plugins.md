@@ -56,6 +56,7 @@ export function activate(ctx: PluginContext): void {
 - Actions go in `handle.toolbar`. `registerOpener` goes in `activate`; the first opener per
   extension wins. A finder never names the reader: it asks `ctx.shell.canOpen`, else `reveal`.
 - `ctx.registerCommand({ id, title, icon?, run })` joins the Ctrl+K palette and returns its removal.
+- `ctx.registerSearch(query => hits)` answers the palette's words with `{ id, title, detail?, run }`.
   `ctx.token(name)` resolves a `--dya-*` value; `ctx` also has `highlight`, `hues`, `when` and `glyph`.
 
 ## Main module

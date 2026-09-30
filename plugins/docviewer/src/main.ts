@@ -4,6 +4,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
+const FIND_LIMIT = 8
 
 const TEXT_EXTENSIONS = [
     'md', 'txt', 'json', 'yaml', 'yml', 'js', 'ts', 'css', 'html',
@@ -86,6 +87,32 @@ export function activate(ctx: PluginMainContext): void {
                 })
         )
         return files.sort((a, b) => b.mtime - a.mtime)
+    })
+
+    /*
+     * The pages whose name or text holds the palette's words: the name first, then the first line
+     * that holds them, cut to a line's worth.
+     */
+    ctx.handle('find', async (raw: unknown) => {
+        const words = typeof raw === 'string' ? raw.trim().toLowerCase() : ''
+        if (!words) return []
+        await mkdir(pages, { recursive: true })
+        const entries = await readdir(pages, { withFileTypes: true })
+        const found: { path: string; name: string; line?: number; text?: string }[] = []
+        for (const entry of entries) {
+            if (!entry.isFile() || found.length >= FIND_LIMIT) continue
+            const path = join(pages, entry.name)
+            if (entry.name.toLowerCase().includes(words)) {
+                found.push({ path, name: entry.name })
+                continue
+            }
+            const info = await stat(path)
+            if (info.size > MAX_FILE_SIZE) continue
+            const lines = (await readFile(path, 'utf-8')).split(/\r?\n/)
+            const at = lines.findIndex((line) => line.toLowerCase().includes(words))
+            if (at >= 0) found.push({ path, name: entry.name, line: at + 1, text: lines[at].trim().slice(0, 120) })
+        }
+        return found
     })
 
     /*

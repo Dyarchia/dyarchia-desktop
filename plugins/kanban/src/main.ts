@@ -102,6 +102,25 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('boards', () => boards.list())
 
+    /*
+     * The cards on every open board whose title or brief holds the palette's words, read as they
+     * are: nothing is promoted by being looked for.
+     */
+    ctx.handle('find', async (raw) => {
+        const words = String(raw ?? '').trim().toLowerCase()
+        if (!words) return []
+        const found: { slug: string; board: string; id: string; title: string; status: string }[] = []
+        for (const meta of await boards.list()) {
+            if (meta.archived) continue
+            for (const card of await board.cards(meta.slug)) {
+                if (!`${card.title} ${card.body}`.toLowerCase().includes(words)) continue
+                found.push({ slug: meta.slug, board: meta.name, id: card.id, title: card.title, status: card.status })
+                if (found.length >= 8) return found
+            }
+        }
+        return found
+    })
+
     ctx.handle('harnesses', () => harness.catalogue())
 
     ctx.handle('settings', () => boards.settings())

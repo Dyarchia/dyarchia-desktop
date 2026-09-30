@@ -4,6 +4,8 @@ import { orderApps, togglePin, useApps } from '../apps'
 import { getCommands, onCommandsChange } from '../commands'
 import type { PanelDescriptor } from '../panels/registry'
 import { pluginIcon } from '../plugins/host'
+import { getSearches } from '../searches'
+import type { Hit } from '../searches'
 import { Svg } from './Svg'
 import { Tip, useTipId } from './Tip'
 
@@ -17,9 +19,13 @@ interface PaletteProps {
 interface Row {
     key: string
     name: string
+    detail?: string
     icon?: string
     run: () => void | Promise<void>
 }
+
+const SEARCH_FROM = 2
+const SEARCH_PAUSE = 250
 
 const PIN = glyph('pin')
 
@@ -113,6 +119,31 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
     }, [])
 
     const wanted = query.trim().toLowerCase()
+    const [found, setFound] = useState<Map<string, Hit[]>>(() => new Map())
+
+    /*
+     * Content is asked for once the typing pauses, of every plugin at once, and each answer is
+     * shown as it comes; an answer to words no longer in the field is dropped.
+     */
+    useEffect(() => {
+        setFound(new Map())
+        if (wanted.length < SEARCH_FROM) return
+        let current = true
+        const timer = window.setTimeout(() => {
+            for (const [owner, search] of getSearches()) {
+                void search(wanted)
+                    .then((hits) => {
+                        if (!current || !hits.length) return
+                        setFound((before) => new Map(before).set(owner, hits))
+                    })
+                    .catch(() => undefined)
+            }
+        }, SEARCH_PAUSE)
+        return () => {
+            current = false
+            window.clearTimeout(timer)
+        }
+    }, [wanted])
 
     const [order] = useState(() => orderApps(panels).map((panel) => panel.id))
 
@@ -143,8 +174,19 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                 icon: (command.owner ? pluginIcon(command.owner) : undefined) ?? command.icon,
                 run: command.run
             }))
-        return ranked(all, (row) => row.name, wanted)
-    }, [commands, panels, wanted])
+        const hits = [...found.entries()]
+            .sort(([a], [b]) => plugin(a).localeCompare(plugin(b)))
+            .flatMap(([owner, list]) =>
+                list.map((hit) => ({
+                    key: `${owner}:${hit.id}`,
+                    name: hit.title,
+                    detail: hit.detail,
+                    icon: pluginIcon(owner),
+                    run: hit.run
+                }))
+            )
+        return [...ranked(all, (row) => row.name, wanted), ...hits]
+    }, [commands, panels, wanted, found])
 
     const count = tiles.length + rows.length
 
@@ -268,6 +310,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                                         >
                                             <Icon icon={row.icon} className="dya-palette__icon" />
                                             <span className="dya-palette__name">{row.name}</span>
+                                            {row.detail && <span className="dya-palette__meta">{row.detail}</span>}
                                         </li>
                                     )
                                 })}

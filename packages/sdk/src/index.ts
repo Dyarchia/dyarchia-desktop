@@ -156,6 +156,19 @@ export interface PluginCommand {
     run(): void | Promise<void>
 }
 
+/*
+ * One thing a plugin found for what is typed in the palette: a page, a card, a crawled document.
+ * The title is the thing's own name and the detail where it lives or the line that matched.
+ */
+export interface SearchHit {
+    id: string
+    title: string
+    detail?: string
+    run(): void | Promise<void>
+}
+
+export type PluginSearch = (query: string) => Promise<SearchHit[]>
+
 export interface PluginContext {
     readonly pluginId: string
     token(name: string): string
@@ -166,6 +179,11 @@ export interface PluginContext {
      */
     registerOpener(descriptor: OpenerDescriptor, open: (request: OpenRequest) => void | Promise<void>): void
     registerCommand(command: PluginCommand): () => void
+    /*
+     * What this plugin holds that matches the palette's words. The shell asks once the typing
+     * pauses, every plugin at once, and drops an answer to words no longer typed.
+     */
+    registerSearch(search: PluginSearch): () => void
     invoke(channel: string, ...args: unknown[]): Promise<unknown>
     on(channel: string, listener: (...args: unknown[]) => void): () => void
     /*

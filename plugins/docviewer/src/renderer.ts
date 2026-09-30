@@ -103,6 +103,8 @@ const CODE_ICON =
  * source got the glyph that means source. `rendered` belongs to markdown alone; everything else
  * this panel opens is already its own source.
  */
+const UNTITLED = /^Untitled( \d+)?\.md$/
+
 const MODES = [
     { id: 'rendered', label: 'Read', icon: EYE_ICON, markdownOnly: true },
     { id: 'source', label: 'Source', icon: CODE_ICON, markdownOnly: false },
@@ -175,6 +177,18 @@ export function activate(ctx: PluginContext): void {
             fresh.add(result.path)
             await ctx.shell.open({ path: result.path })
         }
+    })
+
+    ctx.registerSearch(async (query) => {
+        const found = (await ctx.invoke('find', query)) as { path: string; name: string; line?: number; text?: string }[]
+        return found.map((page) => ({
+            id: `${page.path}:${page.line ?? 0}`,
+            title: page.name,
+            detail: page.text,
+            run: async () => {
+                await ctx.shell.open({ path: page.path, line: page.line })
+            }
+        }))
     })
 
     ctx.registerCommand({
@@ -280,11 +294,29 @@ export function activate(ctx: PluginContext): void {
                     current.mtime = result.mtime
                     saved = current.content ?? ''
                     markDirty(false)
+                    await nameFromHeading()
                 } catch {
                     say('Cannot save')
                 } finally {
                     busy = false
                 }
+            }
+
+            /*
+             * A page made from New page is called Untitled until it says what it is: the first save
+             * that finds a heading on its first line names the file after it, less the characters a
+             * file name cannot hold. A name already taken leaves it as it was.
+             */
+            async function nameFromHeading(): Promise<void> {
+                if (!current?.path || !UNTITLED.test(current.name ?? '')) return
+                const line = (current.content ?? '').trimStart().split(/\r?\n/, 1)[0]
+                const heading = line.match(/^#{1,6}\s+(.+?)\s*#*$/)?.[1]?.replace(/[<>:"/\\|?*]/g, '').trim()
+                if (!heading) return
+                const result = (await ctx.invoke('rename', { path: current.path, name: heading })) as RenameResult
+                if (result.error || !result.path || !result.name) return
+                current.path = result.path
+                current.name = result.name
+                handle.setTitle(result.name)
             }
 
             save.onclick = () => void saveNow()

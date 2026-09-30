@@ -511,6 +511,30 @@ export function activate(ctx) {
             }
         })
     }
+
+    /*
+     * The corpus answers the palette too. Each question starts the CLI, so it is asked only from
+     * three letters on; a page is offered once, only when it holds every word, and a corpus that
+     * is not set up answers nothing.
+     */
+    ctx.registerSearch(async (query) => {
+        if (query.length < 3) return []
+        const found = await ctx.invoke('search', { query, limit: 12 }).catch(() => [])
+        const seen = new Set()
+        return found
+            .filter((hit) => hit.file && hit.match !== 'any' && !seen.has(hit.file) && seen.add(hit.file))
+            .slice(0, 4)
+            .map((hit) => ({
+                id: `${hit.file}:${hit.line}`,
+                title: hit.title && hit.title !== hit.url ? hit.title : hit.url,
+                detail: hit.target,
+                run: async () => {
+                    if (!(ctx.shell.canOpen(hit.file) && (await ctx.shell.open({ path: hit.file, line: hit.line })))) {
+                        await ctx.shell.reveal(hit.file)
+                    }
+                }
+            }))
+    })
 }
 
 function mount(ctx, container, handle) {

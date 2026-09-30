@@ -74,7 +74,8 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
   regions it shows, never how far things stretch. `grid` is a gallery of fixed-width things, `tile--new`
   first; table columns are content width; `form` values up to 560px. Actions live in `handle.toolbar`.
 - **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger.
-  **`palette`** (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first (Ctrl+P pins), over rows.
+  **`palette`** (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first
+  (Ctrl+P pins), over rows: commands, then what plugins find for the words, `__meta` muted after the name.
 - **A lane answers a drag**: `--accept` the accent's soft ground, `--refuse` red's (text-muted 4.52 at peak).
 
 ## Components
@@ -95,6 +96,6 @@ Content      table (__num __fit __name __subject __end __prose __section) row (-
              steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
 Documents    prose (__figure) prose__scroll code (__line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
-             palette (__body __apps __app __pin __list __row __icon __name __empty)
+             palette (__body __apps __app __pin __list __row __icon __name __meta __empty)
 Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading
 ```

@@ -358,6 +358,7 @@ function runEnd(run: Run): string {
 }
 
 interface Commands {
+    reveal(slug: string, card: string): void
     newCard(): void
     newBoard(): void
     switchBoard(): void
@@ -2940,6 +2941,23 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (returning) focusCard(returning)
     })
 
+    const revealCard = (target: string, card: string): void => {
+        if (watching) closeWatch()
+        closeSheet(false)
+        if (target === meta?.slug) {
+            select(card)
+            focusCard(card)
+            return
+        }
+        write(pinKey, target)
+        void refresh()
+            .then(() => {
+                select(card)
+                focusCard(card)
+            })
+            .catch(fail)
+    }
+
     const watchRow = (run: WatchRun): HTMLElement => {
         const row = el('tr', 'dya-row')
         row.tabIndex = 0
@@ -2965,23 +2983,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             el('td', 'dya-table__end dya-meta', ago(run.startedAt, clock))
         )
 
-        const go = (): void => {
-            const target = run.slug
-            const card = run.cardId
-            closeWatch()
-            if (target === meta?.slug) {
-                select(card)
-                focusCard(card)
-                return
-            }
-            write(pinKey, target)
-            void refresh()
-                .then(() => {
-                    select(card)
-                    focusCard(card)
-                })
-                .catch(fail)
-        }
+        const go = (): void => revealCard(run.slug, run.cardId)
         row.addEventListener('click', go)
         row.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter' && event.key !== ' ') return
@@ -3222,6 +3224,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (watching) closeWatch()
     }
     const commands: Commands = {
+        reveal: revealCard,
         newCard: () => {
             if (!meta) return newBoard()
             toBoard()
@@ -3289,6 +3292,18 @@ ${STYLES}`)
             }
         })
     }
+    ctx.registerSearch(async (query) => {
+        const found = (await ctx.invoke('find', query)) as { slug: string; board: string; id: string; title: string; status: string }[]
+        return found.map((card) => ({
+            id: `${card.slug}:${card.id}`,
+            title: card.title,
+            detail: `${card.board} - ${card.status}`,
+            run: async () => {
+                const commands = await instance(ctx)
+                commands?.reveal(card.slug, card.id)
+            }
+        }))
+    })
     command('new-card', 'New card', (commands) => commands.newCard())
     command('new-board', 'New board', (commands) => commands.newBoard())
     command('switch-board', 'Switch board', (commands) => commands.switchBoard())

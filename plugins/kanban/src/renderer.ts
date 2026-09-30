@@ -2647,10 +2647,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     .catch((thrown: unknown) => failOn(card.id, thrown))
             })
             actions.append(stop)
-        } else if (rules.allow[status].length) {
-            const moveKey = key('move', 'Move')
-            moveKey.addEventListener('click', () => openMoveMenu(card.id, moveKey))
-            actions.append(moveKey)
         }
 
         const remove = key('delete', 'Delete')

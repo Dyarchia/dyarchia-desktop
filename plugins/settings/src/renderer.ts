@@ -120,7 +120,7 @@ export function activate(ctx: PluginContext): void {
 
     ctx.registerCommand({
         id: 'settings.files',
-        title: 'Your files',
+        title: 'Open data folder',
         icon: glyph('folder'),
         run: async () => {
             const paths = (await ctx.shell.paths()) as Paths
@@ -129,7 +129,7 @@ export function activate(ctx: PluginContext): void {
     })
     ctx.registerCommand({
         id: 'settings.state',
-        title: 'Settings folder',
+        title: 'Open app folder',
         icon: glyph('folder'),
         run: async () => {
             const paths = (await ctx.shell.paths()) as Paths

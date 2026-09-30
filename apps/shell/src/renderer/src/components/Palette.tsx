@@ -10,7 +10,6 @@ import { Tip, useTipId } from './Tip'
 interface PaletteProps {
     panels: PanelDescriptor[]
     openIds: Set<string>
-    activeOwner: string | null
     onOpen: (id: string) => void
     onClose: () => void
 }
@@ -97,7 +96,7 @@ function App({ panel, position, selected, open, pinned, onPoint, onRun }: AppPro
     )
 }
 
-export function Palette({ panels, openIds, activeOwner, onOpen, onClose }: PaletteProps): React.JSX.Element {
+export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): React.JSX.Element {
     const [query, setQuery] = useState('')
     const [index, setIndex] = useState(0)
     const [commands, setCommands] = useState(getCommands)
@@ -131,16 +130,21 @@ export function Palette({ panels, openIds, activeOwner, onOpen, onClose }: Palet
     }, [panels, order, wanted])
 
     const rows = useMemo<Row[]>(() => {
-        const mine = commands.filter((command) => activeOwner && command.owner === activeOwner)
-        const rest = commands.filter((command) => !activeOwner || command.owner !== activeOwner)
-        const all = [...mine, ...rest].map((command) => ({
-            key: command.id,
-            name: command.title,
-            icon: command.icon ?? (command.owner ? pluginIcon(command.owner) : undefined),
-            run: command.run
-        }))
+        const plugin = (owner?: string): string =>
+            panels.find((panel) => panel.owner === owner)?.title ?? owner ?? ''
+        const all = [...commands]
+            .sort(
+                (a, b) =>
+                    plugin(a.owner).localeCompare(plugin(b.owner)) || a.title.localeCompare(b.title)
+            )
+            .map((command) => ({
+                key: command.id,
+                name: command.title,
+                icon: (command.owner ? pluginIcon(command.owner) : undefined) ?? command.icon,
+                run: command.run
+            }))
         return ranked(all, (row) => row.name, wanted)
-    }, [commands, activeOwner, wanted])
+    }, [commands, panels, wanted])
 
     const count = tiles.length + rows.length
 

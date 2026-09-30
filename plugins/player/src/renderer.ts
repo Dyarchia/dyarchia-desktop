@@ -9,12 +9,6 @@ interface Media {
     src: string
 }
 
-interface Recent {
-    path: string
-    name: string
-    at: number
-}
-
 interface Instance {
     idle(): boolean
     play(path: string): Promise<void>
@@ -78,20 +72,7 @@ const STYLES = `
 }
 `
 
-/*
- * What played last, as the main process last said it, shared by every mounted player. A gallery
- * paints from it at once and repaints when a play anywhere changes it, so a tab that was mounted
- * behind another, or that sat on its gallery while another tab played, is never out of date.
- */
-let recents: Recent[] = []
-const galleries = new Set<() => void>()
-
 export function activate(ctx: PluginContext): void {
-    ctx.on('recent', (list) => {
-        recents = list as Recent[]
-        for (const repaint of galleries) repaint()
-    })
-
     ctx.registerOpener(
         {
             panelId: 'player',
@@ -168,27 +149,9 @@ export function activate(ctx: PluginContext): void {
                 return card
             }
 
-            function recentTile(item: Recent): HTMLButtonElement {
-                const card = document.createElement('button')
-                card.type = 'button'
-                card.className = 'dya-tile dya-tile--dense'
-                const top = document.createElement('div')
-                top.className = 'dya-tile__head'
-                const name = document.createElement('span')
-                name.className = 'dya-tile__name'
-                name.textContent = item.name
-                top.append(name)
-                const facts = document.createElement('span')
-                facts.className = 'dya-meta'
-                facts.textContent = ctx.when(item.at)
-                card.append(top, facts)
-                card.onclick = () => void play(item.path)
-                return card
-            }
-
             /*
              * A panel with nothing in it shows what it can play, as a gallery from the top left:
-             * Open first, then what played last, newest first, each a click from playing again.
+             * Open, and nothing it has played: the player keeps no history.
              * A failure is said over the same gallery, because the gallery is still what to do.
              */
             function paintGallery(): void {
@@ -200,7 +163,7 @@ export function activate(ctx: PluginContext): void {
                     line.textContent = failure
                     cards.push(line)
                 }
-                cards.push(tile(glyph('folder'), 'Open', () => void pick()), ...recents.map(recentTile))
+                cards.push(tile(glyph('folder'), 'Open', () => void pick()))
                 gallery.replaceChildren(...cards)
             }
 
@@ -214,13 +177,6 @@ export function activate(ctx: PluginContext): void {
                 stage.className = 'player-stage'
                 stage.replaceChildren(gallery)
                 paintGallery()
-                void (ctx.invoke('recent') as Promise<Recent[]>).then(
-                    (list) => {
-                        recents = list
-                        for (const repaint of galleries) repaint()
-                    },
-                    () => undefined
-                )
             }
 
             async function play(path: string): Promise<void> {
@@ -252,7 +208,6 @@ export function activate(ctx: PluginContext): void {
                 if (path) await play(path)
             }
 
-            galleries.add(paintGallery)
             showEmpty()
 
             instances.set(handle.instanceId, { idle: () => !playing && !busy, play })
@@ -265,7 +220,6 @@ export function activate(ctx: PluginContext): void {
 
             return () => {
                 disposed = true
-                galleries.delete(paintGallery)
                 instances.delete(handle.instanceId)
                 container.replaceChildren()
             }

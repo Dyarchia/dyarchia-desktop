@@ -2,18 +2,14 @@ import { useEffect, useState } from 'react'
 import type { PanelDescriptor } from './panels/registry'
 
 /*
- * The order of the launcher's tiles: pinned first, in the order they were pinned, then most
- * recently opened, then the rest in manifest order. It lives in the main process beside the
- * layout, so it survives an update and belongs to the one root, and it is read once at start.
+ * The order of the launcher's tiles: pinned first, in the order they were pinned, then the rest
+ * by name. The pins live in the main process beside the layout, read once at start.
  */
 interface AppsState {
     pinned: string[]
-    recent: string[]
 }
 
-const RECENT_LIMIT = 24
-
-let state: AppsState = { pinned: [], recent: [] }
+let state: AppsState = { pinned: [] }
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 const listeners = new Set<() => void>()
 
@@ -33,14 +29,8 @@ export async function loadApps(): Promise<void> {
         | null
         | undefined
     if (!saved) return
-    state = { pinned: strings(saved.pinned), recent: strings(saved.recent) }
+    state = { pinned: strings(saved.pinned) }
     for (const listener of listeners) listener()
-}
-
-export function touchApp(id: string): void {
-    if (state.recent[0] === id) return
-    state = { ...state, recent: [id, ...state.recent.filter((other) => other !== id)].slice(0, RECENT_LIMIT) }
-    changed()
 }
 
 export function togglePin(id: string): void {
@@ -55,19 +45,12 @@ export function isPinned(id: string): boolean {
     return state.pinned.includes(id)
 }
 
-function byToolbar(a: PanelDescriptor, b: PanelDescriptor): number {
-    return (a.toolbar ?? Infinity) - (b.toolbar ?? Infinity) || a.title.localeCompare(b.title)
-}
-
 export function orderApps(panels: PanelDescriptor[]): PanelDescriptor[] {
     const rank = (id: string): number => {
         const pin = state.pinned.indexOf(id)
-        if (pin !== -1) return pin
-        const recent = state.recent.indexOf(id)
-        if (recent !== -1) return 1000 + recent
-        return Infinity
+        return pin === -1 ? Infinity : pin
     }
-    return [...panels].sort((a, b) => rank(a.id) - rank(b.id) || byToolbar(a, b))
+    return [...panels].sort((a, b) => rank(a.id) - rank(b.id) || a.title.localeCompare(b.title))
 }
 
 export function useApps(): AppsState {

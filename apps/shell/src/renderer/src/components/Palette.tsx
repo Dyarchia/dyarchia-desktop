@@ -201,6 +201,9 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
             event.preventDefault()
             const step = event.key === 'ArrowRight' ? 1 : -1
             setIndex((current) => Math.min(tiles.length - 1, Math.max(0, current + step)))
+        } else if (event.key.toLowerCase() === 'p' && (event.ctrlKey || event.metaKey) && inGrid && tiles[index]) {
+            event.preventDefault()
+            togglePin(tiles[index].id)
         } else if (event.key === 'Enter') {
             event.preventDefault()
             run(index)

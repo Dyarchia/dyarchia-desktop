@@ -196,15 +196,6 @@ interface CardProgress {
 const ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.6 12 6.800000000000001 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M6.300000000000001 1.6 8 3.6 6.4 4.6z" fill="#eceef2"/><path d="M8.8 12 12 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M11.5 1.6 13.2 3.6 11.600000000000001 4.6z" fill="#eceef2"/><path d="M14 12 17.2 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M16.7 1.6 18.4 3.6 16.8 4.6z" fill="#eceef2"/><path d="M19.2 12 22.400000000000002 3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><path d="M21.900000000000002 1.6 23.6 3.6 22 4.6z" fill="#eceef2"/><circle cx="4.2" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="9.4" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="14.6" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="19.8" cy="14.2" r="2.9" fill="#9499a3" stroke="#0a0a0b" stroke-width=".9"/><circle cx="4.2" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="4.2" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="9.4" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="9.4" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="14.6" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="14.6" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/><circle cx="19.8" cy="19.2" r="2.9" fill="#eceef2" stroke="#0a0a0b" stroke-width=".9"/><circle cx="19.8" cy="19.2" r="1.7" fill="none" stroke="#0a0a0b" stroke-width=".6"/></svg>'
 
-const STROKE =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-
-const ICONS = {
-    prompt: `${STROKE}<polyline points="5 7 10 12 5 17"/><line x1="12" y1="18" x2="19" y2="18"/></svg>`,
-    expand: `${STROKE}<polyline points="15 4 20 4 20 9"/><polyline points="9 20 4 20 4 15"/><line x1="20" y1="4" x2="14" y2="10"/><line x1="4" y1="20" x2="10" y2="14"/></svg>`,
-    contract: `${STROKE}<polyline points="4 10 9 10 9 5"/><polyline points="20 14 15 14 15 19"/><line x1="9" y1="10" x2="3" y2="4"/><line x1="15" y1="14" x2="21" y2="20"/></svg>`
-}
-
 const PROVIDERS: Record<string, string> = {
     opencode: 'OpenCode Zen',
     'opencode-go': 'OpenCode Go',
@@ -446,10 +437,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     const tipHolder = el('div')
     const withTip = tips(tipHolder)
-    const key = (icon: keyof typeof ICONS | GlyphName, label: string, hint = label): HTMLButtonElement => {
+    const key = (icon: GlyphName, label: string, hint = label): HTMLButtonElement => {
         const button = el('button', 'dya-key')
         button.type = 'button'
-        button.innerHTML = icon in ICONS ? ICONS[icon as keyof typeof ICONS] : glyph(icon as GlyphName)
+        button.innerHTML = glyph(icon)
         button.setAttribute('aria-label', label)
         withTip(button, hint)
         return button
@@ -2081,7 +2072,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const runKeys = (card: Card, run: Run): HTMLElement => {
         const strip = el('div', 'dya-join')
         if (isLive(card, run)) {
-            const live = key('prompt', 'Session')
+            const live = key('terminal', 'Session')
             live.classList.toggle('dya-key--active', session)
             live.setAttribute('aria-pressed', String(session))
             live.addEventListener('click', (event) => {
@@ -2293,7 +2284,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const sizeKey = key('expand', 'Expand')
         const paintSize = (): void => {
             const full = inspector === 'full'
-            sizeKey.innerHTML = ICONS[full ? 'contract' : 'expand']
+            sizeKey.innerHTML = glyph(full ? 'contract' : 'expand')
             sizeKey.setAttribute('aria-label', full ? 'Collapse' : 'Expand')
             sizeKey.setAttribute('aria-pressed', String(full))
             withTip(sizeKey, full ? 'Collapse' : 'Expand')
@@ -2678,7 +2669,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             parents
         )
         if (parkable) fields.append(label('Park until'), schedule)
-        fields.append(label('Thread'), thread, label(''), removeRow)
+        const threadLabel = label('Thread')
+        fields.append(threadLabel, thread, label(''), removeRow)
 
         form.append(problemRow, fields)
         const body = el('div', 'kanban-drawer-body')
@@ -2688,6 +2680,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         } else {
             closeTerminal()
             body.append(form)
+            void invoke<BoardEvent[]>('events', meta?.slug, card.id)
+                .then((found) => {
+                    const events = found.filter((row) => row.kind !== 'commented')
+                    if (disposed || painted !== drawerPaint || !events.length) return
+                    const history = el('div')
+                    paintIndex(card, history, events)
+                    fields.insertBefore(label('History'), threadLabel)
+                    fields.insertBefore(history, threadLabel)
+                })
+                .catch(() => undefined)
         }
         drawer.append(head, body)
     }
@@ -2939,25 +2941,31 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     })
 
     const watchRow = (run: WatchRun): HTMLElement => {
-        const row = el('button', 'dya-entry dya-entry--row')
-        row.type = 'button'
+        const row = el('tr', 'dya-row')
+        row.tabIndex = 0
 
-        const dot = el('span', light(run.waiting ? 'warning' : 'busy'))
+        const name = el('td', 'dya-table__name')
+        const legend = el('span', 'kanban-run-name')
+        legend.append(el('span', light(run.waiting ? 'warning' : 'busy')), el('span', undefined, run.title))
+        name.append(legend)
 
-        const said = [
-            run.board,
-            run.kind === 'review' ? 'review' : null,
-            ago(run.startedAt, clock),
-            run.tool ?? run.state,
-            `${tokens(run.inputTokens + run.outputTokens)} tok`
-        ]
-            .filter(Boolean)
-            .join(' - ')
+        const kind = el('td', 'dya-table__fit')
+        kind.append(el('span', 'dya-tag', run.kind === 'review' ? 'Review' : 'Implement'))
 
-        row.append(dot, el('span', 'dya-name', run.title), el('span', 'dya-meta', said))
-        if (run.waiting) row.append(el('span', 'dya-tag', 'Waiting on you'))
+        const state = el('td', 'dya-table__prose')
+        if (run.waiting) state.append(el('span', 'dya-badge dya-badge--warning', 'Waiting on you'))
+        else state.textContent = run.tool ?? run.state
 
-        row.addEventListener('click', () => {
+        row.append(
+            name,
+            el('td', 'dya-table__fit dya-meta', run.board),
+            kind,
+            state,
+            el('td', 'dya-table__num', `${tokens(run.inputTokens + run.outputTokens)} tok`),
+            el('td', 'dya-table__end dya-meta', ago(run.startedAt, clock))
+        )
+
+        const go = (): void => {
             const target = run.slug
             const card = run.cardId
             closeWatch()
@@ -2973,6 +2981,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                     focusCard(card)
                 })
                 .catch(fail)
+        }
+        row.addEventListener('click', go)
+        row.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return
+            event.preventDefault()
+            go()
         })
         return row
     }
@@ -3032,20 +3046,31 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (shape.runs.length) {
             const runsGroup = el('div', 'kanban-group')
             runsGroup.append(el('span', 'dya-eyebrow', 'runs'))
-            for (const run of shape.runs) runsGroup.appendChild(watchRow(run))
+            const runsTable = el('table', 'dya-table kanban-index')
+            const runsBody = el('tbody')
+            for (const run of shape.runs) runsBody.appendChild(watchRow(run))
+            runsTable.append(runsBody)
+            runsGroup.appendChild(runsTable)
             holder.appendChild(runsGroup)
         }
 
         if (shape.problems.length) {
             const problemGroup = el('div', 'kanban-group')
             problemGroup.append(el('span', 'dya-eyebrow', 'problems'))
+            const problemTable = el('table', 'dya-table')
+            const problemBody = el('tbody')
             for (const entry of shape.problems) {
-                const row = el('div', 'dya-entry dya-entry--row')
-                row.append(el('span', light('warning')))
-                const where = shape.boards.find((board) => board.slug === entry.slug)?.name ?? 'this machine'
-                row.append(el('span', 'dya-name', where), el('span', 'dya-meta dya-meta--wrap', entry.problem))
-                problemGroup.appendChild(row)
+                const where = shape.boards.find((board) => board.slug === entry.slug)?.name ?? 'This machine'
+                const name = el('td', 'dya-table__name')
+                const legend = el('span', 'kanban-run-name')
+                legend.append(el('span', light('warning')), el('span', undefined, where))
+                name.append(legend)
+                const row = el('tr')
+                row.append(name, el('td', 'dya-table__prose', entry.problem))
+                problemBody.appendChild(row)
             }
+            problemTable.append(problemBody)
+            problemGroup.appendChild(problemTable)
             holder.appendChild(problemGroup)
         }
 

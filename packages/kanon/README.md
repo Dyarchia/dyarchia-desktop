@@ -74,7 +74,7 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
   regions it shows, never how far things stretch. `grid` is a gallery of fixed-width things, `tile--new`
   first; table columns are content width; `form` values up to 560px. Actions live in `handle.toolbar`.
 - **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger.
-  **`palette`** (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first, over rows.
+  **`palette`** (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first (Ctrl+P pins), over rows.
 - **A lane answers a drag**: `--accept` the accent's soft ground, `--refuse` red's (text-muted 4.52 at peak).
 
 ## Components

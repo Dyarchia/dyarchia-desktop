@@ -11,6 +11,7 @@ export type { GlyphName } from './glyphs.js'
 export type { Hue } from './hues.js'
 
 import type { Hue } from './hues.js'
+import type { GlyphName } from './glyphs.js'
 
 export interface PanelDescriptor {
     id: string
@@ -181,6 +182,7 @@ export interface PluginContext {
      */
     hues(keys: Iterable<string>): Record<string, Hue>
     when(value: Date | number | string | null | undefined): string
+    glyph(name: GlyphName): string
     shell: ShellApi
 }
 

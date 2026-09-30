@@ -7,37 +7,6 @@
 const ICON =
     '<svg viewBox="9.15 5 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M39.843 34.81h-29.4c-.42 0-.683-.474-.473-.855l7.35-13.24 7.351-13.238a.537.537 0 0 1 .947 0l4.728 8.517a6.521 6.521 0 0 0 1.57 12.848c1.765 0 3.369-.7 4.542-1.843l3.861 6.956c.21.378-.053.854-.473.854h-.003Z" fill="url(#crawlee-body)" stroke="url(#crawlee-body)" stroke-width="1.039"/><path d="M37.855 25.017a6.519 6.519 0 0 1-5.938 3.825 6.518 6.518 0 0 1-6.52-6.52 6.518 6.518 0 0 1 9.343-5.878" stroke="url(#crawlee-arc)" stroke-width="2"/><defs><linearGradient id="crawlee-body" x1="40.393" y1="7.193" x2="12.912" y2="37.541" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient><linearGradient id="crawlee-arc" x1="37.855" y1="15.803" x2="24.829" y2="28.247" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB200"/><stop offset=".53" stop-color="#F98618"/><stop offset="1" stop-color="#EB284B"/></linearGradient></defs></svg>'
 
-const CLOSE =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>'
-
-const PLUS =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
-
-const BOOK =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>'
-
-/*
- * The shared action glyphs, drawn as packages/sdk/src/glyphs.ts draws them. This file is served
- * unbuilt, so it carries its own copy of the few it uses.
- */
-const SEARCH =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5"/></svg>'
-
-const SAVE =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg>'
-
-const INSPECT =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
-
-const DELETE =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>'
-
-const FOLDER =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>'
-
-const OPEN =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="m20 4-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
-
 const STYLE = `
 .crw-root {
     display: flex;
@@ -566,9 +535,9 @@ function mount(ctx, container, handle) {
         control.setAttribute('interestfor', tip.id)
     }
 
-    function iconKey(glyph, label, tone = '') {
+    function iconKey(name, label, tone = '') {
         const key = button(tone ? `dya-key ${tone}` : 'dya-key')
-        key.innerHTML = glyph
+        key.innerHTML = ctx.glyph(name)
         key.setAttribute('aria-label', label)
         withTip(key, label)
         return key
@@ -746,7 +715,7 @@ function mount(ctx, container, handle) {
         grip.setAttribute('aria-label', 'Resize')
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
-        const close = iconKey(CLOSE, 'Close')
+        const close = iconKey('close', 'Close')
         close.addEventListener('click', () => {
             log.hidden = true
         })
@@ -1125,11 +1094,11 @@ function mount(ctx, container, handle) {
         if (!hit.file) return null
         const strip = el('div', 'dya-join')
         if (ctx.shell.canOpen(hit.file)) {
-            const open = iconKey(OPEN, 'Open')
+            const open = iconKey('open', 'Open')
             open.onclick = () => void ctx.shell.open({ path: hit.file, line: hit.line })
             strip.append(open)
         }
-        const reveal = iconKey(FOLDER, 'Show')
+        const reveal = iconKey('folder', 'Show')
         reveal.onclick = () => void ctx.shell.reveal(hit.file)
         strip.append(reveal)
         return strip
@@ -1149,7 +1118,7 @@ function mount(ctx, container, handle) {
         scope.setAttribute('aria-label', 'Repository')
         const scopeBox = el('span', 'dya-select')
         scopeBox.appendChild(scope)
-        const go = iconKey(SEARCH, 'Search')
+        const go = iconKey('search', 'Search')
         const strip = el('div', 'dya-join crw-search')
         strip.append(query, scopeBox, go)
         bar.append(strip)
@@ -1258,11 +1227,11 @@ function mount(ctx, container, handle) {
         sheet.hidden = true
         const title = el('span', 'dya-title')
         const state = el('span', 'crw-status')
-        const remove = iconKey(DELETE, 'Delete', 'dya-key--danger')
+        const remove = iconKey('delete', 'Delete', 'dya-key--danger')
         const inspect = button('dya-button', 'Inspect')
         const save = button('dya-button dya-button--primary', 'Save')
         const actions = el('div', 'dya-join')
-        const close = iconKey(CLOSE, 'Close')
+        const close = iconKey('close', 'Close')
         const end = el('div', 'dya-sheet__end')
         end.append(actions, close)
         const head = el('header', 'dya-sheet__head')
@@ -1296,7 +1265,7 @@ function mount(ctx, container, handle) {
         library.setAttribute('aria-modal', 'true')
         library.hidden = true
         const libraryState = el('span', 'crw-status')
-        const libraryClose = iconKey(CLOSE, 'Close')
+        const libraryClose = iconKey('close', 'Close')
         const libraryEnd = el('div', 'dya-sheet__end')
         libraryEnd.append(libraryClose)
         const libraryHead = el('header', 'dya-sheet__head')
@@ -1329,7 +1298,7 @@ function mount(ctx, container, handle) {
         function buildProbe() {
             const node = el('div', 'crw-region crw-probe')
             const light = el('span', 'dya-light dya-light--busy')
-            const shut = iconKey(CLOSE, 'Close')
+            const shut = iconKey('close', 'Close')
             const tail = el('div', 'dya-sheet__end')
             tail.append(shut)
             const log = el('pre', 'dya-log crw-log')
@@ -1601,7 +1570,7 @@ function mount(ctx, container, handle) {
         function newTargetCard() {
             const card = button('dya-tile dya-tile--new')
             const icon = el('span', 'dya-tile__icon')
-            icon.innerHTML = PLUS
+            icon.innerHTML = ctx.glyph('add')
             card.append(icon, el('span', 'dya-tile__name', 'New target'))
             card.addEventListener('click', () => create(card))
             return card
@@ -1610,7 +1579,7 @@ function mount(ctx, container, handle) {
         function libraryCard() {
             const card = button('dya-tile')
             const icon = el('span', 'dya-tile__icon')
-            icon.innerHTML = BOOK
+            icon.innerHTML = ctx.glyph('book')
             card.append(icon, el('span', 'dya-tile__name', 'Library'))
             card.addEventListener('click', () => browse(card))
             return card

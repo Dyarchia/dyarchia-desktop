@@ -19,7 +19,8 @@ tools/               contrast.py measures, palette.py lifts the six colours to l
 
 ```text
 glass   the panel only: dark metal a shade under the ground, the light passing through, a chrome rim
-key     every control: a near-black face under a light rim, a hard 3px edge that drops 2px pressed
+key     every control: a near-black face under a light rim, a hard 3px edge that drops 2px pressed;
+        a tab's own keys carry no rim, the tab being their frame
 pill    every piece of information: round, words in the sans; never pressable
 light   status only: a green, yellow or red dot, or a hollow top-ink ring for what is under way
 ```

@@ -708,7 +708,6 @@ function mount(ctx, container, handle) {
             if (page.diff) item.append(diffBlock(page.diff))
             changes.append(item)
         }
-        changes.firstElementChild?.setAttribute('open', '')
         region.replaceChildren(head, changes)
     }
 

@@ -701,6 +701,21 @@
 }
 
 /*
+ * A tab's own keys draw no line, at rest or under the pointer: no rim and no lit top, because the
+ * tab around them is already the frame and a line round each key was a box inside a box. The face,
+ * the edge and the drop stay.
+ */
+.dya-tab__action,
+.dya-tab__action:is(:hover, :focus-visible) {
+    border-color: transparent;
+    box-shadow: var(--dya-elev-key-bare);
+}
+
+.dya-tab__action:active {
+    box-shadow: var(--dya-elev-key-bare-down);
+}
+
+/*
  * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
  * nothing on it yet offers what to do next, rather than stating that there is nothing. It is a
  * key, as large as it needs to be, with the same corners, edge and drop.

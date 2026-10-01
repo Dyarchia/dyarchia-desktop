@@ -38,4 +38,29 @@ document.addEventListener('click', (event) => {
 }, true)
 window.addEventListener('blur', () => release(document.activeElement, false))
 
+/*
+ * The browser closes a tip when the pointer leaves its key, and only then. A key redrawn or taken
+ * away under the pointer, by a fold, a board refreshing or a menu opening, never sees the pointer
+ * leave, and its tip stayed open over whatever came next. So every pointer move checks each open
+ * tip against its key: a key that is gone, or is neither under the pointer nor holding the
+ * keyboard's focus, takes its tip away.
+ */
+const shown = new Set<HTMLElement>()
+
+document.addEventListener('toggle', (event) => {
+    const tip = event.target
+    if (!(tip instanceof HTMLElement) || !tip.classList.contains('dya-tip')) return
+    if ((event as ToggleEvent).newState === 'open') shown.add(tip)
+    else shown.delete(tip)
+}, true)
+
+document.addEventListener('pointermove', () => {
+    for (const tip of shown) {
+        const key = document.querySelector(`[interestfor="${tip.id}"]`)
+        if (key?.matches(':hover, :focus-visible')) continue
+        shown.delete(tip)
+        if (tip.matches(':popover-open')) tip.hidePopover()
+    }
+}, { passive: true })
+
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />)

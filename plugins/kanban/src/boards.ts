@@ -1,9 +1,9 @@
-import { app } from 'electron'
+import { app, shell } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { stat } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { isAbsolute, join } from 'node:path'
+import { homedir, tmpdir } from 'node:os'
+import { isAbsolute, join, parse, relative, resolve } from 'node:path'
 import type { BoardDraft, BoardMeta, Settings } from './types.js'
 import { Refusal } from './refusal.js'
 import * as runners from './runners.js'
@@ -259,4 +259,26 @@ export async function setArchived(slug: string, archived: boolean): Promise<Boar
     boards[index] = { ...boards[index], archived }
     await persist(boards)
     return boards[index]
+}
+
+function within(parent: string, child: string): boolean {
+    const path = relative(resolve(parent), resolve(child))
+    return path === '' || (!path.startsWith('..') && !isAbsolute(path))
+}
+
+/*
+ * Deleting a board sends its project folder to the Recycle Bin, never past it, so a wrong click is
+ * undone from the bin. A folder another board works in, or one that holds the home directory or
+ * this application's data, is kept, and the reason is what the call returns.
+ */
+export async function discard(workdir: string, others: BoardMeta[]): Promise<string | null> {
+    const shared = others.find((entry) => within(entry.workdir, workdir) || within(workdir, entry.workdir))
+    if (shared) return `Folder kept: ${shared.name} uses it`
+    const guarded = [homedir(), app.getPath('userData'), root()]
+    if (parse(resolve(workdir)).root === resolve(workdir) || guarded.some((path) => within(workdir, path))) {
+        return 'Folder kept: it holds your home or app data'
+    }
+    if (!(await stat(workdir).catch(() => null))) return null
+    await shell.trashItem(resolve(workdir))
+    return null
 }

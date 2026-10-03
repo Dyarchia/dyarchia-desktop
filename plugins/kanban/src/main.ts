@@ -165,7 +165,7 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('deleteBoard', async (slug) => {
         const target = String(slug)
-        await boards.find(target)
+        const meta = await boards.find(target)
         if ((await running(target)).length) throw new Refusal('that board still has a card running')
 
         for (const card of await board.cards(target)) {
@@ -176,7 +176,7 @@ export function activate(ctx: PluginMainContext): void {
         await reclaim(boards.boardRoot(target), boards.root())
         await reclaim(boards.workspacesRoot(target), boards.workspacesParent())
         registryChanged()
-        return true
+        return boards.discard(meta.workdir, await boards.list())
     })
 
     ctx.handle('board', async (slug): Promise<BoardPayload> => {

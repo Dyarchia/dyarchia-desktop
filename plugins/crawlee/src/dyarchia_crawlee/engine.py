@@ -25,6 +25,7 @@ from dyarchia_crawlee.errors import BrowserNotInstalledError
 from dyarchia_crawlee.extraction.boilerplate import trim_shared_boilerplate
 from dyarchia_crawlee.extraction.dom import SoupAdapter, adapt
 from dyarchia_crawlee.extraction.strategies import RawPage, build_item
+from dyarchia_crawlee.llms import extra_pages
 from dyarchia_crawlee.logs import apply_log_policy
 from dyarchia_crawlee.models import FailureRecord, RunSpec, ScrapedItem
 from dyarchia_crawlee.patterns import to_matchers
@@ -204,6 +205,22 @@ async def retry_next_candidate(context: Any, spec: RunSpec) -> bool:
     return True
 
 
+def _fetcher(spec: RunSpec, settings: Settings) -> Callable[[str], Any]:
+    """Read one index or sitemap with the run's own client, and treat any failure as nothing listed."""
+    client = build_http_client(spec, settings)
+
+    async def fetch(url: str) -> str | None:
+        try:
+            response = await client.send_request(url)
+            if response.status_code >= 400:
+                return None
+            return (await response.read()).decode('utf-8', 'replace')
+        except Exception:
+            return None
+
+    return fetch
+
+
 async def build_request_source(spec: RunSpec, settings: Settings) -> RequestManager | None:
     """Assemble the request manager: per-domain throttling, plus sitemap seeding when configured."""
     client = build_http_client(spec, settings)
@@ -228,13 +245,14 @@ async def build_request_source(spec: RunSpec, settings: Settings) -> RequestMana
     return await loader.to_tandem(throttler)
 
 
-def seed_requests(spec: RunSpec) -> list[str | Request]:
-    """The start URLs as they will actually be fetched."""
+def seed_requests(spec: RunSpec, extra: list[str] | None = None) -> list[str | Request]:
+    """The start URLs, and the pages only an llms.txt lists, as they will actually be fetched."""
+    urls = [*spec.start_urls, *(extra or [])]
     if not spec.fetch_suffix:
-        return list(spec.start_urls)
+        return list(urls)
 
     seeds: list[str | Request] = []
-    for url in spec.start_urls:
+    for url in urls:
         fetched, state = _suffix_request(url, spec.fetch_suffix)
         seeds.append(Request.from_url(fetched, user_data=state))
     return seeds
@@ -294,12 +312,12 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
         """
         if await retry_next_candidate(context, spec):
             return
-        listed = spec.seeded_by_sitemap and not spec.follows_links
+        listed = spec.seeded_by_index and not spec.follows_links
         failures.append(
             FailureRecord(
                 url=_canonical_url(context.request),
                 error=(
-                    'the site serves nothing at this URL, so the sitemap entry is stale'
+                    'the site serves nothing at this URL, so the index listing it is stale'
                     if listed
                     else 'the site serves nothing at this URL'
                 ),
@@ -319,13 +337,14 @@ async def execute(spec: RunSpec, settings: Settings | None = None) -> RunResult:
         )
 
     request_manager = await build_request_source(spec, settings)
+    extra = await extra_pages(spec, _fetcher(spec, settings)) if spec.llms_txt else []
     crawler = build_crawler(spec, settings, handle_page, handle_failure, request_manager)
     apply_log_policy(crawler)
     if crawl_delay_is_ours(spec, request_manager):
         silence_crawl_delay_warning(crawler)
 
     try:
-        statistics = await crawler.run(seed_requests(spec) or None)
+        statistics = await crawler.run(seed_requests(spec, extra) or None)
     except Exception as error:
         raise _translate_browser_error(error) from error
 

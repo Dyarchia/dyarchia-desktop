@@ -37,7 +37,7 @@ async def build_request_manager(spec: RunSpec) -> RequestManager | None:
     if not spec.respect_robots:
         return None
 
-    domains = target_domains([*spec.start_urls, *spec.sitemap_urls])
+    domains = target_domains(spec.sources)
     if not domains:
         return None
 
@@ -63,7 +63,7 @@ async def apply_robots_crawl_delay(
         return []
 
     applied = []
-    for url in _one_url_per_domain([*spec.start_urls, *spec.sitemap_urls]):
+    for url in _one_url_per_domain(spec.sources):
         try:
             robots = await RobotsTxtFile.find(url, client)
         except Exception:
@@ -110,7 +110,7 @@ def crawl_delay_is_ours(spec: RunSpec, manager: RequestManager | None) -> bool:
         spec.respect_robots
         and manager is not None
         and not isinstance(manager, ThrottlingRequestManager)
-        and bool(target_domains([*spec.start_urls, *spec.sitemap_urls]))
+        and bool(target_domains(spec.sources))
     )
 
 

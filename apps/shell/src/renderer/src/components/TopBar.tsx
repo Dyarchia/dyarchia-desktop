@@ -116,18 +116,14 @@ function Build(): React.JSX.Element {
     }
     if (phase === 'failed') {
         return (
-            <>
-                <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
-                <button className="dya-button topbar-update" onClick={check}>
-                    <span className="dya-light dya-light--warning" />
-                    Retry update
-                </button>
-            </>
+            <button className="dya-button topbar-update" onClick={check}>
+                <span className="dya-light dya-light--warning" />
+                Retry update
+            </button>
         )
     }
     return (
         <>
-            <span className="dya-mono">{__DYARCHIA_VERSION__}</span>
             {asked && phase === 'checking' && <span className="dya-key-label">checking…</span>}
             {told && (
                 <span
@@ -149,6 +145,7 @@ export function TopBar({ palette, onLauncher }: TopBarProps): React.JSX.Element 
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="dya-toolbar topbar-build">
+                <span className="dya-wordmark">Dyarchia desktop</span>
                 <Build />
             </div>
             <div className="topbar-right">

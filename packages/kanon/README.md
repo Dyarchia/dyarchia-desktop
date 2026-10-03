@@ -81,7 +81,7 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
 
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead carved splitter stack
+             --pending --ghosted --carried) card__header masthead wordmark splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
@@ -95,6 +95,6 @@ Content      table (__num __fit __name __subject __end __prose __section) row (-
              steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
 Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) editor terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
-             palette (__body __apps __app __pin __list __row __icon __name __meta __empty)
+             palette (__body __apps __app __pin __list __row __icon __name __meta)
 Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading
 ```

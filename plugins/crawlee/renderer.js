@@ -364,6 +364,7 @@ function tell(node, text, tone) {
 
 function stateBadge(corpus) {
     if (corpus.error) return el('span', 'dya-badge dya-badge--danger', 'Unreadable')
+    if (corpus.never_crawled) return el('span', 'dya-tag', 'Not crawled')
 
     /*
      * A sweep that found nothing writes no change report, so the one on disk is older than the
@@ -670,6 +671,10 @@ function mount(ctx, container, handle) {
         head.append(heading)
         if (corpus.error) {
             region.replaceChildren(head, el('p', 'dya-problem', corpus.error))
+            return
+        }
+        if (corpus.never_crawled) {
+            region.replaceChildren(head)
             return
         }
         region.replaceChildren(head, el('span', 'dya-loading'))
@@ -1001,8 +1006,8 @@ function mount(ctx, container, handle) {
                     if (badge) change.append(badge)
                     row.append(
                         el('td', 'dya-table__name', corpus.name),
-                        el('td', 'dya-table__num', corpus.pages.toLocaleString('en')),
-                        el('td', 'dya-table__num', bytes(corpus.bytes)),
+                        el('td', 'dya-table__num', corpus.never_crawled ? '' : corpus.pages.toLocaleString('en')),
+                        el('td', 'dya-table__num', corpus.never_crawled ? '' : bytes(corpus.bytes)),
                         change
                     )
                     row.addEventListener('click', () => void show(corpus))

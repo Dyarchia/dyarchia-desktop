@@ -75,13 +75,27 @@ def test_the_digest_says_where_the_page_now_lives(tmp_path: Path) -> None:
     assert page.path == 'pages/s/one.md'
 
 
-def test_a_missing_report_is_reported_rather_than_raised(tmp_path: Path) -> None:
+def test_a_target_never_crawled_is_not_an_error(tmp_path: Path) -> None:
     settings = Settings(data_dir=tmp_path)
     (tmp_path / 'empty').mkdir()
 
     target = build(['empty'], settings).targets[0]
 
+    assert target.error is None
+    assert target.never_crawled
+    assert target.summary == 'not crawled yet'
+    assert not target.changed
+
+
+def test_a_snapshot_without_its_report_is_reported_rather_than_raised(tmp_path: Path) -> None:
+    settings = Settings(data_dir=tmp_path)
+    (tmp_path / 'broken').mkdir()
+    (tmp_path / 'broken' / 'manifest.json').write_text('{}', encoding='utf-8')
+
+    target = build(['broken'], settings).targets[0]
+
     assert target.error is not None
+    assert not target.never_crawled
     assert not target.changed
 
 

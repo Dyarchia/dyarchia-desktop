@@ -81,13 +81,13 @@ rich           MIT
 PyYAML         MIT            
 ```
 
-## FFmpeg, fetched for the browser
+## FFmpeg, fetched for Forge
 
-Turning the browser plugin on in Setup downloads **FFmpeg** when the machine does not already
-have it. FFmpeg is the work of **the FFmpeg developers** (https://ffmpeg.org), who credit
-themselves collectively and name every contributor in the project's history
-(https://git.ffmpeg.org/ffmpeg); the binary says "Copyright (c) 2000-2026 the FFmpeg
-developers".
+Turning Forge on in Setup downloads **FFmpeg** when the machine does not already have it; the
+player and the browser use the same binary when it is there. FFmpeg is the work of **the FFmpeg
+developers** (https://ffmpeg.org), who credit themselves collectively and name every contributor
+in the project's history (https://git.ffmpeg.org/ffmpeg); the binary says "Copyright (c)
+2000-2026 the FFmpeg developers".
 
 - Windows x64: the 9.0.2 essentials build by **Gyan Doshi** (https://www.gyan.dev/ffmpeg/builds/,
   mirrored at https://github.com/GyanD/codexffmpeg), configured `--enable-gpl --enable-version3`

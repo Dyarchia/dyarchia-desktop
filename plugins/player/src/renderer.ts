@@ -1,12 +1,13 @@
 import { glyph, injectStyles, tips } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
-import { MIME_TYPES } from './media.js'
+import { CONVERTIBLE, MIME_TYPES } from './media.js'
 
 interface Media {
     path: string
     name: string
     kind: 'audio' | 'video'
     src: string
+    convert: boolean
 }
 
 interface Instance {
@@ -70,22 +71,33 @@ const STYLES = `
 .player-stage audio {
     width: min(420px, 100%);
 }
+.player-wait {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-3);
+}
 `
 
 export function activate(ctx: PluginContext): void {
-    ctx.registerOpener(
-        {
-            panelId: 'player',
-            extensions: Object.keys(MIME_TYPES),
-            route: () => [...instances.entries()].find(([, instance]) => instance.idle())?.[0] ?? null
-        },
-        async (request) => {
-            const target = request.instanceId ?? [...instances.keys()][0]
-            const instance = target ? instances.get(target) : undefined
-            if (instance) await instance.play(request.path)
-            else waiting.set(target ?? '', request.path)
-        }
-    )
+    const opener = (extensions: string[]): void =>
+        ctx.registerOpener(
+            {
+                panelId: 'player',
+                extensions,
+                route: () => [...instances.entries()].find(([, instance]) => instance.idle())?.[0] ?? null
+            },
+            async (request) => {
+                const target = request.instanceId ?? [...instances.keys()][0]
+                const instance = target ? instances.get(target) : undefined
+                if (instance) await instance.play(request.path)
+                else waiting.set(target ?? '', request.path)
+            }
+        )
+    opener(Object.keys(MIME_TYPES))
+    const convertible = ctx.invoke('ffmpeg') as Promise<boolean>
+    void convertible.then((has) => {
+        if (has) opener(CONVERTIBLE)
+    })
 
     ctx.registerCommand({
         id: 'player.open',
@@ -132,7 +144,10 @@ export function activate(ctx: PluginContext): void {
             back.innerHTML = glyph('grid')
             back.setAttribute('aria-label', 'Library')
             withTip(back, 'Library')
-            back.onclick = () => showEmpty()
+            back.onclick = () => {
+                void ctx.invoke('release', handle.instanceId)
+                showEmpty()
+            }
             back.hidden = true
             handle.toolbar.append(back)
 
@@ -179,25 +194,78 @@ export function activate(ctx: PluginContext): void {
                 paintGallery()
             }
 
+            /*
+             * A file Chromium cannot play is converted first: the ring fills as FFmpeg goes, the tab
+             * already carries the name, and the converted copy plays when it is whole. A file that
+             * looked playable and is not gets the same second chance on its first error.
+             */
+            async function convert(media: Media): Promise<Media> {
+                const ring = document.createElement('span')
+                ring.className = 'dya-ring dya-ring--current'
+                ring.style.setProperty('--dya-ring-n', '20')
+                const figure = document.createElement('span')
+                figure.className = 'dya-meta'
+                figure.textContent = '0%'
+                const wait = document.createElement('div')
+                wait.className = 'player-wait'
+                wait.append(ring, figure)
+                stage.className = 'player-stage'
+                stage.replaceChildren(wait)
+                handle.setTitle(media.name)
+                back.hidden = false
+                const off = ctx.on('progress', (instance: unknown, percent: unknown) => {
+                    if (instance !== handle.instanceId) return
+                    ring.style.setProperty('--dya-ring-done', String(Math.floor(Number(percent) / 5)))
+                    figure.textContent = `${Number(percent)}%`
+                })
+                try {
+                    return (await ctx.invoke('prepare', media.path, handle.instanceId)) as Media
+                } finally {
+                    off()
+                }
+            }
+
+            function mount(media: Media, retry: boolean): void {
+                const element = document.createElement(media.kind === 'video' ? 'video' : 'audio')
+                element.controls = true
+                element.autoplay = true
+                element.src = media.src
+                element.onerror = () => {
+                    if (!retry || disposed) return showEmpty('Cannot play')
+                    void convertible.then(async (has) => {
+                        if (!has) return showEmpty('Cannot play')
+                        try {
+                            mount(await convert(media), false)
+                        } catch (error) {
+                            if (!disposed && (error as Error).message !== 'Stopped') showEmpty('Cannot play')
+                        }
+                    })
+                }
+                playing = true
+                gallery = null
+                handle.setTitle(media.name)
+                back.hidden = false
+                stage.className = media.kind === 'video' ? 'player-stage player-stage--video' : 'player-stage'
+                stage.replaceChildren(element)
+            }
+
             async function play(path: string): Promise<void> {
                 if (busy) return
                 busy = true
                 try {
-                    const media = (await ctx.invoke('media', path)) as Media
+                    await ctx.invoke('release', handle.instanceId)
+                    let media = (await ctx.invoke('media', path)) as Media
                     if (disposed) return
-                    const element = document.createElement(media.kind === 'video' ? 'video' : 'audio')
-                    element.controls = true
-                    element.autoplay = true
-                    element.src = media.src
-                    element.onerror = () => showEmpty('Cannot play')
-                    playing = true
-                    gallery = null
-                    handle.setTitle(media.name)
-                    back.hidden = false
-                    stage.className = media.kind === 'video' ? 'player-stage player-stage--video' : 'player-stage'
-                    stage.replaceChildren(element)
-                } catch {
-                    showEmpty('Cannot open')
+                    const converted = media.convert
+                    if (converted) {
+                        playing = true
+                        gallery = null
+                        media = await convert(media)
+                        if (disposed) return
+                    }
+                    mount(media, !converted)
+                } catch (error) {
+                    if (!disposed && (error as Error).message !== 'Stopped') showEmpty('Cannot open')
                 } finally {
                     busy = false
                 }
@@ -220,6 +288,7 @@ export function activate(ctx: PluginContext): void {
 
             return () => {
                 disposed = true
+                void ctx.invoke('release', handle.instanceId)
                 instances.delete(handle.instanceId)
                 container.replaceChildren()
             }

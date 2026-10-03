@@ -216,6 +216,11 @@ export interface PluginMainContext {
     handle(channel: string, handler: (...args: unknown[]) => unknown | Promise<unknown>): void
     broadcast(channel: string, ...args: unknown[]): void
     notify(notice: PluginNotice): void
+    /*
+     * Where a binary is, on PATH or where Setup put it, or null when the machine has neither: a
+     * plugin that needs FFmpeg asks here and hides what needs it when the answer is null.
+     */
+    binary(name: string): Promise<string | null>
 }
 
 export function injectStyles(pluginId: string, css: string): void {

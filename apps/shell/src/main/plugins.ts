@@ -9,6 +9,7 @@ import { declarePythonPlugin, invokePythonPlugin, startPythonPlugin } from './py
 import { dataHome, root } from './paths'
 import { hasChosen, isCore, isEnabled, loadEnabled, saveEnabled } from './pluginStore'
 import { withdrawDisabledOffers } from './offers'
+import { findBinary } from './tools'
 
 export interface PluginRequirement {
     kind: string
@@ -255,7 +256,8 @@ async function activateMainModules(): Promise<void> {
                         win.webContents.send(`plugin:${manifest.id}:${channel}`, ...args)
                     }
                 },
-                notify: (notice: PluginNotice) => showNotice(manifest.id, notice)
+                notify: (notice: PluginNotice) => showNotice(manifest.id, notice),
+                binary: findBinary
             })
         } catch (error) {
             console.error(`[plugins] failed to activate main module of "${manifest.id}"`, error)

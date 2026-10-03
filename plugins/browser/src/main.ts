@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path'
 import { FiltersEngine, Request } from '@ghostery/adblocker'
 import type { ElectronRequestType } from '@ghostery/adblocker'
 import type { PluginMainContext } from '@dyarchia/sdk'
+import { watchVideos } from './video.js'
 
 /*
  * The browser's own session is an in-memory partition: its cookies, logins, cache and site storage
@@ -135,6 +136,7 @@ export function activate(ctx: PluginMainContext): void {
     )
     browsing.setPermissionCheckHandler((_contents, permission) => GRANTED.has(permission))
     browsing.setDevicePermissionHandler(() => false)
+    watchVideos(ctx, browsing)
     block(browsing).catch((error: unknown) =>
         console.error('[browser] ad blocking is off this session: its lists could not be loaded', error)
     )

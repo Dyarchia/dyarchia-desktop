@@ -1,8 +1,7 @@
 # Writing a Dyarchia plugin
 
 A plugin is a folder holding `dyarchia-plugin.json` and its bundles. The shell discovers it at
-startup; the workspace copy wins over `~/.dyarchia/plugins/<id>/`. The visual mandate is
-[packages/kanon/README.md](../packages/kanon/README.md).
+startup; the workspace copy wins over `~/.dyarchia/plugins/<id>/`.
 
 ## Manifest
 
@@ -61,17 +60,17 @@ export function activate(ctx: PluginContext): void {
 
 ## Main module
 
-Node, ESM, exporting `activate(ctx)` with `handle`, `broadcast` and `notify({ title, body })`;
-`ctx.dataHome` is where what a plugin makes for the user goes, `~/.dyarchia/data`.
-Channels are short names the shell prefixes: `ctx.handle('spawn')` registers `plugin:<id>:spawn`,
-which `ctx.invoke('spawn')` reaches. Never write the full name. Edits need an app restart.
+Node, ESM, exporting `activate(ctx)` with `handle`, `broadcast`, `notify({ title, body })`,
+`binary(name)` (a tool's path on PATH or where Setup put it, or null) and `dataHome`. Channels are
+short names the shell prefixes: `ctx.handle('spawn')` registers `plugin:<id>:spawn`, which
+`ctx.invoke('spawn')` reaches. Never write the full name. Edits need an app restart.
 
 ## Python plugins
 
 `"python": "main.py"` runs one interpreter per plugin with `packages/pysdk` (stdlib only). The
 shell speaks JSON lines over stdio; invokes run in a thread pool and are correlated by id.
 stdout is the protocol, so `print` goes to stderr. The process gets `DYARCHIA_USER_DATA`,
-`DYARCHIA_DATA_HOME` and `DYARCHIA_PLUGIN_ENV`. `activate(ctx)` has the same three methods.
+`DYARCHIA_DATA_HOME` and `DYARCHIA_PLUGIN_ENV`. `activate(ctx)` has `handle`, `broadcast`, `notify`.
 
 ## Build
 
@@ -89,9 +88,9 @@ folder named by `data`) for what the user would miss.
 ## Kanon
 
 Every `dya-*` class and `--dya-*` token is already in the document. Use them. A plugin's own
-prefixed CSS is layout inside its panel and nothing else: no colour, component, elevation or
-type step. Anything new is declared in `packages/kanon` first, measured on every ground and
-written in its README, and only then used. Panel interiors are transparent.
+prefixed CSS is layout inside its panel and nothing else: no colour, component, elevation or type
+step. Anything new is declared in `packages/kanon` first, measured on every ground and written in
+its [README](../packages/kanon/README.md), and only then used. Panel interiors are transparent.
 
 ## Offering a tool to agents
 

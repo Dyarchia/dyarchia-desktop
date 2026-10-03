@@ -45,37 +45,6 @@ export const STYLES = `
     margin-top: var(--dya-space-2);
 }
 
-/*
- * Folding is there when a column is being looked at, not eight times over at rest. A folded
- * column keeps its key, because it is the only way back, and so does triage, whose fold stands in
- * one strip with the add key that is always there.
- */
-.kanban-fold {
-    opacity: 0;
-    transition: opacity var(--dya-dur-fast) var(--dya-ease);
-}
-
-.kanban-column:hover .kanban-fold,
-.kanban-fold:focus-visible,
-.kanban-column[data-status='triage'] .kanban-fold,
-.kanban-column[data-collapsed='true'] .kanban-fold {
-    opacity: 1;
-}
-
-/*
- * A key that acts on one row of a list, removing a file or a note, is there when that row is
- * being looked at, the way a column's fold is.
- */
-.kanban-reveal {
-    opacity: 0;
-    transition: opacity var(--dya-dur-fast) var(--dya-ease);
-}
-
-.kanban-file:is(:hover, :focus-within) .kanban-reveal,
-.kanban-note:is(:hover, :focus-within) .kanban-reveal {
-    opacity: 1;
-}
-
 .kanban-main {
     position: relative;
     flex: 1;

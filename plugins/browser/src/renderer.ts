@@ -77,16 +77,6 @@ const STYLES = `
 .brw-fail[hidden] {
     display: none;
 }
-.brw-marks > .dya-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--dya-space-1);
-}
-.brw-marks > .dya-chip > svg {
-    width: 14px;
-    height: 14px;
-    flex: none;
-}
 .brw-menu {
     position-area: bottom span-right;
     margin: var(--dya-space-1) 0 0;

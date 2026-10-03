@@ -59,6 +59,7 @@ interface Row {
     install: HTMLButtonElement | null
     why: HTMLElement | null
     chips: HTMLElement[]
+    mark: HTMLElement
 }
 
 /*
@@ -82,6 +83,9 @@ const STYLES = `
 }
 .set-later {
     visibility: hidden;
+}
+.set-list:not(.set-list--waiting) .set-later {
+    display: none;
 }
 .set-log-row > td {
     padding-top: 0;
@@ -180,6 +184,10 @@ export function activate(ctx: PluginContext): void {
             if (!row.pending) return
             const waiting = wanted.has(row.entry.manifest.id) !== loadedIds.has(row.entry.manifest.id)
             row.pending.classList.toggle('set-later', !waiting)
+            table.classList.toggle(
+                'set-list--waiting',
+                [...rows.values()].some((each) => each.pending && !each.pending.classList.contains('set-later'))
+            )
         }
 
         async function persist(): Promise<void> {
@@ -282,7 +290,8 @@ export function activate(ctx: PluginContext): void {
                 logRow: null,
                 install: null,
                 why: null,
-                chips: []
+                chips: [],
+                mark
             }
 
             const switchCell = cell('dya-table__fit set-switch')
@@ -367,6 +376,7 @@ export function activate(ctx: PluginContext): void {
                 for (const entry of ordered) {
                     const row = rows.get(entry.manifest.id)!
                     row.entry = entry
+                    if (entry.icon?.startsWith('<svg') && !row.mark.firstChild) row.mark.innerHTML = ownIds(entry.icon)
                     if (row.tick) row.tick.checked = wanted.has(entry.manifest.id)
                     paintPending(row)
                 }

@@ -1,6 +1,6 @@
 # Dyarchia desktop
 
-**ALPHA — 0.6.2-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.6.3-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 ## 1. What it is

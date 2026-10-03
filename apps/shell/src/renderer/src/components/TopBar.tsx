@@ -145,7 +145,7 @@ export function TopBar({ palette, onLauncher }: TopBarProps): React.JSX.Element 
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="dya-toolbar topbar-build">
-                <span className="dya-wordmark">Dyarchia desktop</span>
+                <span className="dya-carved dya-carved--bar">Dyarchia desktop</span>
                 <Build />
             </div>
             <div className="topbar-right">

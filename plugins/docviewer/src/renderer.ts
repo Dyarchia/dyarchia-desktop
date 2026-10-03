@@ -94,29 +94,18 @@ const STYLES = `
 const DOCS_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1.6 20.4 6.6H3.6z" fill="#eceef2"/><circle cx="3.6" cy="6" r="1.1" fill="#eceef2"/><circle cx="20.4" cy="6" r="1.1" fill="#eceef2"/><rect x="4.6" y="7.8" width="14.8" height="12.6" fill="#eceef2"/><rect x="3" y="20.4" width="18" height="2.2" rx=".4" fill="#eceef2"/><text x="12" y="11.9" text-anchor="middle" font-family="Spectral, Georgia, serif" font-weight="500" font-size="3.6" fill="#0a0a0b">RETRA</text><path d="M7 14.4h10M7 16.6h10M7 18.8h6.4" stroke="#0a0a0b" stroke-width=".9" stroke-linecap="round"/></svg>'
 
-const EYE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
 const PENCIL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 
-const CODE_ICON =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
-
 /*
- * The pencil used to mean "show me the markdown", which is not what a pencil means anywhere
- * else, and the first thing anybody did with it was try to type. It edits now, and reading the
- * source got the glyph that means source. `rendered` belongs to markdown alone; everything else
- * this panel opens is already its own source.
+ * A page is read until the pencil is on, and then it is written. Reading is markdown rendered or,
+ * for anything else, the file as it is; the editor is the source, so a key that only showed the
+ * source was a third way of looking at one file, and three looks plus save, reveal, delete and
+ * pages was seven keys for a page.
  */
 const UNTITLED = /^Untitled( \d+)?\.md$/
 
-const MODES = [
-    { id: 'rendered', label: 'Read', icon: EYE_ICON, markdownOnly: true },
-    { id: 'source', label: 'Source', icon: CODE_ICON, markdownOnly: false },
-    { id: 'edit', label: 'Edit', icon: PENCIL_ICON, markdownOnly: false }
-] as const
-
-type Mode = (typeof MODES)[number]['id']
+type Mode = 'rendered' | 'source' | 'edit'
 
 /*
  * The grammar to colour a file with is its extension, which is the only thing the reader knows
@@ -151,6 +140,7 @@ export function activate(ctx: PluginContext): void {
     const readers = new Map<string, Reader>()
     const waiting = new Map<string, OpenRequest>()
     const fresh = new Set<string>()
+    const galleries = new Set<() => void>()
 
     function route(request: OpenRequest): string | null {
         let idle: string | null = null
@@ -197,6 +187,16 @@ export function activate(ctx: PluginContext): void {
     })
 
     ctx.registerCommand({
+        id: 'folder',
+        title: 'Docs folder',
+        icon: glyph('folder'),
+        run: async () => {
+            const picked = (await ctx.invoke('chooseFolder')) as FolderResult
+            if (picked.path) for (const repaint of galleries) repaint()
+        }
+    })
+
+    ctx.registerCommand({
         id: 'open',
         title: 'Open file',
         icon: glyph('folder'),
@@ -223,19 +223,14 @@ export function activate(ctx: PluginContext): void {
 
             /*
              * The file's name is the tab's title, and what can be done to it sits in the tab row
-             * as one strip: the views, save while editing, and the pages, which puts this tab back
-             * on its gallery. Closing the tab is the dock's key and only the dock's. With nothing
-             * open the gallery is the way in, and the row is empty.
+             * as one strip: edit, save while there is something to save, delete, and the pages,
+             * which puts this tab back on its gallery. Save appearing is what says a change is
+             * unsaved. Closing the tab is the dock's key and only the dock's.
              */
             const header = document.createElement('div')
             header.className = 'docviewer-header'
             const strip = document.createElement('div')
             strip.className = 'dya-join'
-
-            const unsaved = document.createElement('span')
-            unsaved.className = 'dya-badge dya-badge--warning'
-            unsaved.textContent = 'Unsaved'
-            unsaved.hidden = true
 
             /*
              * A save that fails says so beside the control that failed, and leaves the document
@@ -249,20 +244,19 @@ export function activate(ctx: PluginContext): void {
             const save = document.createElement('button')
             save.type = 'button'
 
-            header.append(unsaved, problem, strip)
+            header.append(problem, strip)
             header.hidden = true
 
             /*
-             * With no page open the tab row says where the pages live: the folder's name on a key
-             * that chooses another, and a key that shows it in the file manager. A page made here
-             * that nobody could find again was the reason.
+             * With no page open the tab row says where the pages live: the folder's name, on a key
+             * that shows it in the file manager. A page made here that nobody could find again was
+             * the reason. Choosing another folder is rare and is the palette's Docs folder.
              */
             const place = document.createElement('div')
-            place.className = 'dya-join'
+            place.className = 'dya-toolbar'
             const folderKey = document.createElement('button')
             folderKey.type = 'button'
             folderKey.className = 'dya-button'
-            folderKey.setAttribute('aria-label', 'Folder')
             const folderName = document.createElement('span')
             folderName.className = 'dya-mono'
             folderKey.innerHTML = glyph('folder')
@@ -343,15 +337,13 @@ export function activate(ctx: PluginContext): void {
 
             save.onclick = () => void saveNow()
 
-            const modeButtons = MODES.map((entry) => {
-                const button = document.createElement('button')
-                withTip(button, entry.label)
-                button.setAttribute('aria-label', entry.label)
-                button.type = 'button'
-                button.innerHTML = entry.icon
-                button.onclick = () => setMode(entry.id)
-                return button
-            })
+            const readMode = (): Mode => (current?.markdown ? 'rendered' : 'source')
+            const editKey = document.createElement('button')
+            editKey.type = 'button'
+            editKey.innerHTML = PENCIL_ICON
+            editKey.setAttribute('aria-label', 'Edit')
+            withTip(editKey, 'Edit')
+            editKey.onclick = () => setMode(mode === 'edit' ? readMode() : 'edit')
 
             const pagesKey = document.createElement('button')
             pagesKey.type = 'button'
@@ -361,16 +353,6 @@ export function activate(ctx: PluginContext): void {
             withTip(pagesKey, 'Pages')
             pagesKey.onclick = () => {
                 if (!busy && leave()) showEmpty()
-            }
-
-            const revealKey = document.createElement('button')
-            revealKey.type = 'button'
-            revealKey.className = 'dya-key'
-            revealKey.innerHTML = glyph('open')
-            revealKey.setAttribute('aria-label', 'Show in folder')
-            withTip(revealKey, 'Show in folder')
-            revealKey.onclick = () => {
-                if (current?.path) void ctx.shell.reveal(current.path)
             }
 
             const deleteKey = document.createElement('button')
@@ -391,22 +373,16 @@ export function activate(ctx: PluginContext): void {
              * The refusal to overwrite is a state and its answer, so it stands before the strip.
              */
             function syncModes(): void {
-                const shown: HTMLElement[] = []
-                modeButtons.forEach((button, index) => {
-                    const entry = MODES[index]
-                    const active = entry.id === mode
-                    button.className = active ? 'dya-key dya-key--active' : 'dya-key'
-                    button.setAttribute('aria-pressed', String(active))
-                    if (!entry.markdownOnly || current?.markdown) shown.push(button)
-                })
-                save.disabled = !dirty
+                const editing = mode === 'edit'
+                editKey.className = editing ? 'dya-key dya-key--active' : 'dya-key'
+                editKey.setAttribute('aria-pressed', String(editing))
+                const shown: HTMLElement[] = [editKey]
                 paintSave()
-                if (mode === 'edit' && !overwrite) shown.push(save)
-                strip.replaceChildren(...shown, revealKey, deleteKey, pagesKey)
+                if (dirty && !overwrite) shown.push(save)
+                strip.replaceChildren(...shown, deleteKey, pagesKey)
                 place.hidden = current !== null
-                if (mode === 'edit' && overwrite) header.insertBefore(save, strip)
+                if (overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
-                unsaved.hidden = !dirty || overwrite
             }
 
             let saveShows: boolean | null = null
@@ -642,16 +618,12 @@ export function activate(ctx: PluginContext): void {
                 const where = (await ctx.invoke('folder')) as { path: string }
                 folderPath = where.path
                 folderName.textContent = where.path.split(/[\\/]/).filter(Boolean).at(-1) ?? where.path
-                place.replaceChildren(
-                    folderKey,
-                    barKey('open', 'Show folder', () => void ctx.shell.reveal(folderPath))
-                )
+                place.replaceChildren(folderKey)
             }
 
-            folderKey.onclick = async () => {
-                const picked = (await ctx.invoke('chooseFolder')) as FolderResult
-                if (picked.path) await refresh()
-            }
+            folderKey.onclick = () => void ctx.shell.reveal(folderPath)
+            const repaint = (): void => void refresh()
+            galleries.add(repaint)
 
             async function refresh(): Promise<void> {
                 void paintFolder().catch(() => undefined)
@@ -1068,6 +1040,7 @@ export function activate(ctx: PluginContext): void {
 
             return () => {
                 if (readers.get(handle.instanceId) === reader) readers.delete(handle.instanceId)
+                galleries.delete(repaint)
                 container.replaceChildren()
             }
         }

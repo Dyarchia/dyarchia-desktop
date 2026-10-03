@@ -32,14 +32,17 @@ const pruning = !wanted.has('--keep-old')
  * `--notes "Alpha build 0.2.7-alpha."` reached gh as three arguments and the two strays were
  * taken for files to upload. Every other command here is a real executable and gets its
  * arguments as given. pnpm's arguments are all single words, which is what makes the shell safe
- * for it and for nothing else.
+ * for it and for nothing else. That shell is cmd.exe named as the program, not node's `shell`
+ * option, which Node 24 answers with DEP0190 on every call whatever the arguments are.
  */
 function run(command, args, options = {}) {
-    return execFileSync(command, args, {
+    const viaCmd = process.platform === 'win32' && command === 'pnpm'
+    const program = viaCmd ? (process.env.ComSpec ?? 'cmd.exe') : command
+    const argv = viaCmd ? ['/d', '/s', '/c', command, ...args] : args
+    return execFileSync(program, argv, {
         cwd: root,
         encoding: 'utf8',
         stdio: options.quiet ? 'pipe' : 'inherit',
-        shell: process.platform === 'win32' && command === 'pnpm',
         ...options
     })
 }

@@ -81,7 +81,7 @@ function Build(): React.JSX.Element {
 
     useEffect(() => {
         if (!checkable) return
-        return registerCommand({ id: 'shell:update-check', title: 'Check for updates', run: check })
+        return registerCommand({ id: 'shell:update-check', title: 'Check for updates', icon: glyph('refresh'), run: check })
     }, [checkable])
 
     useEffect(() => {

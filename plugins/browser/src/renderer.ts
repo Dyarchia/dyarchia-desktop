@@ -141,23 +141,13 @@ function el<K extends keyof HTMLElementTagNameMap>(
 
 /*
  * The browser a person last worked in, so a palette command acts on the page they were looking at.
+ * Open outside exists only while some browser holds a page: with none it would have nothing to open.
  */
 let focused: WebviewTag | null = null
+const views = new Set<WebviewTag>()
+let dropOutside: (() => void) | null = null
 
 export function activate(ctx: PluginContext): void {
-    ctx.registerCommand({
-        id: 'browser.external',
-        title: 'Open outside',
-        icon: glyph('open'),
-        run: async () => {
-            let url = ''
-            try {
-                url = focused?.getURL() ?? ''
-            } catch {}
-            if (url) await ctx.invoke('external', url)
-        }
-    })
-
     ctx.registerCommand({
         id: 'browser.new',
         title: 'New tab',
@@ -224,6 +214,19 @@ export function activate(ctx: PluginContext): void {
             root.addEventListener('focusin', () => (focused = view))
             root.addEventListener('pointerdown', () => (focused = view))
             focused = view
+            views.add(view)
+            dropOutside ??= ctx.registerCommand({
+                id: 'browser.external',
+                title: 'Open outside',
+                icon: glyph('open'),
+                run: async () => {
+                    let url = ''
+                    try {
+                        url = focused?.getURL() ?? ''
+                    } catch {}
+                    if (url) await ctx.invoke('external', url)
+                }
+            })
 
             const fail = el('div', 'dya-empty brw-fail')
             fail.hidden = true
@@ -587,7 +590,12 @@ export function activate(ctx: PluginContext): void {
             forward.disabled = true
 
             return () => {
-                if (focused === view) focused = null
+                views.delete(view)
+                if (focused === view) focused = [...views].at(-1) ?? null
+                if (views.size === 0) {
+                    dropOutside?.()
+                    dropOutside = null
+                }
                 offMarks()
                 for (const menu of menus.splice(0)) menu.remove()
                 container.replaceChildren()

@@ -299,12 +299,6 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                             <ul className="dya-palette__list" role="group" aria-label="Commands">
                                 {rows.map((row, offset) => {
                                     const position = tiles.length + offset
-                                    /*
-                                     * A run of rows from one plugin carries its mark once, on the
-                                     * first row; the rest keep the mark's place and leave it empty,
-                                     * so the run reads as one group without a heading.
-                                     */
-                                    const lead = offset === 0 || rows[offset - 1].group !== row.group
                                     return (
                                         <li
                                             key={row.key}
@@ -315,7 +309,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                                             onPointerMove={() => setIndex(position)}
                                             onClick={() => run(position)}
                                         >
-                                            <Icon icon={lead ? row.icon : undefined} className="dya-palette__icon" />
+                                            <Icon icon={row.icon} className="dya-palette__icon" />
                                             <span className="dya-palette__name">{row.name}</span>
                                             {row.detail && <span className="dya-palette__meta">{row.detail}</span>}
                                         </li>

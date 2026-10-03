@@ -152,6 +152,8 @@
     --dya-carve-filter:
         drop-shadow(0 -1px 0 #000000e6)
         drop-shadow(0 1px 0 #ffffff17);
+    --dya-carve-a: #3b3e44;
+    --dya-carve-b: #6b717c;
 
     --dya-edge: #040405;
 

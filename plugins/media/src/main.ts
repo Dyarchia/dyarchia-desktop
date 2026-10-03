@@ -341,7 +341,7 @@ export function activate(ctx: PluginMainContext): void {
             const anyVideo = media.some((item) => first(item, 'video'))
             const extension = extname(input).slice(1).toLowerCase() || 'mp4'
             if (same) {
-                const list = join(tmpdir(), `dyarchia-forge-${process.pid}-${nextId}.txt`)
+                const list = join(tmpdir(), `dyarchia-media-${process.pid}-${nextId}.txt`)
                 await writeFile(list, spec.inputs.map((path) => `file '${path.replace(/'/g, "'\\''")}'`).join('\n'), 'utf8')
                 const output = await beside(input, '-joined', extension)
                 return {
@@ -479,7 +479,7 @@ export function activate(ctx: PluginMainContext): void {
         if (spec.tool === 'record') {
             const source = options['source'] || 'window'
             const mic = options['audio'] || ''
-            const folder = join(ctx.dataHome, 'forge')
+            const folder = join(ctx.dataHome, 'media')
             await mkdir(folder, { recursive: true })
             const output = await beside(join(folder, `recording-${stamp()}.mp4`), '', 'mp4')
             const args = [...videoInput(source)]

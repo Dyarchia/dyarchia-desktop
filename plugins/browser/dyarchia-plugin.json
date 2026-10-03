@@ -5,7 +5,7 @@
     "toolbar": 4,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
-    "description": "Web browser, private, with ad blocking",
+    "description": "Web browser",
     "requires": [
         {
             "kind": "binary",

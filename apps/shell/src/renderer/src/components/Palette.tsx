@@ -18,6 +18,7 @@ interface PaletteProps {
 
 interface Row {
     key: string
+    group: string
     name: string
     detail?: string
     icon?: string
@@ -170,6 +171,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
             )
             .map((command) => ({
                 key: command.id,
+                group: command.owner ?? command.id,
                 name: command.title,
                 icon: (command.owner ? pluginIcon(command.owner) : undefined) ?? command.icon,
                 run: command.run
@@ -179,6 +181,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
             .flatMap(([owner, list]) =>
                 list.map((hit) => ({
                     key: `${owner}:${hit.id}`,
+                    group: `found:${owner}`,
                     name: hit.title,
                     detail: hit.detail,
                     icon: pluginIcon(owner),
@@ -264,7 +267,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                     ref={field}
                     className="dya-field"
                     role="combobox"
-                    aria-expanded="true"
+                    aria-expanded={count > 0}
                     aria-controls="shell-palette-body"
                     aria-activedescendant={count > 0 ? `palette-${index}` : undefined}
                     aria-label="Search"
@@ -274,9 +277,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                     onChange={(event) => setQuery(event.target.value)}
                     onKeyDown={onKeyDown}
                 />
-                {count === 0 ? (
-                    <div className="dya-palette__empty">No match</div>
-                ) : (
+                {count > 0 && (
                     <div id="shell-palette-body" className="dya-palette__body" role="listbox">
                         {tiles.length > 0 && (
                             <ul ref={grid} className="dya-palette__apps" role="group" aria-label="Apps">
@@ -298,6 +299,12 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                             <ul className="dya-palette__list" role="group" aria-label="Commands">
                                 {rows.map((row, offset) => {
                                     const position = tiles.length + offset
+                                    /*
+                                     * A run of rows from one plugin carries its mark once, on the
+                                     * first row; the rest keep the mark's place and leave it empty,
+                                     * so the run reads as one group without a heading.
+                                     */
+                                    const lead = offset === 0 || rows[offset - 1].group !== row.group
                                     return (
                                         <li
                                             key={row.key}
@@ -308,7 +315,7 @@ export function Palette({ panels, openIds, onOpen, onClose }: PaletteProps): Rea
                                             onPointerMove={() => setIndex(position)}
                                             onClick={() => run(position)}
                                         >
-                                            <Icon icon={row.icon} className="dya-palette__icon" />
+                                            <Icon icon={lead ? row.icon : undefined} className="dya-palette__icon" />
                                             <span className="dya-palette__name">{row.name}</span>
                                             {row.detail && <span className="dya-palette__meta">{row.detail}</span>}
                                         </li>

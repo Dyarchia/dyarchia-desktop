@@ -482,20 +482,21 @@
 }
 
 /*
- * The wordmark on the empty window is stamped into the metal rather than printed on it: an ink
- * barely off the ground, a dark lip above and a light one below. It measures 1.45 against the
- * ground and is not text; the window's title carries the name for anything that reads it. It is
- * the one element in the system that is allowed to be decoration.
+ * The application's name, at the head of the title bar and nowhere else: Spectral in capitals at
+ * the body's size, spaced as a brand and carved the way a title is, the top ink falling to the
+ * muted one under a dark lip and a light one. It is text, 16.82 at its top and 6.83 at its foot on
+ * the ground, because it is the one word the window always says.
  */
-.dya-carved {
+.dya-wordmark {
     font-family: var(--dya-font-serif);
-    font-size: var(--dya-size-display);
+    font-size: var(--dya-size-body);
     font-weight: var(--dya-weight-light);
     letter-spacing: var(--dya-tracking-brand);
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
+    white-space: nowrap;
     color: transparent;
-    background: linear-gradient(var(--dya-carve-a), var(--dya-carve-b));
+    background: linear-gradient(var(--dya-text), var(--dya-text-muted));
     -webkit-background-clip: text;
     background-clip: text;
     filter: var(--dya-carve-filter);
@@ -851,8 +852,8 @@
 }
 
 [interestfor] {
-    interest-delay-start: 350ms;
-    interest-delay-end: 120ms;
+    interest-delay-start: var(--dya-dur-tip-in);
+    interest-delay-end: var(--dya-dur-tip-out);
 }
 
 /*
@@ -2140,7 +2141,13 @@ textarea.dya-field {
     border-color: var(--dya-warning);
 }
 
+/*
+ * A marked card is tinted with the accent's soft ground, and on that ground the muted ink is not
+ * text: 4.16 over the panel, 2.87 at card-peak. Inside a marked card the muted ink is the top ink
+ * (7.08 at card-peak), and size and weight carry the hierarchy for as long as the mark lasts.
+ */
 .dya-card--marked {
+    --dya-text-muted: var(--dya-text);
     background-color: var(--dya-accent-soft);
 }
 
@@ -2973,11 +2980,4 @@ button.dya-step__subject {
     color: var(--dya-text-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.dya-palette__empty {
-    padding: var(--dya-space-3) var(--dya-space-2);
-    font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-sm);
-    color: var(--dya-text-muted);
 }

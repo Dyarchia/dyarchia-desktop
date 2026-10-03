@@ -56,7 +56,7 @@ export function Notices(): React.JSX.Element {
     if (!shown.length) return <></>
 
     return (
-        <div className="notices">
+        <div className="notices" role="status" aria-live="polite">
             {shown.map((notice) => (
                 <NoticeCard
                     key={notice.key}

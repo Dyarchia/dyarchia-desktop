@@ -31,8 +31,9 @@ body,
 }
 
 /*
- * The title bar is 40px: the build on the left, the launcher key and the window's own keys on the
- * right. The wordmark lives only on the empty window.
+ * The title bar is 32px, as is the dock's tab row: a 28px key and its 3px edge, and no more. The
+ * build on the left, the launcher key and the window's own keys on the right. The wordmark lives
+ * only on the empty window.
  */
 .topbar {
     position: relative;
@@ -65,13 +66,11 @@ body,
 
 .topbar-actions {
     padding-right: var(--dya-space-3);
-    padding-bottom: 3px;
     -webkit-app-region: no-drag;
 }
 
 .topbar-window-controls {
     padding-right: var(--dya-space-3);
-    padding-bottom: 3px;
     -webkit-app-region: no-drag;
 }
 
@@ -109,11 +108,11 @@ body,
     --dv-icon-hover-background-color: var(--dya-hover);
     --dv-border-radius: var(--dya-radius-chassis);
     --dv-tab-border-radius: 0;
-    --dv-tabs-and-actions-container-height: 40px;
+    --dv-tabs-and-actions-container-height: var(--dya-size-bar);
     --dv-tab-margin-block: 0;
     --dv-floating-border: var(--dya-border-width) solid var(--dya-border);
     --dv-floating-group-border: var(--dya-border-width) solid var(--dya-border);
-    --dv-spacing-padding: var(--dya-space-3);
+    --dv-spacing-padding: var(--dya-space-2);
     --dv-tab-group-line-height: 0px;
     --dv-tab-group-line-opacity: 0;
     --dv-color-abyss-accent: var(--dya-border-strong);
@@ -194,6 +193,10 @@ body,
 
 .dv-shell.dockview-theme-abyss-spaced .dv-resize-container .dv-groupview {
     box-shadow: var(--dya-elev-overlay);
+}
+
+.dv-shell.dockview-theme-abyss-spaced .dv-tab {
+    padding-block: 0;
 }
 
 .panel-tab {

@@ -46,3 +46,15 @@
         transform: rotate(1turn);
     }
 }
+
+@property --dya-orbit {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+}
+
+@keyframes dya-orbit {
+    to {
+        --dya-orbit: 1turn;
+    }
+}

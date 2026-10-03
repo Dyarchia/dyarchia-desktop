@@ -42,7 +42,7 @@
     --dya-size-pill: 11.5px;
 
     --dya-size-control: 28px;
-    --dya-size-bar: 40px;
+    --dya-size-bar: 32px;
 
     --dya-tracking-ui: 0;
     --dya-tracking-key: -0.005em;
@@ -213,4 +213,5 @@
     --dya-dur: 220ms;
     --dya-dur-slow: 320ms;
     --dya-dur-leave: 5s;
+    --dya-dur-orbit: 6s;
 }

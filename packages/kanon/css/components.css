@@ -584,14 +584,36 @@
 }
 
 /*
- * A toggle that is on stays a key and brightens: a lighter face, a stronger border, white ink.
- * It does not sink, because a sunk key reads as one being held, and this one has been let go.
+ * A key that is on stays up, on its edge like every other, and is lit: its rim carries the three
+ * categorical lights, orange into purple into blue, in an arc two thirds of the way round that
+ * travels the rim once every six seconds, above the rims it shares in a strip. It is the one thing in the system that moves for as
+ * long as it lasts, and the only place the lights are an ornament rather than a which-one; a
+ * sunk key read as one being held, and beside a disabled key the two were the same dark square.
+ * The arc is a graphical object and measures 5.50 at the least on every ground a key sits on;
+ * the rest of the rim is the hover rim. It is drawn on the element's own background, padding-box
+ * face over a border-box conic gradient, because the angle animates on the element and a gradient
+ * declared on the root would never see it. Reduced motion holds the arc still.
  */
+.dya-key--active,
+.dya-key--active:hover,
+.dya-key[aria-pressed="true"],
 .dya-button[aria-pressed="true"],
 .dya-chip[aria-pressed="true"] {
-    background-color: var(--dya-selected);
-    border-color: var(--dya-rim-hover);
+    border-color: transparent;
+    background:
+        var(--dya-steel) padding-box,
+        linear-gradient(var(--dya-selected), var(--dya-selected)) padding-box,
+        conic-gradient(
+            from var(--dya-orbit),
+            var(--dya-rim-hover) 0turn,
+            var(--dya-orange-ink) 0.12turn,
+            var(--dya-purple-ink) 0.34turn,
+            var(--dya-blue-ink) 0.56turn,
+            var(--dya-rim-hover) 0.68turn
+        ) border-box;
     color: var(--dya-text);
+    z-index: 1;
+    animation: dya-orbit var(--dya-dur-orbit) linear infinite;
 }
 
 /*
@@ -793,8 +815,7 @@
 
 /*
  * The icon key: a panel to open, a window to act on. A square key with the glyph in the top ink.
- * A key whose panel is open is held down: it sits on its edge and its face goes to the selected
- * step.
+ * A key that is on, a mode chosen or a panel open, is lit, as a toggle is.
  */
 .dya-key {
     display: grid;
@@ -808,15 +829,6 @@
 }
 
 .dya-key:hover {
-    color: var(--dya-text);
-}
-
-.dya-key--active,
-.dya-key--active:hover {
-    transform: translateY(var(--dya-press-y));
-    background-color: var(--dya-selected);
-    border-color: var(--dya-rim-hover);
-    box-shadow: var(--dya-elev-key-down);
     color: var(--dya-text);
 }
 
@@ -2680,6 +2692,7 @@ button.dya-step__subject {
  * says which tab each group is showing, and the silver line is kept for the group being worked in.
  */
 .dya-tab--dock {
+    padding-bottom: 0;
     font-size: var(--dya-size-body-sm);
     white-space: nowrap;
 }

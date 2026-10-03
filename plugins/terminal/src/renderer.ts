@@ -48,7 +48,7 @@ const ANSI_TOKENS = {
  * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const TERMINAL_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.4 19.4 7.8 4.6 13.2 19.4" fill="none" stroke="#eceef2" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.2 19.4h2.8M11.8 19.4h2.6" stroke="#eceef2" stroke-width="1.6" stroke-linecap="round"/><rect x="15.4" y="17.7" width="8.2" height="3" rx=".6" fill="#eceef2"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.4 18.6 7.8 5.4 13.2 18.6" fill="none" stroke="#eceef2" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="15.4" y="16.9" width="8.2" height="3" rx=".6" fill="#eceef2"/></svg>'
 
 interface PortAnnouncement {
     dyarchiaPort?: {

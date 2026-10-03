@@ -1487,7 +1487,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 leaves: [{ label: entry.name, value: entry.slug }]
             }))
 
-        if (!rows.length) {
+        const shelved: MenuRow[] = registry
+            .filter((entry) => entry.archived)
+            .map((entry) => ({
+                key: entry.slug,
+                label: entry.name,
+                group: 'Archived',
+                note: entry.workdir,
+                leaves: [
+                    { label: 'Restore', value: 'restore' },
+                    { label: 'Delete', value: 'delete' }
+                ]
+            }))
+
+        if (!rows.length && !shelved.length) {
             newBoard()
             return
         }
@@ -1507,13 +1520,29 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 group: '',
                 direct: true,
                 leaves: [{ label: 'New board', value: NEW_BOARD }]
-            }
+            },
+            ...shelved
         )
 
         openMenu({
             anchor,
             rows,
-            onPick: (row) => {
+            onPick: (row, leaf) => {
+                if (row.group === 'Archived') {
+                    if (leaf.value === 'delete') {
+                        if (!window.confirm(`Delete ${row.label} and its cards? The project folder stays.`)) return
+                        void invoke('deleteBoard', row.key).then(refresh).catch(fail)
+                        return
+                    }
+                    void invoke('archiveBoard', row.key, false)
+                        .then(() => {
+                            write(pinKey, row.key)
+                            if (watching) closeWatch()
+                            return refresh()
+                        })
+                        .catch(fail)
+                    return
+                }
                 if (row.key === NEW_BOARD) {
                     newBoard()
                     return

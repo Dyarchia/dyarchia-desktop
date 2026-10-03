@@ -7,19 +7,17 @@ import type { ElectronRequestType } from '@ghostery/adblocker'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 /*
- * The browser's own session, held in memory and never written to disk. Cookies, logins, cache and
- * site storage last as long as the application does and are gone when it closes, so no page can
- * recognise the next launch as the same person. The folder a persistent session once wrote is
+ * The browser's own session is an in-memory partition: its cookies, logins, cache and site storage
+ * are not written to disk and end when the application closes. That is all it is; it is not a
+ * private browser and nothing here claims to be one. The folder a persistent session once wrote is
  * removed on the way in.
  */
 const PARTITION = 'dyarchia-browser'
 const RETIRED = join('Partitions', 'dyarchia-browser')
 
 /*
- * A page is granted nothing that says anything about the person or the machine: no location, no
- * camera or microphone, no notifications, no devices, no idle or sensor readings. Writing to the
- * clipboard after a click and filling the panel with a video tell a page nothing, so those two
- * are the whole list.
+ * The permissions a page may be granted: writing to the clipboard after a click, and fullscreen.
+ * Every other permission request is refused.
  */
 const GRANTED = new Set(['clipboard-sanitized-write', 'fullscreen'])
 
@@ -28,29 +26,55 @@ const WEEK = 7 * 24 * 60 * 60 * 1000
 interface Bookmark {
     url: string
     title: string
+    folder?: string
+}
+
+/*
+ * What the person keeps: the page the browser starts on, the folders in the order they were made,
+ * and the bookmarks, each loose or in one folder. An empty home is the default search page. The
+ * file used to be a bare list of bookmarks, which reads as a library with no folders.
+ */
+interface Library {
+    home: string
+    folders: string[]
+    bookmarks: Bookmark[]
 }
 
 function store(): string {
     return join(app.getPath('userData'), 'browser', 'bookmarks.json')
 }
 
-async function load(): Promise<Bookmark[]> {
+function bookmarksOf(raw: unknown): Bookmark[] {
+    if (!Array.isArray(raw)) return []
+    return raw
+        .filter((entry): entry is Bookmark => typeof entry?.url === 'string' && typeof entry?.title === 'string')
+        .map(({ url, title, folder }) => (typeof folder === 'string' && folder ? { url, title, folder } : { url, title }))
+}
+
+async function load(): Promise<Library> {
     try {
         const parsed: unknown = JSON.parse(await readFile(store(), 'utf-8'))
-        return Array.isArray(parsed)
-            ? parsed.filter(
-                  (entry): entry is Bookmark =>
-                      typeof entry?.url === 'string' && typeof entry?.title === 'string'
-              )
+        if (Array.isArray(parsed)) return { home: '', folders: [], bookmarks: bookmarksOf(parsed) }
+        const found = (parsed ?? {}) as Partial<Library>
+        const folders = Array.isArray(found.folders)
+            ? [...new Set(found.folders.filter((name): name is string => typeof name === 'string' && !!name.trim()))]
             : []
+        const bookmarks = bookmarksOf(found.bookmarks).map((entry) =>
+            entry.folder && !folders.includes(entry.folder) ? { url: entry.url, title: entry.title } : entry
+        )
+        return { home: isWeb(found.home) ? found.home : '', folders, bookmarks }
     } catch {
-        return []
+        return { home: '', folders: [], bookmarks: [] }
     }
 }
 
-async function save(bookmarks: Bookmark[]): Promise<void> {
+async function save(library: Library): Promise<void> {
     await mkdir(dirname(store()), { recursive: true })
-    await writeFile(store(), JSON.stringify(bookmarks, null, 4))
+    await writeFile(store(), JSON.stringify(library, null, 4))
+}
+
+function nameOf(raw: unknown): string {
+    return typeof raw === 'string' ? raw.trim().slice(0, 120) : ''
 }
 
 /*
@@ -132,19 +156,91 @@ export function activate(ctx: PluginMainContext): void {
         })
     })
 
-    ctx.handle('bookmarks', () => load())
+    /*
+     * Every change reads the file, changes one thing and writes it back, then tells every open
+     * browser panel, so two panels never disagree about what is kept.
+     */
+    async function change(edit: (library: Library) => Library | void): Promise<Library> {
+        const library = await load()
+        const next = edit(library) ?? library
+        await save(next)
+        ctx.broadcast('library', next)
+        return next
+    }
+
+    ctx.handle('library', () => load())
 
     ctx.handle('toggle', async (...args: unknown[]) => {
         const { url, title } = (args[0] ?? {}) as Partial<Bookmark>
         if (!isWeb(url)) return load()
-        const bookmarks = await load()
-        const next = bookmarks.some((entry) => entry.url === url)
-            ? bookmarks.filter((entry) => entry.url !== url)
-            : [...bookmarks, { url, title: title?.trim() || new URL(url).host }]
-        await save(next)
-        ctx.broadcast('bookmarks', next)
-        return next
+        return change((library) => {
+            library.bookmarks = library.bookmarks.some((entry) => entry.url === url)
+                ? library.bookmarks.filter((entry) => entry.url !== url)
+                : [...library.bookmarks, { url, title: title?.trim() || new URL(url).host }]
+        })
     })
+
+    ctx.handle('rename', async (...args: unknown[]) => {
+        const { url, title } = (args[0] ?? {}) as Partial<Bookmark>
+        const name = nameOf(title)
+        if (!name) return load()
+        return change((library) => {
+            for (const entry of library.bookmarks) if (entry.url === url) entry.title = name
+        })
+    })
+
+    ctx.handle('move', async (...args: unknown[]) => {
+        const { url, folder } = (args[0] ?? {}) as Partial<Bookmark>
+        return change((library) => {
+            const target = typeof folder === 'string' && library.folders.includes(folder) ? folder : undefined
+            library.bookmarks = library.bookmarks.map((entry) =>
+                entry.url !== url ? entry : target ? { url: entry.url, title: entry.title, folder: target } : { url: entry.url, title: entry.title }
+            )
+        })
+    })
+
+    ctx.handle('remove', async (...args: unknown[]) =>
+        change((library) => {
+            library.bookmarks = library.bookmarks.filter((entry) => entry.url !== args[0])
+        })
+    )
+
+    ctx.handle('addFolder', async (...args: unknown[]) => {
+        const name = nameOf(args[0])
+        return change((library) => {
+            if (name && !library.folders.includes(name)) library.folders.push(name)
+        })
+    })
+
+    ctx.handle('renameFolder', async (...args: unknown[]) => {
+        const from = nameOf(args[0])
+        const to = nameOf(args[1])
+        return change((library) => {
+            if (!to || !library.folders.includes(from) || library.folders.includes(to)) return
+            library.folders = library.folders.map((name) => (name === from ? to : name))
+            for (const entry of library.bookmarks) if (entry.folder === from) entry.folder = to
+        })
+    })
+
+    /*
+     * A folder that goes leaves its bookmarks behind, loose on the bar: deleting a container is
+     * not deleting what it held.
+     */
+    ctx.handle('removeFolder', async (...args: unknown[]) => {
+        const name = nameOf(args[0])
+        return change((library) => {
+            library.folders = library.folders.filter((each) => each !== name)
+            library.bookmarks = library.bookmarks.map((entry) =>
+                entry.folder === name ? { url: entry.url, title: entry.title } : entry
+            )
+        })
+    })
+
+    ctx.handle('setHome', async (...args: unknown[]) =>
+        change((library) => {
+            library.home = isWeb(args[0]) ? args[0] : ''
+        })
+    )
 
     ctx.handle('external', async (...args: unknown[]) => {
         if (isWeb(args[0])) await shell.openExternal(args[0])

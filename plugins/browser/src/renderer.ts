@@ -5,11 +5,19 @@ import type { WebviewTag } from 'electron'
 interface Bookmark {
     url: string
     title: string
+    folder?: string
+}
+
+interface Library {
+    home: string
+    folders: string[]
+    bookmarks: Bookmark[]
 }
 
 const PARTITION = 'dyarchia-browser'
-const HOME = 'https://duckduckgo.com/'
+const DEFAULT_HOME = 'https://duckduckgo.com/'
 const SEARCH = 'https://duckduckgo.com/?q='
+const EMPTY: Library = { home: '', folders: [], bookmarks: [] }
 
 const svg = (body: string): string =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
@@ -69,6 +77,43 @@ const STYLES = `
 .brw-fail[hidden] {
     display: none;
 }
+.brw-marks > .dya-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dya-space-1);
+}
+.brw-marks > .dya-chip > svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+}
+.brw-menu {
+    position-area: bottom span-right;
+    margin: var(--dya-space-1) 0 0;
+    min-width: 12rem;
+    max-width: 24rem;
+}
+.brw-library {
+    overflow-y: auto;
+}
+.brw-library > .dya-stack {
+    gap: var(--dya-space-2);
+}
+.brw-library .dya-join {
+    display: flex;
+    width: 100%;
+}
+.brw-library .dya-join > .dya-select > .dya-field {
+    width: 10rem;
+}
+.brw-head {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-2);
+}
+.brw-folder {
+    padding-inline-start: calc(18px + var(--dya-space-2));
+}
 `
 
 /*
@@ -76,9 +121,9 @@ const STYLES = `
  * gets https in front of it; anything else is a question, and the question goes to the search
  * the home page belongs to.
  */
-function destination(typed: string): string {
+function destination(typed: string, home: string): string {
     const text = typed.trim()
-    if (!text) return HOME
+    if (!text) return home
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return text
     if (!/\s/.test(text) && /^[^/]+\.[a-z]{2,}(?::\d+)?(\/.*)?$/i.test(text)) return `https://${text}`
     if (/^localhost(:\d+)?(\/.*)?$/i.test(text)) return `http://${text}`
@@ -158,9 +203,9 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * One strip: the three keys that move through the history, the address, and the star
-             * that keeps it. Home is an empty address and Enter; opening the page outside is a
-             * palette command.
+             * One strip: the three keys that move through the history, the address, the star that
+             * keeps it, and the book that opens what is kept. Home is an empty address and Enter;
+             * opening the page outside is a palette command.
              */
             const bar = el('div', 'dya-bar brw-bar')
             const strip = el('div', 'dya-join')
@@ -172,7 +217,8 @@ export function activate(ctx: PluginContext): void {
             address.setAttribute('aria-label', 'Address')
             address.placeholder = 'Search or address'
             const star = key(STAR_ICON, 'Bookmark', () => void toggleBookmark())
-            strip.append(back, forward, reload, address, star)
+            const shelf = key(glyph('book'), 'Bookmarks', () => openLibrary())
+            strip.append(back, forward, reload, address, star, shelf)
             bar.append(strip)
 
             const marks = el('div', 'brw-marks')
@@ -185,7 +231,6 @@ export function activate(ctx: PluginContext): void {
             const view = document.createElement('webview') as WebviewTag
             view.setAttribute('partition', PARTITION)
             view.setAttribute('allowpopups', '')
-            view.src = HOME
             root.addEventListener('focusin', () => (focused = view))
             root.addEventListener('pointerdown', () => (focused = view))
             focused = view
@@ -194,12 +239,27 @@ export function activate(ctx: PluginContext): void {
             fail.hidden = true
             stage.append(view, fail)
 
-            root.append(bar, marks, stage, tipHolder)
+            /*
+             * What is kept, in a sheet over the panel: the home page, a new folder, and every
+             * bookmark with its name, its folder and its delete, loose ones first and then each
+             * folder under its own name. Names are fields and commit on Enter or on leaving them.
+             */
+            const scrim = el('div', 'dya-scrim')
+            scrim.hidden = true
+            const sheet = el('aside', 'dya-sheet dya-sheet--modal dya-pane brw-library')
+            sheet.setAttribute('role', 'dialog')
+            sheet.setAttribute('aria-modal', 'true')
+            sheet.setAttribute('aria-label', 'Bookmarks')
+            sheet.hidden = true
+
+            root.append(bar, marks, stage, scrim, sheet, tipHolder)
             container.append(root)
 
             let loading = false
             let ready = false
-            let bookmarks: Bookmark[] = []
+            let library: Library = EMPTY
+            let started = false
+            const home = (): string => library.home || DEFAULT_HOME
 
             function go(url: string): void {
                 fail.hidden = true
@@ -216,7 +276,7 @@ export function activate(ctx: PluginContext): void {
                 if (document.activeElement !== address) address.value = url
                 back.disabled = !view.canGoBack()
                 forward.disabled = !view.canGoForward()
-                const marked = bookmarks.some((entry) => entry.url === url)
+                const marked = library.bookmarks.some((entry) => entry.url === url)
                 star.classList.toggle('dya-key--active', marked)
                 const label = marked ? 'Unbookmark' : 'Bookmark'
                 star.setAttribute('aria-label', label)
@@ -232,36 +292,236 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * Bookmarks are keys, because each one goes somewhere when pressed, and they carry
-             * the title the page gave itself when it was saved. The row is absent until there is
-             * something in it: a strip announcing that nothing is bookmarked is a strip of nothing.
+             * Bookmarks are keys, because each one goes somewhere when pressed, and they carry the
+             * name they were given. Folders come first, each a key that opens its bookmarks as a
+             * menu under it; the loose bookmarks follow. The row is absent until there is something
+             * in it: a strip announcing that nothing is bookmarked is a strip of nothing.
              */
+            const menus: HTMLElement[] = []
+
             function drawMarks(): void {
-                marks.replaceChildren(
-                    ...bookmarks.map((entry) => {
+                for (const menu of menus.splice(0)) menu.remove()
+                const folders = library.folders.flatMap((name, index) => {
+                    const inside = library.bookmarks.filter((entry) => entry.folder === name)
+                    if (!inside.length) return []
+                    const chip = el('button', 'dya-chip')
+                    chip.type = 'button'
+                    chip.innerHTML = glyph('folder')
+                    chip.append(name)
+                    const anchor = `--brw-folder-${handle.instanceId.replace(/\W/g, '')}-${index}`
+                    chip.style.setProperty('anchor-name', anchor)
+                    const menu = el('div', 'dya-menu brw-menu')
+                    menu.popover = 'auto'
+                    menu.style.setProperty('position-anchor', anchor)
+                    for (const entry of inside) {
+                        const item = el('button', 'dya-menu__item', entry.title)
+                        item.type = 'button'
+                        item.addEventListener('click', () => {
+                            menu.hidePopover()
+                            go(entry.url)
+                        })
+                        menu.append(item)
+                    }
+                    chip.popoverTargetElement = menu
+                    menus.push(menu)
+                    tipHolder.append(menu)
+                    return [chip]
+                })
+                const loose = library.bookmarks
+                    .filter((entry) => !entry.folder)
+                    .map((entry) => {
                         const mark = el('button', 'dya-chip', entry.title)
                         mark.type = 'button'
                         mark.addEventListener('click', () => go(entry.url))
                         return mark
                     })
-                )
-                marks.hidden = bookmarks.length === 0
+                marks.replaceChildren(...folders, ...loose)
+                marks.hidden = folders.length + loose.length === 0
+            }
+
+            function receive(next: Library): void {
+                library = next
+                drawMarks()
+                if (!sheet.hidden) drawLibrary()
+                sync()
             }
 
             async function toggleBookmark(): Promise<void> {
                 if (!ready) return
-                bookmarks = (await ctx.invoke('toggle', {
-                    url: view.getURL(),
-                    title: view.getTitle()
-                })) as Bookmark[]
-                drawMarks()
-                sync()
+                receive(
+                    (await ctx.invoke('toggle', {
+                        url: view.getURL(),
+                        title: view.getTitle()
+                    })) as Library
+                )
             }
+
+            function send(channel: string, ...args: unknown[]): void {
+                void ctx.invoke(channel, ...args).then((next) => receive(next as Library))
+            }
+
+            /*
+             * A name field keeps what was typed when Enter is pressed or the field is left, and
+             * Escape puts the old name back.
+             */
+            function nameField(value: string, label: string, commit: (next: string) => void): HTMLInputElement {
+                const field = el('input', 'dya-field')
+                field.type = 'text'
+                field.value = value
+                field.spellcheck = false
+                field.setAttribute('aria-label', label)
+                const keep = (): void => {
+                    const next = field.value.trim()
+                    if (next && next !== value) commit(next)
+                    else field.value = value
+                }
+                field.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') field.blur()
+                    if (event.key === 'Escape') {
+                        event.stopPropagation()
+                        field.value = value
+                        field.blur()
+                    }
+                })
+                field.addEventListener('blur', keep)
+                return field
+            }
+
+            function folderSelect(entry: Bookmark): HTMLElement {
+                const wrap = el('span', 'dya-select')
+                const select = el('select', 'dya-field')
+                select.setAttribute('aria-label', `Folder of ${entry.title}`)
+                const shown = el('button')
+                shown.type = 'button'
+                shown.append(document.createElement('selectedcontent'))
+                select.append(shown)
+                for (const [value, text] of [['', 'No folder'], ...library.folders.map((name) => [name, name])]) {
+                    const option = el('option', undefined, text)
+                    option.value = value
+                    option.selected = (entry.folder ?? '') === value
+                    select.append(option)
+                }
+                select.addEventListener('change', () => send('move', { url: entry.url, folder: select.value }))
+                wrap.append(select)
+                return wrap
+            }
+
+            function bookmarkRow(entry: Bookmark): HTMLElement {
+                const row = el('div', 'dya-join')
+                row.append(
+                    nameField(entry.title, `Name of ${entry.url}`, (title) => send('rename', { url: entry.url, title })),
+                    ...(library.folders.length ? [folderSelect(entry)] : []),
+                    key(glyph('delete'), 'Delete', () => send('remove', entry.url))
+                )
+                row.lastElementChild?.classList.add('dya-key--danger')
+                return row
+            }
+
+            function drawLibrary(): void {
+                const close = key(glyph('close'), 'Close', closeLibrary)
+                const end = el('div', 'dya-sheet__end')
+                end.append(close)
+                const head = el('div', 'dya-sheet__head')
+                head.append(el('span', 'dya-title', 'Bookmarks'), end)
+
+                const form = el('div', 'dya-form')
+                const homeRow = el('div', 'dya-join')
+                const homeField = el('input', 'dya-field')
+                homeField.type = 'text'
+                homeField.value = library.home
+                homeField.placeholder = DEFAULT_HOME
+                homeField.spellcheck = false
+                homeField.setAttribute('aria-label', 'Home page')
+                const keepHome = (): void => {
+                    const typed = homeField.value.trim()
+                    const next = typed ? destination(typed, DEFAULT_HOME) : ''
+                    if (next !== library.home) send('setHome', next)
+                }
+                homeField.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') homeField.blur()
+                })
+                homeField.addEventListener('blur', keepHome)
+                const current = key(glyph('pin'), 'This page', () => {
+                    if (ready) send('setHome', view.getURL())
+                })
+                homeRow.append(homeField, current)
+
+                const folderRow = el('div', 'dya-join')
+                const folderField = el('input', 'dya-field')
+                folderField.type = 'text'
+                folderField.placeholder = 'Name'
+                folderField.setAttribute('aria-label', 'New folder')
+                const addFolder = (): void => {
+                    const name = folderField.value.trim()
+                    if (name) send('addFolder', name)
+                    folderField.value = ''
+                }
+                folderField.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') addFolder()
+                })
+                folderRow.append(folderField, key(glyph('add'), 'New folder', addFolder))
+
+                form.append(el('span', 'dya-label', 'Home'), homeRow, el('span', 'dya-label', 'New folder'), folderRow)
+
+                const list = el('div', 'dya-stack')
+                for (const entry of library.bookmarks.filter((each) => !each.folder)) list.append(bookmarkRow(entry))
+                for (const name of library.folders) {
+                    const folderHead = el('div', 'dya-join')
+                    folderHead.append(
+                        nameField(name, `Name of folder ${name}`, (to) => send('renameFolder', name, to)),
+                        key(glyph('delete'), 'Delete folder', () => send('removeFolder', name))
+                    )
+                    folderHead.lastElementChild?.classList.add('dya-key--danger')
+                    const mark = el('span', 'dya-glyph')
+                    mark.innerHTML = glyph('folder')
+                    const headRow = el('div', 'brw-head')
+                    headRow.append(mark, folderHead)
+                    const inside = el('div', 'dya-stack brw-folder')
+                    for (const entry of library.bookmarks.filter((each) => each.folder === name)) {
+                        inside.append(bookmarkRow(entry))
+                    }
+                    list.append(headRow, inside)
+                }
+
+                sheet.replaceChildren(head, form, ...(list.childElementCount ? [list] : []))
+            }
+
+            let opener: HTMLElement | null = null
+
+            function openLibrary(): void {
+                if (!sheet.hidden) return
+                opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+                drawLibrary()
+                bar.inert = true
+                marks.inert = true
+                stage.inert = true
+                scrim.hidden = false
+                sheet.hidden = false
+                sheet.querySelector<HTMLElement>('input')?.focus()
+            }
+
+            function closeLibrary(): void {
+                if (sheet.hidden) return
+                sheet.hidden = true
+                scrim.hidden = true
+                bar.inert = false
+                marks.inert = false
+                stage.inert = false
+                opener?.focus()
+                opener = null
+            }
+
+            scrim.addEventListener('click', closeLibrary)
+            sheet.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape' || event.defaultPrevented) return
+                event.preventDefault()
+                closeLibrary()
+            })
 
             address.addEventListener('focus', () => address.select())
             address.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    go(destination(address.value))
+                    go(destination(address.value, home()))
                     view.focus()
                 } else if (event.key === 'Escape') {
                     address.value = view.getURL()
@@ -311,23 +571,33 @@ export function activate(ctx: PluginContext): void {
                 fail.hidden = false
             })
 
-            const offMarks = ctx.on('bookmarks', (next) => {
-                bookmarks = next as Bookmark[]
-                drawMarks()
-                sync()
-            })
-            void ctx.invoke('bookmarks').then((next) => {
-                bookmarks = next as Bookmark[]
-                drawMarks()
-            })
+            const offMarks = ctx.on('library', (next) => receive(next as Library))
+
+            /*
+             * The first page waits for the library, because the home page is in it.
+             */
+            function start(): void {
+                if (started) return
+                started = true
+                view.src = home()
+                address.value = home()
+            }
+            void ctx
+                .invoke('library')
+                .then((next) => {
+                    library = next as Library
+                    drawMarks()
+                })
+                .catch(() => undefined)
+                .finally(start)
 
             back.disabled = true
             forward.disabled = true
-            address.value = HOME
 
             return () => {
                 if (focused === view) focused = null
                 offMarks()
+                for (const menu of menus.splice(0)) menu.remove()
                 container.replaceChildren()
             }
         }

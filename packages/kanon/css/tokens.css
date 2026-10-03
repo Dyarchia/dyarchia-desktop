@@ -28,6 +28,7 @@
     --dya-weight-medium: 500;
 
     --dya-size-display: 42px;
+    --dya-size-inscription: 56px;
     --dya-size-h2: 25px;
     --dya-size-h3: 19px;
     --dya-size-h4: 16px;
@@ -53,6 +54,8 @@
     --dya-tracking-head: 0.06em;
     --dya-tracking-label: 0.16em;
     --dya-tracking-brand: 0.34em;
+    --dya-tracking-inscription: 0.14em;
+    --dya-tracking-inscription-bar: 0.22em;
 
     --dya-leading-tight: 100%;
     --dya-leading-heading: 110%;
@@ -152,8 +155,10 @@
     --dya-carve-filter:
         drop-shadow(0 -1px 0 #000000e6)
         drop-shadow(0 1px 0 #ffffff17);
-    --dya-carve-a: #3b3e44;
-    --dya-carve-b: #6b717c;
+    --dya-relief-face: #18191c;
+    --dya-relief-light: #eceef247;
+    --dya-relief-shade: #000000;
+    --dya-relief-drop: #000000d9;
 
     --dya-edge: #040405;
 

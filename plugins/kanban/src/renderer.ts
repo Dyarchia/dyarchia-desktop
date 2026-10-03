@@ -702,7 +702,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         (await ctx.invoke(channel, ...args)) as T
 
     const buildColumn = (status: Status, label: string): Column => {
-        const shell = el('section', 'dya-lane kanban-column')
+        const shell = el('section', 'dya-lane dya-reveals kanban-column')
         shell.dataset.status = status
         shell.setAttribute('role', 'group')
         shell.setAttribute('aria-label', label)
@@ -791,10 +791,16 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             keys.appendChild(addKey)
         }
 
-        const fold = el('button', 'dya-key kanban-fold')
+        /*
+         * Folding is there when a column is being looked at, not eight times over at rest. A folded
+         * column keeps its key, because it is the only way back, and so does triage, whose fold
+         * stands in one strip with the add key that is always there.
+         */
+        const fold = el('button', 'dya-key dya-reveal kanban-fold')
         fold.type = 'button'
         const apply = (closed: boolean): void => {
             shell.dataset.collapsed = String(closed)
+            fold.classList.toggle('dya-reveal--held', closed || status === 'triage')
             fold.innerHTML = glyph(closed ? 'unfold' : 'fold')
             fold.setAttribute('aria-label', closed ? `show ${label}` : `fold ${label}`)
             withTip(fold, closed ? 'Show' : 'Fold')
@@ -2472,7 +2478,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
                 .catch((thrown: unknown) => failOn(card.id, thrown))
         }
         const attached = (card.attachments ?? []).map((file) => {
-            const row = el('div', 'kanban-file')
+            const row = el('div', 'dya-reveals kanban-file')
             const open = fileRow(file.name, () => {
                 void invoke('reveal', meta?.slug, card.id, file.name).catch((thrown: unknown) =>
                     failOn(card.id, thrown)
@@ -2480,7 +2486,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             }, size(file.bytes))
             const drop = key('close', 'Remove')
             drop.disabled = card.locked
-            drop.classList.add('kanban-reveal')
+            drop.classList.add('dya-reveal')
             drop.addEventListener('click', () => unattach(file.name))
             row.append(open, drop)
             return row
@@ -2534,10 +2540,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const thread = el('div', 'dya-form__stack')
         for (const entry of card.comments) {
-            const item = el('div', 'dya-stack kanban-note')
+            const item = el('div', 'dya-stack dya-reveals kanban-note')
             const itemHead = el('div', 'dya-entry__head')
             const forget = key('close', 'Delete')
-            forget.classList.add('kanban-reveal')
+            forget.classList.add('dya-reveal')
             forget.addEventListener('click', () => {
                 void invoke('uncomment', meta?.slug, card.id, entry.at)
                     .then(() => {

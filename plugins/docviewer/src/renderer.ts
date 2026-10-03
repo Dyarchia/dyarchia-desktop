@@ -63,9 +63,6 @@ const STYLES = `
 .docviewer-page > .dya-field {
     flex: 1;
 }
-.docviewer-page:not(:hover, :focus-within) > .dya-join {
-    visibility: hidden;
-}
 .docviewer-header {
     display: flex;
     align-items: center;
@@ -588,7 +585,7 @@ export function activate(ctx: PluginContext): void {
                 files.className = 'dya-files'
                 for (const page of shown) {
                     const item = document.createElement('li')
-                    item.className = 'docviewer-page'
+                    item.className = 'dya-reveals docviewer-page'
                     const row = document.createElement('button')
                     row.type = 'button'
                     row.className = 'dya-file'
@@ -603,7 +600,7 @@ export function activate(ctx: PluginContext): void {
                     row.append(name, facts)
                     row.onclick = () => void openPage(page.path)
                     const keys = document.createElement('span')
-                    keys.className = 'dya-join'
+                    keys.className = 'dya-join dya-reveal'
                     keys.append(
                         barKey('rename', 'Rename', () => renameRow(page, row)),
                         barKey('delete', 'Delete', () => void deletePage(page))

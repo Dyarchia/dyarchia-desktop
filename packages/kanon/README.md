@@ -2,18 +2,10 @@
 
 The shared visual system: CSS tokens, `dya-*` classes and three OFL families, with no build and no
 JavaScript. This file is the authority over the CSS; the before and after of a change is its commit body.
-Tokens precede what consumes them; everything is prefixed `dya-`; `prefers-color-scheme` is never read.
-
-```text
-css/dyarchia.css     the only entry point; imports the five below, in this order
-css/fonts.css        the @font-face declarations
-css/tokens.css       the one theme, black metal, on :root
-css/reset.css        normalisation, [hidden], the ground, focus ring, scrollbars, reduced motion
-css/motion.css       the keyframes
-css/components.css   the dya-* classes
-fonts/               Inter 300-500 variable, Plex Mono 400/500, Spectral 300/500
-tools/               contrast.py measures, palette.py lifts the six colours to lights and inks
-```
+`css/dyarchia.css` is the only entry point and imports, in order, `fonts`, `tokens` (the one theme, on
+`:root`), `reset`, `motion` and `components`; tokens precede what consumes them, everything is prefixed
+`dya-`, and `prefers-color-scheme` is never read. `fonts/` holds Inter, Plex Mono and Spectral; `tools/`
+holds `contrast.py`, which measures, and `palette.py`, which lifts the six colours to lights and inks.
 
 ## Materials
 
@@ -33,17 +25,15 @@ within a quarter of the diagonal. The accent is silver: the primary's rim, the o
 ring. A plugin's mark keeps its brand's original colours. Nothing glows. Two inks, `text` and `text-muted`; every
 glyph is `text`. Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths and code.
 
-## Colour and contrast
-
-- **Six colours and no others**: blue, purple, orange, green, yellow, red; a light `--dya-<name>`, an `-ink` for text.
-- **Green is success, yellow warning, red error, always.** Blue, purple and orange are the only categorical
-  hues (`hue--<name>`, from `ctx.hues`): a dot beside a name, a glyph or the lit rim of a key that is on,
-  never a pill's word, a fill or a dot inside a pill. A pill that informs is neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
-- **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `text-muted` is 4.61 at the least,
-  `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, peaks included, into the commit body.
-
 ## Rules
 
+- **Six colours and no others**, blue, purple, orange, green, yellow and red, each a light `--dya-<name>`
+  and an `-ink` for text. **Green is success, yellow warning, red error, always.** Blue, purple and orange
+  are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name, a glyph or the lit
+  rim of a key that is on, never a pill's word, a fill or a dot inside a pill. A pill that informs is
+  neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
+- **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `text-muted` is 4.61 at the least,
+  `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, peaks included, into the commit body.
 - **Components reference tokens, never literals**: no literal colour, radius or duration in `components.css`.
 - **Round is information, square is action; colour is status or which-one, never emphasis.** **Pressable is
   raised, information is flat.** Every control is a key. Content that opens when pressed (a lifted card, an
@@ -68,6 +58,8 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
 - **One primary per view**: `--primary`, the black key under the accent rim (13.34 on the face, 10.49 at
   glass-peak), top-ink word. `key--success` is lit green; `--danger` turns red only under the pointer or
   focus. **A state a person answers is one key**: `button--resolve`, red state, green answer.
+- **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
+  focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
 - **A tip exists only on an icon-only key**, one or two words, never a word already on screen beside it. A
   label, a pill and a key that spells anything have none; the SDK's `tips()` refuses them.
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
@@ -77,14 +69,13 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
 - **A panel measures itself** as a `pane` (`@container pane`), never a media query: width changes how many
   regions it shows, never how far things stretch. `grid` is a gallery of fixed-width things, `tile--new`
   first; table columns are content width; `form` values up to 560px. Actions live in `handle.toolbar`.
-- **What opens in place is a `fold`**: `details.fold` with a `__head` summary led by `__mark`, the SDK
-  chevron, turned down while open. Only where nothing else says it opens.
-- **One scroller per region**: nothing inside a region that scrolls scrolls again, and text in a code
-  block wraps (`code--wrap`) rather than scrolling sideways. A live log is the exception, sized by a handle.
-- **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger.
-  **`palette`** (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first
-  (Ctrl+P pins), over rows: commands, then what plugins find for the words, `__meta` muted after the name.
-- **A lane answers a drag**: `--accept` the accent's soft ground, `--refuse` red's (text-muted 4.52 at peak).
+- **What opens in place is a `fold`**: `details.fold`, a `__head` summary led by `__mark`, the SDK chevron
+  turned down while open, only where nothing else says it opens. **One scroller per region**: nothing in a
+  region that scrolls scrolls again; a code block wraps (`code--wrap`); a live log is sized by a handle.
+- **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger. **`palette`**
+  (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first (Ctrl+P pins), over
+  rows: commands, then what plugins find, `__meta` muted. **A lane answers a drag**: `--accept` the accent's
+  soft ground, `--refuse` red's (text-muted 4.52 at peak).
 
 ## Components
 
@@ -93,7 +84,7 @@ Structure    pane bar (--flush --inset __group) card (--lift --selected --danger
              --pending --ghosted --carried) card__header masthead carved splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
-             chip join tile (--dense --new __icon __head __name __note) winkey (--close)
+             chip join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
 Input        field (--auto --prose __label) select checkbox form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)

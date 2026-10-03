@@ -861,13 +861,44 @@
  */
 .dya-chip {
     display: inline-grid;
+    grid-auto-flow: column;
     place-items: center;
+    gap: var(--dya-space-1);
     height: var(--dya-size-control);
     padding: 0 var(--dya-space-3);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-key);
     color: var(--dya-text);
+}
+
+/*
+ * A chip may lead with a glyph, a folder that opens onto the chips it holds, at the key's own
+ * glyph size and a step from its word.
+ */
+.dya-chip > svg {
+    width: 15px;
+    height: 15px;
+}
+
+/*
+ * A key that acts on one row, removing a file or a note, folding a column, is there when that row
+ * is being looked at and not on every row at rest. It keeps its place while hidden, so nothing
+ * moves when it appears, and it cannot be pressed until it shows: the row under the pointer, the
+ * focus inside the row, or the key's own focus reveals it. `--held` keeps it in view, for the one
+ * key a row cannot be left without.
+ */
+.dya-reveal {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dya-dur-fast) var(--dya-ease);
+}
+
+.dya-reveals:is(:hover, :focus-within) .dya-reveal,
+.dya-reveal:focus-visible,
+.dya-reveal--held {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /*

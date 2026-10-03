@@ -47,7 +47,7 @@ def test_a_profile_takes_its_name_from_the_filename(tmp_path: Path) -> None:
 
 def test_an_unknown_key_is_rejected(tmp_path: Path) -> None:
     path = write(tmp_path, 'demo', MINIMAL + '\ncrawlerr: parsel\n')
-    with pytest.raises(ProfileError, match='not a valid profile'):
+    with pytest.raises(ProfileError, match='crawlerr, which this version of Dyarchia does not know'):
         load_profile_file(path)
 
 

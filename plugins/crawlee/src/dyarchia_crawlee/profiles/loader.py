@@ -39,6 +39,20 @@ def load_profile_file(path: Path) -> ProfileSpec:
 
     raw.setdefault('name', path.stem)
 
+    """
+    A field this version does not know is refused, not ignored. The profiles live in the corpus
+    repositories and outlive any one build, so an installed copy meets fields a newer one wrote; run
+    without `llms_txt`, a target loses the pages only the index lists and its snapshot records them
+    as removed, a wrong history committed in good faith. Refusing stops the run, and the message
+    names both causes, since a typo and a newer field look the same from here.
+    """
+    unknown = sorted(set(raw) - set(ProfileSpec.model_fields))
+    if unknown:
+        raise ProfileError(
+            f'{path.name} uses {", ".join(unknown)}, which this version of Dyarchia does not know: '
+            'a typo, or a field from a newer version, and then the remedy is to update Dyarchia.'
+        )
+
     try:
         return ProfileSpec.model_validate(raw)
     except ValidationError as error:

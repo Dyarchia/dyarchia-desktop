@@ -31,9 +31,10 @@ body,
 }
 
 /*
- * The title bar is 32px, as is the dock's tab row: a 28px key and its 3px edge, and no more. The
- * build on the left, the launcher key and the window's own keys on the right. The wordmark lives
- * only on the empty window.
+ * The title bar is 32px, a 28px key and its 3px edge and no more, because nothing frames it but
+ * the window. The dock's tab row stays 40px: there the keys stand under the panel's rim and need
+ * 6px of air below it. The build on the left, the launcher key and the window's own keys on the
+ * right. The wordmark lives only on the empty window.
  */
 .topbar {
     position: relative;
@@ -108,7 +109,7 @@ body,
     --dv-icon-hover-background-color: var(--dya-hover);
     --dv-border-radius: var(--dya-radius-chassis);
     --dv-tab-border-radius: 0;
-    --dv-tabs-and-actions-container-height: var(--dya-size-bar);
+    --dv-tabs-and-actions-container-height: 40px;
     --dv-tab-margin-block: 0;
     --dv-floating-border: var(--dya-border-width) solid var(--dya-border);
     --dv-floating-group-border: var(--dya-border-width) solid var(--dya-border);

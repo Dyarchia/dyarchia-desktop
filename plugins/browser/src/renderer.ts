@@ -148,6 +148,12 @@ const views = new Set<WebviewTag>()
 let dropOutside: (() => void) | null = null
 
 export function activate(ctx: PluginContext): void {
+    const canSave = ctx.invoke('canSave') as Promise<boolean>
+    ctx.on('notice', (action: unknown) => {
+        const reveal = (action as { reveal?: unknown } | null)?.reveal
+        if (typeof reveal === 'string') void ctx.shell.reveal(reveal)
+    })
+
     ctx.registerCommand({
         id: 'browser.new',
         title: 'New tab',
@@ -185,7 +191,8 @@ export function activate(ctx: PluginContext): void {
             /*
              * One strip: the three keys that move through the history, the address, the star that
              * keeps it, and the book that opens what is kept. Home is an empty address and Enter;
-             * opening the page outside is a palette command.
+             * opening the page outside is a palette command. A page that plays a video FFmpeg can
+             * read adds a save key to the strip; while it saves, the ring beside the strip fills.
              */
             const bar = el('div', 'dya-bar brw-bar')
             const strip = el('div', 'dya-join')
@@ -198,8 +205,30 @@ export function activate(ctx: PluginContext): void {
             address.placeholder = 'Search or address'
             const star = key(STAR_ICON, 'Bookmark', () => void toggleBookmark())
             const shelf = key(glyph('book'), 'Bookmarks', () => openLibrary())
-            strip.append(back, forward, reload, address, star, shelf)
-            bar.append(strip)
+            let guest = -1
+            const save = key(glyph('extract'), 'Save video', () => void ctx.invoke('save', guest))
+            save.hidden = true
+            const saving = el('span', 'dya-ring dya-ring--busy')
+            saving.hidden = true
+            strip.append(back, forward, reload, address, save, star, shelf)
+            bar.append(strip, saving)
+            const offVideos = ctx.on('videos', (id: unknown, count: unknown) => {
+                if (id !== guest) return
+                void canSave.then((has) => (save.hidden = !has || Number(count) === 0))
+            })
+            const offSaving = ctx.on('saving', (id: unknown, percent: unknown) => {
+                if (id !== guest) return
+                save.disabled = true
+                saving.hidden = false
+                saving.className = percent === null ? 'dya-ring dya-ring--busy' : 'dya-ring dya-ring--current'
+                saving.style.setProperty('--dya-ring-n', percent === null ? '12' : '20')
+                saving.style.setProperty('--dya-ring-done', String(Math.floor(Number(percent ?? 0) / 5)))
+            })
+            const offSaved = ctx.on('saved', (id: unknown) => {
+                if (id !== guest) return
+                save.disabled = false
+                saving.hidden = true
+            })
 
             const marks = el('div', 'brw-marks')
             marks.hidden = true
@@ -533,6 +562,7 @@ export function activate(ctx: PluginContext): void {
 
             view.addEventListener('dom-ready', () => {
                 ready = true
+                if (guest === -1) guest = view.getWebContentsId()
                 sync()
             })
             view.addEventListener('did-start-loading', () => {
@@ -597,6 +627,9 @@ export function activate(ctx: PluginContext): void {
                     dropOutside = null
                 }
                 offMarks()
+                offVideos()
+                offSaving()
+                offSaved()
                 for (const menu of menus.splice(0)) menu.remove()
                 container.replaceChildren()
             }

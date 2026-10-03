@@ -7,6 +7,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { needLabels } from './needs.js'
 import type { Requirement, Status } from './needs.js'
+import type { PluginMainContext } from '@dyarchia/sdk'
 
 /*
  * What each plugin needs before it can run, and how to go and get it.
@@ -83,17 +84,7 @@ async function onPath(name: string): Promise<string | null> {
     return null
 }
 
-/*
- * A binary is found on PATH first, because a machine that already has it should not get a second
- * copy, and then in the folder Setup extracted it into, where it sits however deep the archive
- * put it.
- */
-async function findBinary(name: string): Promise<string | null> {
-    const onMachine = await onPath(name)
-    if (onMachine) return onMachine
-    const folder = join(toolsDirectory(), name)
-    return (await exists(folder)) ? findFile(folder, executable(name), 4) : null
-}
+let findBinary: (name: string) => Promise<string | null> = async () => null
 
 function executable(name: string): string {
     return process.platform === 'win32' ? `${name}.exe` : name
@@ -436,11 +427,8 @@ async function acquirePython(
     }
 }
 
-export async function activate(ctx: {
-    pluginId: string
-    handle(channel: string, handler: (...args: unknown[]) => unknown): void
-    broadcast(channel: string, ...args: unknown[]): void
-}): Promise<void> {
+export async function activate(ctx: PluginMainContext): Promise<void> {
+    findBinary = ctx.binary
     let busy = false
 
     ctx.handle('inspect', async (...args: unknown[]) => {

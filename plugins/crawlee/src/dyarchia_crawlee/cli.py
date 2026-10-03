@@ -554,6 +554,8 @@ def render_state(snapshot: state.State) -> None:
         for corpus in repository.corpora:
             if corpus.error:
                 outcome = f'[bold red]{corpus.error}[/bold red]'
+            elif corpus.never_crawled:
+                outcome = '[dim]not crawled yet[/dim]'
             elif corpus.stale:
                 outcome = '[dim]no change last sweep[/dim]'
             elif corpus.changed:

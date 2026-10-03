@@ -29,7 +29,7 @@ from dyarchia_crawlee.errors import DyarchiaCrawleeError
 from dyarchia_crawlee.models import utcnow
 from dyarchia_crawlee.storage.snapshots import CHANGES_DOCUMENT
 from dyarchia_crawlee.versioning.diffing import ChangeKind, load_report
-from dyarchia_crawlee.versioning.manifest import load_manifest
+from dyarchia_crawlee.versioning.manifest import load_manifest, manifest_path
 from dyarchia_crawlee.watch import WATCH_RESULT, rounds, watchable
 
 
@@ -72,6 +72,8 @@ class DigestTarget:
     swept_at: datetime | None = None
     stale: bool = False
     """The change report predates the last sweep, so it describes an older run than this one."""
+    never_crawled: bool = False
+    """A profile with no snapshot yet: nothing on disk, which is a fact about it, not a failure."""
 
     @property
     def substantive(self) -> list[DigestPage]:
@@ -92,6 +94,8 @@ class DigestTarget:
     def summary(self) -> str:
         if self.error:
             return self.error
+        if self.never_crawled:
+            return 'not crawled yet'
         if self.stale:
             swept = self.swept_at.isoformat() if self.swept_at else 'the last sweep'
             seen = self.generated_at.isoformat() if self.generated_at else 'an earlier run'
@@ -118,6 +122,7 @@ class DigestTarget:
             'swept_at': self.swept_at.isoformat() if self.swept_at else None,
             'stale': self.stale,
             'first_run': self.first_run,
+            'never_crawled': self.never_crawled,
             'changed': self.changed,
             'summary': self.summary,
             'unchanged': self.unchanged,
@@ -200,7 +205,13 @@ def _target(name: str, settings: Settings, last: bool = False) -> DigestTarget:
 
     report = load_report(directory)
     if report is None:
-        target.error = f'no change report in {directory}'
+        # A profile added and not crawled yet has neither a report nor a manifest. Calling that
+        # unreadable put six new targets in red the moment they were saved; only a corpus that has
+        # a manifest and has lost or broken its report is a problem.
+        if manifest_path(directory).is_file():
+            target.error = f'no change report in {directory}'
+        else:
+            target.never_crawled = True
         return target
 
     target.generated_at = report.generated_at

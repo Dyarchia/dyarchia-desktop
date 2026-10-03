@@ -1051,7 +1051,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         void health().catch(() => undefined)
     }
 
+    /*
+     * A pinned board that was deleted or archived is forgotten here, not mourned: the panel opens
+     * on what exists, the boards to switch to and a new one, as if the pin had never been made.
+     */
     const renderAbsence = (missing: string | null): void => {
+        if (missing) write(pinKey, '')
         if (marked.size) clearMarks()
         meta = null
         bar.hidden = registry.length === 0
@@ -1060,20 +1065,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         setup.replaceChildren()
 
         const open = registry.filter((entry) => !entry.archived)
-        if (missing && !open.some((entry) => entry.slug === missing)) {
-            const gone = el('div', 'dya-empty')
-            gone.append(
-                el('span', 'dya-title', `${missing} is gone`)
-            )
-            const actions = el('div', 'dya-empty__actions')
-            const pick = el('button', 'dya-button dya-button--primary', 'Choose another')
-            pick.type = 'button'
-            pick.addEventListener('click', () => openBoardMenu(pick))
-            actions.append(pick)
-            gone.appendChild(actions)
-            setup.appendChild(gone)
-            return
-        }
 
         /*
          * A machine that already holds boards is not asked to make another one. It was: with three

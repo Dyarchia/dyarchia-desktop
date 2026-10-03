@@ -256,7 +256,11 @@ body,
 
 /*
  * A modal panel is window-wide: it sits under the title bar, over the dock, and its scrim covers
- * the dock only, so the title bar's keys still say which panel this is.
+ * the dock only, so the title bar's keys still say which panel this is. It is as wide as what it
+ * holds, up to the window: a fixed 760px folded Setup's descriptions onto four lines beside an
+ * empty column. Being sized by its content, neither the sheet nor its body can be a size
+ * container, whose inline size is by definition not its content's; a container query inside a
+ * modal falls back to its narrowest layout.
  */
 .shell-modal-scrim {
     position: fixed;
@@ -268,7 +272,10 @@ body,
     position: fixed;
     inset: calc(var(--dya-size-bar) + var(--dya-space-6)) 0 auto;
     z-index: 901;
-    width: min(760px, calc(100% - 2 * var(--dya-space-4)));
+    width: max-content;
+    min-width: min(480px, calc(100% - 2 * var(--dya-space-4)));
+    max-width: calc(100% - 2 * var(--dya-space-4));
+    container-type: normal;
     max-height: calc(100% - var(--dya-size-bar) - 2 * var(--dya-space-6));
     padding: var(--dya-space-4) var(--dya-space-5) var(--dya-space-5);
     gap: var(--dya-space-4);
@@ -280,6 +287,7 @@ body,
 }
 
 .shell-modal-body {
+    container-type: normal;
     flex: 1;
     min-height: 0;
     overflow-y: auto;

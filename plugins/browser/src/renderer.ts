@@ -268,7 +268,8 @@ export function activate(ctx: PluginContext): void {
 
             /*
              * A webview answers nothing about its page until its first dom-ready, and asking
-             * throws, so every read waits for that.
+             * throws, so every read waits for that. A page that is a bookmark is called by the
+             * bookmark's name in its tab, the one somebody chose, before the title the site gave it.
              */
             function sync(): void {
                 if (!ready) return
@@ -276,12 +277,13 @@ export function activate(ctx: PluginContext): void {
                 if (document.activeElement !== address) address.value = url
                 back.disabled = !view.canGoBack()
                 forward.disabled = !view.canGoForward()
-                const marked = library.bookmarks.some((entry) => entry.url === url)
+                const kept = library.bookmarks.find((entry) => entry.url === url)
+                const marked = kept !== undefined
                 star.classList.toggle('dya-key--active', marked)
                 const label = marked ? 'Unbookmark' : 'Bookmark'
                 star.setAttribute('aria-label', label)
                 withTip(star, label)
-                handle.setTitle(view.getTitle() || hostOf(url) || null)
+                handle.setTitle(kept?.title || view.getTitle() || hostOf(url) || null)
             }
 
             function setLoading(next: boolean): void {

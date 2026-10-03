@@ -632,7 +632,7 @@ def profiles_command(
                         'description': profile.description,
                         'crawler': profile.crawler.value,
                         'snapshot': profile.snapshot,
-                        'urls': [*profile.start_urls, *profile.sitemap_urls],
+                        'urls': profile.sources,
                         'repository': str(repository.resolve(repository.data_dir).parent),
                     }
                     for profile, repository in found.values()
@@ -661,7 +661,7 @@ def profiles_command(
     table.add_column('description')
 
     for profile, repository in found.values():
-        target = next(iter([*profile.start_urls, *profile.sitemap_urls]), '-')
+        target = next(iter(profile.sources), '-')
         owner = [repository.resolve(repository.data_dir).parent.name] if len(owners) > 1 else []
         table.add_row(profile.name, *owner, profile.crawler.value, target, profile.description or '-')
 

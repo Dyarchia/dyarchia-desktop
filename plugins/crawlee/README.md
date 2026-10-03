@@ -41,7 +41,7 @@ The profiles under `catalog/` are working examples.
     Field                              Meaning
     --------------------------------   -------------------------------------------------------
     name, group                        Target name; snapshots go to data/<group>/<name>/
-    start_urls, sitemap_urls           Where the crawl begins; at least one is required
+    start_urls, sitemap_urls, llms_txt Where the crawl begins; llms.txt adds what sitemaps omit
     fetch_suffix                       Fetch the page's markdown twin, falling back to the page
     crawler                            http, beautifulsoup, parsel, playwright, adaptive
     extract, selectors                 Extraction mode (auto) and CSS field selectors

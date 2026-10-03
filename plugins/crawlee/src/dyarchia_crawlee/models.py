@@ -113,6 +113,7 @@ class RunSpec(BaseModel):
     group: str | None = Field(default=None, pattern=r'^[a-z0-9][a-z0-9-]*$')
     start_urls: list[str] = Field(default_factory=list)
     sitemap_urls: list[str] = Field(default_factory=list)
+    llms_txt: list[str] = Field(default_factory=list)
     fetch_suffix: str | None = None
 
     crawler: CrawlerKind = CrawlerKind.ADAPTIVE
@@ -145,8 +146,8 @@ class RunSpec(BaseModel):
 
     @model_validator(mode='after')
     def _require_a_source(self) -> RunSpec:
-        if not self.start_urls and not self.sitemap_urls:
-            raise ValueError('a run needs at least one start URL or one sitemap URL')
+        if not self.start_urls and not self.sitemap_urls and not self.llms_txt:
+            raise ValueError('a run needs at least one start URL, sitemap URL or llms.txt')
         return self
 
     @property
@@ -156,3 +157,12 @@ class RunSpec(BaseModel):
     @property
     def seeded_by_sitemap(self) -> bool:
         return bool(self.sitemap_urls)
+
+    @property
+    def seeded_by_index(self) -> bool:
+        """Whether some of the run's URLs come from somebody's list rather than from a person."""
+        return bool(self.sitemap_urls or self.llms_txt)
+
+    @property
+    def sources(self) -> list[str]:
+        return [*self.start_urls, *self.sitemap_urls, *self.llms_txt]

@@ -63,7 +63,7 @@ def _404_is_an_answer(spec: RunSpec) -> bool:
     operator asked for it by name, and a 404 there is the answer to their question rather than a
     fact about somebody's index.
     """
-    return bool(spec.fetch_suffix or spec.seeded_by_sitemap)
+    return bool(spec.fetch_suffix or spec.seeded_by_index)
 
 
 def _browser_options(spec: RunSpec, settings: Settings) -> dict[str, Any]:

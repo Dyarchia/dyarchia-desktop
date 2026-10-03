@@ -482,29 +482,33 @@
 }
 
 /*
- * The wordmark is stamped into the metal rather than printed on it: an ink barely off the ground,
- * a dark lip above and a light one below. It measures 1.82 to 3.98 against the ground and is not
- * text; the window's title carries the name for anything that reads it. It is the one element in
- * the system that is allowed to be decoration: large on the empty window and the loading screen,
- * `--bar` at the body's size at the head of the title bar.
+ * The wordmark is an inscription in relief, the way LYCURGUS stands out of the marble under his
+ * medallion: Roman capitals in Spectral 500 raised from the ground, the face a step off it, a hard
+ * edge of light at the top left and a hard shadow at the bottom right, nothing blurred but the
+ * drop. The face measures 1.11 on the ground and the lit edge 2.24, so it is not text; the
+ * window's title carries the name for anything that reads it. It is the one element in the system
+ * that is allowed to be decoration. Large it says DYARCHIA DESKTOP on the empty window and the
+ * loading screen, sized to the pane so two words never overflow it; `--bar` says DYARCHIA alone,
+ * at the body's size, at the head of the title bar.
  */
 .dya-carved {
     font-family: var(--dya-font-serif);
-    font-size: var(--dya-size-display);
-    font-weight: var(--dya-weight-light);
-    letter-spacing: var(--dya-tracking-brand);
+    font-size: min(var(--dya-size-inscription), 6cqi);
+    font-weight: var(--dya-weight-medium);
+    letter-spacing: var(--dya-tracking-inscription);
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
     white-space: nowrap;
-    color: transparent;
-    background: linear-gradient(var(--dya-carve-a), var(--dya-carve-b));
-    -webkit-background-clip: text;
-    background-clip: text;
-    filter: var(--dya-carve-filter);
+    color: var(--dya-relief-face);
+    text-shadow:
+        -1px -1px 0 var(--dya-relief-light),
+        1px 1px 0 var(--dya-relief-shade),
+        2px 2px 2px var(--dya-relief-drop);
 }
 
 .dya-carved--bar {
     font-size: var(--dya-size-body);
+    letter-spacing: var(--dya-tracking-inscription-bar);
 }
 
 /*

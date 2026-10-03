@@ -1,12 +1,12 @@
 {
-    "id": "forge",
-    "name": "Forge",
+    "id": "media",
+    "name": "Media",
     "version": "0.1.0",
     "toolbar": 8,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
     "description": "Convert, cut, record and stream media",
-    "data": "forge",
+    "data": "media",
     "requires": [
         {
             "kind": "binary",

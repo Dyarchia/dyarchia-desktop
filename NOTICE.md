@@ -81,9 +81,9 @@ rich           MIT
 PyYAML         MIT            
 ```
 
-## FFmpeg, fetched for Forge
+## FFmpeg, fetched for Media
 
-Turning Forge on in Setup downloads **FFmpeg** when the machine does not already have it; the
+Turning Media on in Setup downloads **FFmpeg** when the machine does not already have it; the
 player and the browser use the same binary when it is there. FFmpeg is the work of **the FFmpeg
 developers** (https://ffmpeg.org), who credit themselves collectively and name every contributor
 in the project's history (https://git.ffmpeg.org/ffmpeg); the binary says "Copyright (c)

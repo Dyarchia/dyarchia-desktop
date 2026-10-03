@@ -465,9 +465,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     /*
-     * The dock's tab row holds what is used all day and nothing else: which board, and a new card,
-     * one strip. Settings, worktrees and all boards are palette commands; the board's health is
-     * said on the cards and at the foot of the board, where it applies.
+     * The dock's tab row holds which board, a new card and the board's settings, one strip.
+     * Settings is there because a board is renamed, archived and deleted from it, and a palette
+     * command alone hid all three. Worktrees and all boards are palette commands; the board's
+     * health is said on the cards and at the foot of the board, where it applies.
      */
     const bar = el('div', 'dya-join')
     const boardSwitch = el('span', 'dya-select kanban-switch')
@@ -479,6 +480,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     boardButton.append(boardLabel)
     boardSwitch.append(boardButton)
     const newCardKey = key('add', 'New card')
+    const settingsKey = key('settings', 'Settings')
+    settingsKey.addEventListener('click', () => showBoardSettings())
     let openDraft: (() => void) | null = null
     bar.append(boardSwitch)
 
@@ -622,8 +625,11 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const onBoard = meta !== null && next === 'board'
         if (!onBoard) closeSheet(false)
-        if (onBoard) bar.append(newCardKey)
-        else newCardKey.remove()
+        if (onBoard) bar.append(newCardKey, settingsKey)
+        else {
+            newCardKey.remove()
+            settingsKey.remove()
+        }
         boardLabel.textContent = onBoard && meta ? meta.name : next === 'watch' ? 'All boards' : 'Boards'
     }
 
@@ -1445,16 +1451,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         const remove = key('delete', 'Delete board', 'Delete')
         remove.classList.add('dya-key--danger')
-        remove.addEventListener('click', () => {
-            if (!window.confirm(`Delete ${current.name} and its cards? The project folder stays.`)) return
-            void invoke('deleteBoard', current.slug)
-                .then(() => {
-                    closeSheet(false)
-                    write(pinKey, '')
-                    return refresh()
-                })
-                .catch(fail)
-        })
+        remove.addEventListener('click', () => deleteBoard(current))
 
         field(form, 'Name', name)
         field(form, 'Folder', dirRow)
@@ -1470,6 +1467,20 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         shell.append(head, form)
         return shell
+    }
+
+    const deleteBoard = (target: BoardMeta): void => {
+        if (!window.confirm(`Delete ${target.name}? ${target.workdir} goes to the Recycle Bin.`)) return
+        void invoke<string | null>('deleteBoard', target.slug)
+            .then((kept) => {
+                if (meta?.slug === target.slug) {
+                    closeSheet(false)
+                    write(pinKey, '')
+                }
+                if (kept) say(kept)
+                return refresh()
+            })
+            .catch(fail)
     }
 
     const NEW_BOARD = '\u0000new-board'
@@ -1529,9 +1540,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             rows,
             onPick: (row, leaf) => {
                 if (row.group === 'Archived') {
+                    const shelf = registry.find((entry) => entry.slug === row.key)
                     if (leaf.value === 'delete') {
-                        if (!window.confirm(`Delete ${row.label} and its cards? The project folder stays.`)) return
-                        void invoke('deleteBoard', row.key).then(refresh).catch(fail)
+                        if (shelf) deleteBoard(shelf)
                         return
                     }
                     void invoke('archiveBoard', row.key, false)

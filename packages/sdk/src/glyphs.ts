@@ -36,6 +36,7 @@ const PATHS = {
     expand: '<path d="M15 4h5v5"/><path d="M9 20H4v-5"/><path d="m20 4-6 6"/><path d="m4 20 6-6"/>',
     contract: '<path d="M4 10h5V5"/><path d="M20 14h-5v5"/><path d="M9 10 3 4"/><path d="m15 14 6 6"/>',
     chevron: '<path d="m9 6 6 6-6 6"/>',
+    settings: '<path d="M4 6h9"/><path d="M19 6h1"/><circle cx="16" cy="6" r="2"/><path d="M4 12h1"/><path d="M11 12h9"/><circle cx="8" cy="12" r="2"/><path d="M4 18h9"/><path d="M19 18h1"/><circle cx="16" cy="18" r="2"/>',
     book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>'
 }
 

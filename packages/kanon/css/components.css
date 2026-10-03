@@ -482,24 +482,29 @@
 }
 
 /*
- * The application's name, at the head of the title bar and nowhere else: Spectral in capitals at
- * the body's size, spaced as a brand and carved the way a title is, the top ink falling to the
- * muted one under a dark lip and a light one. It is text, 16.82 at its top and 6.83 at its foot on
- * the ground, because it is the one word the window always says.
+ * The wordmark is stamped into the metal rather than printed on it: an ink barely off the ground,
+ * a dark lip above and a light one below. It measures 1.82 to 3.98 against the ground and is not
+ * text; the window's title carries the name for anything that reads it. It is the one element in
+ * the system that is allowed to be decoration: large on the empty window and the loading screen,
+ * `--bar` at the body's size at the head of the title bar.
  */
-.dya-wordmark {
+.dya-carved {
     font-family: var(--dya-font-serif);
-    font-size: var(--dya-size-body);
+    font-size: var(--dya-size-display);
     font-weight: var(--dya-weight-light);
     letter-spacing: var(--dya-tracking-brand);
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
     white-space: nowrap;
     color: transparent;
-    background: linear-gradient(var(--dya-text), var(--dya-text-muted));
+    background: linear-gradient(var(--dya-carve-a), var(--dya-carve-b));
     -webkit-background-clip: text;
     background-clip: text;
     filter: var(--dya-carve-filter);
+}
+
+.dya-carved--bar {
+    font-size: var(--dya-size-body);
 }
 
 /*

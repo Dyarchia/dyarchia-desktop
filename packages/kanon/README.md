@@ -20,6 +20,7 @@ tools/               contrast.py measures, palette.py lifts the six colours to l
 ```text
 glass   the panel only: dark metal a shade under the ground, the light passing through, a chrome rim
 key     every control: a near-black face under a light rim, a hard 3px edge that drops 2px pressed;
+        a key that is on stays up and is lit, an orange-purple-blue arc travelling its rim;
         a tab's own keys carry no rim, the tab being their frame
 pill    every piece of information: round, words in the sans; never pressable
 light   status only: a green, yellow or red dot, or a hollow top-ink ring for what is under way
@@ -36,8 +37,8 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
 
 - **Six colours and no others**: blue, purple, orange, green, yellow, red; a light `--dya-<name>`, an `-ink` for text.
 - **Green is success, yellow warning, red error, always.** Blue, purple and orange are the only categorical
-  hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a glyph, never a pill's word, a fill or a
-  dot inside a pill. A pill that informs is neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
+  hues (`hue--<name>`, from `ctx.hues`): a dot beside a name, a glyph or the lit rim of a key that is on,
+  never a pill's word, a fill or a dot inside a pill. A pill that informs is neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
 - **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `text-muted` is 4.61 at the least,
   `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, peaks included, into the commit body.
 
@@ -49,6 +50,8 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
   entry, a row, a file, a menu row, a tab) stays flat and answers with its ground.
 - **Hover changes the background and the border, never the shadow**; a transition names only `transform`,
   `opacity` and `background-color`; the focus ring is an outline.
+- **One thing moves for as long as it lasts**: the lit rim of a key that is on, one turn in `--dya-dur-orbit`,
+  its arc 5.50 at the least on every ground. Nothing else animates forever: no shimmer, no pulse.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and the section row's alone, in the top ink; a date in a section row is a `meta`.
 - **Scale** body 15, rows 14, controls and meta 13px, prose 72ch. **Radii** 3px key, field, menu row; 6px menu;

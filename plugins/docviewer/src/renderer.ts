@@ -17,6 +17,11 @@ interface DeleteResult {
     error?: string
 }
 
+interface FolderResult {
+    canceled?: boolean
+    path?: string
+}
+
 interface Page {
     name: string
     path: string
@@ -247,8 +252,25 @@ export function activate(ctx: PluginContext): void {
             header.append(unsaved, problem, strip)
             header.hidden = true
 
+            /*
+             * With no page open the tab row says where the pages live: the folder's name on a key
+             * that chooses another, and a key that shows it in the file manager. A page made here
+             * that nobody could find again was the reason.
+             */
+            const place = document.createElement('div')
+            place.className = 'dya-join'
+            const folderKey = document.createElement('button')
+            folderKey.type = 'button'
+            folderKey.className = 'dya-button'
+            folderKey.setAttribute('aria-label', 'Folder')
+            const folderName = document.createElement('span')
+            folderName.className = 'dya-mono'
+            folderKey.innerHTML = glyph('folder')
+            folderKey.append(folderName)
+            let folderPath = ''
+
             const content = document.createElement('div')
-            handle.toolbar.append(header)
+            handle.toolbar.append(header, place)
             root.append(content, tipHolder)
             container.appendChild(root)
 
@@ -341,6 +363,28 @@ export function activate(ctx: PluginContext): void {
                 if (!busy && leave()) showEmpty()
             }
 
+            const revealKey = document.createElement('button')
+            revealKey.type = 'button'
+            revealKey.className = 'dya-key'
+            revealKey.innerHTML = glyph('open')
+            revealKey.setAttribute('aria-label', 'Show in folder')
+            withTip(revealKey, 'Show in folder')
+            revealKey.onclick = () => {
+                if (current?.path) void ctx.shell.reveal(current.path)
+            }
+
+            const deleteKey = document.createElement('button')
+            deleteKey.type = 'button'
+            deleteKey.className = 'dya-key dya-key--danger'
+            deleteKey.innerHTML = glyph('delete')
+            deleteKey.setAttribute('aria-label', 'Delete')
+            withTip(deleteKey, 'Delete')
+            deleteKey.onclick = () => {
+                if (!busy && current?.path && current.name) {
+                    void deletePage({ name: current.name, path: current.path, size: 0, mtime: 0 })
+                }
+            }
+
             /*
              * A strip is drawn from what applies, never from hidden members: a hidden key is
              * still the first or last child, and the corners of the strip would be cut wrong.
@@ -358,7 +402,8 @@ export function activate(ctx: PluginContext): void {
                 save.disabled = !dirty
                 paintSave()
                 if (mode === 'edit' && !overwrite) shown.push(save)
-                strip.replaceChildren(...shown, pagesKey)
+                strip.replaceChildren(...shown, revealKey, deleteKey, pagesKey)
+                place.hidden = current !== null
                 if (mode === 'edit' && overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
                 unsaved.hidden = !dirty || overwrite
@@ -593,7 +638,23 @@ export function activate(ctx: PluginContext): void {
                 list.replaceChildren(files)
             }
 
+            async function paintFolder(): Promise<void> {
+                const where = (await ctx.invoke('folder')) as { path: string }
+                folderPath = where.path
+                folderName.textContent = where.path.split(/[\\/]/).filter(Boolean).at(-1) ?? where.path
+                place.replaceChildren(
+                    folderKey,
+                    barKey('open', 'Show folder', () => void ctx.shell.reveal(folderPath))
+                )
+            }
+
+            folderKey.onclick = async () => {
+                const picked = (await ctx.invoke('chooseFolder')) as FolderResult
+                if (picked.path) await refresh()
+            }
+
             async function refresh(): Promise<void> {
+                void paintFolder().catch(() => undefined)
                 try {
                     pages = (await ctx.invoke('list')) as Page[]
                 } catch {

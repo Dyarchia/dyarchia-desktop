@@ -1,6 +1,6 @@
-import { BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog, shell } from 'electron'
 import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
-import { basename, dirname, extname, join, resolve } from 'node:path'
+import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -10,6 +10,22 @@ const TEXT_EXTENSIONS = [
     'md', 'txt', 'json', 'yaml', 'yml', 'js', 'ts', 'css', 'html',
     'xml', 'csv', 'log', 'ps1', 'py', 'cls', 'trigger', 'apex'
 ]
+
+function parentWindow(): BrowserWindow | undefined {
+    return BrowserWindow.getFocusedWindow() ?? undefined
+}
+
+async function chooseFolder(start: string): Promise<string | null> {
+    const options = {
+        title: 'Docs folder',
+        defaultPath: start,
+        buttonLabel: 'Use folder',
+        properties: ['openDirectory' as const, 'createDirectory' as const]
+    }
+    const parent = parentWindow()
+    const result = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options)
+    return result.canceled ? null : (result.filePaths[0] ?? null)
+}
 
 async function choose(): Promise<string | null> {
     const options = {
@@ -68,14 +84,54 @@ export function activate(ctx: PluginMainContext): void {
         return load(filePath)
     })
 
-    const pages = join(ctx.dataHome, 'docs')
+    /*
+     * The pages live in one folder the person chooses, asked the first time a page is made and
+     * kept in the application's state beside the others. Until then it is the data home's docs
+     * folder, which is also where the dialog starts, so the pages already there are one click from
+     * staying where they are.
+     */
+    const fallback = join(ctx.dataHome, 'docs')
+    const statePath = join(app.getPath('userData'), 'docviewer.json')
+    let chosen: string | null = null
+
+    async function remembered(): Promise<string | null> {
+        if (chosen) return chosen
+        try {
+            const folder = (JSON.parse(await readFile(statePath, 'utf-8')) as { folder?: unknown }).folder
+            if (typeof folder === 'string' && isAbsolute(folder)) chosen = folder
+        } catch {
+            chosen = null
+        }
+        return chosen
+    }
+
+    async function folder(): Promise<string> {
+        const path = (await remembered()) ?? fallback
+        await mkdir(path, { recursive: true })
+        return path
+    }
+
+    async function pickFolder(): Promise<string | null> {
+        const picked = await chooseFolder((await remembered()) ?? fallback)
+        if (!picked) return null
+        chosen = picked
+        await writeFile(statePath, JSON.stringify({ folder: picked }, null, 4), 'utf-8')
+        return picked
+    }
+
+    ctx.handle('folder', async () => ({ path: await folder(), chosen: (await remembered()) !== null }))
+
+    ctx.handle('chooseFolder', async () => {
+        const picked = await pickFolder()
+        return picked ? { path: picked } : { canceled: true }
+    })
 
     /*
-     * The pages this panel keeps: the files in one folder of the data home, newest first. Files
-     * anywhere else are reached through the file picker and are not listed.
+     * The pages this panel keeps: the files in its folder, newest first. Files anywhere else are
+     * reached through the file picker and are not listed.
      */
     ctx.handle('list', async () => {
-        await mkdir(pages, { recursive: true })
+        const pages = await folder()
         const entries = await readdir(pages, { withFileTypes: true })
         const files = await Promise.all(
             entries
@@ -96,7 +152,7 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('find', async (raw: unknown) => {
         const words = typeof raw === 'string' ? raw.trim().toLowerCase() : ''
         if (!words) return []
-        await mkdir(pages, { recursive: true })
+        const pages = await folder()
         const entries = await readdir(pages, { withFileTypes: true })
         const found: { path: string; name: string; line?: number; text?: string }[] = []
         for (const entry of entries) {
@@ -117,13 +173,15 @@ export function activate(ctx: PluginMainContext): void {
 
     /*
      * A new page is created empty and then read like any other. A name already taken is refused
-     * rather than emptied.
+     * rather than emptied. The first one asks where the pages live, and a dialog closed without an
+     * answer makes nothing.
      */
     ctx.handle('create', async (raw: unknown) => {
         const untitled = raw === undefined
         const name = untitled ? 'Untitled.md' : pageName(raw)
         if (!name) return { error: 'Not a file name' }
-        await mkdir(pages, { recursive: true })
+        if (!(await remembered()) && !(await pickFolder())) return { canceled: true }
+        const pages = await folder()
         for (let n = 1; ; n++) {
             const filePath = join(pages, n === 1 ? name : `Untitled ${n}.md`)
             try {

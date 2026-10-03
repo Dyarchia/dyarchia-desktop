@@ -46,6 +46,7 @@ class CorpusState:
     reordered: int = 0
     unchanged: int = 0
     error: str | None = None
+    never_crawled: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -67,6 +68,7 @@ class CorpusState:
             'reordered': self.reordered,
             'unchanged': self.unchanged,
             'error': self.error,
+            'never_crawled': self.never_crawled,
         }
 
 
@@ -166,6 +168,7 @@ def _corpus(target: digest.DigestTarget, settings: Settings) -> CorpusState:
         first_run=target.first_run,
         changed=target.changed,
         error=target.error,
+        never_crawled=target.never_crawled,
         reordered=len(target.reordered),
         unchanged=target.unchanged,
     )

@@ -4,11 +4,11 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
 
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
- * an anvil, where Sparta struck the iron bars it kept for money. Solid shapes, so it reads as a
- * key at 18px.
+ * a Laconian bronze mirror, the polished disc a standing figure holds up with both arms, which
+ * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
  */
-const FORGE_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 5.5h15v3.5h-4.5v2.2c0 1.6-1.2 2.7-2.6 3.2l1 2.6h2.6v3.5H5.5V17h2.6l1-2.6C7.9 13.9 7 12.9 7 11.4V10C4.4 10 2.3 8.4 1.8 5.5z" fill="#eceef2"/><rect x="9.6" y="7" width="6" height="1.1" rx=".5" fill="#0a0a0b"/></svg>'
+const MEDIA_ICON =
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="7.6" r="6.6" fill="#eceef2"/><circle cx="12" cy="7.6" r="5.1" fill="none" stroke="#0a0a0b" stroke-width=".8"/><path d="M9 6.2a3.3 3.3 0 0 1 2.3-2.2" stroke="#0a0a0b" stroke-width="1.2" stroke-linecap="round" fill="none"/><path d="M11.1 17.6 9.3 14.2M12.9 17.6l1.8-3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="16.2" r="1.05" fill="#eceef2"/><path d="M10.9 17.5h2.2l.7 3.7h-3.6z" fill="#eceef2"/><rect x="8.3" y="21.1" width="7.4" height="1.8" rx=".5" fill="#eceef2"/></svg>'
 
 interface ToolInfo {
     id: Tool
@@ -31,12 +31,12 @@ const TOOLS: ToolInfo[] = [
 ]
 
 const STYLES = `
-.forge {
+.media {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
-.forge-stage {
+.media-stage {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -45,30 +45,30 @@ const STYLES = `
     gap: var(--dya-space-6);
     padding: var(--dya-space-4);
 }
-.forge-unit {
+.media-unit {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
 }
-.forge-unit > .dya-field,
-.forge-time {
+.media-unit > .dya-field,
+.media-time {
     width: 96px;
 }
-.forge .dya-form__stack > .dya-key {
+.media .dya-form__stack > .dya-key {
     align-self: flex-start;
 }
-.forge-jobs {
+.media-jobs {
     align-self: flex-start;
     max-width: 100%;
 }
-.forge-status {
+.media-status {
     width: var(--dya-size-control);
     text-align: center;
 }
-.forge-status > .dya-ring {
+.media-status > .dya-ring {
     display: block;
 }
-.forge-jobs .dya-table__name {
+.media-jobs .dya-table__name {
     max-width: 360px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -113,22 +113,22 @@ export function activate(ctx: PluginContext): void {
     const open = (tool: Tool): void => {
         if (chooseTool) chooseTool(tool)
         else waitingTool = tool
-        void ctx.shell.show('forge')
+        void ctx.shell.show('media')
     }
 
     void ready.then((state) => {
         if (!state.ffmpeg) return
         for (const tool of TOOLS) {
             if (tool.capture && !state.capture) continue
-            ctx.registerCommand({ id: `forge.${tool.id}`, title: tool.name, icon: FORGE_ICON, run: () => open(tool.id) })
+            ctx.registerCommand({ id: `media.${tool.id}`, title: tool.name, icon: MEDIA_ICON, run: () => open(tool.id) })
         }
     })
 
-    ctx.registerPanel({ id: 'forge', title: 'Forge', icon: FORGE_ICON }, (container, handle) => {
+    ctx.registerPanel({ id: 'media', title: 'Media', icon: MEDIA_ICON }, (container, handle) => {
         injectStyles(ctx.pluginId, STYLES)
 
-        const root = el('div', 'forge dya-pane')
-        const stage = el('div', 'forge-stage')
+        const root = el('div', 'media dya-pane')
+        const stage = el('div', 'media-stage')
         const body = el('div')
         const jobsHolder = el('div')
         const tipHolder = el('div')
@@ -158,7 +158,7 @@ export function activate(ctx: PluginContext): void {
         handle.toolbar.append(back)
 
         function fail(error: unknown): void {
-            const line = body.querySelector('.forge-failure')
+            const line = body.querySelector('.media-failure')
             const message = error instanceof Error ? error.message : String(error)
             if (line) line.textContent = message
         }
@@ -192,7 +192,7 @@ export function activate(ctx: PluginContext): void {
         }
 
         function unit(input: HTMLInputElement, word: string): HTMLElement {
-            const row = el('span', 'forge-unit')
+            const row = el('span', 'media-unit')
             row.append(input, el('span', 'dya-meta', word))
             return row
         }
@@ -256,7 +256,7 @@ export function activate(ctx: PluginContext): void {
                 if (value.hidden) name.hidden = true
                 new MutationObserver(() => (name.hidden = value.hidden)).observe(value, { attributes: true, attributeFilter: ['hidden'] })
             }
-            const failure = el('span', 'dya-text dya-text--danger forge-failure')
+            const failure = el('span', 'dya-text dya-text--danger media-failure')
             if (tool.verb) {
                 const actions = el('div', 'dya-form__actions')
                 const go = el('button', 'dya-button dya-button--primary', tool.verb)
@@ -318,8 +318,8 @@ export function activate(ctx: PluginContext): void {
         function buildCut(tool: ToolInfo): HTMLElement {
             const start = text('Start', '0:00')
             const end = text('End', '')
-            start.classList.add('forge-time')
-            end.classList.add('forge-time')
+            start.classList.add('media-time')
+            end.classList.add('media-time')
             const exact = el('input', 'dya-checkbox')
             exact.type = 'checkbox'
             exact.setAttribute('aria-label', 'Exact')
@@ -403,7 +403,7 @@ export function activate(ctx: PluginContext): void {
             const file = fileField(() => undefined)
             const what = select('What', [['gif', 'GIF'], ['frame', 'Frame']], 'gif')
             const start = text('Start', '0:00')
-            start.classList.add('forge-time')
+            start.classList.add('media-time')
             const length = text('Length', '5')
             const lengthRow = unit(length, 's')
             const width = select('Width', [['320', '320'], ['480', '480'], ['640', '640'], ['800', '800']], '480')
@@ -588,7 +588,7 @@ export function activate(ctx: PluginContext): void {
                 jobsHolder.replaceChildren()
                 return
             }
-            const table = el('table', 'dya-table forge-jobs')
+            const table = el('table', 'dya-table media-jobs')
             const rows = el('tbody')
             for (const job of [...jobs].reverse()) {
                 const row = el('tr', 'dya-reveals')
@@ -620,7 +620,7 @@ export function activate(ctx: PluginContext): void {
                     strip.append(dismiss)
                 }
                 end.append(strip)
-                const cell = el('td', 'dya-table__fit forge-status')
+                const cell = el('td', 'dya-table__fit media-status')
                 cell.append(status(job))
                 const tone = job.state === 'failed' ? 'dya-table__prose dya-text--danger' : 'dya-table__num'
                 row.append(cell, el('td', 'dya-table__name dya-mono', job.name), el('td', tone, progress(job)), end)

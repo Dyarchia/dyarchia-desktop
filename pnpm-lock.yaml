@@ -141,7 +141,7 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  plugins/forge:
+  plugins/media:
     devDependencies:
       '@dyarchia/sdk':
         specifier: workspace:*

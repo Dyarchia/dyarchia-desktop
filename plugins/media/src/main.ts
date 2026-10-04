@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, screen } from 'electron'
 import { execFile, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
@@ -666,15 +666,6 @@ export function activate(ctx: PluginMainContext): void {
             job.error = reason(running)
             if (plan.output && made && !plan.live) await rm(plan.output, { recursive: true, force: true })
             if (!plan.live) job.output = undefined
-        }
-        if (plan.program && job.state === 'done' && job.output) {
-            const folder = dirname(job.output)
-            const base = basename(job.output, extname(job.output))
-            for (const name of await readdir(folder).catch(() => [] as string[])) {
-                if (!name.startsWith(`${base}.`) || !/\.(srt|vtt)$/i.test(name)) continue
-                const left = join(folder, name)
-                if (((await stat(left).catch(() => null))?.mtimeMs ?? 0) >= job.started) await rm(left, { force: true })
-            }
         }
         job.ended = Date.now()
         running.child = null

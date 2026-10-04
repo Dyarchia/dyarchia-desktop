@@ -41,6 +41,16 @@
     }
 }
 
+@keyframes dya-sheen {
+    from {
+        transform: translateX(-100%);
+    }
+    35%,
+    to {
+        transform: translateX(100%);
+    }
+}
+
 @keyframes dya-turn {
     to {
         transform: rotate(1turn);

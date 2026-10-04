@@ -5,7 +5,7 @@
     "toolbar": 8,
     "renderer": "dist/renderer.js",
     "main": "dist/main.js",
-    "description": "Convert, cut, record and stream media",
+    "description": "Download, convert, cut, record and stream media",
     "data": "media",
     "requires": [
         {
@@ -19,7 +19,16 @@
                 "linux-x64": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-linux64-gpl-9.0.tar.xz",
                 "linux-arm64": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-linuxarm64-gpl-9.0.tar.xz"
             },
-            "note": "115 MB"
+            "note": "145 MB"
+        },
+        {
+            "kind": "binary",
+            "name": "yt-dlp",
+            "label": "yt-dlp",
+            "withPlugin": true,
+            "assets": {
+                "win32-x64": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_win.zip"
+            }
         }
     ]
 }

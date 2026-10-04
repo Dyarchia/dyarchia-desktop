@@ -19,6 +19,7 @@ interface ToolInfo {
 }
 
 const TOOLS: ToolInfo[] = [
+    { id: 'download', name: 'Download', icon: 'download', verb: 'Download' },
     { id: 'convert', name: 'Convert', icon: 'convert', verb: 'Convert' },
     { id: 'cut', name: 'Cut', icon: 'cut', verb: 'Cut' },
     { id: 'join', name: 'Join', icon: 'join', verb: 'Join' },
@@ -120,6 +121,7 @@ export function activate(ctx: PluginContext): void {
         if (!state.ffmpeg) return
         for (const tool of TOOLS) {
             if (tool.capture && !state.capture) continue
+            if (tool.id === 'download' && !state.ytdlp) continue
             ctx.registerCommand({ id: `media.${tool.id}`, title: tool.name, icon: MEDIA_ICON, run: () => open(tool.id) })
         }
     })
@@ -137,19 +139,19 @@ export function activate(ctx: PluginContext): void {
         root.append(stage, tipHolder)
         container.append(root)
 
-        let state: Ready = { ffmpeg: false, capture: false, codecs: [] }
+        let state: Ready = { ffmpeg: false, ytdlp: false, capture: false, codecs: [] }
         let jobs: Job[] = []
         let disposed = false
         let sources: Promise<Sources> | null = null
         let watching: number | null = null
         let ticker: number | null = null
 
-        function key(icon: GlyphName, label: string, act: () => void): HTMLButtonElement {
+        function key(icon: GlyphName, label: string, act: () => void, tip = true): HTMLButtonElement {
             const button = el('button', 'dya-key')
             button.type = 'button'
             button.innerHTML = glyph(icon)
             button.setAttribute('aria-label', label)
-            withTip(button, label)
+            if (tip) withTip(button, label)
             button.addEventListener('click', act)
             return button
         }
@@ -512,7 +514,23 @@ export function activate(ctx: PluginContext): void {
             return node
         }
 
+        function buildDownload(tool: ToolInfo): HTMLElement {
+            const link = text('Link', 'https://')
+            link.classList.add('dya-mono')
+            const what = select('What', [['video', 'Video'], ['audio', 'Audio']], 'video')
+            const quality = select('Quality', [['0', 'Best'], ['2160', '2160p'], ['1080', '1080p'], ['720', '720p'], ['480', '480p']], '1080')
+            what.addEventListener('change', () => (quality.wrap.hidden = what.value !== 'video'))
+            return form(tool, [['Link', link], ['What', what.wrap], ['Quality', quality.wrap]], () => {
+                if (!link.value.trim()) {
+                    fail(new Error('No link'))
+                    return null
+                }
+                return { tool: tool.id, inputs: [], options: { url: link.value, what: what.value, quality: quality.value } }
+            })
+        }
+
         const BUILDERS: Record<Tool, (tool: ToolInfo) => HTMLElement> = {
+            download: buildDownload,
             convert: buildConvert,
             cut: buildCut,
             join: buildJoin,
@@ -549,6 +567,7 @@ export function activate(ctx: PluginContext): void {
                 const grid = el('div', 'dya-grid')
                 for (const entry of TOOLS) {
                     if (entry.capture && !state.capture) continue
+                    if (entry.id === 'download' && !state.ytdlp) continue
                     const tile = el('button', 'dya-tile')
                     tile.type = 'button'
                     tile.innerHTML = `<span class="dya-tile__icon">${glyph(entry.icon)}</span>`
@@ -583,51 +602,91 @@ export function activate(ctx: PluginContext): void {
             return ''
         }
 
+        /*
+         * The jobs are one table whose rows are kept and updated in place: a repaint every second
+         * would otherwise replace the key under the pointer, and its tip with it. A row's keys are
+         * rebuilt only when its job changes state. Stop, open and dismiss are symbols nobody needs
+         * named; only the folder says what it does.
+         */
+        const jobsTable = el('table', 'dya-table media-jobs')
+        const jobRows = el('tbody')
+        jobsTable.append(jobRows)
+        const painted = new Map<number, {
+            row: HTMLTableRowElement
+            status: HTMLTableCellElement
+            name: HTMLTableCellElement
+            progress: HTMLTableCellElement
+            end: HTMLTableCellElement
+            state: string
+            percent: number | null
+        }>()
+
+        function jobKeys(job: Job): HTMLElement {
+            const strip = el('span', 'dya-join')
+            if (job.state === 'running') {
+                const halt = key('stop', 'Stop', () => void ctx.invoke('stop', job.id), false)
+                halt.classList.add('dya-reveal', 'dya-reveal--held')
+                strip.append(halt)
+                return strip
+            }
+            if (job.state === 'done' && job.output) {
+                const output = job.output
+                if (ctx.shell.canOpen(output)) {
+                    const play = key('play', 'Open', () => void ctx.shell.open({ path: output }), false)
+                    play.classList.add('dya-reveal')
+                    strip.append(play)
+                }
+                const folder = key('folder', 'Show', () => void ctx.shell.reveal(output))
+                folder.classList.add('dya-reveal')
+                strip.append(folder)
+            }
+            const dismiss = key('close', 'Dismiss', () => {
+                void ctx.invoke('dismiss', job.id).then(() => {
+                    jobs = jobs.filter((known) => known.id !== job.id)
+                    paintJobs()
+                })
+            }, false)
+            dismiss.classList.add('dya-reveal')
+            strip.append(dismiss)
+            return strip
+        }
+
         function paintJobs(): void {
+            for (const [id, entry] of painted) {
+                if (jobs.some((job) => job.id === id)) continue
+                entry.row.remove()
+                painted.delete(id)
+            }
             if (jobs.length === 0) {
                 jobsHolder.replaceChildren()
                 return
             }
-            const table = el('table', 'dya-table media-jobs')
-            const rows = el('tbody')
-            for (const job of [...jobs].reverse()) {
-                const row = el('tr', 'dya-reveals')
-                const end = el('td', 'dya-table__end')
-                const strip = el('span', 'dya-join')
-                if (job.state === 'running') {
-                    const halt = key('stop', 'Stop', () => void ctx.invoke('stop', job.id))
-                    halt.classList.add('dya-reveal', 'dya-reveal--held')
-                    strip.append(halt)
-                } else if (job.state === 'done' && job.output) {
-                    const output = job.output
-                    if (ctx.shell.canOpen(output)) {
-                        const play = key('play', 'Open', () => void ctx.shell.open({ path: output }))
-                        play.classList.add('dya-reveal')
-                        strip.append(play)
+            if (!jobsTable.isConnected) jobsHolder.replaceChildren(jobsTable)
+            ;[...jobs].reverse().forEach((job, index) => {
+                let entry = painted.get(job.id)
+                if (!entry) {
+                    const row = el('tr', 'dya-reveals')
+                    entry = {
+                        row,
+                        status: el('td', 'dya-table__fit media-status'),
+                        name: el('td', 'dya-table__name dya-mono'),
+                        progress: el('td'),
+                        end: el('td', 'dya-table__end'),
+                        state: '',
+                        percent: null
                     }
-                    const folder = key('folder', 'Show', () => void ctx.shell.reveal(output))
-                    folder.classList.add('dya-reveal')
-                    strip.append(folder)
+                    row.append(entry.status, entry.name, entry.progress, entry.end)
+                    painted.set(job.id, entry)
                 }
-                if (job.state !== 'running') {
-                    const dismiss = key('close', 'Dismiss', () => {
-                        void ctx.invoke('dismiss', job.id).then(() => {
-                            jobs = jobs.filter((known) => known.id !== job.id)
-                            paintJobs()
-                        })
-                    })
-                    dismiss.classList.add('dya-reveal')
-                    strip.append(dismiss)
-                }
-                end.append(strip)
-                const cell = el('td', 'dya-table__fit media-status')
-                cell.append(status(job))
-                const tone = job.state === 'failed' ? 'dya-table__prose dya-text--danger' : 'dya-table__num'
-                row.append(cell, el('td', 'dya-table__name dya-mono', job.name), el('td', tone, progress(job)), end)
-                rows.append(row)
-            }
-            table.append(rows)
-            jobsHolder.replaceChildren(table)
+                if (entry.state !== job.state || entry.percent !== job.percent) entry.status.replaceChildren(status(job))
+                if (entry.state !== job.state) entry.end.replaceChildren(jobKeys(job))
+                entry.name.textContent = job.name
+                entry.progress.textContent = progress(job)
+                entry.progress.className = job.state === 'failed' ? 'dya-table__prose dya-text--danger' : 'dya-table__num'
+                entry.state = job.state
+                entry.percent = job.percent
+                if (jobRows.children[index] !== entry.row) jobRows.insertBefore(entry.row, jobRows.children[index] ?? null)
+            })
         }
 
         function tick(): void {

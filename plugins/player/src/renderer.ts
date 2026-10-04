@@ -5,7 +5,7 @@ import { CONVERTIBLE, MIME_TYPES } from './media.js'
 interface Media {
     path: string
     name: string
-    kind: 'audio' | 'video'
+    kind: 'audio' | 'video' | 'image'
     src: string
     convert: boolean
 }
@@ -70,6 +70,21 @@ const STYLES = `
 }
 .player-stage audio {
     width: min(420px, 100%);
+}
+/*
+ * A picture is fitted inside the stage and never blown up past its own size, so a small icon
+ * stays sharp, centred on the bare glass.
+ */
+.player-stage--image {
+    padding: var(--dya-space-3);
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+}
+.player-stage--image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
 .player-wait {
     display: flex;
@@ -270,7 +285,23 @@ export function activate(ctx: PluginContext): void {
                 })
             }
 
+            function show(media: Media): void {
+                const picture = document.createElement('img')
+                picture.alt = media.name
+                picture.src = media.src
+                picture.onerror = () => {
+                    if (!disposed) showEmpty('Cannot open')
+                }
+                playing = true
+                gallery = null
+                handle.setTitle(media.name)
+                back.hidden = false
+                stage.className = 'player-stage player-stage--image'
+                stage.replaceChildren(picture)
+            }
+
             function mount(media: Media, retry: boolean): void {
+                if (media.kind === 'image') return show(media)
                 const element = document.createElement(media.kind === 'video' ? 'video' : 'audio')
                 element.controls = true
                 element.autoplay = true

@@ -85,7 +85,7 @@ Structure    pane bar (--flush --inset __group) card (--lift --selected --danger
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
              chip join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
-Input        field (--auto --prose __label) select checkbox form (__value __stack __split __actions)
+Input        field (--auto --prose __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
 Content      table (__num __fit __name __subject __end __prose __section) row (--selected) files file (__name)

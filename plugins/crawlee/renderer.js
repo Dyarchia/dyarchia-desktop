@@ -40,6 +40,32 @@ const STYLE = `
 .crw-run {
     min-width: 56px;
 }
+.crw-scope {
+    anchor-name: --crw-scope;
+    max-width: 320px;
+}
+.crw-scope-menu:popover-open {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dya-space-1);
+}
+.crw-scope-group {
+    padding: var(--dya-space-1);
+}
+.crw-scope-folder > .dya-menu__item ~ .dya-menu__item {
+    padding-left: calc(var(--dya-space-2) + 22px);
+}
+.crw-scope-menu {
+    position: fixed;
+    position-anchor: --crw-scope;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block;
+    inset: auto;
+    margin: var(--dya-space-1) 0 0;
+    min-width: anchor-size(width);
+    max-height: 60vh;
+    overflow-y: auto;
+}
 .crw-status {
     display: inline-flex;
     align-items: center;
@@ -832,11 +858,25 @@ function mount(ctx, container, handle) {
          * The scope is one choice for two things: which targets the list shows and which the round
          * runs, so it and the key that runs it are one strip. The key is Run at rest and Stop while
          * a round is under way, one key in one place rather than two where one cannot be pressed.
+         *
+         * It is a set, not one value: a menu of checkboxes, All targets first, then one card per
+         * folder, the folder heading its own targets. A folder ticks every target in it and stands
+         * half ticked when only some are. Nothing ticked is all of them. The key says what is
+         * chosen, a whole folder by its name and the rest by theirs.
          */
-        const scope = el('select', 'dya-field dya-field--auto')
-        scope.setAttribute('aria-label', 'Scope')
+        const selected = new Set()
+        const scopeKey = el('button', 'dya-field crw-scope')
+        scopeKey.type = 'button'
+        scopeKey.setAttribute('aria-label', 'Scope')
+        scopeKey.setAttribute('aria-haspopup', 'true')
+        const scopeLabel = el('span', 'dya-field__label', 'All targets')
+        scopeKey.append(scopeLabel)
         const scopeBox = el('span', 'dya-select')
-        scopeBox.appendChild(scope)
+        scopeBox.appendChild(scopeKey)
+        const scopeMenu = el('div', 'dya-menu crw-scope-menu')
+        scopeMenu.setAttribute('popover', 'auto')
+        scopeMenu.id = `crw-scope-${crypto.randomUUID()}`
+        scopeKey.setAttribute('popovertarget', scopeMenu.id)
         const run = button('dya-button dya-button--primary crw-run', 'Run')
         const strip = el('div', 'dya-join')
         strip.append(scopeBox, run)
@@ -845,7 +885,7 @@ function mount(ctx, container, handle) {
         ring.hidden = true
         const status = el('span', 'crw-status')
         const controls = el('div', 'crw-bar')
-        controls.append(strip, ring, status)
+        controls.append(strip, ring, status, scopeMenu)
 
         let going = false
         const running = (on) => {
@@ -914,7 +954,76 @@ function mount(ctx, container, handle) {
         let asked = 0
         let everything = []
 
-        scope.addEventListener('change', () => paint())
+        const groupsOf = () => [...new Set(everything.map((corpus) => corpus.group).filter(Boolean))].sort()
+        const membersOf = (group) => everything.filter((corpus) => corpus.group === group).map((corpus) => corpus.name)
+
+        /*
+         * What is chosen, read as folders where a whole folder is ticked and as targets for the
+         * rest: the key's words, and whether a round can name a folder instead of a list.
+         */
+        function chosenParts() {
+            const covered = new Set()
+            const groups = []
+            for (const group of groupsOf()) {
+                const members = membersOf(group)
+                if (members.length && members.every((name) => selected.has(name))) {
+                    groups.push(group)
+                    members.forEach((name) => covered.add(name))
+                }
+            }
+            const names = [...selected].filter((name) => !covered.has(name))
+            return { groups, names }
+        }
+
+        function checkRow(label, checked, mixed, toggle) {
+            const row = el('label', 'dya-menu__item')
+            const box = el('input', 'dya-checkbox')
+            box.type = 'checkbox'
+            box.checked = checked
+            box.indeterminate = mixed
+            box.addEventListener('change', toggle)
+            row.append(box, el('span', 'dya-menu__text', label))
+            return row
+        }
+
+        function paintScope() {
+            const rows = [checkRow('All targets', selected.size === 0, false, () => {
+                selected.clear()
+                scopeChanged()
+            })]
+            const target = (corpus) =>
+                checkRow(corpus.name, selected.has(corpus.name), false, () => {
+                    if (selected.has(corpus.name)) selected.delete(corpus.name)
+                    else selected.add(corpus.name)
+                    scopeChanged()
+                })
+            for (const group of groupsOf()) {
+                const members = membersOf(group)
+                const some = members.filter((name) => selected.has(name)).length
+                const card = el('div', 'dya-card crw-scope-group crw-scope-folder')
+                card.append(checkRow(group, some > 0 && some === members.length, some > 0 && some < members.length, () => {
+                    if (some === members.length) members.forEach((name) => selected.delete(name))
+                    else members.forEach((name) => selected.add(name))
+                    scopeChanged()
+                }))
+                for (const corpus of everything) if (corpus.group === group) card.append(target(corpus))
+                rows.push(card)
+            }
+            const loose = everything.filter((corpus) => !corpus.group)
+            if (loose.length) {
+                const card = el('div', 'dya-card crw-scope-group')
+                card.append(...loose.map(target))
+                rows.push(card)
+            }
+            scopeMenu.replaceChildren(...rows)
+            const { groups: whole, names } = chosenParts()
+            scopeLabel.textContent = selected.size === 0 ? 'All targets' : [...whole, ...names].join(', ')
+        }
+
+        function scopeChanged() {
+            paintScope()
+            paint()
+        }
 
         async function refreshState() {
             try {
@@ -939,31 +1048,15 @@ function mount(ctx, container, handle) {
             headline.replaceChildren()
             everything = (state.repositories || []).flatMap((repo) => repo.corpora || [])
 
-            const sweptGroups = [...new Set(everything.map((corpus) => corpus.group).filter(Boolean))].sort()
-            const kept = scope.value
-            scope.replaceChildren()
-            scope.appendChild(new Option('All targets', 'all'))
-            if (sweptGroups.length) scope.appendChild(el('hr'))
-            for (const group of sweptGroups) scope.appendChild(new Option(group, `group:${group}`))
-            if (everything.length) scope.appendChild(el('hr'))
-            for (const corpus of everything) {
-                scope.appendChild(new Option(corpus.name, `name:${corpus.name}`))
-            }
-            if (kept && [...scope.options].some((option) => option.value === kept)) scope.value = kept
+            const known = new Set(everything.map((corpus) => corpus.name))
+            for (const name of [...selected]) if (!known.has(name)) selected.delete(name)
+            paintScope()
 
             paint()
         }
 
         function scoped() {
-            const [kind, value] = picked()
-            if (kind === 'group') return everything.filter((corpus) => corpus.group === value)
-            if (kind === 'name') return everything.filter((corpus) => corpus.name === value)
-            return everything
-        }
-
-        function picked() {
-            const at = scope.value.indexOf(':')
-            return at < 0 ? [scope.value, ''] : [scope.value.slice(0, at), scope.value.slice(at + 1)]
+            return selected.size ? everything.filter((corpus) => selected.has(corpus.name)) : everything
         }
 
         /*
@@ -1052,10 +1145,10 @@ function mount(ctx, container, handle) {
         async function startRound() {
             Object.assign(round, { total: 0, done: 0, changed: 0, failed: 0, current: '', index: 0, started: Date.now() })
             window.clearInterval(round.timer)
-            const [kind, value] = picked()
             const payload = { commit: true }
-            if (kind === 'group') payload.group = value
-            if (kind === 'name') payload.names = [value]
+            const { groups, names } = chosenParts()
+            if (groups.length === 1 && names.length === 0) payload.group = groups[0]
+            else if (selected.size) payload.names = [...selected]
             try {
                 await begin('run', payload, log)
             } catch (error) {

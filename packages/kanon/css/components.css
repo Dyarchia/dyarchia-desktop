@@ -665,10 +665,32 @@
  * A key that names a state which needs a person, a blocked card, stays lit red, because there the
  * light is the state's own.
  */
-.dya-button--primary,
-.dya-button--primary:hover {
-    border-color: var(--dya-accent);
+/*
+ * The primary is the one key that moves at rest: a band of silver light crosses its black face in
+ * the first stretch of every turn and rests for the rest of it, under a rim like any other key's.
+ * The light is in the face, never the rim, so it is not taken for a key that is on. It moves by
+ * transform alone, stops where motion is reduced, and a primary that cannot be pressed is dark.
+ */
+.dya-button--primary {
+    overflow: hidden;
+    isolation: isolate;
     color: var(--dya-text);
+}
+
+.dya-button--primary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(100deg, transparent 15%, var(--dya-sheen) 50%, transparent 85%);
+    transform: translateX(-100%);
+    animation: dya-sheen var(--dya-dur-sheen) var(--dya-ease) infinite;
+    pointer-events: none;
+}
+
+.dya-button--primary:disabled::before {
+    animation: none;
+    opacity: 0;
 }
 
 .dya-key--success {

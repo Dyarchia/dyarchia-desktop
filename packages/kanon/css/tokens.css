@@ -100,6 +100,7 @@
 
     --dya-accent: #d7dbe1;
     --dya-accent-soft: #d7dbe12e;
+    --dya-sheen: #d7dbe11a;
     --dya-on-accent: #0a0a0b;
 
     --dya-blue: #1970fd;
@@ -219,6 +220,7 @@
     --dya-dur-slow: 320ms;
     --dya-dur-leave: 5s;
     --dya-dur-orbit: 6s;
+    --dya-dur-sheen: 7s;
     --dya-dur-tip-in: 350ms;
     --dya-dur-tip-out: 120ms;
 }

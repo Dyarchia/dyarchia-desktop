@@ -129,22 +129,20 @@ export function activate(ctx: PluginMainContext): void {
     /*
      * yt-dlp solves YouTube's challenges in JavaScript, and the runtime it is given is this
      * application's own executable run as Node: no Deno and no Node install to ask for. A copy
-     * Setup fetched updates itself a minute after start, every six hours while the application is
-     * open, and before a download when the last check is older than that, because the sites it
-     * reads change weekly; one the person installed is theirs to update.
+     * Setup fetched updates itself once a run, a minute after start or before the first download
+     * if that comes sooner, because the sites it reads change weekly; one the person installed is
+     * theirs to update.
      */
-    const FRESH = 6 * 60 * 60 * 1000
-    let checked = 0
+    let checked = false
 
     async function freshen(found: string | null): Promise<void> {
-        if (!found || Date.now() - checked < FRESH) return
+        if (!found || checked) return
         if (!found.startsWith(join(app.getPath('userData'), 'tools'))) return
-        checked = Date.now()
+        checked = true
         await new Promise((resolve) => execFile(found, ['-U'], { windowsHide: true, timeout: 120000 }, resolve))
     }
 
     setTimeout(() => void ctx.binary('yt-dlp').then(freshen), 60000)
-    setInterval(() => void ctx.binary('yt-dlp').then(freshen), FRESH)
 
     async function ytdlp(): Promise<string> {
         const found = await ctx.binary('yt-dlp')

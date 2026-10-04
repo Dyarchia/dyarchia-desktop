@@ -141,9 +141,9 @@ export function activate(ctx: PluginContext): void {
             const back = document.createElement('button')
             back.type = 'button'
             back.className = 'dya-key'
-            back.innerHTML = glyph('grid')
-            back.setAttribute('aria-label', 'Library')
-            withTip(back, 'Library')
+            back.innerHTML = glyph('home')
+            back.setAttribute('aria-label', 'Plugin home')
+            withTip(back, 'Plugin home')
             back.onclick = () => {
                 void ctx.invoke('release', handle.instanceId)
                 showEmpty()
@@ -225,11 +225,56 @@ export function activate(ctx: PluginContext): void {
                 }
             }
 
+            /*
+             * A video's text subtitles become tracks under the player's own captions control, the
+             * one in the reader's language shown from the start. A language arrives as two letters,
+             * three, or a tag; the label is its name in English, or the track's own title.
+             */
+            const THREE: Record<string, string> = {
+                spa: 'es', eng: 'en', fre: 'fr', fra: 'fr', ger: 'de', deu: 'de', ita: 'it', por: 'pt',
+                jpn: 'ja', chi: 'zh', zho: 'zh', rus: 'ru', kor: 'ko', cat: 'ca', dut: 'nl', nld: 'nl'
+            }
+            const names = new Intl.DisplayNames(['en'], { type: 'language' })
+            let captions: string[] = []
+
+            function subtitle(element: HTMLVideoElement, path: string): void {
+                for (const url of captions.splice(0)) URL.revokeObjectURL(url)
+                void (ctx.invoke('subtitles', path) as Promise<{ lang: string; label: string; text: string }[]>).then((found) => {
+                    if (disposed || !element.isConnected) return
+                    const reader = navigator.language.slice(0, 2).toLowerCase()
+                    let chosen = false
+                    const seen = new Set<string>()
+                    found.reverse().forEach((entry) => {
+                        const code = (THREE[entry.lang.toLowerCase()] ?? entry.lang).split(/[-_.]/)[0].toLowerCase()
+                        const key = `${code}|${entry.label === entry.lang ? '' : entry.label}`
+                        if (code && seen.has(key)) return
+                        seen.add(key)
+                        let name = entry.label
+                        try {
+                            if (code) name = names.of(code) ?? name
+                        } catch {}
+                        const track = document.createElement('track')
+                        track.kind = 'subtitles'
+                        track.label = name || `Track ${element.textTracks.length + 1}`
+                        if (code) track.srclang = code
+                        const url = URL.createObjectURL(new Blob([entry.text], { type: 'text/vtt' }))
+                        captions.push(url)
+                        track.src = url
+                        if (!chosen && code === reader) {
+                            track.default = true
+                            chosen = true
+                        }
+                        element.append(track)
+                    })
+                })
+            }
+
             function mount(media: Media, retry: boolean): void {
                 const element = document.createElement(media.kind === 'video' ? 'video' : 'audio')
                 element.controls = true
                 element.autoplay = true
                 element.src = media.src
+                if (element instanceof HTMLVideoElement) subtitle(element, media.path)
                 element.onerror = () => {
                     if (!retry || disposed) return showEmpty('Cannot play')
                     void convertible.then(async (has) => {
@@ -288,6 +333,7 @@ export function activate(ctx: PluginContext): void {
 
             return () => {
                 disposed = true
+                for (const url of captions.splice(0)) URL.revokeObjectURL(url)
                 void ctx.invoke('release', handle.instanceId)
                 instances.delete(handle.instanceId)
                 container.replaceChildren()

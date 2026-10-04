@@ -156,7 +156,7 @@ export function activate(ctx: PluginContext): void {
             return button
         }
 
-        const back = key('grid', 'Tools', () => show(null))
+        const back = key('home', 'Plugin home', () => show(null))
         handle.toolbar.append(back)
 
         function fail(error: unknown): void {
@@ -519,13 +519,17 @@ export function activate(ctx: PluginContext): void {
             link.classList.add('dya-mono')
             const what = select('What', [['video', 'Video'], ['audio', 'Audio']], 'video')
             const quality = select('Quality', [['0', 'Best'], ['2160', '2160p'], ['1080', '1080p'], ['720', '720p'], ['480', '480p']], '1080')
-            what.addEventListener('change', () => (quality.wrap.hidden = what.value !== 'video'))
-            return form(tool, [['Link', link], ['What', what.wrap], ['Quality', quality.wrap]], () => {
+            const subs = select('Subtitles', [['', 'None'], ['es', 'Spanish'], ['en', 'English'], ['both', 'Both']], '')
+            what.addEventListener('change', () => {
+                quality.wrap.hidden = what.value !== 'video'
+                subs.wrap.hidden = what.value !== 'video'
+            })
+            return form(tool, [['Link', link], ['What', what.wrap], ['Quality', quality.wrap], ['Subtitles', subs.wrap]], () => {
                 if (!link.value.trim()) {
                     fail(new Error('No link'))
                     return null
                 }
-                return { tool: tool.id, inputs: [], options: { url: link.value, what: what.value, quality: quality.value } }
+                return { tool: tool.id, inputs: [], options: { url: link.value, what: what.value, quality: quality.value, subs: subs.value } }
             })
         }
 

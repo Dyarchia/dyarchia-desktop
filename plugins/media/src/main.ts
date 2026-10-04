@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, screen } from 'electron'
 import { execFile, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { mkdir, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
@@ -129,18 +129,27 @@ export function activate(ctx: PluginMainContext): void {
     /*
      * yt-dlp solves YouTube's challenges in JavaScript, and the runtime it is given is this
      * application's own executable run as Node: no Deno and no Node install to ask for. A copy
-     * Setup fetched updates itself once a run, because the sites it reads change weekly; one the
-     * person installed is theirs to update.
+     * Setup fetched updates itself a minute after start, every six hours while the application is
+     * open, and before a download when the last check is older than that, because the sites it
+     * reads change weekly; one the person installed is theirs to update.
      */
-    let updated = false
+    const FRESH = 6 * 60 * 60 * 1000
+    let checked = 0
+
+    async function freshen(found: string | null): Promise<void> {
+        if (!found || Date.now() - checked < FRESH) return
+        if (!found.startsWith(join(app.getPath('userData'), 'tools'))) return
+        checked = Date.now()
+        await new Promise((resolve) => execFile(found, ['-U'], { windowsHide: true, timeout: 120000 }, resolve))
+    }
+
+    setTimeout(() => void ctx.binary('yt-dlp').then(freshen), 60000)
+    setInterval(() => void ctx.binary('yt-dlp').then(freshen), FRESH)
 
     async function ytdlp(): Promise<string> {
         const found = await ctx.binary('yt-dlp')
         if (!found) throw refuse('yt-dlp missing')
-        if (!updated && found.startsWith(join(app.getPath('userData'), 'tools'))) {
-            updated = true
-            await new Promise((resolve) => execFile(found, ['-U'], { windowsHide: true, timeout: 60000 }, resolve))
-        }
+        await freshen(found)
         return found
     }
 
@@ -562,6 +571,11 @@ export function activate(ctx: PluginMainContext): void {
                 '--print', 'before_dl:TITLE %(title)s',
                 '--print', 'after_move:FILE %(filepath)s'
             ]
+            const languages = { es: 'es', en: 'en', both: 'es,en' }[options['subs'] ?? ''] ?? ''
+            if (!audio && languages) {
+                args.push('--write-subs', '--write-auto-subs', '--sub-langs', languages, '--convert-subs', 'srt', '--embed-subs',
+                    '--sleep-subtitles', '2', '--ignore-errors')
+            }
             if (audio) args.push('-f', 'ba/b', '-x', '--audio-format', 'mp3', '--audio-quality', '0')
             else args.push('-f', 'bv*+ba/b', '-S', `${height ? `res:${height},` : ''}ext:mp4:m4a`, '--merge-output-format', 'mp4')
             args.push(url)
@@ -616,7 +630,7 @@ export function activate(ctx: PluginMainContext): void {
                 if (plan.output && made) await rm(plan.output, { recursive: true, force: true })
                 job.output = undefined
             }
-        } else if (code === 0) {
+        } else if (code === 0 && !(plan.program && !job.output)) {
             job.state = 'done'
             job.percent = 100
         } else {
@@ -624,6 +638,15 @@ export function activate(ctx: PluginMainContext): void {
             job.error = reason(running)
             if (plan.output && made && !plan.live) await rm(plan.output, { recursive: true, force: true })
             if (!plan.live) job.output = undefined
+        }
+        if (plan.program && job.state === 'done' && job.output) {
+            const folder = dirname(job.output)
+            const base = basename(job.output, extname(job.output))
+            for (const name of await readdir(folder).catch(() => [] as string[])) {
+                if (!name.startsWith(`${base}.`) || !/\.(srt|vtt)$/i.test(name)) continue
+                const left = join(folder, name)
+                if (((await stat(left).catch(() => null))?.mtimeMs ?? 0) >= job.started) await rm(left, { force: true })
+            }
         }
         job.ended = Date.now()
         running.child = null

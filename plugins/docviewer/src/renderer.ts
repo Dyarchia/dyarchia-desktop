@@ -345,9 +345,9 @@ export function activate(ctx: PluginContext): void {
             const pagesKey = document.createElement('button')
             pagesKey.type = 'button'
             pagesKey.className = 'dya-key'
-            pagesKey.innerHTML = glyph('grid')
-            pagesKey.setAttribute('aria-label', 'Pages')
-            withTip(pagesKey, 'Pages')
+            pagesKey.innerHTML = glyph('home')
+            pagesKey.setAttribute('aria-label', 'Plugin home')
+            withTip(pagesKey, 'Plugin home')
             pagesKey.onclick = () => {
                 if (!busy && leave()) showEmpty()
             }

@@ -189,9 +189,9 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * One strip: the three keys that move through the history, the address, the star that
-             * keeps it, and the book that opens what is kept. Home is an empty address and Enter;
-             * opening the page outside is a palette command. A page that plays a video FFmpeg can
+             * One strip: the three keys that move through the history, home, the address, the star
+             * that keeps it, and the book that opens what is kept. Opening the page outside is a
+             * palette command. A page that plays a video FFmpeg can
              * read adds a save key to the strip; while it saves, the ring beside the strip fills.
              */
             const bar = el('div', 'dya-bar brw-bar')
@@ -199,6 +199,7 @@ export function activate(ctx: PluginContext): void {
             const back = key(BACK_ICON, 'Back', () => view.goBack())
             const forward = key(FORWARD_ICON, 'Forward', () => view.goForward())
             const reload = key(RELOAD_ICON, 'Reload', () => (loading ? view.stop() : view.reload()))
+            const homeKey = key(glyph('home'), 'Plugin home', () => go(home()))
             const address = el('input', 'dya-field')
             address.type = 'text'
             address.setAttribute('aria-label', 'Address')
@@ -210,7 +211,7 @@ export function activate(ctx: PluginContext): void {
             save.hidden = true
             const saving = el('span', 'dya-ring dya-ring--busy')
             saving.hidden = true
-            strip.append(back, forward, reload, address, save, star, shelf)
+            strip.append(back, forward, reload, homeKey, address, save, star, shelf)
             bar.append(strip, saving)
             const offVideos = ctx.on('videos', (id: unknown, count: unknown) => {
                 if (id !== guest) return

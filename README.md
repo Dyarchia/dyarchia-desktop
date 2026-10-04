@@ -9,8 +9,9 @@ you cannot afford to lose.**
   plugin discovered at runtime, with its own draggable, resizable, persistent panels.
 - Four plugins always load: Setup, the terminal, the reader and the player. kanban, crawlee,
   the browser and Media reach outside for something and are a choice made in Setup, which says
-  what each will download and where it will write. Choosing Media is choosing FFmpeg: with it,
-  the player also converts what Chromium cannot play and the browser can save a page's video.
+  what each will download and where it will write. Choosing Media is choosing FFmpeg and
+  yt-dlp: with them, the player also converts what Chromium cannot play and the browser can
+  save a page's video.
 - kanban drives real agent CLIs that spend real money; read `plugins/kanban/README.md` first.
 - The look is kanon, the design system in `packages/kanon`.
 - Writing a plugin: [docs/plugins.md](docs/plugins.md).

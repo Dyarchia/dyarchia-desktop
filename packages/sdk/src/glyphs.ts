@@ -45,7 +45,8 @@ const PATHS = {
     film: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16"/><path d="M17 4v16"/><path d="M3 9h4"/><path d="M3 15h4"/><path d="M17 9h4"/><path d="M17 15h4"/>',
     record: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',
     broadcast: '<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path d="M19.1 4.9a10 10 0 0 1 0 14.2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2"/>',
-    play: '<path d="M7 4v16l13-8z"/>'
+    play: '<path d="M7 4v16l13-8z"/>',
+    download: '<path d="M7 17a4.5 4.5 0 0 1-.7-8.9A6 6 0 0 1 17.8 8 4 4 0 0 1 18 16"/><path d="M12 11v10"/><path d="m8.5 17.5 3.5 3.5 3.5-3.5"/>'
 }
 
 export type GlyphName = keyof typeof PATHS

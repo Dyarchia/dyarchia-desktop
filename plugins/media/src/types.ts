@@ -1,4 +1,4 @@
-export type Tool = 'convert' | 'cut' | 'join' | 'extract' | 'compress' | 'gif' | 'record' | 'stream' | 'inspect'
+export type Tool = 'download' | 'convert' | 'cut' | 'join' | 'extract' | 'compress' | 'gif' | 'record' | 'stream' | 'inspect'
 
 export interface Spec {
     tool: Tool
@@ -39,6 +39,7 @@ export interface Probe {
 
 export interface Ready {
     ffmpeg: boolean
+    ytdlp: boolean
     capture: boolean
     codecs: string[]
 }

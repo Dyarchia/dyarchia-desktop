@@ -98,6 +98,14 @@ in the project's history (https://git.ffmpeg.org/ffmpeg); the binary says "Copyr
 Each is extracted unmodified under `~/.dyarchia/tools/ffmpeg`, with its licence inside. FFmpeg
 is not redistributed by this project and nothing here links against it.
 
+## yt-dlp, fetched for Media
+
+Media's Download fetches **yt-dlp** (https://github.com/yt-dlp/yt-dlp), the work of the yt-dlp
+contributors, released under the Unlicense. On Windows x64 it is the official `yt-dlp_win.zip`,
+which bundles a Python runtime and libraries under their own licences, extracted unmodified under
+`~/.dyarchia/tools/yt-dlp` and updated by its own `-U`. It runs this application's executable as
+its JavaScript runtime. It is not redistributed by this project.
+
 ## What the kanban drives, and does not ship
 
 The kanban dispatches work to coding agents installed on the machine: the Claude, Codex, Grok

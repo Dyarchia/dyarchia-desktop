@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, screen } from 'electron'
+import { app, BrowserWindow, dialog, screen } from 'electron'
 import { execFile, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises'
@@ -39,6 +39,7 @@ interface Plan {
     live: boolean
     secret?: string
     temporary?: string
+    program?: 'ytdlp'
 }
 
 interface Running {
@@ -122,6 +123,24 @@ export function activate(ctx: PluginMainContext): void {
     async function ffmpeg(): Promise<string> {
         const found = await ctx.binary('ffmpeg')
         if (!found) throw refuse('FFmpeg missing')
+        return found
+    }
+
+    /*
+     * yt-dlp solves YouTube's challenges in JavaScript, and the runtime it is given is this
+     * application's own executable run as Node: no Deno and no Node install to ask for. A copy
+     * Setup fetched updates itself once a run, because the sites it reads change weekly; one the
+     * person installed is theirs to update.
+     */
+    let updated = false
+
+    async function ytdlp(): Promise<string> {
+        const found = await ctx.binary('yt-dlp')
+        if (!found) throw refuse('yt-dlp missing')
+        if (!updated && found.startsWith(join(app.getPath('userData'), 'tools'))) {
+            updated = true
+            await new Promise((resolve) => execFile(found, ['-U'], { windowsHide: true, timeout: 60000 }, resolve))
+        }
         return found
     }
 
@@ -524,6 +543,31 @@ export function activate(ctx: PluginMainContext): void {
             return { name: new URL(server.replace(/^rtmps?/i, 'http')).host, args, duration, live: true, secret: key || undefined }
         }
 
+        if (spec.tool === 'download') {
+            const url = (options['url'] ?? '').trim()
+            if (!/^https?:\/\//i.test(url)) throw refuse('Not a link')
+            const audio = options['what'] === 'audio'
+            const height = Number(options['quality'] || '0')
+            const temporary = join(app.getPath('userData'), 'cache', 'media', `download-${nextId}`)
+            await mkdir(temporary, { recursive: true })
+            const args = [
+                '--no-config', '--no-playlist', '--no-mtime',
+                '--js-runtimes', `node:${process.execPath}`,
+                '--ffmpeg-location', dirname(await ffmpeg()),
+                '-P', app.getPath('downloads'), '-P', `temp:${temporary}`,
+                '-o', '%(title).150B.%(ext)s',
+                '--quiet', '--progress', '--newline',
+                '--progress-template', 'download:DYA %(progress.downloaded_bytes)s %(progress.total_bytes,progress.total_bytes_estimate)s',
+                '--print', 'before_dl:SIZE %(filesize,filesize_approx)s',
+                '--print', 'before_dl:TITLE %(title)s',
+                '--print', 'after_move:FILE %(filepath)s'
+            ]
+            if (audio) args.push('-f', 'ba/b', '-x', '--audio-format', 'mp3', '--audio-quality', '0')
+            else args.push('-f', 'bv*+ba/b', '-S', `${height ? `res:${height},` : ''}ext:mp4:m4a`, '--merge-output-format', 'mp4')
+            args.push(url)
+            return { name: new URL(url).host.replace(/^www\./, ''), args, duration: null, live: false, temporary, program: 'ytdlp' }
+        }
+
         throw refuse('Unknown tool')
     }
 
@@ -536,6 +580,18 @@ export function activate(ctx: PluginMainContext): void {
 
     function reason(running: Running): string {
         let lines = running.tail.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+        if (running.plan.program === 'ytdlp') {
+            const said = lines.filter((line) => line.startsWith('ERROR:')).join('\n') || lines.join('\n')
+            if (/Unsupported URL/i.test(said)) return 'Unsupported'
+            if (/DRM/i.test(said)) return 'Protected'
+            if (/Private video/i.test(said)) return 'Private'
+            if (/Sign in to confirm|login required|cookies/i.test(said)) return 'Sign-in needed'
+            if (/unavailable|not available|removed/i.test(said)) return 'Unavailable'
+            if (/HTTP Error 4\d\d/i.test(said)) return 'Refused'
+            if (/Unable to download|getaddrinfo|timed out/i.test(said)) return 'Unreachable'
+            const last = said.split('\n').at(-1) ?? 'Failed'
+            return last.replace(/^ERROR:\s*(\[[^\]]+\]\s*)?([\w-]+:\s*)?/, '').slice(0, 160)
+        }
         if (running.plan.secret) lines = lines.map((line) => line.split(running.plan.secret!).join('•••'))
         const said = lines.join('\n')
         if (/Connection refused|Error number -138|-10061|Connection timed out|Network is unreachable/i.test(said)) return 'Unreachable'
@@ -550,7 +606,7 @@ export function activate(ctx: PluginMainContext): void {
     async function finish(running: Running, code: number | null): Promise<void> {
         const { job, plan } = running
         if (job.state !== 'running') return
-        if (plan.temporary) await rm(plan.temporary, { force: true })
+        if (plan.temporary) await rm(plan.temporary, { recursive: true, force: true })
         const made = plan.output ? await exists(plan.output) : false
         if (running.stopping) {
             if (plan.live) {
@@ -575,8 +631,8 @@ export function activate(ctx: PluginMainContext): void {
     }
 
     async function start(spec: Spec): Promise<number> {
-        const binary = await ffmpeg()
         const built = await plan(spec)
+        const binary = built.program === 'ytdlp' ? await ytdlp() : await ffmpeg()
         const id = nextId++
         const job: Job = {
             id,
@@ -587,13 +643,17 @@ export function activate(ctx: PluginMainContext): void {
             started: Date.now(),
             output: built.output
         }
-        const args = ['-hide_banner', '-loglevel', 'error', '-y', '-progress', 'pipe:1', '-nostats']
-        if (!built.live) args.push('-nostdin')
+        const args = built.program ? [] : ['-hide_banner', '-loglevel', 'error', '-y', '-progress', 'pipe:1', '-nostats']
+        if (!built.live && !built.program) args.push('-nostdin')
         args.push(...built.args)
         const child = spawn(binary, args, {
             windowsHide: true,
-            stdio: [built.live ? 'pipe' : 'ignore', 'pipe', 'pipe']
+            stdio: [built.live ? 'pipe' : 'ignore', 'pipe', 'pipe'],
+            env: built.program ? { ...process.env, ELECTRON_RUN_AS_NODE: '1' } : process.env
         })
+        let size = 0
+        let finished = 0
+        let stream = 0
         const running: Running = { job, child, plan: built, stopping: false, sent: 0, tail: '' }
         jobs.set(id, running)
         let buffer = ''
@@ -602,6 +662,25 @@ export function activate(ctx: PluginMainContext): void {
             const lines = buffer.split('\n')
             buffer = lines.pop() ?? ''
             for (const line of lines) {
+                if (built.program) {
+                    const [word, first, second] = line.trim().split(' ')
+                    if (word === 'SIZE') size = Number(first) || 0
+                    if (word === 'TITLE') job.name = line.trim().slice(6) || job.name
+                    if (word === 'FILE') job.output = line.trim().slice(5)
+                    if (word === 'DYA') {
+                        const done = Number(first)
+                        const total = Number(second)
+                        if (!Number.isFinite(done) || !Number.isFinite(total) || !total) continue
+                        if (total !== stream) {
+                            if (stream) finished += stream
+                            stream = total
+                        }
+                        const whole = Math.max(size, finished + total)
+                        job.percent = Math.max(job.percent ?? 0, Math.min(99, Math.floor(((finished + done) / whole) * 100)))
+                    }
+                    send(running)
+                    continue
+                }
                 const [key, value] = line.trim().split('=')
                 if ((key === 'out_time_us' || key === 'out_time_ms') && built.duration) {
                     const done = Number(value) / 1e6
@@ -634,6 +713,8 @@ export function activate(ctx: PluginMainContext): void {
             setTimeout(() => {
                 if (running.child === child) child.kill()
             }, 5000)
+        } else if (running.plan.program && process.platform === 'win32' && running.child.pid) {
+            execFile('taskkill', ['/pid', String(running.child.pid), '/T', '/F'], { windowsHide: true }, () => undefined)
         } else {
             running.child.kill()
         }
@@ -643,6 +724,7 @@ export function activate(ctx: PluginMainContext): void {
         const found = await ctx.binary('ffmpeg')
         return {
             ffmpeg: found !== null,
+            ytdlp: (await ctx.binary('yt-dlp')) !== null,
             capture: process.platform === 'win32',
             codecs: found ? await codecs() : []
         }

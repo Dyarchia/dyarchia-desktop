@@ -6,7 +6,7 @@ import { mkdir, readdir, readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import type { PluginMainContext } from '@dyarchia/sdk'
-import { CONVERTIBLE, MIME_TYPES, PLAYABLE_AUDIO, PLAYABLE_VIDEO, VIDEO_EXTENSIONS } from './media.js'
+import { CONVERTIBLE, IMAGE_EXTENSIONS, MIME_TYPES, PLAYABLE_AUDIO, PLAYABLE_VIDEO, VIDEO_EXTENSIONS } from './media.js'
 
 const MEDIA_SCHEME = 'dyarchia-media'
 
@@ -275,6 +275,15 @@ export function activate(ctx: PluginMainContext): void {
         const filePath = String(path)
         if (!(await isFile(filePath))) throw new Error('not a file')
         const extension = extname(filePath).toLowerCase()
+        if (IMAGE_EXTENSIONS.has(extension)) {
+            return {
+                path: filePath,
+                name: basename(filePath),
+                kind: 'image',
+                src: `${MEDIA_SCHEME}://local/${encodeURIComponent(filePath)}`,
+                convert: false
+            }
+        }
         const found = await tools()
         const streams = found ? await probe(found.ffprobe, filePath) : null
         const convert =

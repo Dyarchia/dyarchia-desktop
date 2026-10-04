@@ -21,8 +21,8 @@ light   status only: a green, yellow or red dot, or a hollow top-ink ring for wh
 Black and white, and one light. One black in three roles: `ground` #0c0c0e, `panel` #131316 (a key's face,
 a tile, an entry, a menu, a sheet), `field` #0e0e11 (input, code, a log); `hover`, `selected`, `disabled`
 and `scrim` are the only other steps. A cold clear light (`--dya-light-in`) comes in at two corners and dies
-within a quarter of the diagonal. The accent is silver: the primary's rim, the open tab's line, the focus
-ring. A plugin's mark keeps its brand's original colours. Nothing glows. Two inks, `text` and `text-muted`; every
+within a quarter of the diagonal. The accent is silver: the primary's passing light, the open tab's line, the
+focus ring. A plugin's mark keeps its brand's original colours. Nothing glows. Two inks, `text` and `text-muted`; every
 glyph is `text`. Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths and code.
 
 ## Rules
@@ -40,8 +40,8 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
   entry, a row, a file, a menu row, a tab) stays flat and answers with its ground.
 - **Hover changes the background and the border, never the shadow**; a transition names only `transform`,
   `opacity` and `background-color`; the focus ring is an outline.
-- **One thing moves for as long as it lasts**: the lit rim of a key that is on, one turn in `--dya-dur-orbit`,
-  its arc 5.50 at the least on every ground. Nothing else animates forever: no shimmer, no pulse.
+- **Two things move for as long as they last**: the lit rim of a key that is on (`--dya-dur-orbit`, arc 5.50
+  at the least), and the primary's sheen, crossing in the first 35% of `--dya-dur-sheen` by transform alone.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and the section row's alone, in the top ink; a date in a section row is a `meta`.
 - **Scale** body 15, rows 14, controls and meta 13px, prose 72ch. **Radii** 3px key, field, menu row; 6px menu;
@@ -55,9 +55,9 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
 - **Keys side by side are one strip**: `join` sets controls edge to edge, inner corners square, the shared
   rim as the divider, one edge under the whole. A field and its keys are a join, the field on the key's rim
   and filling the row. Adjacent icon keys in a `toolbar` join on their own.
-- **One primary per view**: `--primary`, the black key under the accent rim (13.34 on the face, 10.49 at
-  glass-peak), top-ink word. `key--success` is lit green; `--danger` turns red only under the pointer or
-  focus. **A state a person answers is one key**: `button--resolve`, red state, green answer.
+- **One primary per view**: `--primary`, a black key under an ordinary rim, its face crossed by `--dya-sheen`
+  (top ink 15.96 on the face, 12.81 at the band's peak). `key--success` is lit green; `--danger` turns red
+  only under pointer or focus. **A state a person answers is one key**: `button--resolve`, red, green answer.
 - **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
   focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
 - **A tip exists only on an icon-only key**, one or two words, never a word already on screen beside it. A

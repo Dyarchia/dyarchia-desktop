@@ -141,7 +141,7 @@ export function activate(ctx: PluginContext): void {
             const back = document.createElement('button')
             back.type = 'button'
             back.className = 'dya-key'
-            back.innerHTML = glyph('home')
+            back.innerHTML = glyph('plugin')
             back.setAttribute('aria-label', 'Plugin home')
             withTip(back, 'Plugin home')
             back.onclick = () => {
@@ -226,8 +226,8 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * A video's text subtitles become tracks under the player's own captions control, the
-             * one in the reader's language shown from the start. A language arrives as two letters,
+             * A video's text subtitles become tracks under the player's own captions control, shown
+             * from the start: the one in the reader's language if there is one, else the first. A language arrives as two letters,
              * three, or a tag; the label is its name in English, or the track's own title.
              */
             const THREE: Record<string, string> = {
@@ -266,6 +266,7 @@ export function activate(ctx: PluginContext): void {
                         }
                         element.append(track)
                     })
+                    if (!chosen && element.textTracks.length > 0) element.textTracks[0].mode = 'showing'
                 })
             }
 

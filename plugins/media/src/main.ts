@@ -153,6 +153,34 @@ export function activate(ctx: PluginMainContext): void {
         return found
     }
 
+    /*
+     * Subtitles are only ever in the language the video was made in. yt-dlp is asked first what
+     * that language is and which subtitles were written by hand: a hand-made track in it wins,
+     * else YouTube's own transcript of the original sound (`<lang>-orig`), and a video whose
+     * language is unknown takes whichever original transcript it has.
+     */
+    async function originalSubtitles(url: string): Promise<string> {
+        const binary = await ytdlp()
+        const said = await new Promise<string>((resolve) =>
+            execFile(
+                binary,
+                ['--no-config', '--no-playlist', '--js-runtimes', `node:${process.execPath}`, '--skip-download',
+                    '--print', '%(language)s', '--print', '%(subtitles)j', url],
+                { windowsHide: true, maxBuffer: 32 * 1024 * 1024, timeout: 120000, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } },
+                (_error, stdout) => resolve(String(stdout))
+            )
+        )
+        const [language = '', manual = '{}'] = said.trim().split(/\r?\n/)
+        const lang = /^[a-z]{2,3}(-[A-Za-z0-9]+)?$/.test(language) ? language : ''
+        if (!lang) return '.*-orig'
+        let keys: string[] = []
+        try {
+            keys = Object.keys(JSON.parse(manual) ?? {})
+        } catch {}
+        const written = keys.find((key) => key === lang) ?? keys.find((key) => key.startsWith(`${lang.split('-')[0]}-`) && !key.endsWith('-orig'))
+        return written ?? `${lang.split('-')[0]}-orig`
+    }
+
     async function ffprobe(): Promise<string> {
         const sibling = join(dirname(await ffmpeg()), executable('ffprobe'))
         if (await exists(sibling)) return sibling
@@ -559,11 +587,14 @@ export function activate(ctx: PluginMainContext): void {
             const height = Number(options['quality'] || '0')
             const temporary = join(app.getPath('userData'), 'cache', 'media', `download-${nextId}`)
             await mkdir(temporary, { recursive: true })
+            const folder = join(ctx.dataHome, 'media')
+            await mkdir(folder, { recursive: true })
+            const original = !audio && options['subs'] === '1' ? await originalSubtitles(url) : ''
             const args = [
                 '--no-config', '--no-playlist', '--no-mtime',
                 '--js-runtimes', `node:${process.execPath}`,
                 '--ffmpeg-location', dirname(await ffmpeg()),
-                '-P', app.getPath('downloads'), '-P', `temp:${temporary}`,
+                '-P', folder, '-P', `temp:${temporary}`,
                 '-o', '%(title).150B.%(ext)s',
                 '--quiet', '--progress', '--newline',
                 '--progress-template', 'download:DYA %(progress.downloaded_bytes)s %(progress.total_bytes,progress.total_bytes_estimate)s',
@@ -571,9 +602,8 @@ export function activate(ctx: PluginMainContext): void {
                 '--print', 'before_dl:TITLE %(title)s',
                 '--print', 'after_move:FILE %(filepath)s'
             ]
-            const languages = { es: 'es', en: 'en', both: 'es,en' }[options['subs'] ?? ''] ?? ''
-            if (!audio && languages) {
-                args.push('--write-subs', '--write-auto-subs', '--sub-langs', languages, '--convert-subs', 'srt', '--embed-subs',
+            if (original) {
+                args.push('--write-subs', '--write-auto-subs', '--sub-langs', original, '--convert-subs', 'srt', '--embed-subs',
                     '--sleep-subtitles', '2', '--ignore-errors')
             }
             if (audio) args.push('-f', 'ba/b', '-x', '--audio-format', 'mp3', '--audio-quality', '0')

@@ -1,7 +1,7 @@
 import { app, webContents } from 'electron'
 import type { Session } from 'electron'
 import { execFile, spawn } from 'node:child_process'
-import { rm, stat } from 'node:fs/promises'
+import { mkdir, rm, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
@@ -133,7 +133,8 @@ export function watchVideos(ctx: PluginMainContext, browsing: Session): void {
         if (sound) map.push('-map', `0:${sound.index}`)
         if (map.length === 0) map.push('-map', '0:v:0?', '-map', '0:a:0?')
 
-        const folder = app.getPath('downloads')
+        const folder = join(ctx.dataHome, 'media')
+        await mkdir(folder, { recursive: true })
         const base = join(folder, slug(video.title))
         let output = `${base}.mp4`
         for (let n = 2; await exists(output); n++) output = `${base} (${n}).mp4`

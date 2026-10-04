@@ -801,7 +801,27 @@ export function activate(ctx: PluginMainContext): void {
 
     ctx.handle('start', (spec) => start(spec as Spec))
     ctx.handle('stop', (id) => stop(Number(id)))
-    ctx.handle('jobs', () => [...jobs.values()].map((running) => running.job))
+    /*
+     * A finished file is the user's from then on, and they move it, rename it or delete it. Its row
+     * forgets the path the moment it is no longer there, so Open and Show never hand on a dead one.
+     */
+    async function present(running: Running): Promise<boolean> {
+        const { job } = running
+        if (job.state !== 'done' || !job.output) return Boolean(job.output)
+        if (await exists(job.output)) return true
+        job.output = undefined
+        send(running, true)
+        return false
+    }
+
+    ctx.handle('jobs', async () => {
+        await Promise.all([...jobs.values()].map(present))
+        return [...jobs.values()].map((running) => running.job)
+    })
+    ctx.handle('present', async (id) => {
+        const running = jobs.get(Number(id))
+        return running ? present(running) : false
+    })
     ctx.handle('dismiss', (id) => {
         if (jobs.get(Number(id))?.job.state !== 'running') jobs.delete(Number(id))
     })

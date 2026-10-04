@@ -74,7 +74,7 @@ glyph is `text`. Spectral is the brand, Inter the interface with tabular figures
   region that scrolls scrolls again; a code block wraps (`code--wrap`); a live log is sized by a handle.
 - **`title`** is the carved Spectral at 25px (11.36, 4.61 at card-peak); only a `stat` is larger. **`palette`**
   (Ctrl+K, the launcher key) is the one way in: app tiles, open lit green, pinned first (Ctrl+P pins), over
-  rows: commands, then what plugins find, `__meta` muted. **A lane answers a drag**: `--accept` the accent's
+  rows: commands, then what plugins find, `__meta` muted. **A lane or a chip answers a drag**: `--accept` the accent's
   soft ground, `--refuse` red's (text-muted 4.52 at peak).
 
 ## Components
@@ -84,7 +84,7 @@ Structure    pane bar (--flush --inset __group) card (--lift --selected --danger
              --pending --ghosted --carried) card__header masthead carved (--bar) splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
-             chip join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
+             chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
 Input        field (--auto --prose __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)

@@ -1,4 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
+import { appendFileSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import electronUpdater from 'electron-updater'
 
 /*
@@ -45,6 +47,39 @@ const FIRST_CHECK_MS = 8000
 const RECHECK_MS = 4 * 60 * 60 * 1000
 const REFOCUS_MS = 30 * 60 * 1000
 
+/*
+ * A release is a tag first and a release with its latest.yml a couple of minutes later, while the
+ * installer uploads, and GitHub's feed lists the tag at once. A check in that window is told the
+ * newest version has no latest.yml. That, and a network that does not answer, is not a failure
+ * worth a key in the title bar: an unasked check that meets it says nothing and asks again a few
+ * minutes later, and only an answer that stays wrong across those tries is shown.
+ */
+const PASSING = /latest\.yml|404|net::|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|socket hang up|HttpError: 5\d\d/i
+const PATIENCE_MS = 3 * 60 * 1000
+const PATIENCE = 5
+
+/*
+ * What the updater does, in a log of its own that keeps only its last stretch, so an update that
+ * goes wrong on somebody's machine can be read rather than guessed at.
+ */
+function logger(): { info: (m: unknown) => void; warn: (m: unknown) => void; error: (m: unknown) => void; debug: (m: unknown) => void } {
+    const folder = join(app.getPath('userData'), 'logs')
+    const file = join(folder, 'updates.log')
+    const write = (level: string, message: unknown): void => {
+        try {
+            mkdirSync(folder, { recursive: true })
+            if ((statSync(file, { throwIfNoEntry: false })?.size ?? 0) > 256 * 1024) writeFileSync(file, '')
+            appendFileSync(file, `${new Date().toISOString()} ${level} ${message instanceof Error ? message.stack ?? message.message : String(message)}\n`)
+        } catch {}
+    }
+    return {
+        info: (m) => write('info', m),
+        warn: (m) => write('warn', m),
+        error: (m) => write('error', m),
+        debug: () => undefined
+    }
+}
+
 let state: UpdateState = {
     phase: 'idle',
     running: app.getVersion(),
@@ -90,7 +125,7 @@ export function registerUpdates(): void {
     autoUpdater.allowPrerelease = true
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = true
-    autoUpdater.logger = null
+    autoUpdater.logger = logger()
 
     autoUpdater.on('checking-for-update', () => publish({ phase: 'checking', note: null }))
     autoUpdater.on('update-available', (info) =>
@@ -103,14 +138,30 @@ export function registerUpdates(): void {
     autoUpdater.on('update-downloaded', (info) =>
         publish({ phase: 'ready', version: info.version, percent: 100, note: null })
     )
-    autoUpdater.on('error', (error) => publish({ phase: 'failed', note: describe(error), checkedAt: Date.now() }))
+    let unasked = false
+    let misses = 0
+    const missed = (error: unknown): void => {
+        const said = error instanceof Error ? error.message : String(error)
+        if (state.phase !== 'downloading' && unasked && PASSING.test(said) && misses < PATIENCE) {
+            misses++
+            publish({ phase: 'idle', note: null })
+            setTimeout(ask, PATIENCE_MS)
+            return
+        }
+        publish({ phase: 'failed', note: describe(error), checkedAt: Date.now() })
+    }
+
+    autoUpdater.on('error', missed)
+    autoUpdater.on('update-available', () => (misses = 0))
+    autoUpdater.on('update-not-available', () => (misses = 0))
 
     ipcMain.handle('shell:update:check', async () => {
         if (!['idle', 'current', 'failed'].includes(state.phase)) return state
+        unasked = false
         try {
             await autoUpdater.checkForUpdates()
         } catch (error) {
-            publish({ phase: 'failed', note: describe(error) })
+            missed(error)
         }
         return state
     })
@@ -144,13 +195,12 @@ export function registerUpdates(): void {
      * returned to after a while away, which is when somebody is likely to notice a new control --
      * and never while an answer is already on screen or a download is under way.
      */
-    let asked = 0
-    const ask = (): void => {
+    let asked = Date.now()
+    function ask(): void {
         if (!['idle', 'current', 'failed'].includes(state.phase)) return
         asked = Date.now()
-        void autoUpdater.checkForUpdates().catch((error: unknown) => {
-            publish({ phase: 'failed', note: describe(error) })
-        })
+        unasked = true
+        void autoUpdater.checkForUpdates().catch(missed)
     }
 
     setTimeout(ask, FIRST_CHECK_MS)

@@ -123,7 +123,6 @@ its JavaScript runtime. It is not redistributed by this project.
 
 ## What the kanban drives, and does not ship
 
-The kanban dispatches work to coding agents installed on the machine: the Claude, Codex, Grok,
-Kimi and opencode command line tools. None of them is bundled, vendored or modified, and none is a
-dependency of this project — the board runs whichever of them is on the PATH, and tells you when
+The kanban dispatches work to the coding agent command line tools the person has installed and
+pays for. None of them is bundled, vendored or modified, and none is a dependency of this project — the board runs whichever of them is on the PATH, and tells you when
 one is not.

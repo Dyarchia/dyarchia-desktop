@@ -199,7 +199,7 @@ export function activate(ctx: PluginContext): void {
             const back = key(BACK_ICON, 'Back', () => view.goBack())
             const forward = key(FORWARD_ICON, 'Forward', () => view.goForward())
             const reload = key(RELOAD_ICON, 'Reload', () => (loading ? view.stop() : view.reload()))
-            const homeKey = key(glyph('home'), 'Plugin home', () => go(home()))
+            const homeKey = key(glyph('home'), 'Home', () => go(home()))
             const address = el('input', 'dya-field')
             address.type = 'text'
             address.setAttribute('aria-label', 'Address')

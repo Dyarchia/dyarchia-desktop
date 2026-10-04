@@ -345,7 +345,7 @@ export function activate(ctx: PluginContext): void {
             const pagesKey = document.createElement('button')
             pagesKey.type = 'button'
             pagesKey.className = 'dya-key'
-            pagesKey.innerHTML = glyph('home')
+            pagesKey.innerHTML = glyph('plugin')
             pagesKey.setAttribute('aria-label', 'Plugin home')
             withTip(pagesKey, 'Plugin home')
             pagesKey.onclick = () => {

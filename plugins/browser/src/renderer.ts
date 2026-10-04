@@ -324,15 +324,84 @@ export function activate(ctx: PluginContext): void {
              */
             const menus: HTMLElement[] = []
 
+            /*
+             * The bar holds every folder, empty ones too, then the loose bookmarks, then a key that
+             * makes a folder. A bookmark is dragged onto a folder to go in, and out of a folder's
+             * menu onto the bar to come out; a folder lights with the accent while it would take
+             * one. The sheet does the same by its folder field, for whoever does not drag.
+             */
+            const MARK = 'application/x-dya-bookmark'
+            const carries = (event: DragEvent): boolean => event.dataTransfer?.types.includes(MARK) ?? false
+
+            function draggable(node: HTMLElement, entry: Bookmark): void {
+                node.draggable = true
+                node.addEventListener('dragstart', (event) => {
+                    event.dataTransfer?.setData(MARK, entry.url)
+                    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+                })
+            }
+
+            function accepts(node: HTMLElement, folder: string | undefined): void {
+                node.addEventListener('dragover', (event) => {
+                    if (!carries(event)) return
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+                    if (folder !== undefined) node.classList.add('dya-chip--accept')
+                })
+                node.addEventListener('dragleave', () => node.classList.remove('dya-chip--accept'))
+                node.addEventListener('drop', (event) => {
+                    if (!carries(event)) return
+                    event.preventDefault()
+                    event.stopPropagation()
+                    node.classList.remove('dya-chip--accept')
+                    const url = event.dataTransfer?.getData(MARK)
+                    const entry = library.bookmarks.find((known) => known.url === url)
+                    if (entry && entry.folder !== folder) send('move', { url, folder })
+                })
+            }
+
+            accepts(marks, undefined)
+
+            function folderMaker(): HTMLElement {
+                const make = el('button', 'dya-chip')
+                make.type = 'button'
+                make.innerHTML = glyph('add')
+                make.setAttribute('aria-label', 'New folder')
+                withTip(make, 'New folder')
+                make.addEventListener('click', () => {
+                    const field = el('input', 'dya-field dya-field--auto')
+                    field.type = 'text'
+                    field.setAttribute('aria-label', 'New folder')
+                    let done = false
+                    const finish = (keep: boolean): void => {
+                        if (done) return
+                        done = true
+                        const name = field.value.trim()
+                        if (keep && name) send('addFolder', name)
+                        else drawMarks()
+                    }
+                    field.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter') finish(true)
+                        if (event.key === 'Escape') finish(false)
+                    })
+                    field.addEventListener('blur', () => finish(true))
+                    make.replaceWith(field)
+                    field.focus()
+                })
+                return make
+            }
+
             function drawMarks(): void {
                 for (const menu of menus.splice(0)) menu.remove()
-                const folders = library.folders.flatMap((name, index) => {
+                const folders = library.folders.map((name, index) => {
                     const inside = library.bookmarks.filter((entry) => entry.folder === name)
-                    if (!inside.length) return []
                     const chip = el('button', 'dya-chip')
                     chip.type = 'button'
                     chip.innerHTML = glyph('folder')
                     chip.append(name)
+                    accepts(chip, name)
+                    if (!inside.length) return chip
                     const anchor = `--brw-folder-${handle.instanceId.replace(/\W/g, '')}-${index}`
                     chip.style.setProperty('anchor-name', anchor)
                     const menu = el('div', 'dya-menu brw-menu')
@@ -341,6 +410,7 @@ export function activate(ctx: PluginContext): void {
                     for (const entry of inside) {
                         const item = el('button', 'dya-menu__item', entry.title)
                         item.type = 'button'
+                        draggable(item, entry)
                         item.addEventListener('click', () => {
                             menu.hidePopover()
                             go(entry.url)
@@ -350,18 +420,20 @@ export function activate(ctx: PluginContext): void {
                     chip.popoverTargetElement = menu
                     menus.push(menu)
                     tipHolder.append(menu)
-                    return [chip]
+                    return chip
                 })
                 const loose = library.bookmarks
                     .filter((entry) => !entry.folder)
                     .map((entry) => {
                         const mark = el('button', 'dya-chip', entry.title)
                         mark.type = 'button'
+                        draggable(mark, entry)
                         mark.addEventListener('click', () => go(entry.url))
                         return mark
                     })
-                marks.replaceChildren(...folders, ...loose)
-                marks.hidden = folders.length + loose.length === 0
+                const empty = folders.length + loose.length === 0
+                marks.replaceChildren(...folders, ...loose, ...(empty ? [] : [folderMaker()]))
+                marks.hidden = empty
             }
 
             function receive(next: Library): void {

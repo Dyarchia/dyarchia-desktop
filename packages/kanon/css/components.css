@@ -2243,6 +2243,15 @@ textarea.dya-field {
     background: var(--dya-accent-soft);
 }
 
+/*
+ * A chip that takes what is dragged over it, a folder taking a bookmark: the lane's soft accent
+ * ground under the accent rim, its word in the top ink at 10.23 on that ground.
+ */
+.dya-chip--accept {
+    border-color: var(--dya-accent);
+    background-color: var(--dya-accent-soft);
+}
+
 .dya-lane--refuse {
     background: var(--dya-danger-soft);
 }

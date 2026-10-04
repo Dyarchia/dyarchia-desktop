@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, protocol } from 'electron'
 import { execFile, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { createReadStream } from 'node:fs'
-import { mkdir, rm, stat } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import type { PluginMainContext } from '@dyarchia/sdk'
@@ -102,6 +102,39 @@ function probe(ffprobe: string, path: string): Promise<Streams | null> {
     })
 }
 
+const TEXT_SUBTITLES = new Set(['subrip', 'ass', 'ssa', 'mov_text', 'webvtt', 'text'])
+
+function vtt(srt: string): string {
+    return `WEBVTT\n\n${srt.replace(/^\uFEFF/, '').replace(/\r/g, '').replace(/(\d\d:\d\d:\d\d),(\d\d\d)/g, '$1.$2')}`
+}
+
+function textTracks(ffprobe: string, path: string): Promise<{ index: number; lang: string; title: string }[]> {
+    return new Promise((resolve) => {
+        execFile(
+            ffprobe,
+            ['-v', 'error', '-select_streams', 's', '-show_entries', 'stream=index,codec_name:stream_tags=language,title', '-of', 'json', path],
+            { windowsHide: true },
+            (error, stdout) => {
+                if (error) return resolve([])
+                try {
+                    const streams = (JSON.parse(String(stdout)).streams ?? []) as {
+                        index: number
+                        codec_name?: string
+                        tags?: { language?: string; title?: string }
+                    }[]
+                    resolve(
+                        streams
+                            .filter((s) => TEXT_SUBTITLES.has(s.codec_name ?? ''))
+                            .map((s) => ({ index: s.index, lang: s.tags?.language ?? '', title: s.tags?.title ?? '' }))
+                    )
+                } catch {
+                    resolve([])
+                }
+            }
+        )
+    })
+}
+
 /*
  * What Chromium cannot play is converted into one file per player under the cache, then played
  * from there with the seeking a finished file has. A stream it can already decode is copied, so
@@ -132,6 +165,40 @@ export function activate(ctx: PluginMainContext): void {
     }
 
     ctx.handle('ffmpeg', async () => (await tools()) !== null)
+
+    /*
+     * The subtitles a video carries as text, inside it or beside it as a .srt or .vtt under its
+     * own name, handed to the panel as WebVTT text: a picture subtitle cannot become a track,
+     * and nothing is written to disk to read them.
+     */
+    ctx.handle('subtitles', async (path) => {
+        const filePath = String(path)
+        const found: { lang: string; label: string; text: string }[] = []
+        const folder = dirname(filePath)
+        const base = basename(filePath, extname(filePath))
+        for (const name of await readdir(folder).catch(() => [] as string[])) {
+            const extension = extname(name).toLowerCase()
+            if (!name.startsWith(`${base}.`) || (extension !== '.vtt' && extension !== '.srt')) continue
+            const middle = name.slice(base.length + 1, -extension.length)
+            const text = await readFile(join(folder, name), 'utf8').catch(() => '')
+            if (!text) continue
+            found.push({ lang: middle.split('.')[0] ?? '', label: middle, text: extension === '.srt' ? vtt(text) : text })
+        }
+        const binaries = await tools()
+        if (!binaries) return found
+        for (const stream of await textTracks(binaries.ffprobe, filePath)) {
+            const text = await new Promise<string>((resolve) =>
+                execFile(
+                    binaries.ffmpeg,
+                    ['-hide_banner', '-loglevel', 'error', '-nostdin', '-i', filePath, '-map', `0:${stream.index}`, '-f', 'webvtt', 'pipe:1'],
+                    { windowsHide: true, maxBuffer: 32 * 1024 * 1024 },
+                    (error, stdout) => resolve(error ? '' : String(stdout))
+                )
+            )
+            if (text.startsWith('WEBVTT')) found.push({ lang: stream.lang, label: stream.title, text })
+        }
+        return found
+    })
 
     ctx.handle('release', (instance) => release(String(instance)))
 

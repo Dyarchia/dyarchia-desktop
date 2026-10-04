@@ -28,12 +28,22 @@ component                          licence        what it does here
 Electron                           MIT            the application shell
 Chromium and its own dependencies  BSD-3-Clause   the renderer, see LICENSES.chromium.html
                                    and others
+electron-updater and the fifteen   MIT, ISC,      finds, fetches and installs a newer build
+packages under it                  Python-2.0
+                                   (argparse),
+                                   BlueOak-1.0.0
+                                   (sax)
+NSIS, and elevate.exe from         zlib, MIT      the installer, and its elevation helper
+electron-builder
 React, React DOM                   MIT            the shell's own interface
 dockview, dockview-react           MIT            the panel layout
 xterm.js and its addons            MIT            the terminal panel's screen
 node-pty                           MIT            the pseudo-terminal behind it
 winpty, ConPTY / OpenConsole       MIT            what node-pty drives on Windows
-mermaid                            MIT            diagrams in the reader
+mermaid and the 65 packages under  MIT, BSD-3-    diagrams in the reader
+it (d3 and others)                 Clause (four
+                                   d3 modules),
+                                   ISC
 KaTeX                              MIT            formulas in those diagrams
 marked                             MIT            markdown in the reader
 DOMPurify, by Cure53               MPL-2.0 or     sanitises that markdown before it is shown
@@ -66,20 +76,25 @@ affiliated with or endorsed by any of their owners.
 
 ## What is installed on demand
 
-The crawlee plugin's environment is built by the Setup panel and is not part of the download.
-It brings, beyond Crawlee itself:
+The crawlee plugin's environment is built by the Setup panel from PyPI and is not part of the
+download. Read from the packages' own metadata, it brings, beyond Crawlee itself:
 
 ```
-package        licence        
-------------   ------------   
-trafilatura    Apache-2.0     
-httpx          BSD-3-Clause   
-pydantic       MIT            
-pydantic-settings MIT         
-typer          MIT            
-rich           MIT            
-PyYAML         MIT            
+package                                   licence
+---------------------------------------   ------------
+trafilatura, Playwright (and the          Apache-2.0
+Chromium it downloads), BrowserForge,
+impit, apify-fingerprint-datapoints
+httpx, lxml, parsel, scikit-learn         BSD-3-Clause
+pydantic, pydantic-settings, typer,       MIT
+rich, PyYAML, curl_cffi, beautifulsoup4,
+html5lib, cachetools
+jaro-winkler                              GPL-3.0
 ```
+
+jaro-winkler is the one copyleft package in that environment. It is installed from PyPI on the
+machine that runs Setup, never redistributed by this project, and nothing here links against it
+outside that environment.
 
 ## FFmpeg, fetched for Media
 
@@ -108,7 +123,7 @@ its JavaScript runtime. It is not redistributed by this project.
 
 ## What the kanban drives, and does not ship
 
-The kanban dispatches work to coding agents installed on the machine: the Claude, Codex, Grok
-and opencode command line tools. None of them is bundled, vendored or modified, and none is a
+The kanban dispatches work to coding agents installed on the machine: the Claude, Codex, Grok,
+Kimi and opencode command line tools. None of them is bundled, vendored or modified, and none is a
 dependency of this project — the board runs whichever of them is on the PATH, and tells you when
 one is not.

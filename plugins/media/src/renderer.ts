@@ -596,7 +596,7 @@ export function activate(ctx: PluginContext): void {
                 ring.style.setProperty('--dya-ring-done', String(Math.floor(job.percent / 5)))
                 return ring
             }
-            if (job.state === 'done') return el('span', 'dya-light dya-light--success')
+            if (job.state === 'done') return el('span', job.output ? 'dya-light dya-light--success' : 'dya-light dya-light--warning')
             if (job.state === 'failed') return el('span', 'dya-light dya-light--danger')
             return el('span', 'dya-light')
         }
@@ -604,6 +604,7 @@ export function activate(ctx: PluginContext): void {
         function progress(job: Job): string {
             if (job.state === 'failed') return job.error ?? 'Failed'
             if (job.state === 'stopped') return 'Stopped'
+            if (job.state === 'done' && !job.output) return 'Missing'
             if (job.state === 'running' && job.percent !== null) return `${job.percent}%`
             if (job.state === 'running') return clock((Date.now() - job.started) / 1000)
             return ''
@@ -626,6 +627,7 @@ export function activate(ctx: PluginContext): void {
             end: HTMLTableCellElement
             state: string
             percent: number | null
+            output: string | undefined
         }>()
 
         function jobKeys(job: Job): HTMLElement {
@@ -638,12 +640,13 @@ export function activate(ctx: PluginContext): void {
             }
             if (job.state === 'done' && job.output) {
                 const output = job.output
+                const still = async (): Promise<boolean> => (await ctx.invoke('present', job.id)) as boolean
                 if (ctx.shell.canOpen(output)) {
-                    const play = key('play', 'Open', () => void ctx.shell.open({ path: output }), false)
+                    const play = key('play', 'Open', () => void still().then((here) => here && ctx.shell.open({ path: output })), false)
                     play.classList.add('dya-reveal')
                     strip.append(play)
                 }
-                const folder = key('folder', 'Show', () => void ctx.shell.reveal(output))
+                const folder = key('folder', 'Show', () => void still().then((here) => here && ctx.shell.reveal(output)))
                 folder.classList.add('dya-reveal')
                 strip.append(folder)
             }
@@ -680,18 +683,20 @@ export function activate(ctx: PluginContext): void {
                         progress: el('td'),
                         end: el('td', 'dya-table__end'),
                         state: '',
-                        percent: null
+                        percent: null,
+                        output: undefined
                     }
                     row.append(entry.status, entry.name, entry.progress, entry.end)
                     painted.set(job.id, entry)
                 }
-                if (entry.state !== job.state || entry.percent !== job.percent) entry.status.replaceChildren(status(job))
-                if (entry.state !== job.state) entry.end.replaceChildren(jobKeys(job))
+                if (entry.state !== job.state || entry.percent !== job.percent || entry.output !== job.output) entry.status.replaceChildren(status(job))
+                if (entry.state !== job.state || entry.output !== job.output) entry.end.replaceChildren(jobKeys(job))
                 entry.name.textContent = job.name
                 entry.progress.textContent = progress(job)
                 entry.progress.className = job.state === 'failed' ? 'dya-table__prose dya-text--danger' : 'dya-table__num'
                 entry.state = job.state
                 entry.percent = job.percent
+                entry.output = job.output
                 if (jobRows.children[index] !== entry.row) jobRows.insertBefore(entry.row, jobRows.children[index] ?? null)
             })
         }

@@ -1306,6 +1306,22 @@ textarea.dya-field {
 }
 
 /*
+ * A box that stands for several, some of them ticked: the ticked fill and rim with a bar for the
+ * tick, in the same top ink.
+ */
+.dya-checkbox:indeterminate {
+    border-color: var(--dya-text);
+    background-color: var(--dya-selected);
+}
+
+.dya-checkbox:indeterminate::after {
+    height: 0;
+    border-left: none;
+    transform: none;
+    opacity: 1;
+}
+
+/*
  * The pill: every piece of information, a group, a tag, a count. Round, so that it is never taken
  * for a key; a faint glass of its own with a lit top edge; its words in the sans with tabular
  * figures, because mono is for paths and code alone.

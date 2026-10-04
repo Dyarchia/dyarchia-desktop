@@ -8,8 +8,19 @@ export const MIME_TYPES: Record<string, string> = {
     '.mp4': 'video/mp4',
     '.webm': 'video/webm',
     '.mkv': 'video/x-matroska',
-    '.mov': 'video/quicktime'
+    '.mov': 'video/quicktime',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.avif': 'image/avif',
+    '.bmp': 'image/bmp',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon'
 }
+
+export const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.bmp', '.svg', '.ico'])
 
 export const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mkv', '.mov'])
 

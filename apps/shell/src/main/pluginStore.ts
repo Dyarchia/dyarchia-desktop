@@ -6,10 +6,10 @@ import { dirname, join } from 'node:path'
  * Which plugins this installation has been told to load, and which ones it never asks about.
  *
  * The application is not an empty shell any more. A window with one gear in it is a question asked
- * of somebody who has not seen the product yet, and the four plugins below are the product: Setup,
- * a terminal, a reader and a player. They cost nothing to carry, they need no toolchain, and every
- * one of them works the moment the window opens. They are not listed as choices because there is
- * no version of this application that is better without them.
+ * of somebody who has not seen the product yet, and the plugins below are the product: Setup, a
+ * terminal, a reader, a player and the choice of theme. They cost nothing to carry, they need no
+ * toolchain, and every one of them works the moment the window opens. They are not listed as
+ * choices because there is no version of this application that is better without them.
  *
  * What stays a choice is the plugin that reaches outside for something. kanban needs the Claude
  * Code CLI and spends money on a real account; crawlee needs an interpreter, a package set and a
@@ -26,7 +26,7 @@ import { dirname, join } from 'node:path'
  * first run a user gets is reproduced on purpose, for working on the panel itself.
  */
 
-const ALWAYS = new Set(['settings', 'terminal', 'docviewer', 'player'])
+const ALWAYS = new Set(['settings', 'terminal', 'docviewer', 'player', 'kanon'])
 
 export function isCore(id: string): boolean {
     return ALWAYS.has(id)

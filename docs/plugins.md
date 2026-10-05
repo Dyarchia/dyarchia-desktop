@@ -56,7 +56,7 @@ export function activate(ctx: PluginContext): void {
   extension wins. A finder never names the reader: it asks `ctx.shell.canOpen`, else `reveal`.
 - `ctx.registerCommand({ id, title, icon?, run })` joins the Ctrl+K palette and returns its removal.
 - `ctx.registerSearch(query => hits)` answers the palette's words with `{ id, title, detail?, run }`.
-  `ctx.token(name)` resolves a `--dya-*` value; `ctx` also has `highlight`, `hues`, `when` and `glyph`.
+  `ctx.token(name)` reads a `--dya-*` value; also `highlight`, `hues`, `when`, `glyph`, `theme`, `mark`.
 
 ## Main module
 
@@ -87,10 +87,10 @@ folder named by `data`) for what the user would miss.
 
 ## Kanon
 
-Every `dya-*` class and `--dya-*` token is already in the document. Use them. A plugin's own
-prefixed CSS is layout inside its panel and nothing else: no colour, component, elevation or type
-step. Anything new is declared in `packages/kanon` first, measured on every ground and written in
-its [README](../packages/kanon/README.md), and only then used. Panel interiors are transparent.
+Every `dya-*` class and `--dya-*` token is in the document, in the theme chosen; what JavaScript
+drew from `ctx.token` is drawn again in `ctx.theme.on`. A plugin's own prefixed CSS is layout inside
+its panel only: no colour, component, elevation or type step. Anything new is declared and measured
+in [kanon](../packages/kanon/README.md) first. Panel interiors are transparent.
 
 ## Offering a tool to agents
 

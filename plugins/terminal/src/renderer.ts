@@ -1,11 +1,10 @@
 import { Terminal } from '@xterm/xterm'
-import type { ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { ClipboardAddon } from '@xterm/addon-clipboard'
 import xtermCss from '@xterm/xterm/css/xterm.css'
-import { brandIcon, injectStyles } from '@dyarchia/sdk'
+import { brandIcon, injectStyles, terminalTheme } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 
 const STYLES =
@@ -16,39 +15,12 @@ const STYLES =
     '\n.dyarchia-terminal-connecting { position: absolute; inset: 0; }'
 
 /*
- * The sixteen colours a program asks for by number, taken from kanon rather than written here. They
- * were sixteen hex values in this file, the one place in the application a plugin declared colours
- * of its own, and they were measured against nothing: a green chosen by eye on one theme's ground
- * is a green on the other theme's ground too, whatever it measures there. The chromatic six and
- * their bright twins are solved per theme against the surface the terminal draws on; black and
- * white are the system's own ink ranks, so a program's dim text is the dimmest text the system has.
- */
-const ANSI_TOKENS = {
-    black: 'border-strong',
-    red: 'ansi-red',
-    green: 'ansi-green',
-    yellow: 'ansi-yellow',
-    blue: 'ansi-blue',
-    magenta: 'ansi-magenta',
-    cyan: 'ansi-cyan',
-    white: 'text-3',
-    brightBlack: 'text-4',
-    brightRed: 'ansi-bright-red',
-    brightGreen: 'ansi-bright-green',
-    brightYellow: 'ansi-bright-yellow',
-    brightBlue: 'ansi-bright-blue',
-    brightMagenta: 'ansi-bright-magenta',
-    brightCyan: 'ansi-bright-cyan',
-    brightWhite: 'text'
-} as const satisfies Partial<Record<keyof ITheme, string>>
-
-/*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * the prompt turned upright, which is a lambda: Lacedaemon on every shield.
  * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const TERMINAL_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.4 18.6 7.8 5.4 13.2 18.6" fill="none" stroke="#eceef2" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="15.4" y="16.9" width="8.2" height="3" rx=".6" fill="#eceef2"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.4 18.6 7.8 5.4 13.2 18.6" fill="none" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--dya-text)"/><rect x="15.4" y="16.9" width="8.2" height="3" rx=".6" style="fill:var(--dya-text)"/></svg>'
 
 interface PortAnnouncement {
     dyarchiaPort?: {
@@ -135,17 +107,6 @@ export function activate(ctx: PluginContext): void {
         injectStyles(ctx.pluginId, STYLES)
         container.classList.add('dya-terminal', 'dyarchia-terminal')
 
-        const terminalTheme = (): ITheme => ({
-            ...Object.fromEntries(
-                Object.entries(ANSI_TOKENS).map(([slot, name]) => [slot, ctx.token(name)])
-            ),
-            background: ctx.token('field'),
-            foreground: ctx.token('text'),
-            cursor: ctx.token('text'),
-            cursorAccent: ctx.token('field'),
-            selectionBackground: ctx.token('accent-soft')
-        })
-
         const terminal = new Terminal({
             fontFamily: ctx.token('font-mono'),
             fontSize: 13,
@@ -153,7 +114,7 @@ export function activate(ctx: PluginContext): void {
             allowProposedApi: true,
             minimumContrastRatio: 4.5,
             scrollback: 10000,
-            theme: terminalTheme()
+            theme: terminalTheme(ctx.token)
         })
         const fit = new FitAddon()
         terminal.loadAddon(fit)
@@ -304,14 +265,21 @@ export function activate(ctx: PluginContext): void {
             handle.setTitle(null)
         })
 
-        const observer = new ResizeObserver(() => {
+        const refit = (): void => {
             fit.fit()
             port?.postMessage({ t: 'resize', cols: terminal.cols, rows: terminal.rows })
-        })
+        }
+        const observer = new ResizeObserver(refit)
         observer.observe(container)
+        const offTheme = ctx.theme.on(() => {
+            terminal.options.theme = terminalTheme(ctx.token)
+            terminal.options.fontFamily = ctx.token('font-mono')
+            refit()
+        })
 
         return () => {
             disposed = true
+            offTheme()
             observer.disconnect()
             window.removeEventListener('message', onPortAnnouncement)
             container.removeEventListener('mouseup', onMouseUp)

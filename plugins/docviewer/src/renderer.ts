@@ -89,7 +89,7 @@ const STYLES = `
  * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const DOCS_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1.6 20.4 6.6H3.6z" fill="#eceef2"/><circle cx="3.6" cy="6" r="1.1" fill="#eceef2"/><circle cx="20.4" cy="6" r="1.1" fill="#eceef2"/><rect x="4.6" y="7.8" width="14.8" height="12.6" fill="#eceef2"/><rect x="3" y="20.4" width="18" height="2.2" rx=".4" fill="#eceef2"/><text x="12" y="11.9" text-anchor="middle" font-family="Spectral, Georgia, serif" font-weight="500" font-size="3.6" fill="#0a0a0b">RETRA</text><path d="M7 14.4h10M7 16.6h10M7 18.8h6.4" stroke="#0a0a0b" stroke-width=".9" stroke-linecap="round"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1.6 20.4 6.6H3.6z" style="fill:var(--dya-text)"/><circle cx="3.6" cy="6" r="1.1" style="fill:var(--dya-text)"/><circle cx="20.4" cy="6" r="1.1" style="fill:var(--dya-text)"/><rect x="4.6" y="7.8" width="14.8" height="12.6" style="fill:var(--dya-text)"/><rect x="3" y="20.4" width="18" height="2.2" rx=".4" style="fill:var(--dya-text)"/><text x="12" y="11.9" text-anchor="middle" font-weight="500" font-size="3.6" style="fill:var(--dya-on-accent);font-family:var(--dya-font-serif)">RETRA</text><path d="M7 14.4h10M7 16.6h10M7 18.8h6.4" stroke-width=".9" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/></svg>'
 
 const PENCIL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
@@ -950,9 +950,22 @@ export function activate(ctx: PluginContext): void {
                 await renderCurrent()
             }
 
+            /*
+             * A drawn diagram keeps its source, so a change of theme draws it again in the new
+             * theme's tokens where it stands, without rendering the page or losing its scroll.
+             */
+            const diagrams = new WeakMap<HTMLElement, string>()
+
             async function renderDiagrams(host: HTMLElement): Promise<void> {
-                const blocks = [...host.querySelectorAll('pre > code.language-mermaid')]
-                if (blocks.length === 0) return
+                const targets: [HTMLElement, string][] = []
+                for (const block of host.querySelectorAll('pre > code.language-mermaid')) {
+                    if (block.parentElement) targets.push([block.parentElement, block.textContent ?? ''])
+                }
+                for (const figure of host.querySelectorAll<HTMLElement>('.dya-prose__figure')) {
+                    const source = diagrams.get(figure)
+                    if (source !== undefined) targets.push([figure, source])
+                }
+                if (targets.length === 0) return
                 const { default: mermaid } = await import('mermaid')
                 mermaid.initialize({
                     startOnLoad: false,
@@ -977,19 +990,15 @@ export function activate(ctx: PluginContext): void {
                         fontSize: '11px'
                     }
                 })
-                for (const block of blocks) {
-                    const pre = block.parentElement
-                    if (!pre) continue
+                for (const [element, source] of targets) {
                     try {
-                        const { svg } = await mermaid.render(
-                            `dya-mermaid-${diagram++}`,
-                            block.textContent ?? ''
-                        )
+                        const { svg } = await mermaid.render(`dya-mermaid-${diagram++}`, source)
                         const figure = document.createElement('div')
                         figure.className = 'dya-prose__figure'
-                        if (pre.dataset.sourceLine) figure.dataset.sourceLine = pre.dataset.sourceLine
+                        if (element.dataset.sourceLine) figure.dataset.sourceLine = element.dataset.sourceLine
                         figure.innerHTML = svg
-                        pre.replaceWith(figure)
+                        diagrams.set(figure, source)
+                        element.replaceWith(figure)
                     } catch {
                         continue
                     }
@@ -1035,7 +1044,12 @@ export function activate(ctx: PluginContext): void {
             waiting.delete(key)
             if (pending) void accept(pending)
 
+            const offTheme = ctx.theme.on(() => {
+                if (current?.markdown && mode === 'rendered') void renderDiagrams(content)
+            })
+
             return () => {
+                offTheme()
                 if (readers.get(handle.instanceId) === reader) readers.delete(handle.instanceId)
                 galleries.delete(repaint)
                 container.replaceChildren()

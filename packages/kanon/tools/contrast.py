@@ -30,6 +30,10 @@ COMPOSITES = {
         'glass-peak': '#27292c',
         'card-peak': '#2f3033',
     },
+    'terracotta': {
+        'glass-peak': '#141413',
+        'card-peak': '#232321',
+    },
 }
 
 FLOOR = 4.50

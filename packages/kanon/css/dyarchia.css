@@ -1,5 +1,6 @@
 @import "./fonts.css";
 @import "./tokens.css";
+@import "./themes/terracotta.css";
 @import "./reset.css";
 @import "./motion.css";
 @import "./components.css";

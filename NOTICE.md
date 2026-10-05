@@ -1,6 +1,6 @@
 # Third-party notices
 
-Dyarchia desktop is MIT licensed; see [LICENSE](LICENSE). It is built on, and ships with, work that
+Dyarchia Desktop is MIT licensed; see [LICENSE](LICENSE). It is built on, and ships with, work that
 belongs to other people. This file says whose.
 
 ## Crawlee
@@ -72,7 +72,7 @@ carries the BSD 3-Clause notice of highlight.js (https://github.com/highlightjs/
 Ivan Sagalaev and its contributors, which `packages/sdk/src/highlight.ts` bundles unmodified.
 
 Those marks are trademarks of the companies that own them. They are shown only to identify the
-program a terminal tab is running or the agent a card goes to, and Dyarchia desktop is not
+program a terminal tab is running or the agent a card goes to, and Dyarchia Desktop is not
 affiliated with or endorsed by any of their owners.
 
 ## What is installed on demand

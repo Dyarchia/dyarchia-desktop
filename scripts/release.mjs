@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const OWNER = 'Dyarchia/dyarchia-desktop'
+const OWNER = 'Dyarchia/Dyarchia-Desktop'
 const releaseDir = join(root, 'apps', 'shell', 'release')
 
 const wanted = new Set(process.argv.slice(2))

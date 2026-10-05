@@ -1,26 +1,7 @@
 import { Terminal } from '@xterm/xterm'
-import type { ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { terminalTheme } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
-
-const ANSI: ITheme = {
-    black: '#3a3d42',
-    red: '#e07b7b',
-    green: '#7fc99a',
-    yellow: '#d6b168',
-    blue: '#7ba6e8',
-    magenta: '#c493dd',
-    cyan: '#6dc3cf',
-    white: '#a0a3a8',
-    brightBlack: '#909398',
-    brightRed: '#f09a9a',
-    brightGreen: '#9bdcb2',
-    brightYellow: '#e8c98a',
-    brightBlue: '#9dbef2',
-    brightMagenta: '#d7b0e8',
-    brightCyan: '#8fd6e0',
-    brightWhite: '#f4f4f6'
-}
 
 const MIN_COLS = 80
 const QUIET_MS = 1_500
@@ -42,15 +23,6 @@ export function openTerminal(
     cardId: string,
     onFail: (reason: string) => void
 ): Attached {
-    const theme = (): ITheme => ({
-        ...ANSI,
-        background: ctx.token('field'),
-        foreground: ctx.token('text'),
-        cursor: ctx.token('text'),
-        cursorAccent: ctx.token('field'),
-        selectionBackground: ctx.token('accent-soft')
-    })
-
     const terminal = new Terminal({
         fontFamily: ctx.token('font-mono'),
         fontSize: 12,
@@ -58,7 +30,7 @@ export function openTerminal(
         allowProposedApi: true,
         minimumContrastRatio: 4.5,
         scrollback: 10_000,
-        theme: theme()
+        theme: terminalTheme(ctx.token)
     })
 
     let port: MessagePort | null = null
@@ -188,10 +160,16 @@ export function openTerminal(
 
     const observer = new ResizeObserver(resize)
     observer.observe(container)
+    const offTheme = ctx.theme.on(() => {
+        terminal.options.theme = terminalTheme(ctx.token)
+        terminal.options.fontFamily = ctx.token('font-mono')
+        resize()
+    })
 
     return {
         dispose(): void {
             disposed = true
+            offTheme()
             stopWaiting()
             observer.disconnect()
             window.removeEventListener('message', onAnnouncement)

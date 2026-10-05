@@ -4,6 +4,7 @@ import { registerLauncherStore } from './launcherStore'
 import { registerLayoutStore } from './layoutStore'
 import { adoptUserData, registerPaths } from './paths'
 import { registerWindowControls } from './windowControls'
+import { registerTheme, themeGround } from './theme'
 import { registerZoom } from './zoom'
 import { registerPluginScheme, setupPlugins } from './plugins'
 import { registerUpdates } from './updates'
@@ -46,7 +47,7 @@ function createWindow(): void {
         show: false,
         autoHideMenuBar: true,
         titleBarStyle: 'hidden',
-        backgroundColor: '#0a0b0d',
+        backgroundColor: themeGround('#0c0c0e'),
         icon: DEV_ICON,
         webPreferences: {
             preload: join(import.meta.dirname, '../preload/index.mjs'),
@@ -140,6 +141,7 @@ app.whenReady().then(async () => {
     registerLauncherStore()
     registerWindowControls()
     registerPaths()
+    registerTheme()
     registerUpdates()
     await setupPlugins()
     createWindow()

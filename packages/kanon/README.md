@@ -1,11 +1,11 @@
 # dyarchia-kanon
 
-The shared visual system: CSS tokens, `dya-*` classes and three OFL families, with no build and no
-JavaScript. This file is the authority over the CSS; the before and after of a change is its commit body.
-`css/dyarchia.css` is the only entry point and imports, in order, `fonts`, `tokens` (the one theme, on
-`:root`), `reset`, `motion` and `components`; tokens precede what consumes them, everything is prefixed
-`dya-`, and `prefers-color-scheme` is never read. `fonts/` holds Inter, Plex Mono and Spectral; `tools/`
-holds `contrast.py`, which measures, and `palette.py`, which lifts the six colours to lights and inks.
+The shared visual system: CSS tokens, `dya-*` classes and three OFL families, no build, no JavaScript. This
+file is the authority over the CSS; a change's before and after is its commit body. `css/dyarchia.css`
+imports, in order, `fonts`, `tokens` (black metal, the default, on `:root`), the themes, `reset`, `motion`
+and `components`; all prefixed `dya-`, `prefers-color-scheme` never read. **A theme** is
+`css/themes/<id>.css`, `:root[data-theme="<id>"]` redefining only what it changes, listed in `THEMES`
+(`src/index.ts`) and shipped only measured: `tools/contrast.py --theme <id>`, its own peaks included.
 
 ## Materials
 
@@ -18,20 +18,20 @@ pill    every piece of information: round, words in the sans; never pressable
 light   status only: a green, yellow or red dot, or a hollow top-ink ring for what is under way
 ```
 
-Black and white, and one light. One black in three roles: `ground` #0c0c0e, `panel` #131316 (a key's face,
-a tile, an entry, a menu, a sheet), `field` #0e0e11 (input, code, a log); `hover`, `selected`, `disabled`
-and `scrim` are the only other steps. A cold clear light (`--dya-light-in`) comes in at two corners and dies
-within a quarter of the diagonal. The accent is silver: the primary's passing light, the open tab's line, the
-focus ring. A plugin's mark keeps its brand's original colours. Nothing glows. Two inks, `text` and `text-muted`; every
-glyph is `text`. Spectral is the brand, Inter the interface with tabular figures, Plex Mono paths and code.
+Black metal is black and white, and one light. One black in three roles: `ground` #0c0c0e, `panel` #131316
+(every face), `field` #0e0e11 (input, code, a log); `hover`, `selected`, `disabled` and `scrim` are the other
+steps. A cold clear light (`--dya-light-in`) comes in at two corners, dead within a quarter of the diagonal. The
+accent is silver: the primary's passing light, the open tab's line, the focus ring. Nothing glows. Two inks,
+`text` and `text-muted`; a glyph is `text`, a Dyarchia mark `text`, `text-muted` and `on-accent`, a brand's mark
+its own. Spectral the brand, Inter the interface (tabular figures), Plex Mono paths and code.
 
 ## Rules
 
 - **Six colours and no others**, blue, purple, orange, green, yellow and red, each a light `--dya-<name>`
-  and an `-ink` for text. **Green is success, yellow warning, red error, always.** Blue, purple and orange
-  are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name, a glyph or the lit
-  rim of a key that is on, never a pill's word, a fill or a dot inside a pill. A pill that informs is
-  neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
+  and an `-ink` for text, lifted by `tools/palette.py`. **Green is success, yellow warning, red error,
+  always.** Blue, purple and orange are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot
+  beside a name, a glyph or the lit rim of a key that is on, never a pill's word, a fill or a dot inside a
+  pill. A pill that informs is neutral. **Plugins have no hue.** A ticked `checkbox` is the top ink.
 - **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `text-muted` is 4.61 at the least,
   `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, peaks included, into the commit body.
 - **Components reference tokens, never literals**: no literal colour, radius or duration in `components.css`.

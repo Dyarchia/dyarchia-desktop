@@ -141,24 +141,6 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  plugins/media:
-    devDependencies:
-      '@dyarchia/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
-      '@types/node':
-        specifier: ^26.2.0
-        version: 26.2.0
-      electron:
-        specifier: ^43.3.0
-        version: 43.3.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
-      typescript:
-        specifier: ^5.9.0
-        version: 5.9.3
-
   plugins/kanban:
     dependencies:
       node-pty:
@@ -185,6 +167,39 @@ importers:
         version: 0.28.2
       typescript:
         specifier: ^5.9.3
+        version: 5.9.3
+
+  plugins/kanon:
+    devDependencies:
+      '@dyarchia/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  plugins/media:
+    devDependencies:
+      '@dyarchia/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      electron:
+        specifier: ^43.3.0
+        version: 43.3.0
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      typescript:
+        specifier: ^5.9.0
         version: 5.9.3
 
   plugins/player:

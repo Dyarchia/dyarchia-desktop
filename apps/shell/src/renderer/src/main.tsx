@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom/client'
 import { App } from './App'
+import { restoreTheme } from './theme'
 import '@dyarchia/kanon/css/dyarchia.css'
 import 'dockview/dist/styles/dockview.css'
 import './styles.css'
@@ -63,4 +64,4 @@ document.addEventListener('pointermove', () => {
     }
 }, { passive: true })
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<App />)
+void restoreTheme().then(() => ReactDOM.createRoot(document.getElementById('root')!).render(<App />))

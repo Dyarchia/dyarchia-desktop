@@ -8,6 +8,7 @@ import { registerPanel } from '../panels/registry'
 import type { PanelDescriptor, PanelMount } from '../panels/registry'
 import { canOpen, openFile, registerOpener, showPanel } from '../panels/openers'
 import type { OpenerDescriptor, OpenHandler, OpenRequest } from '../panels/openers'
+import { theme } from '../theme'
 
 interface PluginListEntry {
     manifest: {
@@ -83,6 +84,7 @@ interface PluginModule {
         registerPanel(descriptor: PanelDescriptor, mount: PanelMount): void
         registerOpener(descriptor: OpenerDescriptor, open: OpenHandler): void
         registerCommand(command: PluginCommand): () => void
+        mark(svg: string): void
         registerSearch(search: Search): () => void
         invoke(channel: string, ...args: unknown[]): Promise<unknown>
         on(channel: string, listener: (...args: unknown[]) => void): void | (() => void)
@@ -90,6 +92,7 @@ interface PluginModule {
         hues(keys: Iterable<string>): Record<string, string>
         when(value: Date | number | string | null | undefined): string
         glyph(name: GlyphName): string
+        theme: typeof theme
         shell: ShellApi
     }): void | Promise<void>
 }
@@ -125,11 +128,12 @@ async function invokeFor(id: string, channel: string, args: unknown[]): Promise<
 }
 
 /*
- * Each loaded plugin's face, from the first panel it registers, so a list of plugins can show the
- * icon the plugin wears on its key and its tabs. A plugin that is not loaded has registered nothing
- * and keeps its dot.
+ * Each loaded plugin's face, from the first panel it registers or from `mark` when it has none, so a
+ * list of plugins can show the icon the plugin wears on its key and its tabs. A plugin that is not
+ * loaded has registered nothing and keeps its dot.
  */
 const pluginIcons = new Map<string, string>()
+const panelled = new Set<string>()
 
 export function pluginIcon(id: string): string | undefined {
     return pluginIcons.get(id)
@@ -156,13 +160,17 @@ export async function loadPlugins(): Promise<void> {
                 pluginId: id,
                 token,
                 registerPanel: (descriptor: PanelDescriptor, mount: PanelMount) => {
-                    if (!pluginIcons.has(id)) pluginIcons.set(id, descriptor.icon)
+                    if (!panelled.has(id)) pluginIcons.set(id, descriptor.icon)
+                    panelled.add(id)
                     registerPanel({ ...descriptor, toolbar, owner: id }, mount)
                 },
                 registerOpener: (descriptor: OpenerDescriptor, open: OpenHandler) =>
                     registerOpener(id, descriptor, open),
                 registerCommand: (command: PluginCommand) =>
                     registerCommand({ ...command, id: `${id}:${command.id}`, owner: id }),
+                mark: (svg: string) => {
+                    if (!panelled.has(id)) pluginIcons.set(id, svg)
+                },
                 registerSearch: (search: Search) => registerSearch(id, search),
                 invoke: (channel, ...args) => invokeFor(id, channel, args),
                 on: (channel, listener) => bridge.on(`plugin:${id}:${channel}`, listener),
@@ -170,6 +178,7 @@ export async function loadPlugins(): Promise<void> {
                 hues,
                 when,
                 glyph,
+                theme,
                 shell: {
                     catalogue,
                     paths: () => bridge.invoke('shell:app:paths') as Promise<ShellPaths>,

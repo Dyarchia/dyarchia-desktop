@@ -1,0 +1,17 @@
+{
+    "name": "@dyarchia/plugin-kanon",
+    "version": "0.1.0",
+    "private": true,
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "build": "pnpm build:renderer",
+        "build:renderer": "node ../../scripts/build-plugin.mjs renderer"
+    },
+    "devDependencies": {
+        "@dyarchia/sdk": "workspace:*",
+        "@types/node": "^26.2.0",
+        "esbuild": "^0.28.2",
+        "typescript": "^5.9.0"
+    }
+}

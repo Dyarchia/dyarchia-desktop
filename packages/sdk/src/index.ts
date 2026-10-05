@@ -6,6 +6,7 @@ export { when } from './when.js'
 export { brandIcon, ownIds } from './brands.js'
 export { glyph } from './glyphs.js'
 export { tips } from './tips.js'
+export { terminalTheme } from './terminal.js'
 export type { Tip } from './tips.js'
 export type { GlyphName } from './glyphs.js'
 export type { Hue } from './hues.js'
@@ -169,6 +170,23 @@ export interface SearchHit {
 
 export type PluginSearch = (query: string) => Promise<SearchHit[]>
 
+export interface Theme {
+    id: string
+    name: string
+}
+
+/*
+ * Which kanon theme the window wears. Everything drawn in CSS follows a change by itself; what a
+ * plugin painted from `token()` in JavaScript, a terminal or a diagram, reads the tokens again in
+ * `on`. A plugin offering a choice of theme calls `set`, which the shell stores.
+ */
+export interface ThemeApi {
+    list(): Theme[]
+    current(): string
+    set(id: string): Promise<void>
+    on(listener: (id: string) => void): () => void
+}
+
 export interface PluginContext {
     readonly pluginId: string
     token(name: string): string
@@ -179,6 +197,11 @@ export interface PluginContext {
      */
     registerOpener(descriptor: OpenerDescriptor, open: (request: OpenRequest) => void | Promise<void>): void
     registerCommand(command: PluginCommand): () => void
+    /*
+     * The face of a plugin with no panel to lend it one, shown wherever plugins are listed. A
+     * plugin with a panel wears its first panel's icon and needs nothing here.
+     */
+    mark(svg: string): void
     /*
      * What this plugin holds that matches the palette's words. The shell asks once the typing
      * pauses, every plugin at once, and drops an answer to words no longer typed.
@@ -201,6 +224,7 @@ export interface PluginContext {
     hues(keys: Iterable<string>): Record<string, Hue>
     when(value: Date | number | string | null | undefined): string
     glyph(name: GlyphName): string
+    theme: ThemeApi
     shell: ShellApi
 }
 

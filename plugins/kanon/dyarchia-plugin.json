@@ -1,0 +1,7 @@
+{
+    "id": "kanon",
+    "name": "Kanon",
+    "version": "0.1.0",
+    "description": "Themes",
+    "renderer": "dist/renderer.js"
+}

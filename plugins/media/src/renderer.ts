@@ -8,7 +8,7 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
  * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
  */
 const MEDIA_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="7.6" r="6.6" fill="#eceef2"/><circle cx="12" cy="7.6" r="5.1" fill="none" stroke="#0a0a0b" stroke-width=".8"/><path d="M9 6.2a3.3 3.3 0 0 1 2.3-2.2" stroke="#0a0a0b" stroke-width="1.2" stroke-linecap="round" fill="none"/><path d="M11.1 17.6 9.3 14.2M12.9 17.6l1.8-3.4" stroke="#eceef2" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="16.2" r="1.05" fill="#eceef2"/><path d="M10.9 17.5h2.2l.7 3.7h-3.6z" fill="#eceef2"/><rect x="8.3" y="21.1" width="7.4" height="1.8" rx=".5" fill="#eceef2"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="7.6" r="6.6" style="fill:var(--dya-text)"/><circle cx="12" cy="7.6" r="5.1" fill="none" stroke-width=".8" style="stroke:var(--dya-on-accent)"/><path d="M9 6.2a3.3 3.3 0 0 1 2.3-2.2" stroke-width="1.2" stroke-linecap="round" fill="none" style="stroke:var(--dya-on-accent)"/><path d="M11.1 17.6 9.3 14.2M12.9 17.6l1.8-3.4" stroke-width="1.2" stroke-linecap="round" style="stroke:var(--dya-text)"/><circle cx="12" cy="16.2" r="1.05" style="fill:var(--dya-text)"/><path d="M10.9 17.5h2.2l.7 3.7h-3.6z" style="fill:var(--dya-text)"/><rect x="8.3" y="21.1" width="7.4" height="1.8" rx=".5" style="fill:var(--dya-text)"/></svg>'
 
 interface ToolInfo {
     id: Tool

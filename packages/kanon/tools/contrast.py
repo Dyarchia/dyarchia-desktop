@@ -1,6 +1,7 @@
 """Measure a colour token against every surface it can sit on.
 
     py packages/kanon/tools/contrast.py text-muted
+    py packages/kanon/tools/contrast.py text-muted --theme <id>
     py packages/kanon/tools/contrast.py '#85857f' --against panel field
 
 Every change to a text, border, surface or accent token has to be re-measured this way and
@@ -12,28 +13,38 @@ import argparse
 import pathlib
 import re
 
-CSS = pathlib.Path(__file__).resolve().parent.parent / 'css' / 'tokens.css'
+CSS = pathlib.Path(__file__).resolve().parent.parent / 'css'
+DEFAULT = 'black-metal'
 
 SURFACES = ['ground', 'panel', 'field', 'hover', 'selected', 'disabled']
 
 """
 Two grounds no token declares, because they only exist where translucent layers stack: the
 panel's glass over the brightest ground the system has allowed, and a card on that glass. They
-sit above the corner where `--dya-light-in` is brightest (#222325) and are kept as a ceiling:
-the lightest place a panel's text could land, so every ink is measured against them too.
+sit above the corner where `--dya-light-in` is brightest and are kept as a ceiling: the lightest
+place a panel's text could land, so every ink is measured against them too. Each theme measures
+its own; a theme is not finished until its two are here.
 """
 COMPOSITES = {
-    'glass-peak': '#27292c',
-    'card-peak': '#2f3033',
+    'black-metal': {
+        'glass-peak': '#27292c',
+        'card-peak': '#2f3033',
+    },
 }
 
 FLOOR = 4.50
 GRAPHIC = 3.00
 
 
-def palette() -> dict[str, str]:
-    values = tokens(CSS.read_text(encoding='utf-8'))
-    values.update({f'--dya-{name}': value for name, value in COMPOSITES.items()})
+def palette(theme: str) -> dict[str, str]:
+    """The default's tokens, with a theme's own file laid over them as the cascade does."""
+    values = tokens((CSS / 'tokens.css').read_text(encoding='utf-8'))
+    if theme != DEFAULT:
+        path = CSS / 'themes' / f'{theme}.css'
+        if not path.exists():
+            raise SystemExit(f'{path} does not exist')
+        values.update(tokens(path.read_text(encoding='utf-8')))
+    values.update({f'--dya-{name}': value for name, value in COMPOSITES.get(theme, {}).items()})
     return values
 
 
@@ -70,15 +81,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ink', help='a token suffix such as text-2 or code-comment, or a literal #rrggbb')
     parser.add_argument('--against', nargs='*', default=SURFACES, help='surface suffixes')
+    parser.add_argument('--theme', default=DEFAULT, help='a theme id, as css/themes/<id>.css names it')
     args = parser.parse_args()
 
-    values = palette()
+    values = palette(args.theme)
+    composites = COMPOSITES.get(args.theme, {})
+    if not composites:
+        print(f'{args.theme} declares no composite grounds yet')
     ink = args.ink if args.ink.startswith('#') else values.get(f'--dya-{args.ink}')
     if not ink:
         raise SystemExit(f'--dya-{args.ink} is not defined')
     print(f'{"surface":14} {"ground":9} {"ratio":>6}  reading')
     print('-' * 43)
-    for surface in args.against + [name for name in COMPOSITES if name not in args.against]:
+    for surface in args.against + [name for name in composites if name not in args.against]:
         ground = values.get(f'--dya-{surface}')
         if ground:
             value = ratio(ink, ground)

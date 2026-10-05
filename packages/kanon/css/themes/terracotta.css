@@ -1,0 +1,88 @@
+:root[data-theme="terracotta"] {
+    --dya-radius-sm: 0;
+    --dya-radius: 0;
+    --dya-radius-card: 0;
+    --dya-radius-chassis: 0;
+
+    --dya-font-serif: var(--dya-font-mono);
+
+    --dya-tracking-head: 0.02em;
+    --dya-tracking-label: 0.02em;
+
+    --dya-ground: #141413;
+    --dya-panel: #1a1a18;
+    --dya-field: #121110;
+    --dya-hover: #232321;
+    --dya-selected: #2c2c2a;
+    --dya-disabled: #171716;
+    --dya-scrim: #141413f0;
+
+    --dya-light-in: none;
+    --dya-noise: none;
+
+    --dya-glass: none;
+    --dya-glass-card: none;
+    --dya-glass-pill: none;
+    --dya-steel: none;
+    --dya-steel-band: none;
+    --dya-glass-edge: linear-gradient(#faf9f517, #faf9f517);
+    --dya-glass-hover: #faf9f50b;
+    --dya-glass-press: #faf9f514;
+
+    --dya-text: #faf9f5;
+    --dya-text-muted: #b0aea5;
+    --dya-text-off: #5e5d59;
+
+    --dya-border: #292927;
+    --dya-border-strong: #393937;
+    --dya-rim: #393937;
+    --dya-rim-hover: #4b4b49;
+    --dya-border-menu: #292927;
+    --dya-hairline: #faf9f50b;
+    --dya-pill-border: #faf9f517;
+    --dya-dashed: #faf9f521;
+
+    --dya-accent: #d97859;
+    --dya-accent-soft: #d978592e;
+    --dya-sheen: #d978591f;
+    --dya-on-accent: #141413;
+    --dya-focus: #d97859;
+
+    --dya-ansi-red: #ff8472;
+    --dya-ansi-green: #7fd18b;
+    --dya-ansi-yellow: #e6c200;
+    --dya-ansi-blue: #82aaff;
+    --dya-ansi-magenta: #f394cd;
+    --dya-ansi-cyan: #89ddff;
+
+    --dya-code-keyword: #c792ea;
+    --dya-code-string: #c3e88d;
+    --dya-code-number: #c3e88d;
+    --dya-code-function: #82aaff;
+    --dya-code-key: #89ddff;
+    --dya-code-comment: #94938d;
+    --dya-code-punct: #b0aea5;
+
+    --dya-carve-filter: none;
+    --dya-relief-face: #faf9f5;
+    --dya-relief-light: transparent;
+    --dya-relief-shade: transparent;
+    --dya-relief-drop: transparent;
+
+    --dya-edge: transparent;
+    --dya-elev-chassis: none;
+    --dya-elev-panel: none;
+    --dya-elev-key: none;
+    --dya-elev-key-down: none;
+    --dya-elev-key-bare: none;
+    --dya-elev-key-bare-down: none;
+    --dya-elev-key-off: none;
+    --dya-elev-pill: none;
+    --dya-elev-sunken: none;
+    --dya-elev-focus: 0 0 0 1px var(--dya-focus);
+    --dya-elev-popover: 0 4px 16px #0000001a;
+    --dya-elev-overlay: 0 40px 110px #000000a6;
+    --dya-press-y: 0;
+
+    --dya-ease-out: cubic-bezier(0.19, 1, 0.22, 1);
+}

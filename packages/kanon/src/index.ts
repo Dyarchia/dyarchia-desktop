@@ -12,6 +12,9 @@ export interface Theme {
  * Every theme kanon declares, the default first. The default is `:root` in tokens.css; each other
  * is `:root[data-theme="<id>"]` in css/themes, redefining only the tokens it changes.
  */
-export const THEMES: readonly Theme[] = [{ id: 'black-metal', name: 'Black metal' }]
+export const THEMES: readonly Theme[] = [
+    { id: 'black-metal', name: 'Black metal' },
+    { id: 'terracotta', name: 'Terracotta' }
+]
 
 export const DEFAULT_THEME = THEMES[0].id

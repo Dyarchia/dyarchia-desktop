@@ -10,6 +10,9 @@ Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
 Copyright 2017 The Spectral Project Authors (https://github.com/productiontype/Spectral)
     Spectral-Light.woff2, Spectral-Medium.woff2
 
+Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
+    GeistMono-Latin.woff2
+
 The license is copied below, and is also available with a FAQ at:
 https://openfontlicense.org
 

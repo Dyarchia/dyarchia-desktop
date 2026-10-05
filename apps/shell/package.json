@@ -1,6 +1,6 @@
 {
     "name": "@dyarchia/shell",
-    "productName": "Dyarchia desktop",
+    "productName": "Dyarchia Desktop",
     "version": "0.7.2-alpha",
     "private": true,
     "license": "MIT",

@@ -30,7 +30,7 @@ export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
     return (
         <div className="dya-pane launcher">
             <div className="launcher-head">
-                <span className="dya-carved">Dyarchia desktop</span>
+                <span className="dya-carved">Dyarchia Desktop</span>
             </div>
             <div className="dya-grid launcher-grid">
                 {orderApps(panels).map((panel) => (

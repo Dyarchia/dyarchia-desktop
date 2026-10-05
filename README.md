@@ -1,4 +1,4 @@
-# Dyarchia desktop
+# Dyarchia Desktop
 
 **ALPHA — 0.7.2-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**

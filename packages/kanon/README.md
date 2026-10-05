@@ -1,11 +1,11 @@
 # dyarchia-kanon
 
-The shared visual system: CSS tokens, `dya-*` classes and three OFL families, no build, no JavaScript. This
+The shared visual system: CSS tokens, `dya-*` classes and four OFL families, no build, no JavaScript. This
 file is the authority over the CSS; a change's before and after is its commit body. `css/dyarchia.css`
 imports, in order, `fonts`, `tokens` (black metal, the default, on `:root`), the themes, `reset`, `motion`
 and `components`; all prefixed `dya-`, `prefers-color-scheme` never read. **A theme** is
-`css/themes/<id>.css`, `:root[data-theme="<id>"]` redefining only what it changes, listed in `THEMES`
-(`src/index.ts`) and shipped only measured: `tools/contrast.py --theme <id>`, its own peaks included.
+`css/themes/<id>.css`: its tokens on `:root[data-theme="<id>"]`, and component rules under the same
+selector where its shape differs; listed in `THEMES` and shipped only measured: `contrast.py --theme <id>`.
 
 ## Materials
 

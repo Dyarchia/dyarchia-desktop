@@ -52,6 +52,7 @@ highlight.js                       BSD-3-Clause   the colour of code everywhere 
 Inter                              OFL 1.1        the interface face
 IBM Plex Mono                      OFL 1.1        paths and code
 Spectral                           OFL 1.1        the brand face
+Geist Mono                         OFL 1.1        the Terracotta theme's mono
 Lobe Icons, by LobeHub             MIT            the marks of the agent CLIs
 @ghostery/adblocker, by Ghostery,  MPL-2.0        blocks ads and trackers in the browser
 and its @remusao helpers
@@ -63,8 +64,8 @@ its source is at https://github.com/ghostery/adblocker. The filter lists it runs
 Ghostery's CDN on the user's machine and are not redistributed by this project.
 
 `LICENSE.electron.txt` and `LICENSES.chromium.html` are installed beside the executable, as
-Electron and Chromium require. `licenses/OFL.txt` carries the font licence, with both copyright
-notices, as the Open Font License requires of anything that bundles them. `licenses/lobe-icons.txt`
+Electron and Chromium require. `licenses/OFL.txt` carries the font licence, with every copyright
+notice, as the Open Font License requires of anything that bundles them. `licenses/lobe-icons.txt`
 carries the MIT notice of Lobe Icons (https://github.com/lobehub/lobe-icons), from which the
 monochrome marks in `packages/sdk/src/brands.ts` are taken unmodified. `licenses/highlight-js.txt`
 carries the BSD 3-Clause notice of highlight.js (https://github.com/highlightjs/highlight.js), by

@@ -1,5 +1,5 @@
 appId: dev.dyarchia.desktop
-productName: Dyarchia desktop
+productName: Dyarchia Desktop
 # The executable keeps its name when the product name changes. Every shortcut, every taskbar pin
 # and the updater replacing the running build find the application by this file, and renaming it
 # would leave each of them pointing at a file the next install no longer writes.
@@ -51,7 +51,7 @@ electronLanguages:
 publish:
     provider: github
     owner: Dyarchia
-    repo: dyarchia-desktop
+    repo: Dyarchia-Desktop
     # A draft is the default, and a draft is invisible: to the releases page, to gh, and to
     # every installed copy asking whether there is a newer one. Every release here is a
     # prerelease, so that is what an upload makes.
@@ -82,7 +82,7 @@ nsis:
     allowToChangeInstallationDirectory: true
     createDesktopShortcut: true
     createStartMenuShortcut: true
-    shortcutName: Dyarchia desktop
-    uninstallDisplayName: Dyarchia desktop ${version}
+    shortcutName: Dyarchia Desktop
+    uninstallDisplayName: Dyarchia Desktop ${version}
     deleteAppDataOnUninstall: false
     artifactName: dyarchia-${version}-setup.exe

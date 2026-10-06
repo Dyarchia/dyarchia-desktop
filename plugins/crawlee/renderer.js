@@ -62,8 +62,8 @@ const STYLE = `
 }
 /*
  * The cards and the selected target's changes side by side once the panel can hold both, the
- * handle between them setting the cards' width and the changes taking the rest; each table fills
- * its card, its slack going to the names. Narrower, the cards are alone.
+ * cards at a table's width and the changes taking the rest; each table fills its card, its slack
+ * going to the names. Narrower, the cards are alone.
  */
 .crw-split {
     display: flex;
@@ -98,19 +98,23 @@ const STYLE = `
     width: 80px;
     padding-inline: var(--dya-space-2);
 }
-.crw-card .dya-table__num:nth-child(5) {
+.crw-card .crw-swept {
     width: 112px;
 }
-.crw-card .dya-table__end {
-    width: 44px;
-    padding-inline: var(--dya-space-2);
+.crw-card .crw-pick {
+    width: 40px;
+    padding-inline: var(--dya-space-4) 0;
+}
+.crw-card .dya-card__header > label {
+    display: flex;
+    align-items: center;
+    gap: var(--dya-space-3);
+    cursor: pointer;
 }
 .crw-card .dya-table td {
     white-space: nowrap;
 }
-.crw-grip,
 .crw-detail,
-.crw-grip[hidden],
 .crw-log-key[hidden] {
     display: none;
 }
@@ -124,11 +128,8 @@ const STYLE = `
 @container pane (min-width: 1100px) {
     .crw-list {
         flex: none;
-        width: var(--crw-list, 640px);
+        width: 680px;
         max-width: calc(100% - 480px);
-    }
-    .crw-grip:not([hidden]) {
-        display: grid;
     }
     .crw-detail {
         display: flex;
@@ -842,13 +843,13 @@ function mount(ctx, container, handle) {
 
     function buildRounds() {
         /*
-         * A card per folder, each its own table: a target per row with its pages, its size, what
-         * its last sweep changed and when, and the key that runs it alone; under the rows what the
-         * folder adds up to. The card's head is the folder and the key that runs all of it. Beside
-         * the cards, the selected target's changed pages, nothing above them: the selected row
-         * already says whose they are. Above everything, the key that runs every target and, while
-         * a round runs, its ring. While it runs the rows are the progress: the target being swept
-         * carries a busy light and each one swept shows how it ended.
+         * A card per folder, each its own table: a target per row with the box that picks it, its
+         * pages, its size, what its last sweep changed and when; under the rows what the folder adds
+         * up to. The card's head is the folder and the box that picks all of it. Beside the cards,
+         * the selected target's changed pages, nothing above them: the selected row already says
+         * whose they are. Above everything, the key that runs what is picked, everything when nothing
+         * is, and while a round runs, its ring. While it runs the rows are the
+         * progress: the target being swept carries a busy light and each one swept shows how it ended.
          */
         const headline = el('div', 'crw-headline')
 
@@ -862,61 +863,13 @@ function mount(ctx, container, handle) {
         vacant.hidden = true
 
         const detail = el('section', 'crw-detail')
-        const grip = el('div', 'dya-splitter dya-splitter--column crw-grip')
-        grip.setAttribute('role', 'separator')
-        grip.setAttribute('aria-orientation', 'vertical')
-        grip.setAttribute('aria-label', 'Resize')
-        grip.tabIndex = 0
-        grip.hidden = true
         const split = el('div', 'crw-split')
-        split.append(list, grip, detail)
+        split.append(list, detail)
 
         /*
-         * The handle gives the cards the room the changes give up, never so much that the changes
-         * are left less than a column of text. The width is remembered.
-         */
-        const WIDTH = 'crawlee.rounds.list'
-        const widen = (next, remember) => {
-            const room = split.getBoundingClientRect().width
-            const width = Math.round(Math.max(600, Math.min(next, room - 480)))
-            split.style.setProperty('--crw-list', `${width}px`)
-            if (remember) {
-                try {
-                    localStorage.setItem(WIDTH, String(width))
-                } catch {}
-            }
-        }
-        try {
-            const stored = Number(localStorage.getItem(WIDTH))
-            if (stored) split.style.setProperty('--crw-list', `${stored}px`)
-        } catch {}
-        grip.addEventListener('pointerdown', (event) => {
-            const from = event.clientX
-            const start = list.getBoundingClientRect().width
-            grip.setPointerCapture(event.pointerId)
-            grip.dataset.dragging = 'true'
-            const move = (moved) => widen(start + moved.clientX - from, true)
-            const drop = () => {
-                delete grip.dataset.dragging
-                grip.removeEventListener('pointermove', move)
-                grip.removeEventListener('pointerup', drop)
-                grip.removeEventListener('pointercancel', drop)
-            }
-            grip.addEventListener('pointermove', move)
-            grip.addEventListener('pointerup', drop)
-            grip.addEventListener('pointercancel', drop)
-            event.preventDefault()
-        })
-        grip.addEventListener('keydown', (event) => {
-            const step = event.key === 'ArrowRight' ? 24 : event.key === 'ArrowLeft' ? -24 : 0
-            if (!step) return
-            widen(list.getBoundingClientRect().width + step, true)
-            event.preventDefault()
-        })
-
-        /*
-         * Run at rest and Stop while a round is under way, its ring beside it, and nothing in
-         * words: the rows say where the round is. The log is kept whether shown or not, and its
+         * Run at rest, which runs what is picked or everything when nothing is, and Stop while a
+         * round is under way, its ring beside it, and nothing else in words: the rows say where the
+         * round is. The log is kept whether shown or not, and its
          * key is there only while there is a round or something it wrote to read.
          */
         const run = button('dya-button dya-button--primary crw-run', 'Run')
@@ -943,6 +896,7 @@ function mount(ctx, container, handle) {
         output.closed(() => showLog(false))
 
         let going = false
+        const picked = new Set()
         let chosen = null
         let asked = 0
         let everything = []
@@ -954,9 +908,13 @@ function mount(ctx, container, handle) {
         const round = { total: 0, done: 0, current: '' }
         const results = new Map()
 
+        const label = () => {
+            run.textContent = going ? 'Stop' : 'Run'
+        }
+
         const running = (on) => {
             going = on
-            run.textContent = on ? 'Stop' : 'Run'
+            label()
             run.className = on ? 'dya-button dya-button--danger crw-run' : 'dya-button dya-button--primary crw-run'
             ring.hidden = !on
             offerLog()
@@ -988,7 +946,33 @@ function mount(ctx, container, handle) {
             offerLog()
         }
 
-        run.addEventListener('click', () => (going ? void ctx.invoke('stop') : void startRound({})))
+        run.addEventListener('click', () => (going ? void ctx.invoke('stop') : void startRound(scope())))
+
+        /*
+         * What a round runs: a folder by its name when exactly one whole folder is picked, the
+         * picked targets by theirs otherwise, and everything when nothing is.
+         */
+        function scope() {
+            if (!picked.size) return {}
+            const groups = [...new Set(everything.map((corpus) => corpus.group).filter(Boolean))]
+            const whole = groups.filter((group) => everything.filter((corpus) => corpus.group === group).every((corpus) => picked.has(corpus.name)))
+            if (whole.length === 1 && everything.filter((corpus) => corpus.group === whole[0]).length === picked.size) return { group: whole[0] }
+            return { names: [...picked] }
+        }
+
+        function box(checked, mixed, toggle) {
+            const node = el('input', 'dya-checkbox')
+            node.type = 'checkbox'
+            node.checked = checked
+            node.indeterminate = mixed
+            node.addEventListener('click', (event) => event.stopPropagation())
+            node.addEventListener('change', () => {
+                toggle()
+                label()
+                paint()
+            })
+            return node
+        }
 
         async function refreshState() {
             try {
@@ -1004,24 +988,16 @@ function mount(ctx, container, handle) {
                 everything = []
                 list.replaceChildren()
                 detail.replaceChildren()
-                grip.hidden = true
                 controls.hidden = true
                 return
             }
             controls.hidden = false
             headline.replaceChildren()
             everything = (state.repositories || []).flatMap((repo) => repo.corpora || [])
+            const known = new Set(everything.map((corpus) => corpus.name))
+            for (const name of [...picked]) if (!known.has(name)) picked.delete(name)
+            label()
             paint()
-        }
-
-        function goKey(label, payload) {
-            const key = iconKey('play', label)
-            key.disabled = going
-            key.addEventListener('click', (event) => {
-                event.stopPropagation()
-                void startRound(payload)
-            })
-            return key
         }
 
         /*
@@ -1049,9 +1025,15 @@ function mount(ctx, container, handle) {
             const node = el('article', 'dya-card crw-card')
             if (group) {
                 const head = el('header', 'dya-card__header')
-                const end = el('div', 'dya-sheet__end')
-                end.append(goKey(`Run ${group}`, { group }))
-                head.append(el('span', 'dya-eyebrow', group), end)
+                const names = members.map((corpus) => corpus.name)
+                const some = names.filter((name) => picked.has(name)).length
+                const all = box(some > 0 && some === names.length, some > 0 && some < names.length, () => {
+                    if (some === names.length) names.forEach((name) => picked.delete(name))
+                    else names.forEach((name) => picked.add(name))
+                })
+                const pick = el('label')
+                pick.append(all, el('span', 'dya-eyebrow', group))
+                head.append(pick)
                 node.append(head)
             }
 
@@ -1059,33 +1041,34 @@ function mount(ctx, container, handle) {
             const thead = el('thead')
             const header = el('tr')
             header.append(
+                el('th', 'crw-pick'),
                 el('th', undefined, 'Target'),
                 el('th', 'dya-table__num', 'Pages'),
                 el('th', 'dya-table__num', 'Size'),
                 el('th', 'dya-table__num', 'Changed'),
-                el('th', 'dya-table__num', 'Swept'),
-                el('th', 'dya-table__end')
+                el('th', 'dya-table__num crw-swept', 'Swept')
             )
             thead.append(header)
 
             const body = el('tbody')
             for (const corpus of members) {
-                const row = el('tr', 'dya-row dya-reveals')
+                const row = el('tr', 'dya-row')
                 row.dataset.name = corpus.name
                 row.classList.toggle('dya-row--selected', corpus.name === chosen)
-                const swept = el('td', 'dya-table__num')
+                const swept = el('td', 'dya-table__num crw-swept')
                 if (corpus.swept_at) swept.append(el('span', 'dya-meta', ctx.when(corpus.swept_at)))
-                const keys = el('td', 'dya-table__end')
-                const key = goKey('Run', { names: [corpus.name] })
-                key.classList.add('dya-reveal')
-                keys.append(key)
+                const pick = el('td', 'crw-pick')
+                pick.append(box(picked.has(corpus.name), false, () => {
+                    if (picked.has(corpus.name)) picked.delete(corpus.name)
+                    else picked.add(corpus.name)
+                }))
                 row.append(
+                    pick,
                     el('td', 'dya-table__name', corpus.name),
                     el('td', 'dya-table__num', corpus.never_crawled ? '' : corpus.pages.toLocaleString('en')),
                     el('td', 'dya-table__num', corpus.never_crawled ? '' : bytes(corpus.bytes)),
                     changeCell(corpus),
-                    swept,
-                    keys
+                    swept
                 )
                 row.addEventListener('click', () => void show(corpus))
                 body.append(row)
@@ -1102,10 +1085,10 @@ function mount(ctx, container, handle) {
             }
             subtotal.append(
                 el('td'),
+                el('td'),
                 figure(sum((corpus) => corpus.pages).toLocaleString('en')),
                 figure(bytes(sum((corpus) => corpus.bytes))),
                 figure(moved ? moved.toLocaleString('en') : ''),
-                el('td'),
                 el('td')
             )
             foot.append(subtotal)
@@ -1125,7 +1108,6 @@ function mount(ctx, container, handle) {
             )
             vacant.hidden = everything.length > 0
             run.hidden = everything.length === 0
-            grip.hidden = everything.length === 0
             offerLog()
         }
 

@@ -75,22 +75,22 @@
     --dya-hairline: #faf9f517;
     --dya-dashed: #faf9f521;
 
-    --dya-accent: #c8962e;
-    --dya-accent-hover: #d6a84a;
-    --dya-accent-soft: #c8962e33;
+    --dya-accent: #d18743;
+    --dya-accent-hover: #dd9a5c;
+    --dya-accent-soft: #d1874333;
     --dya-on-accent: #141413;
-    --dya-focus: #c8962e;
+    --dya-focus: #d18743;
 
     --dya-blue: #1970fd;
     --dya-purple: #8559f9;
-    --dya-orange: #f07a35;
+    --dya-cyan: #12a4c4;
     --dya-green: #32d74b;
     --dya-yellow: #c9b957;
     --dya-red: #ff2c56;
 
     --dya-blue-ink: #75a8fe;
     --dya-purple-ink: #c790fe;
-    --dya-orange-ink: #fe8743;
+    --dya-cyan-ink: #2cb1d1;
     --dya-green-ink: #32d74b;
     --dya-yellow-ink: #c9b957;
     --dya-red-ink: #ff5569;

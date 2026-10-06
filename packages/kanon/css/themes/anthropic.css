@@ -1,0 +1,6 @@
+:root[data-theme="anthropic"] {
+    --dya-accent: #da7858;
+    --dya-accent-hover: #e38c6f;
+    --dya-accent-soft: #da785833;
+    --dya-focus: #da7858;
+}

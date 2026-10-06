@@ -6,7 +6,7 @@
  * would read as a group that passed. A plugin never chooses a colour: it asks `hues` for the
  * things inside it that come in sets -- groups of corpora, agents, boards.
  */
-const HUES = ['blue', 'purple', 'orange'] as const
+const HUES = ['blue', 'purple', 'cyan'] as const
 
 export type Hue = (typeof HUES)[number]
 

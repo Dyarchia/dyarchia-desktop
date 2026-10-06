@@ -68,7 +68,7 @@ interface Row {
  * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const GEAR_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><circle cx="12" cy="12" r="10"/><path d="M12 6.8 17 16.2H7z"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><circle cx="12" cy="12" r="10"/><path d="M5.4 16 9.5 7.8l4.1 8.2zM12.2 16l3.2-6.4 3.2 6.4z"/></svg>'
 
 const STYLES = `
 .set-list td {

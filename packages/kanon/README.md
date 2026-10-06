@@ -11,7 +11,9 @@ selector where its shape differs; listed in `THEMES` and shipped only measured: 
 
 Black and ochre. One warm black in three roles: `ground` #141413, `panel` #1a1a18, `field` #121110;
 `hover`, `selected` and `scrim` are the only other steps, and a white wash (`hover-wash`, `press-wash`) is
-how a thing answers the pointer. Two inks, `text` #faf9f5 and `text-muted` #b0aea5. **Ochre** (`accent`
+how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
+`text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
+idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Ochre** (`accent`
 #c8962e) is the one colour that is not status: the primary's fill, the open tab's line, a link, the focus,
 the caret and the wordmark, 6.90 on the ground and 5.24 on `selected`. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,

@@ -66,6 +66,7 @@
 
     --dya-text: #faf9f5;
     --dya-text-muted: #b0aea5;
+    --dya-text-faint: #94938d;
     --dya-text-off: #5e5d59;
 
     --dya-border: #292927;
@@ -127,7 +128,7 @@
     --dya-code-function: #82aaff;
     --dya-code-key: #89ddff;
     --dya-code-deleted: #ff5569;
-    --dya-code-comment: #94938d;
+    --dya-code-comment: var(--dya-text-faint);
     --dya-code-punct: #b0aea5;
 
     --dya-elev-popover: 0 4px 16px #0000001a;

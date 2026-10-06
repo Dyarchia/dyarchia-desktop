@@ -86,7 +86,7 @@
     letter-spacing: var(--dya-tracking-label);
     line-height: var(--dya-leading-tight);
     text-transform: uppercase;
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-key-label {
@@ -565,7 +565,7 @@
 .dya-button kbd {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-label);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 /*
@@ -938,7 +938,7 @@
 }
 
 .dya-field::placeholder {
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-field:not(select):focus,
@@ -1169,7 +1169,7 @@ textarea.dya-field {
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-select > .dya-field > button {
@@ -1402,7 +1402,7 @@ textarea.dya-field {
  */
 .dya-badge {
     --dya-light: var(--dya-idle);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-badge::before {
@@ -1498,7 +1498,7 @@ textarea.dya-field {
     font-size: var(--dya-size-h3);
     font-weight: var(--dya-weight-light);
     line-height: var(--dya-leading-tight);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-stat__text {
@@ -1589,7 +1589,7 @@ textarea.dya-field {
     line-height: var(--dya-leading-tight);
     text-align: left;
     text-transform: uppercase;
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-table td {
@@ -1832,7 +1832,7 @@ textarea.dya-field {
     font-size: var(--dya-size-mono-xs);
     letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1929,7 +1929,7 @@ textarea.dya-field {
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-label-sm);
     letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-menu__arrow {
@@ -1979,7 +1979,7 @@ textarea.dya-field {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-ui);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
     cursor: pointer;
 }
 
@@ -2362,7 +2362,7 @@ button.dya-entry__head {
     font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
     font-variant-numeric: tabular-nums;
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
 }
 
 .dya-step__verb {
@@ -2950,7 +2950,7 @@ button.dya-step__subject {
     max-width: 50%;
     overflow: hidden;
     font-size: var(--dya-size-body-xs);
-    color: var(--dya-text-muted);
+    color: var(--dya-text-faint);
     text-overflow: ellipsis;
     white-space: nowrap;
 }

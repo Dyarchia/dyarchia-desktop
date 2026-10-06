@@ -41,15 +41,6 @@
     }
 }
 
-@keyframes dya-sheen {
-    from {
-        transform: translateX(-100%);
-    }
-    35%,
-    to {
-        transform: translateX(100%);
-    }
-}
 
 @keyframes dya-turn {
     to {
@@ -57,14 +48,4 @@
     }
 }
 
-@property --dya-orbit {
-    syntax: '<angle>';
-    inherits: false;
-    initial-value: 0deg;
-}
 
-@keyframes dya-orbit {
-    to {
-        --dya-orbit: 1turn;
-    }
-}

@@ -3085,7 +3085,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
         /*
          * A board is a card you can press, and pressing it opens that board — which is what makes
-         * the relief honest rather than decorative. The tallies are pills whose hue says which
+         * the hover honest rather than decorative. The tallies are pills whose hue says which
          * queue they are: a number beside the word "blocked" in the same grey as the number beside
          * "ready" is two facts dressed as one.
          */

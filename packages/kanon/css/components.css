@@ -360,10 +360,11 @@
  * wrong.
  *
  * The strip is eleven pixels so it can be caught with a pointer and pulls its own height back out
- * of the layout with a negative margin, so adding one does not move what is above it. The grip is
- * a 64 by 4 pill in `--dya-text-muted`, because a handle is found before it is used; it takes
- * `--dya-accent` under the pointer and while dragging. Arrow keys move it for anybody who is not
- * holding one.
+ * of the layout with a negative margin, so adding one does not move what is above it. At rest it
+ * draws nothing: the space between the regions is the division, and the pointer's cursor is how
+ * it is found. Under the pointer, while dragging and with the keyboard's focus, a hairline of the
+ * accent runs its whole length to say what is held. Nothing on it is a grip. Arrow keys move it
+ * for anybody who is not holding one.
  */
 .dya-splitter {
     display: grid;
@@ -380,20 +381,24 @@
 
 .dya-splitter::after {
     content: "";
-    width: 64px;
-    height: 4px;
-    border-radius: var(--dya-radius-full);
-    background: var(--dya-text-muted);
+    width: 100%;
+    height: var(--dya-border-width);
+    background: transparent;
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
 .dya-splitter:hover::after,
+.dya-splitter:focus-visible::after,
 .dya-splitter[data-dragging="true"]::after {
     background: var(--dya-accent);
 }
 
+.dya-splitter:focus-visible {
+    outline: none;
+}
+
 /*
- * The same handle between two regions side by side: eleven pixels wide, the grip standing on end.
+ * The same handle between two regions side by side: eleven pixels wide, the line standing on end.
  */
 .dya-splitter--column {
     width: 11px;
@@ -404,8 +409,8 @@
 }
 
 .dya-splitter--column::after {
-    width: 4px;
-    height: 64px;
+    width: var(--dya-border-width);
+    height: 100%;
 }
 
 /*

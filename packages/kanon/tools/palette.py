@@ -23,9 +23,9 @@ REFERENCE = {
     'blue': '#1069f6',
     'purple': '#7646e6',
     'orange': '#f07a35',
-    'green': '#4bbc6e',
-    'yellow': '#f5b031',
-    'red': '#ec4b3a',
+    'green': '#32d74b',
+    'yellow': '#c9b957',
+    'red': '#ff2c56',
 }
 
 FLOORS = {'light': 3.00, 'ink': 5.50, 'bright': 9.00}

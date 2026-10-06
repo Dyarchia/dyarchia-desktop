@@ -1657,7 +1657,6 @@ textarea.dya-field {
     padding-top: var(--dya-space-5);
     font-family: var(--dya-font-sans);
     font-size: var(--dya-size-label-sm);
-    font-weight: var(--dya-weight-medium);
     letter-spacing: var(--dya-tracking-label);
     text-transform: uppercase;
     color: var(--dya-text);
@@ -2550,7 +2549,6 @@ button.dya-step__subject {
 
 .dya-prose h3 {
     font-size: var(--dya-size-h4);
-    font-weight: var(--dya-weight-medium);
 }
 
 .dya-prose p {

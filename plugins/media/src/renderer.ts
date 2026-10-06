@@ -8,7 +8,7 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
  * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
  */
 const MEDIA_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M8 16C6 12 4.4 7.6 5.6 2.5M16 16C18 12 19.6 7.6 18.4 2.5"/><path d="M7 16h10c0 3.4-2.2 5.5-5 5.5S7 19.4 7 16Z"/><path d="M5 6.5h14M10.5 6.5V16M13.5 6.5V16"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M2.3 20.3l1.4 1.4M3 21 13 11"/><path d="M13 11Q16.4 8.6 22.4 7.4L16.6 1.6Q15.4 7.6 13 11Z"/></svg>'
 
 interface ToolInfo {
     id: Tool

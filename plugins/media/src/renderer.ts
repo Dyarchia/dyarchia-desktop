@@ -8,7 +8,7 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
  * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
  */
 const MEDIA_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="7.6" r="6.6" style="fill:var(--dya-text)"/><circle cx="12" cy="7.6" r="5.1" fill="none" stroke-width=".8" style="stroke:var(--dya-on-accent)"/><path d="M9 6.2a3.3 3.3 0 0 1 2.3-2.2" stroke-width="1.2" stroke-linecap="round" fill="none" style="stroke:var(--dya-on-accent)"/><path d="M11.1 17.6 9.3 14.2M12.9 17.6l1.8-3.4" stroke-width="1.2" stroke-linecap="round" style="stroke:var(--dya-text)"/><circle cx="12" cy="16.2" r="1.05" style="fill:var(--dya-text)"/><path d="M10.9 17.5h2.2l.7 3.7h-3.6z" style="fill:var(--dya-text)"/><rect x="8.3" y="21.1" width="7.4" height="1.8" rx=".5" style="fill:var(--dya-text)"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M8 16C6 12 4.4 7.6 5.6 2.5M16 16C18 12 19.6 7.6 18.4 2.5"/><path d="M7 16h10c0 3.4-2.2 5.5-5 5.5S7 19.4 7 16Z"/><path d="M5 6.5h14M10.5 6.5V16M13.5 6.5V16"/></svg>'
 
 interface ToolInfo {
     id: Tool

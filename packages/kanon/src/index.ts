@@ -13,9 +13,6 @@ export interface Theme {
  * is `:root[data-theme="<id>"]` in css/themes: the tokens it changes, and component rules where
  * its shape differs.
  */
-export const THEMES: readonly Theme[] = [
-    { id: 'black-metal', name: 'Black metal' },
-    { id: 'terracotta', name: 'Terracotta' }
-]
+export const THEMES: readonly Theme[] = [{ id: 'dyarchia', name: 'Dyarchia' }]
 
 export const DEFAULT_THEME = THEMES[0].id

@@ -14,25 +14,19 @@ import pathlib
 import re
 
 CSS = pathlib.Path(__file__).resolve().parent.parent / 'css'
-DEFAULT = 'black-metal'
+DEFAULT = 'dyarchia'
 
-SURFACES = ['ground', 'panel', 'field', 'hover', 'selected', 'disabled']
+SURFACES = ['ground', 'panel', 'field', 'hover', 'selected']
 
 """
-Two grounds no token declares, because they only exist where translucent layers stack: the
-panel's glass over the brightest ground the system has allowed, and a card on that glass. They
-sit above the corner where `--dya-light-in` is brightest and are kept as a ceiling: the lightest
-place a panel's text could land, so every ink is measured against them too. Each theme measures
-its own; a theme is not finished until its two are here.
+Grounds no token declares, because they only exist where a translucent wash lies over a surface:
+the pressed wash over a panel is the lightest place text lands. Each theme measures its own; a
+theme is not finished until its washes are here.
 """
 COMPOSITES = {
-    'black-metal': {
-        'glass-peak': '#27292c',
-        'card-peak': '#2f3033',
-    },
-    'terracotta': {
-        'glass-peak': '#141413',
-        'card-peak': '#232321',
+    'dyarchia': {
+        'press-peak': '#2c2b29',
+        'hover-peak': '#242422',
     },
 }
 

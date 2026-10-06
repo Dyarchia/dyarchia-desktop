@@ -43,13 +43,17 @@ def palette(theme: str) -> dict[str, str]:
             raise SystemExit(f'{path} does not exist')
         values.update(tokens(path.read_text(encoding='utf-8')))
     values.update({f'--dya-{name}': value for name, value in COMPOSITES.get(theme, {}).items()})
+    for name, value in values.items():
+        while value.startswith('var('):
+            value = values[value[4:-1]]
+        values[name] = value
     return values
 
 
 def tokens(block: str) -> dict[str, str]:
     return {
         name: value.strip()
-        for name, value in re.findall(r'(--dya-[a-z0-9-]+)\s*:\s*(#[0-9a-fA-F]{6})\s*;', block)
+        for name, value in re.findall(r'(--dya-[a-z0-9-]+)\s*:\s*(#[0-9a-fA-F]{6}|var\(--dya-[a-z0-9-]+\))\s*;', block)
     }
 
 
@@ -77,7 +81,7 @@ def verdict(value: float) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('ink', help='a token suffix such as text-2 or code-comment, or a literal #rrggbb')
+    parser.add_argument('ink', help='a token suffix such as text-faint or code-comment, or a literal #rrggbb')
     parser.add_argument('--against', nargs='*', default=SURFACES, help='surface suffixes')
     parser.add_argument('--theme', default=DEFAULT, help='a theme id, as css/themes/<id>.css names it')
     args = parser.parse_args()

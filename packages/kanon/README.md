@@ -57,7 +57,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   label, a pill and a key that spells anything have none; the SDK's `tips()` refuses them.
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
-- **A list is lines**: every table row ends on a hairline rule. **A list of files is `files`**: `file` rows of
+- **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
+  sections divided by their heads and space. A diff's added and removed lines wear success and error. **A list of files is `files`**: `file` rows of
   glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.
 - **A panel is a hairline on the ground** and measures itself as a `pane` (`@container pane`), never a media
   query: width changes how many regions it shows, never how far things stretch. `grid` is a gallery of
@@ -74,14 +75,14 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead carved splitter stack
+             --pending --ghosted --carried) card__header masthead carved splitter (--column) stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
 Input        field (--auto --prose __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark)   (blue purple cyan)
-Content      table (__num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
+Content      table (--bare __num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body; aria-current) notice (__body __title __text)

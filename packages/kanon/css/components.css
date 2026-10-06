@@ -2302,14 +2302,15 @@ button.dya-entry__head {
 /*
  * A fold: something that opens in place, a changed page, a run's diff, a step's detail. Its head
  * is a row that answers the pointer with its ground and leads with a chevron, on the edge of the
- * text above it, pointing along the head while closed and down while open.
+ * text above it, pointing along the head while closed and down while open. It hangs out on the
+ * leading side only: a head that hung out on both widened every region that scrolls it.
  */
 .dya-fold > .dya-fold__head {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
     min-height: var(--dya-size-control);
-    margin-inline: calc(-1 * var(--dya-space-2));
+    margin-inline-start: calc(-1 * var(--dya-space-2));
     padding: 0 var(--dya-space-2);
     border-radius: var(--dya-radius-sm);
     list-style: none;

@@ -877,6 +877,7 @@ function mount(ctx, container, handle) {
         ring.hidden = true
         const logKey = iconKey('terminal', 'Log')
         logKey.classList.add('crw-log-key')
+        logKey.hidden = true
         const controls = el('div', 'crw-bar')
         controls.append(run, ring, logKey)
 

@@ -15,8 +15,7 @@ how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
 #d18743) is the one colour that is not status: the primary's fill, the open tab's line, a link, the focus,
-the caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. **Anthropic** is the same theme with
-claude.dev's clay for the accent, #da7858 (#d97757 lifted to 4.54 on `selected`). Nothing is raised, nothing glows,
+the caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
 `on-accent`; a brand's mark keeps its own colours.

@@ -64,12 +64,16 @@ function createWindow(): void {
      * document it navigated to would hold window.dyarchia and with it every plugin handler, a
      * terminal among them; a link in a rendered markdown file was enough to hand that to whatever
      * site it pointed at. A web link opens in the user's own browser instead, a new window is
-     * refused, and nothing else is followed.
+     * refused, and nothing else is followed. A reload of the document the window already holds is
+     * not a navigation anywhere: blocked, the dev server's page reloads became browser tabs of
+     * the window's own address and the window kept its stale code.
      */
     const outward = (url: string): void => {
         if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     }
+    const address = (url: string): string => url.split('#')[0]
     win.webContents.on('will-navigate', (event, url) => {
+        if (address(url) === address(win.webContents.getURL())) return
         event.preventDefault()
         outward(url)
     })

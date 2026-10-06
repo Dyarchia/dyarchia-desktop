@@ -1,10 +1,10 @@
 :root {
     --dya-scheme: dark;
 
-    --dya-radius-sm: 3px;
-    --dya-radius: 6px;
-    --dya-radius-card: 8px;
-    --dya-radius-chassis: 12px;
+    --dya-radius-sm: 0;
+    --dya-radius: 0;
+    --dya-radius-card: 0;
+    --dya-radius-chassis: 0;
     --dya-radius-full: 999px;
     --dya-border-width: 1px;
 
@@ -14,14 +14,10 @@
     --dya-space-4: 16px;
     --dya-space-5: 24px;
     --dya-space-6: 32px;
-    --dya-space-8: 48px;
     --dya-space-12: 64px;
-    --dya-space-16: 96px;
-    --dya-space-24: 160px;
 
     --dya-font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-    --dya-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-    --dya-font-serif: "Spectral", Georgia, "Times New Roman", serif;
+    --dya-font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
     --dya-weight-light: 300;
     --dya-weight: 400;
@@ -40,7 +36,6 @@
     --dya-size-mono-xs: 12px;
     --dya-size-label: 11px;
     --dya-size-label-sm: 10.5px;
-    --dya-size-pill: 11.5px;
 
     --dya-size-control: 28px;
     --dya-size-bar: 32px;
@@ -50,12 +45,9 @@
     --dya-tracking-display: -0.035em;
     --dya-tracking-h2: -0.02em;
     --dya-tracking-h3: -0.015em;
-    --dya-tracking-mono: 0.02em;
-    --dya-tracking-head: 0.06em;
-    --dya-tracking-label: 0.16em;
-    --dya-tracking-brand: 0.34em;
-    --dya-tracking-inscription: 0.14em;
-    --dya-tracking-inscription-bar: 0.22em;
+    --dya-tracking-mono: 0;
+    --dya-tracking-head: 0.02em;
+    --dya-tracking-label: 0.02em;
 
     --dya-leading-tight: 100%;
     --dya-leading-heading: 110%;
@@ -63,66 +55,51 @@
     --dya-leading-loose: 165%;
     --dya-leading-log: 160%;
 
-    --dya-ground: #0c0c0e;
-    --dya-panel: #131316;
-    --dya-field: #0e0e11;
-    --dya-hover: #1b1b1f;
-    --dya-selected: #242429;
-    --dya-disabled: #101013;
-    --dya-scrim: #0c0c0ef0;
+    --dya-ground: #141413;
+    --dya-panel: #1a1a18;
+    --dya-field: #121110;
+    --dya-hover: #232321;
+    --dya-selected: #2c2c2a;
+    --dya-scrim: #141413f0;
+    --dya-hover-wash: #faf9f50b;
+    --dya-press-wash: #faf9f514;
 
-    --dya-light-in:
-        radial-gradient(circle farthest-corner at 100% 0%, #e6ebf21a, #e6ebf20d 6%, #e6ebf205 14%, #e6ebf200 25%),
-        radial-gradient(circle farthest-corner at 0% 100%, #e6ebf212, #e6ebf208 6%, #e6ebf203 14%, #e6ebf200 25%);
-    --dya-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    --dya-text: #faf9f5;
+    --dya-text-muted: #b0aea5;
+    --dya-text-off: #5e5d59;
 
-    --dya-glass: linear-gradient(180deg, #0000001f, #00000014 56px, #0000000f 40%, #0000000f);
-    --dya-glass-card: linear-gradient(180deg, #0000002e, #00000024);
-    --dya-glass-pill: linear-gradient(180deg, #d6e2f20d, #d6e2f204);
-    --dya-steel: linear-gradient(180deg, #ffffff07, #ffffff00 55%, #00000026);
-    --dya-steel-band: linear-gradient(180deg, #ffffff05, #ffffff00 70%);
-    --dya-glass-edge: linear-gradient(180deg, #ffffff4d, #ffffff29 32px, #ffffff0f 30%, #ffffff05 62%, #ffffff12);
-    --dya-glass-hover: #ffffff05;
-    --dya-glass-press: #ffffff0d;
+    --dya-border: #292927;
+    --dya-border-strong: #393937;
+    --dya-border-menu: #292927;
+    --dya-hairline: #faf9f517;
+    --dya-dashed: #faf9f521;
 
-    --dya-text: #eceef2;
-    --dya-text-muted: #9499a3;
-    --dya-text-off: #6b717c;
-
-    --dya-border: #2e3136;
-    --dya-border-strong: #44474e;
-    --dya-rim: #484b52;
-    --dya-rim-hover: #5c6068;
-    --dya-border-menu: #2a2c31;
-    --dya-hairline: #ffffff12;
-    --dya-pill-border: #ffffff17;
-    --dya-dashed: #ffffff1c;
-
-    --dya-accent: #d7dbe1;
-    --dya-accent-soft: #d7dbe12e;
-    --dya-sheen: #d7dbe11a;
-    --dya-on-accent: #0a0a0b;
+    --dya-accent: #c8962e;
+    --dya-accent-hover: #d6a84a;
+    --dya-accent-soft: #c8962e33;
+    --dya-on-accent: #141413;
+    --dya-focus: #c8962e;
 
     --dya-blue: #1970fd;
     --dya-purple: #8559f9;
     --dya-orange: #f07a35;
     --dya-green: #4bbc6e;
-    --dya-yellow: #f5b031;
+    --dya-yellow: #c9b957;
     --dya-red: #ec4b3a;
 
     --dya-blue-ink: #75a8fe;
     --dya-purple-ink: #c790fe;
     --dya-orange-ink: #fe8743;
     --dya-green-ink: #4dbe70;
-    --dya-yellow-ink: #f5b031;
+    --dya-yellow-ink: #c9b957;
     --dya-red-ink: #ff8472;
 
     --dya-ansi-red: #ff8472;
-    --dya-ansi-green: #4dbe70;
-    --dya-ansi-yellow: #f5b031;
-    --dya-ansi-blue: #75a8fe;
-    --dya-ansi-magenta: #c790fe;
-    --dya-ansi-cyan: #54b5c5;
+    --dya-ansi-green: #7fd18b;
+    --dya-ansi-yellow: #e6c200;
+    --dya-ansi-blue: #82aaff;
+    --dya-ansi-magenta: #f394cd;
+    --dya-ansi-cyan: #89ddff;
     --dya-ansi-bright-red: #ffcac1;
     --dya-ansi-bright-green: #7dec9b;
     --dya-ansi-bright-yellow: #ffce83;
@@ -134,93 +111,33 @@
     --dya-success-soft: #4bbc6e1f;
     --dya-success-line: #4bbc6e52;
     --dya-success-ink: #4dbe70;
-    --dya-warning: #f5b031;
-    --dya-warning-soft: #f5b0311c;
-    --dya-warning-line: #f5b0314d;
-    --dya-warning-ink: #f5b031;
+    --dya-warning: #c9b957;
+    --dya-warning-soft: #c9b9571c;
+    --dya-warning-line: #c9b9574d;
+    --dya-warning-ink: #c9b957;
     --dya-danger: #ec4b3a;
     --dya-danger-soft: #ec4b3a1f;
     --dya-danger-line: #ec4b3a52;
     --dya-danger-ink: #ff8472;
     --dya-idle: #858b95;
 
-    --dya-code-keyword: #c790fe;
-    --dya-code-string: #4dbe70;
-    --dya-code-number: #fe8743;
-    --dya-code-function: #75a8fe;
-    --dya-code-key: #f5b031;
+    --dya-code-keyword: #c792ea;
+    --dya-code-string: #c3e88d;
+    --dya-code-number: #c3e88d;
+    --dya-code-function: #82aaff;
+    --dya-code-key: #89ddff;
     --dya-code-deleted: #ff8472;
-    --dya-code-comment: #9499a3;
-    --dya-code-punct: #a3a8b2;
+    --dya-code-comment: #94938d;
+    --dya-code-punct: #b0aea5;
 
-    --dya-carve-filter:
-        drop-shadow(0 -1px 0 #000000e6)
-        drop-shadow(0 1px 0 #ffffff17);
-    --dya-relief-face: #18191c;
-    --dya-relief-light: #eceef247;
-    --dya-relief-shade: #000000;
-    --dya-relief-drop: #000000d9;
-
-    --dya-edge: #040405;
-
-    --dya-elev-flat: none;
-
-    --dya-elev-chassis: inset 0 1px 0 #ffffff1f;
-
-    --dya-elev-panel:
-        inset 0 1px 0 #ffffff1f,
-        0 0 0 1px #00000099,
-        0 14px 32px -12px #000000cc;
-
-    --dya-elev-key:
-        inset 0 1px 0 #ffffff29,
-        0 3px 0 var(--dya-edge);
-
-    --dya-elev-key-down:
-        inset 0 1px 0 #ffffff0d,
-        0 1px 0 var(--dya-edge);
-
-    --dya-elev-key-bare: 0 3px 0 var(--dya-edge);
-
-    --dya-elev-key-bare-down: 0 1px 0 var(--dya-edge);
-
-    --dya-elev-key-off:
-        inset 0 1px 0 #ffffff0a,
-        0 3px 0 var(--dya-edge);
-
-    --dya-elev-pill: inset 0 1px 0 #ffffff0f;
-
-    --dya-elev-sunken: inset 0 1px 3px #00000099;
-
-    --dya-elev-focus:
-        inset 0 1px 3px #00000099,
-        0 0 0 1px var(--dya-focus);
-
-    --dya-elev-popover:
-        inset 0 1px 0 #ffffff0f,
-        0 12px 28px #0000008c;
-
-    --dya-elev-overlay:
-        inset 0 1px 0 #ffffff0f,
-        0 24px 48px -12px #000000e6;
-
-    --dya-focus: #9a9fa8;
-
-    --dya-press-y: 2px;
-    --dya-press-scale: 0.98;
+    --dya-elev-popover: 0 4px 16px #0000001a;
+    --dya-elev-overlay: 0 40px 110px #000000a6;
 
     --dya-ease: ease-in-out;
-    --dya-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-    --dya-ease-press: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --dya-ease-enter: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --dya-ease-out: cubic-bezier(0.19, 1, 0.22, 1);
 
-    --dya-dur-press: 50ms;
     --dya-dur-fast: 150ms;
-    --dya-dur: 220ms;
-    --dya-dur-slow: 320ms;
     --dya-dur-leave: 5s;
-    --dya-dur-orbit: 6s;
-    --dya-dur-sheen: 7s;
     --dya-dur-tip-in: 350ms;
     --dya-dur-tip-out: 120ms;
 }

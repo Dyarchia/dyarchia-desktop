@@ -6,10 +6,7 @@ body,
 }
 
 /*
- * The ground the panels sit on: black, with a cold clear light coming in at two corners and dead
- * within a quarter of the diagonal, under a grain blended as an overlay, so it darkens as much as
- * it lightens and the black stays black wherever the light dies. The panels are translucent, so that light shows through them and no
- * panel needs a `backdrop-filter`. Both are static images, painted once.
+ * The ground the panels sit on: one warm black, flat, painted once.
  */
 .shell {
     position: relative;
@@ -17,23 +14,14 @@ body,
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--dya-light-in), var(--dya-ground);
+    background: var(--dya-ground);
 }
 
-.shell::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background-image: var(--dya-noise);
-    mix-blend-mode: overlay;
-    pointer-events: none;
-}
 
 /*
- * The title bar is 32px, a 28px key and its 3px edge and no more, because nothing frames it but
- * the window. The dock's tab row stays 40px: there the keys stand under the panel's rim and need
- * 6px of air below it. The carved wordmark on the left and, only when there is news, the update
+ * The title bar is 32px, a 28px key and its air and no more, because nothing frames it but the
+ * window. The dock's tab row stays 40px: there the keys stand under the panel's hairline and need
+ * air below it. The ochre wordmark on the left and, only when there is news, the update
  * beside it; the launcher key and the window's own keys on the right. The running version is not
  * shown. The empty window carries the same wordmark large.
  */
@@ -124,33 +112,15 @@ body,
 }
 
 /*
- * The panel is dark metal: a smoked black a shade under the ground, which the light behind it
- * passes through, under a hairline, with a lit rim that is bright along the top and all but gone
- * halfway down the sides. The rim is the only light thing a panel carries. The rim is a gradient border cut out of a pseudo-element with a mask, because a border
- * cannot carry a gradient and a panel lit from above is lit unevenly. Nothing here blurs what is
- * behind it: the ground is blurred already.
+ * A panel is a region of the same ground under a hairline: no glass, no rim of light, no shadow. It
+ * is told apart by its line, as a window of the site's terminal is.
  */
 .dv-shell.dockview-theme-abyss-spaced .dv-groupview {
     position: relative;
-    background: var(--dya-glass);
     border: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius-chassis);
-    box-shadow: var(--dya-elev-panel);
 }
 
-.dv-shell.dockview-theme-abyss-spaced .dv-groupview::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    padding: 1px;
-    border-radius: inherit;
-    background: var(--dya-glass-edge);
-    mask:
-        linear-gradient(#000 0 0) content-box exclude,
-        linear-gradient(#000 0 0);
-    pointer-events: none;
-}
 
 /*
  * No rule under this one. It is the shell's tab strip, and the first thing almost every plugin
@@ -159,7 +129,6 @@ body,
  * than as two boundaries, so the rule inside the panel is the one that stays.
  */
 .dv-shell.dockview-theme-abyss-spaced .dv-tabs-and-actions-container {
-    background: var(--dya-steel-band);
     border-radius: var(--dya-radius-chassis) var(--dya-radius-chassis) 0 0;
     padding-inline: var(--dya-space-2);
 }
@@ -210,7 +179,7 @@ body,
 
 /*
  * Every group shows one of its tabs, but only one group is the one the window is working in, and
- * only its tab carries the silver underline. The others keep the top ink and the weight.
+ * only its tab carries the ochre underline. The others keep the top ink and the weight.
  */
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
     box-shadow: inset 0 -2px 0 var(--dya-accent);
@@ -235,7 +204,7 @@ body,
 /*
  * A panel that cannot be duplicated keeps the place of the key that would, so the open tab ends
  * the same distance after its name whichever plugin it is and its close key sits at one offset.
- * The strip overlaps its two keys by their shared rim, and the slot is that much narrower.
+ * The strip overlaps its two keys by one border width, and the slot is that much narrower.
  */
 .panel-tab-slot {
     width: calc(var(--dya-size-control) - var(--dya-border-width));

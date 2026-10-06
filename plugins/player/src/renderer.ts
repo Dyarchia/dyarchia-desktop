@@ -52,7 +52,7 @@ const STYLES = `
 /*
  * The video takes the whole stage and the picture is fitted inside it: contain scales it up or
  * down to the largest size that keeps its proportion, and whatever the panel's shape leaves over
- * is bare glass on the two short sides rather than a stretched frame. Audio has no picture, so its
+ * is bare ground on the two short sides rather than a stretched frame. Audio has no picture, so its
  * controls stand at the top left, where the gallery's first tile stood, never an island mid-pane.
  */
 .player-stage--video {
@@ -73,7 +73,7 @@ const STYLES = `
 }
 /*
  * A picture is fitted inside the stage and never blown up past its own size, so a small icon
- * stays sharp, centred on the bare glass.
+ * stays sharp, centred on the bare ground.
  */
 .player-stage--image {
     padding: var(--dya-space-3);

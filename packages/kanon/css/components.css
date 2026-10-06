@@ -191,7 +191,8 @@
  * out as a value, blue a name being declared or a heading, cyan the key of a pair, which is what
  * sets a JSON or YAML key apart from its value. A comment steps down to the faint ink and
  * punctuation to the muted one, so the code outranks the notes about it. In a diff an added line is
- * green and a removed one red, the one place a syntax hue says how something went.
+ * success's green and a removed one error's red: what a diff says is how something went, so it
+ * takes the status colours, not two syntax hues that happen to be green and red.
  */
 .dya-code__keyword,
 .dya-code__built_in,
@@ -205,9 +206,12 @@
 .dya-code__string,
 .dya-code__regexp,
 .dya-code__symbol,
-.dya-code__code,
-.dya-code__addition {
+.dya-code__code {
     color: var(--dya-code-string);
+}
+
+.dya-code__addition {
+    color: var(--dya-success-ink);
 }
 
 .dya-code__number,
@@ -234,7 +238,7 @@
 }
 
 .dya-code__deletion {
-    color: var(--dya-code-deleted);
+    color: var(--dya-danger-ink);
 }
 
 .dya-code__comment,
@@ -386,6 +390,22 @@
 .dya-splitter:hover::after,
 .dya-splitter[data-dragging="true"]::after {
     background: var(--dya-accent);
+}
+
+/*
+ * The same handle between two regions side by side: eleven pixels wide, the grip standing on end.
+ */
+.dya-splitter--column {
+    width: 11px;
+    height: auto;
+    margin-block: 0;
+    margin-inline: -4px;
+    cursor: ew-resize;
+}
+
+.dya-splitter--column::after {
+    width: 4px;
+    height: 64px;
 }
 
 /*
@@ -1642,6 +1662,16 @@ textarea.dya-field {
 
 .dya-row:hover > td {
     background-color: var(--dya-hover-wash);
+}
+
+/*
+ * A bare table drops the rule under every row, for rows that come in sections: the section's head
+ * and the space before it divide them, and a rule on every row as well is only lines to read past.
+ * A row still answers the pointer with its ground, and the selected one keeps its wash.
+ */
+.dya-table--bare td {
+    padding-block: 6px;
+    border-bottom: none;
 }
 
 /*

@@ -23,7 +23,7 @@ body,
  * window. The dock's tab row stays 40px: there the keys stand under the panel's hairline and need
  * air below it. No name: on the left only the update, when there is news; the launcher key and
  * the window's own keys on the right. The running version is not shown. The empty window carries
- * the ochre wordmark large.
+ * the wordmark large, in the accent.
  */
 .topbar {
     position: relative;
@@ -179,7 +179,7 @@ body,
 
 /*
  * Every group shows one of its tabs, but only one group is the one the window is working in, and
- * only its tab carries the ochre underline. The others keep the top ink and the weight.
+ * only its tab carries the accent's underline. The others keep the top ink and the weight.
  */
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
     box-shadow: inset 0 -2px 0 var(--dya-accent);

@@ -9,23 +9,24 @@ selector where its shape differs; listed in `THEMES` and shipped only measured: 
 
 ## Dyarchia
 
-Black and ochre. One warm black in three roles: `ground` #141413, `panel` #1a1a18, `field` #121110;
+Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a18, `field` #121110;
 `hover`, `selected` and `scrim` are the only other steps, and a white wash (`hover-wash`, `press-wash`) is
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
-idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Ochre** (`accent`
-#c8962e) is the one colour that is not status: the primary's fill, the open tab's line, a link, the focus,
-the caret and the wordmark, 6.90 on the ground and 5.24 on `selected`. Nothing is raised, nothing glows,
+idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
+#d18743) is the one colour that is not status: the primary's fill, the open tab's line, a link, the focus,
+the caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. **Anthropic** is the same theme with
+claude.dev's clay for the accent, #da7858 (#d97757 lifted to 4.54 on `selected`). Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
 `on-accent`; a brand's mark keeps its own colours.
 
 ## Rules
 
-- **Six colours and no others**, blue, purple, orange, green, yellow and red, each a light `--dya-<name>`
+- **Six colours and no others**, blue, purple, cyan, green, yellow and red, each a light `--dya-<name>`
   and an `-ink` for text, lifted by `tools/palette.py`. **Green is success, yellow warning, red error,
-  always**; yellow is a muted lemon, 19° greener than ochre, so a warning is never read as the accent. Blue,
-  purple and orange are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a
+  always**; yellow is a muted lemon, far greener than the accent, so a warning is never read as the accent. Blue,
+  purple and cyan are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a
   glyph, never a pill's word, a fill or a dot inside a pill. **Plugins have no hue.**
 - **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `danger-ink` is 4.50 at the least,
   `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, the wash peaks included, into the commit body.
@@ -33,9 +34,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 - **Controls are type, information is filled.** A key, a tile, a tab's action and a window key are their glyph
   or word in the muted ink, brightening under the pointer; a worded button is a mono capital word in a
   hairline. A pill is the one filled thing that cannot be pressed: a square code chip, a breath of white.
-- **Colour is status or which-one, never emphasis**, with the one exception of ochre, spent once per view.
+- **Colour is status or which-one, never emphasis**, with the one exception of the accent, spent once per view.
 - **Hover changes the background and the ink**; a transition names only `transform`, `opacity` and
-  `background-color`; the focus ring is an outline in ochre.
+  `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and a button's alone, in the mono.
 - **Scale** body 15, rows 14, controls and meta 13px, prose 72ch. **Corners are square** except a light, a dot
@@ -46,9 +47,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 
 - **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
   keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size.
-- **A field is an underline**, brightening under the pointer and turning ochre with the keyboard. A field and
+- **A field is an underline**, brightening under the pointer and turning the accent with the keyboard. A field and
   its keys are a `join`, the field filling the row. Adjacent icon keys in a `toolbar` join on their own.
-- **One primary per view**: `--primary`, a block of ochre with the ground's black for its word (6.90; 8.39 on
+- **One primary per view**: `--primary`, a block of the accent with the ground's black for its word (6.37; 7.77 on
   the hover step). `key--success` is lit green; `--danger` turns red only under pointer or focus. **A state a
   person answers is one key**: `button--resolve`, red, green answer.
 - **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
@@ -67,7 +68,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   block wraps (`code--wrap`); a live log is sized by a handle.
 - **`title`** is the mono at 25px in the top ink; only a `stat` is larger. **`palette`** (Ctrl+K, the launcher
   key) is the one way in: app tiles, open lit green, pinned first (Ctrl+P pins), over rows: commands, then
-  what plugins find, `__meta` muted. **A lane or a chip answers a drag**: `--accept` ochre's soft ground,
+  what plugins find, `__meta` muted. **A lane or a chip answers a drag**: `--accept` the accent's soft ground,
   `--refuse` red's.
 
 ## Components
@@ -80,7 +81,7 @@ Keys         button (--primary --danger --resolve __state __answer) key (--activ
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
 Input        field (--auto --prose __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
-Hue          hue--<name> dot legend glyph (--mark)   (blue purple orange)
+Hue          hue--<name> dot legend glyph (--mark)   (blue purple cyan)
 Content      table (__num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)

@@ -28,6 +28,10 @@ COMPOSITES = {
         'press-peak': '#2c2b29',
         'hover-peak': '#242422',
     },
+    'anthropic': {
+        'press-peak': '#2c2b29',
+        'hover-peak': '#242422',
+    },
 }
 
 FLOOR = 4.50

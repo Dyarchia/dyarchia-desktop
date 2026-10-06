@@ -187,10 +187,10 @@
 
 /*
  * The classes are highlight.js scopes under kanon's prefix, and every scope a grammar emits lands
- * on one of six inks. Purple is the language's own words, green what is quoted, orange a value
- * written out, blue a name being declared or a heading, yellow the key of a pair, which is what
- * sets a JSON or YAML key apart from its value. A comment and punctuation step down to the
- * muted ink, so the code outranks the notes about it. In a diff an added line is
+ * on one of the code inks. Purple is the language's own words, green what is quoted or written
+ * out as a value, blue a name being declared or a heading, cyan the key of a pair, which is what
+ * sets a JSON or YAML key apart from its value. A comment steps down to the faint ink and
+ * punctuation to the muted one, so the code outranks the notes about it. In a diff an added line is
  * green and a removed one red, the one place a syntax hue says how something went.
  */
 .dya-code__keyword,
@@ -471,7 +471,7 @@
 }
 
 /*
- * The wordmark is the one place ochre is spent as a word for its own sake: Dyarchia Desktop in the
+ * The wordmark is the one place the accent is spent as a word for its own sake: Dyarchia Desktop in the
  * mono, at the regular weight, on the empty window and the loading screen, sized to the pane so two
  * words never overflow it. The title bar carries no name.
  */
@@ -488,7 +488,7 @@
  * Controls are type, not surfaces. A key, a tile, a tab's own action and a window key are their
  * glyph or their word: no face and no rim, the muted ink brightening to the top ink over a breath
  * of white under the pointer. A worded button is a mono capital word inside a hairline. The
- * primary is the one filled thing on a view, a block of ochre with the ground for its word.
+ * primary is the one filled thing on a view, a block of the accent with the ground for its word.
  * Nothing is raised, nothing drops when pressed, and nothing moves at rest.
  *
  * A transition may name `transform`, `opacity` and `background-color` and nothing else.
@@ -602,7 +602,7 @@
 
 /*
  * The primary is the one action a view is about, at most one per view: run, make, install,
- * finish. It is ochre, filled, its word the ground's black at 6.90; under the pointer the fill
+ * finish. It is the accent, filled, its word the ground's black at 6.37; under the pointer the fill
  * steps toward the ink. Red is never a key's fill: filled red reads as destroy.
  */
 .dya-button--primary,
@@ -915,7 +915,7 @@
 
 /*
  * A field receives input, and it is an underline: no box, the line brightening under the pointer
- * and turning ochre with the keyboard. It is as tall as a key so that a field and the key that
+ * and turning the accent with the keyboard. It is as tall as a key so that a field and the key that
  * submits it share a baseline.
  */
 .dya-field {
@@ -1299,7 +1299,7 @@ textarea.dya-field {
  * Hue is the categorical axis: which of several things of one kind this is, which group of
  * corpora, which agent. It is not status, which has green, yellow and red to itself, and it is
  * not emphasis, so the three hues are the three colours of the palette that mean nothing else:
- * blue, purple and orange.
+ * blue, purple and cyan.
  *
  * `.dya-hue--<name>` sets two properties on an element and nothing else: `--dya-hue`, the ink,
  * which is text on every ground, and `--dya-hue-light`, the colour itself, for a dot. Components
@@ -1308,7 +1308,7 @@ textarea.dya-field {
  */
 .dya-hue--blue { --dya-hue: var(--dya-blue-ink); --dya-hue-light: var(--dya-blue); }
 .dya-hue--purple { --dya-hue: var(--dya-purple-ink); --dya-hue-light: var(--dya-purple); }
-.dya-hue--orange { --dya-hue: var(--dya-orange-ink); --dya-hue-light: var(--dya-orange); }
+.dya-hue--cyan { --dya-hue: var(--dya-cyan-ink); --dya-hue-light: var(--dya-cyan); }
 
 /*
  * Hue is spent sparingly: a mark beside a name, not a fill around it. The dot says which one; the
@@ -1964,7 +1964,7 @@ textarea.dya-field {
 
 /*
  * Tabs are mono words on the ground, with no rule under the strip. The open one is in the first
- * ink with two pixels of ochre under the word alone, drawn as an inset shadow so it adds no height.
+ * ink with two pixels of the accent under the word alone, drawn as an inset shadow so it adds no height.
  */
 .dya-tabs {
     display: flex;
@@ -2703,7 +2703,7 @@ button.dya-step__subject {
 /*
  * The tabs of the dock are the panels themselves, so they read a step larger than a tab inside a
  * panel, and the open one takes the medium weight: across a dock of several groups, weight is what
- * says which tab each group is showing, and the ochre line is kept for the group being worked in.
+ * says which tab each group is showing, and the accent's line is kept for the group being worked in.
  */
 .dya-tab--dock {
     padding-bottom: 0;

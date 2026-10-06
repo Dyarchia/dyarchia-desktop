@@ -471,10 +471,9 @@
 }
 
 /*
- * The wordmark is the one place ochre is spent as a word for its own sake: DYARCHIA in the mono, at
- * the regular weight, as the site of a terminal would sign itself. Large it says DYARCHIA DESKTOP on
- * the empty window and the loading screen, sized to the pane so two words never overflow it;
- * `--bar` says Dyarchia alone, at the body's size, at the head of the title bar.
+ * The wordmark is the one place ochre is spent as a word for its own sake: Dyarchia Desktop in the
+ * mono, at the regular weight, on the empty window and the loading screen, sized to the pane so two
+ * words never overflow it. The title bar carries no name.
  */
 .dya-carved {
     font-family: var(--dya-font-mono);
@@ -483,10 +482,6 @@
     line-height: var(--dya-leading-tight);
     white-space: nowrap;
     color: var(--dya-accent);
-}
-
-.dya-carved--bar {
-    font-size: var(--dya-size-body);
 }
 
 /*

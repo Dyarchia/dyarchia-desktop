@@ -72,7 +72,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 
 ```text
 Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
-             --pending --ghosted --carried) card__header masthead carved (--bar) splitter stack
+             --pending --ghosted --carried) card__header masthead carved splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals

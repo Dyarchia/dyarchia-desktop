@@ -89,7 +89,7 @@ const STYLES = `
  * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const DOCS_ICON =
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1.6 20.4 6.6H3.6z" style="fill:var(--dya-text)"/><circle cx="3.6" cy="6" r="1.1" style="fill:var(--dya-text)"/><circle cx="20.4" cy="6" r="1.1" style="fill:var(--dya-text)"/><rect x="4.6" y="7.8" width="14.8" height="12.6" style="fill:var(--dya-text)"/><rect x="3" y="20.4" width="18" height="2.2" rx=".4" style="fill:var(--dya-text)"/><text x="12" y="11.9" text-anchor="middle" font-weight="500" font-size="3.6" style="fill:var(--dya-on-accent);font-family:var(--dya-font-mono)">RETRA</text><path d="M7 14.4h10M7 16.6h10M7 18.8h6.4" stroke-width=".9" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/></svg>'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M12 6.5C10 5 6.5 4.5 3 5v14c3.5-.5 7 0 9 1.5 2-1.5 5.5-2 9-1.5V5c-3.5-.5-7 0-9 1.5Z"/><path d="M12 6.5v14"/></svg>'
 
 const PENCIL_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'

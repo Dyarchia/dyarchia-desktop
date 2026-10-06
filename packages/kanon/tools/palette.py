@@ -22,7 +22,7 @@ import contrast
 REFERENCE = {
     'blue': '#1069f6',
     'purple': '#7646e6',
-    'orange': '#f07a35',
+    'cyan': '#12a4c4',
     'green': '#32d74b',
     'yellow': '#c9b957',
     'red': '#ff2c56',
@@ -100,8 +100,8 @@ def main() -> None:
     parser.add_argument('--floor', type=float, help='one floor instead of light, ink and bright')
     args = parser.parse_args()
 
-    theme = contrast.palette()
-    grounds = [theme[f'--dya-{name}'] for name in contrast.SURFACES + list(contrast.COMPOSITES)]
+    theme = contrast.palette(contrast.DEFAULT)
+    grounds = [theme[f'--dya-{name}'] for name in contrast.SURFACES + list(contrast.COMPOSITES[contrast.DEFAULT])]
     colours = {'colour': args.colour} if args.colour else REFERENCE
     floors = {f'{args.floor:.2f}': args.floor} if args.floor else FLOORS
 

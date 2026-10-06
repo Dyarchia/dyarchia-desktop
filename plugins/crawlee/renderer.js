@@ -40,33 +40,8 @@ const STYLE = `
 .crw-run {
     min-width: 56px;
 }
-.crw-scope {
-    anchor-name: --crw-scope;
-    max-width: 320px;
-}
-.crw-scope-menu:popover-open {
-    display: flex;
-    flex-direction: column;
-}
-.crw-scope-head {
-    margin-top: var(--dya-space-2);
-}
-.crw-scope-member {
-    padding-left: calc(var(--dya-space-2) + 22px);
-}
-.crw-scope-menu {
-    position: fixed;
-    position-anchor: --crw-scope;
-    position-area: block-end span-inline-end;
-    position-try-fallbacks: flip-block;
-    inset: auto;
-    margin: var(--dya-space-1) 0 0;
-    min-width: anchor-size(width);
-    max-height: 80vh;
-    overflow-y: auto;
-}
-.crw-scope-menu > .dya-menu__item {
-    flex: none;
+.crw-log-key {
+    margin-inline-start: auto;
 }
 .crw-status {
     display: inline-flex;
@@ -86,13 +61,14 @@ const STYLE = `
     max-width: 880px;
 }
 /*
- * The list and the selected target's changes side by side once the panel can hold both: the list
- * at its content's width up to 640px, the changes taking the rest. Narrower, the list is alone.
+ * The list and the selected target's changes side by side once the panel can hold both, the
+ * handle between them setting the list's width and the changes taking the rest; the table fills
+ * the list, its slack going to the names. Narrower, the list is alone.
  */
 .crw-split {
     display: flex;
     flex: 1 1 auto;
-    gap: var(--dya-space-6);
+    gap: var(--dya-space-3);
     min-height: 160px;
 }
 .crw-list {
@@ -100,8 +76,26 @@ const STYLE = `
     min-width: 0;
     overflow: auto;
 }
+.crw-list > .dya-table {
+    width: 100%;
+}
+.crw-list .dya-table__name {
+    width: auto;
+}
+.crw-list .dya-table__num {
+    width: 1%;
+}
+.crw-list .dya-table td {
+    white-space: nowrap;
+}
+.crw-list .dya-table__end > .dya-join {
+    justify-content: flex-end;
+}
+.crw-grip,
 .crw-detail {
     display: none;
+}
+.crw-detail {
     flex: 1;
     flex-direction: column;
     gap: var(--dya-space-3);
@@ -110,8 +104,12 @@ const STYLE = `
 }
 @container pane (min-width: 1100px) {
     .crw-list {
-        flex: 0 1 auto;
-        max-width: 640px;
+        flex: none;
+        width: var(--crw-list, 560px);
+        max-width: 70%;
+    }
+    .crw-grip {
+        display: grid;
     }
     .crw-detail {
         display: flex;
@@ -119,6 +117,12 @@ const STYLE = `
     .crw-list .dya-row {
         cursor: pointer;
     }
+}
+.crw-sum {
+    margin-inline-start: var(--dya-space-3);
+}
+.crw-sweeping {
+    margin-inline-end: var(--dya-space-2);
 }
 .crw-changes {
     display: flex;
@@ -181,9 +185,6 @@ const STYLE = `
     align-items: baseline;
     gap: var(--dya-space-3);
     padding-inline: var(--dya-space-4);
-}
-.crw-when {
-    margin-inline-start: var(--dya-space-3);
 }
 /*
  * The sheet that writes a target: what is written on the left, at a form's width, and what is
@@ -412,16 +413,19 @@ function tell(node, text, tone) {
 
 /*
  * A unified diff with its added lines in green and its removed lines in red, one element per line.
+ * The two file lines go: they name the page the fold already names. A hunk's place steps down to
+ * the faint ink, since it says where, not what.
  */
 function diffBlock(text) {
     const pre = el('pre', 'dya-code dya-code--wrap')
     for (const line of String(text).split('\n')) {
-        const tone = line.startsWith('+') && !line.startsWith('+++')
+        if (line.startsWith('+++') || line.startsWith('---')) continue
+        const tone = line.startsWith('+')
             ? 'dya-code__addition'
-            : line.startsWith('-') && !line.startsWith('---')
+            : line.startsWith('-')
               ? 'dya-code__deletion'
               : line.startsWith('@@')
-                ? 'dya-code__meta'
+                ? 'dya-code__comment'
                 : undefined
         pre.append(el('span', tone ? `dya-code__line ${tone}` : 'dya-code__line', line))
     }
@@ -674,13 +678,13 @@ function mount(ctx, container, handle) {
     /*
      * One job at a time: the output goes to `into`, and the caller draws what running looks like.
      */
-    async function begin(kind, payload, into) {
+    async function begin(kind, payload, into, show = true) {
         if (busy) throw new Error('Busy')
         busy = true
         sink = into
         ansi = plainAnsi()
         into.textContent = ''
-        into.hidden = false
+        if (show) into.hidden = false
         into.dataset.running = 'true'
         try {
             await ctx.invoke('start', kind, payload)
@@ -760,8 +764,10 @@ function mount(ctx, container, handle) {
         const log = el('pre', 'dya-log crw-log')
         log.hidden = true
         const close = iconKey('close', 'Close')
+        const shut = new Set()
         close.addEventListener('click', () => {
             log.hidden = true
+            for (const listener of shut) listener()
         })
         const head = el('div', 'crw-out-head')
         head.append(grip, close)
@@ -826,17 +832,20 @@ function mount(ctx, container, handle) {
             size(room(), false)
         })
 
-        return { node: pane, log }
+        return { node: pane, log, closed: (listener) => shut.add(listener) }
     }
 
     function buildRounds() {
         /*
-         * Nothing above the table but its controls, and a problem when there is one. The state is
-         * read again whenever it can have moved: on open, after a round, after a target is saved.
+         * One table, a section per folder. A section is the folder's name, what its targets add
+         * up to and the key that runs the folder; a row is a target, the key that runs it alone and
+         * the key that edits it, both there while the row is looked at. Space and the section head
+         * divide the folders, so the rows carry no rule. Nothing above the table but the key that
+         * runs everything, the round while it runs, and the key that shows its log.
          */
         const headline = el('div', 'crw-headline')
 
-        const table = el('table', 'dya-table')
+        const table = el('table', 'dya-table dya-table--bare')
         const list = el('div', 'crw-list')
         const vacant = el('div', 'dya-empty')
         const vacantActions = el('div', 'dya-empty__actions')
@@ -848,57 +857,83 @@ function mount(ctx, container, handle) {
         list.append(table, vacant)
 
         /*
-         * What the selected target's last change was, page by page with its diff. It is a region
-         * of its own, beside the list, only where the panel is wide enough for both.
+         * The selected target's last change, beside the list where the panel holds both, and the
+         * handle between them that gives one the room the other gives up. The width is remembered.
          */
         const detail = el('section', 'crw-detail')
+        const grip = el('div', 'dya-splitter dya-splitter--column crw-grip')
+        grip.setAttribute('role', 'separator')
+        grip.setAttribute('aria-orientation', 'vertical')
+        grip.setAttribute('aria-label', 'Resize')
+        grip.tabIndex = 0
         const split = el('div', 'crw-split')
-        split.append(list, detail)
+        split.append(list, grip, detail)
+
+        const WIDTH = 'crawlee.rounds.list'
+        const widen = (next, remember) => {
+            const room = split.getBoundingClientRect().width
+            const width = Math.round(Math.max(320, Math.min(next, room * 0.7)))
+            split.style.setProperty('--crw-list', `${width}px`)
+            if (remember) {
+                try {
+                    localStorage.setItem(WIDTH, String(width))
+                } catch {}
+            }
+        }
+        try {
+            const stored = Number(localStorage.getItem(WIDTH))
+            if (stored) split.style.setProperty('--crw-list', `${stored}px`)
+        } catch {}
+        grip.addEventListener('pointerdown', (event) => {
+            const from = event.clientX
+            const start = list.getBoundingClientRect().width
+            grip.setPointerCapture(event.pointerId)
+            grip.dataset.dragging = 'true'
+            const move = (moved) => widen(start + moved.clientX - from, true)
+            const drop = () => {
+                delete grip.dataset.dragging
+                grip.removeEventListener('pointermove', move)
+                grip.removeEventListener('pointerup', drop)
+                grip.removeEventListener('pointercancel', drop)
+            }
+            grip.addEventListener('pointermove', move)
+            grip.addEventListener('pointerup', drop)
+            grip.addEventListener('pointercancel', drop)
+            event.preventDefault()
+        })
+        grip.addEventListener('keydown', (event) => {
+            const step = event.key === 'ArrowRight' ? 24 : event.key === 'ArrowLeft' ? -24 : 0
+            if (!step) return
+            widen(list.getBoundingClientRect().width + step, true)
+            event.preventDefault()
+        })
 
         /*
-         * The scope is one choice for two things: which targets the list shows and which the round
-         * runs, so it and the key that runs it are one strip. The key is Run at rest and Stop while
-         * a round is under way, one key in one place rather than two where one cannot be pressed.
-         *
-         * It is a set, not one value: a menu of checkboxes, All targets first, then each folder as
-         * an eyebrow heading its own targets, set in under it. A folder ticks every target in it
-         * and stands half ticked when only some are. Nothing ticked is all of them. The key says what is
-         * chosen, a whole folder by its name and the rest by theirs.
+         * Run at rest and Stop while a round is under way, one key in one place. The log is kept
+         * whether it is shown or not, and shown only when asked for: a round is followed by its
+         * ring and its line, and the log is for when that line says something went wrong.
          */
-        const selected = new Set()
-        const scopeKey = el('button', 'dya-field crw-scope')
-        scopeKey.type = 'button'
-        scopeKey.setAttribute('aria-label', 'Scope')
-        scopeKey.setAttribute('aria-haspopup', 'true')
-        const scopeLabel = el('span', 'dya-field__label', 'All targets')
-        scopeKey.append(scopeLabel)
-        const scopeBox = el('span', 'dya-select')
-        scopeBox.appendChild(scopeKey)
-        const scopeMenu = el('div', 'dya-menu crw-scope-menu')
-        scopeMenu.setAttribute('popover', 'auto')
-        scopeMenu.id = `crw-scope-${crypto.randomUUID()}`
-        scopeKey.setAttribute('popovertarget', scopeMenu.id)
         const run = button('dya-button dya-button--primary crw-run', 'Run')
-        const strip = el('div', 'dya-join')
-        strip.append(scopeBox, run)
-
         const ring = el('span', 'dya-ring')
         ring.hidden = true
         const status = el('span', 'crw-status')
+        const logKey = iconKey('terminal', 'Log')
+        logKey.classList.add('crw-log-key')
         const controls = el('div', 'crw-bar')
-        controls.append(strip, ring, status, scopeMenu)
+        controls.append(run, ring, status, logKey)
 
         let going = false
         const running = (on) => {
             going = on
             run.textContent = on ? 'Stop' : 'Run'
             run.className = on ? 'dya-button dya-button--danger crw-run' : 'dya-button dya-button--primary crw-run'
+            for (const key of table.querySelectorAll('.crw-go')) key.disabled = on
         }
 
         /*
          * Where a round is, while it runs: a ring of one segment per target beside the key, and a
          * line after it with the target by its place and name, what changed and failed so far,
-         * and the time it has been running.
+         * and the time it has been running. The target being swept carries a busy light in its row.
          */
         const round = { total: 0, done: 0, changed: 0, failed: 0, current: '', index: 0, started: 0, timer: 0 }
 
@@ -927,6 +962,9 @@ function mount(ctx, container, handle) {
             ring.style.setProperty('--dya-ring-done', String(Math.floor((round.done / (round.total || 1)) * steps)))
             ring.classList.toggle('dya-ring--current', round.done < round.total && Boolean(round.current))
             ring.hidden = !going || round.total === 0
+            for (const row of table.querySelectorAll('tr.dya-row')) {
+                row.querySelector('.crw-sweeping')?.toggleAttribute('hidden', !(going && row.dataset.name === round.current))
+            }
         }
 
         const heard = (event) => {
@@ -949,75 +987,20 @@ function mount(ctx, container, handle) {
         const log = output.log
         rounds.append(controls, headline, split, output.node)
 
-        run.addEventListener('click', () => (going ? void ctx.invoke('stop') : void startRound()))
+        const showLog = (on) => {
+            log.hidden = !on
+            logKey.classList.toggle('dya-key--active', on)
+            logKey.setAttribute('aria-pressed', String(on))
+        }
+        logKey.addEventListener('click', () => showLog(log.hidden))
+        output.closed(() => showLog(false))
+        showLog(false)
+
+        run.addEventListener('click', () => (going ? void ctx.invoke('stop') : void startRound({})))
 
         let chosen = null
         let asked = 0
         let everything = []
-
-        const groupsOf = () => [...new Set(everything.map((corpus) => corpus.group).filter(Boolean))].sort()
-        const membersOf = (group) => everything.filter((corpus) => corpus.group === group).map((corpus) => corpus.name)
-
-        /*
-         * What is chosen, read as folders where a whole folder is ticked and as targets for the
-         * rest: the key's words, and whether a round can name a folder instead of a list.
-         */
-        function chosenParts() {
-            const covered = new Set()
-            const groups = []
-            for (const group of groupsOf()) {
-                const members = membersOf(group)
-                if (members.length && members.every((name) => selected.has(name))) {
-                    groups.push(group)
-                    members.forEach((name) => covered.add(name))
-                }
-            }
-            const names = [...selected].filter((name) => !covered.has(name))
-            return { groups, names }
-        }
-
-        function checkRow(label, checked, mixed, toggle, kind = '') {
-            const row = el('label', kind ? `dya-menu__item ${kind}` : 'dya-menu__item')
-            const box = el('input', 'dya-checkbox')
-            box.type = 'checkbox'
-            box.checked = checked
-            box.indeterminate = mixed
-            box.addEventListener('change', toggle)
-            row.append(box, el('span', kind === 'crw-scope-head' ? 'dya-eyebrow' : 'dya-menu__text', label))
-            return row
-        }
-
-        function paintScope() {
-            const rows = [checkRow('All targets', selected.size === 0, false, () => {
-                selected.clear()
-                scopeChanged()
-            })]
-            const target = (corpus, kind) =>
-                checkRow(corpus.name, selected.has(corpus.name), false, () => {
-                    if (selected.has(corpus.name)) selected.delete(corpus.name)
-                    else selected.add(corpus.name)
-                    scopeChanged()
-                }, kind)
-            rows.push(...everything.filter((corpus) => !corpus.group).map((corpus) => target(corpus)))
-            for (const group of groupsOf()) {
-                const members = membersOf(group)
-                const some = members.filter((name) => selected.has(name)).length
-                rows.push(checkRow(group, some > 0 && some === members.length, some > 0 && some < members.length, () => {
-                    if (some === members.length) members.forEach((name) => selected.delete(name))
-                    else members.forEach((name) => selected.add(name))
-                    scopeChanged()
-                }, 'crw-scope-head'))
-                for (const corpus of everything) if (corpus.group === group) rows.push(target(corpus, 'crw-scope-member'))
-            }
-            scopeMenu.replaceChildren(...rows)
-            const { groups: whole, names } = chosenParts()
-            scopeLabel.textContent = selected.size === 0 ? 'All targets' : [...whole, ...names].join(', ')
-        }
-
-        function scopeChanged() {
-            paintScope()
-            paint()
-        }
 
         async function refreshState() {
             try {
@@ -1037,94 +1020,97 @@ function mount(ctx, container, handle) {
                 controls.hidden = true
                 return
             }
-
             controls.hidden = false
             headline.replaceChildren()
             everything = (state.repositories || []).flatMap((repo) => repo.corpora || [])
-
-            const known = new Set(everything.map((corpus) => corpus.name))
-            for (const name of [...selected]) if (!known.has(name)) selected.delete(name)
-            paintScope()
-
             paint()
         }
 
-        function scoped() {
-            return selected.size ? everything.filter((corpus) => selected.has(corpus.name)) : everything
+        function goKey(label, payload) {
+            const key = iconKey('play', label)
+            key.classList.add('crw-go')
+            key.disabled = going
+            key.addEventListener('click', (event) => {
+                event.stopPropagation()
+                void startRound(payload)
+            })
+            return key
         }
 
-        /*
-         * Four columns and every row on them. A group heads its rows once, its name and when it was
-         * last swept on one line across them, so a date never stands under the changed count; the
-         * totals stand under the figures they add up, and only when there is more than one row
-         * to add.
-         */
         function paint() {
-            const corpora = scoped()
             const thead = el('thead')
             const header = el('tr')
             header.append(
                 el('th', undefined, 'Target'),
                 el('th', 'dya-table__num', 'Pages'),
                 el('th', 'dya-table__num', 'Size'),
-                el('th', 'dya-table__end', 'Changed')
+                el('th', 'dya-table__num', 'Changed'),
+                el('th', 'dya-table__end')
             )
             thead.appendChild(header)
 
-            const order = [...new Set(corpora.map((corpus) => corpus.group || ''))].sort((a, b) =>
+            const order = [...new Set(everything.map((corpus) => corpus.group || ''))].sort((a, b) =>
                 a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)
             )
             const body = el('tbody')
             for (const group of order) {
-                const members = corpora.filter((corpus) => (corpus.group || '') === group)
+                const members = everything.filter((corpus) => (corpus.group || '') === group)
                 if (group) {
-                    const latest = members.map((corpus) => corpus.swept_at).filter(Boolean).sort().at(-1)
+                    const sum = (key) => members.reduce((total, corpus) => total + (Number(corpus[key]) || 0), 0)
                     const section = el('tr', 'dya-table__section')
                     const name = el('td', 'dya-table__fit', group)
-                    if (latest) name.append(el('span', 'dya-meta crw-when', ctx.when(latest)))
                     name.colSpan = 4
-                    section.append(name)
+                    name.append(el('span', 'dya-meta crw-sum', [
+                        plural(members.length, 'target'),
+                        plural(sum('pages'), 'page'),
+                        bytes(sum('bytes'))
+                    ].join(' - ')))
+                    const end = el('td', 'dya-table__end')
+                    const lead = el('div', 'dya-join')
+                    lead.append(goKey(`Run ${group}`, { group }))
+                    end.append(lead)
+                    section.append(name, end)
                     body.append(section)
                 }
                 for (const corpus of members) {
-                    const row = el('tr', 'dya-row')
+                    const row = el('tr', 'dya-row dya-reveals')
                     row.dataset.name = corpus.name
-                    const change = el('td', 'dya-table__end')
+                    const change = el('td', 'dya-table__num')
+                    const sweeping = el('span', 'dya-light dya-light--busy crw-sweeping')
+                    sweeping.hidden = true
+                    change.append(sweeping)
                     const state = stateOf(corpus)
                     if (state) {
                         const text = state.moved ? state.moved.toLocaleString('en') : state.text
                         change.append(el('span', state.tone ? `dya-text--${state.tone}` : state.moved ? 'dya-name' : 'dya-meta', text))
                     }
+                    const keys = el('td', 'dya-table__end')
+                    const strip = el('div', 'dya-join dya-reveal')
+                    const edit = iconKey('open', 'Edit')
+                    edit.addEventListener('click', (event) => {
+                        event.stopPropagation()
+                        targetsView.edit(corpus.name)
+                    })
+                    strip.append(edit, goKey('Run', { names: [corpus.name] }))
+                    keys.append(strip)
                     row.append(
                         el('td', 'dya-table__name', corpus.name),
                         el('td', 'dya-table__num', corpus.never_crawled ? '' : corpus.pages.toLocaleString('en')),
                         el('td', 'dya-table__num', corpus.never_crawled ? '' : bytes(corpus.bytes)),
-                        change
+                        change,
+                        keys
                     )
                     row.addEventListener('click', () => void show(corpus))
                     body.appendChild(row)
                 }
             }
-            const parts = corpora.length ? [thead, body] : []
-            if (corpora.length > 1) {
-                const total = (key) => corpora.reduce((sum, corpus) => sum + (Number(corpus[key]) || 0), 0)
-                const foot = el('tfoot')
-                const sum = el('tr', 'dya-table__section')
-                const figure = (text) => {
-                    const cell = el('td', 'dya-table__num')
-                    cell.append(el('span', 'dya-meta', text))
-                    return cell
-                }
-                sum.append(el('td', 'dya-table__fit', 'Total'), figure(total('pages').toLocaleString('en')), figure(bytes(total('bytes'))), el('td'))
-                foot.append(sum)
-                parts.push(foot)
-            }
-            table.replaceChildren(...parts)
+            table.replaceChildren(...(everything.length ? [thead, body] : []))
             vacant.hidden = everything.length > 0
-            strip.hidden = everything.length === 0
+            run.hidden = everything.length === 0
+            pips()
 
-            const again = corpora.find((corpus) => corpus.name === chosen)
-            void show(again ?? corpora.find((corpus) => corpus.changed) ?? corpora[0] ?? null)
+            const again = everything.find((corpus) => corpus.name === chosen)
+            void show(again ?? everything.find((corpus) => corpus.changed) ?? everything[0] ?? null)
         }
 
         async function show(corpus) {
@@ -1140,15 +1126,12 @@ function mount(ctx, container, handle) {
             await changesInto(detail, corpus, el('span', 'dya-title', corpus.name), () => ticket === asked)
         }
 
-        async function startRound() {
+        async function startRound(scope) {
+            if (going) return
             Object.assign(round, { total: 0, done: 0, changed: 0, failed: 0, current: '', index: 0, started: Date.now() })
             window.clearInterval(round.timer)
-            const payload = { commit: true }
-            const { groups, names } = chosenParts()
-            if (groups.length === 1 && names.length === 0) payload.group = groups[0]
-            else if (selected.size) payload.names = [...selected]
             try {
-                await begin('run', payload, log)
+                await begin('run', { commit: true, ...scope }, log, false)
             } catch (error) {
                 tell(status, reason(error), 'danger')
                 return
@@ -1160,7 +1143,7 @@ function mount(ctx, container, handle) {
         }
 
         return {
-            start: () => void startRound(),
+            start: () => void startRound({}),
             refresh: refreshState,
             heard,
             /*
@@ -1185,6 +1168,7 @@ function mount(ctx, container, handle) {
                 parts.push(report.minutes ? `${report.minutes} min` : elapsed())
                 tell(status, parts.join(' - '), failed ? 'danger' : stopped ? '' : 'success')
                 round.done = done
+                round.current = ''
                 pips()
                 void refreshState()
             },
@@ -1929,6 +1913,15 @@ function mount(ctx, container, handle) {
 
         return {
             refresh: refreshList,
+            edit(name) {
+                select('targets')
+                if (!library.hidden) shut()
+                if (!sheet.hidden && dirty()) {
+                    leave()
+                    return
+                }
+                void open(name, null)
+            },
             create() {
                 if (!library.hidden) shut()
                 if (!sheet.hidden && dirty()) {

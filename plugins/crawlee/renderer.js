@@ -47,12 +47,11 @@ const STYLE = `
 .crw-scope-menu:popover-open {
     display: flex;
     flex-direction: column;
-    gap: var(--dya-space-1);
 }
-.crw-scope-group {
-    padding: var(--dya-space-1);
+.crw-scope-head {
+    margin-top: var(--dya-space-2);
 }
-.crw-scope-folder > .dya-menu__item ~ .dya-menu__item {
+.crw-scope-member {
     padding-left: calc(var(--dya-space-2) + 22px);
 }
 .crw-scope-menu {
@@ -63,8 +62,11 @@ const STYLE = `
     inset: auto;
     margin: var(--dya-space-1) 0 0;
     min-width: anchor-size(width);
-    max-height: 60vh;
+    max-height: 80vh;
     overflow-y: auto;
+}
+.crw-scope-menu > .dya-menu__item {
+    flex: none;
 }
 .crw-status {
     display: inline-flex;
@@ -161,20 +163,27 @@ const STYLE = `
     margin: 0;
 }
 .crw-grid {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    gap: var(--dya-space-6);
     min-height: 0;
     overflow: auto;
     padding: 2px;
 }
-.crw-facts {
+.crw-shelf {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
     gap: var(--dya-space-2);
-    min-width: 0;
 }
-.crw-facts > .dya-meta {
-    flex: none;
+.crw-shelf-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dya-space-3);
+    padding-inline: var(--dya-space-4);
+}
+.crw-when {
+    margin-inline-start: var(--dya-space-3);
 }
 /*
  * The sheet that writes a target: what is written on the left, at a form's width, and what is
@@ -378,6 +387,19 @@ function plural(count, noun) {
 }
 
 /*
+ * What a target's last sweep left, as the words the rounds table and a card both carry: nothing
+ * for a quiet target, the number of pages that moved for one that changed, `New` for a first
+ * snapshot, `Not crawled` before one, and `Unreadable` in red for a corpus that cannot be read.
+ */
+function stateOf(corpus) {
+    if (corpus.error) return { text: 'Unreadable', tone: 'danger' }
+    if (corpus.never_crawled) return { text: 'Not crawled' }
+    if (!corpus.changed) return corpus.first_run ? { text: 'New' } : null
+    const moved = ['added', 'modified', 'removed'].reduce((sum, key) => sum + (Number(corpus[key]) || 0), 0)
+    return { text: moved ? `${moved.toLocaleString('en')} changed` : 'Changed', moved }
+}
+
+/*
  * What happened to a job, beside the key that started it: a light when there is an outcome, the
  * words after it. No tone is no light; an empty tone is the idle grey of a round stopped part way.
  */
@@ -386,23 +408,6 @@ function tell(node, text, tone) {
     if (tone !== undefined) parts.push(el('span', tone ? `dya-light dya-light--${tone}` : 'dya-light'))
     if (text) parts.push(el('span', 'dya-key-label', text))
     node.replaceChildren(...parts)
-}
-
-function stateBadge(corpus) {
-    if (corpus.error) return el('span', 'dya-badge dya-badge--danger', 'Unreadable')
-    if (corpus.never_crawled) return el('span', 'dya-tag', 'Not crawled')
-
-    /*
-     * A sweep that found nothing writes no change report, so the one on disk is older than the
-     * sweep. That is the quiet outcome, not a warning, and a quiet target carries nothing:
-     * `unchanged` on twelve of fourteen is a word read twelve times to learn nothing. A first
-     * snapshot says `New`, a failure says so in red, and a change is one number and a word in a
-     * neutral pill: finding changes is what a round is for.
-     */
-    if (!corpus.changed) return corpus.first_run ? el('span', 'dya-tag', 'New') : null
-
-    const moved = ['added', 'modified', 'removed'].reduce((sum, key) => sum + (Number(corpus[key]) || 0), 0)
-    return el('span', 'dya-tag', moved ? `${moved.toLocaleString('en')} changed` : 'Changed')
 }
 
 /*
@@ -592,8 +597,6 @@ function mount(ctx, container, handle) {
     let ansi = plainAnsi()
     let busy = false
 
-    const groupTag = (group) => el('span', 'dya-tag', group)
-
     const views = [
         { id: 'rounds', title: 'Rounds', node: rounds },
         { id: 'targets', title: 'Targets', node: targets },
@@ -719,13 +722,11 @@ function mount(ctx, container, handle) {
             region.replaceChildren(head)
             return
         }
-        if (when) head.append(el('span', 'dya-meta', when))
-        const tally = el('span', 'dya-pills')
-        for (const [kind, word] of Object.entries(KINDS)) {
-            const count = pages.filter((page) => page.kind === kind).length
-            if (count) tally.append(el('span', 'dya-tag', `${count.toLocaleString('en')} ${word.toLowerCase()}`))
-        }
-        head.append(tally)
+        const tally = Object.entries(KINDS)
+            .map(([kind, word]) => [pages.filter((page) => page.kind === kind).length, word.toLowerCase()])
+            .filter(([count]) => count)
+            .map(([count, word]) => `${count.toLocaleString('en')} ${word}`)
+        head.append(el('span', 'dya-meta', [when, ...tally].filter(Boolean).join(' - ')))
         const changes = el('div', 'crw-changes')
         const mixed = new Set(pages.map((page) => page.kind)).size > 1
         for (const page of pages) {
@@ -734,7 +735,7 @@ function mount(ctx, container, handle) {
             const mark = el('span', 'dya-fold__mark')
             mark.innerHTML = ctx.glyph('chevron')
             line.append(mark, el('span', 'dya-name', page.title || page.url))
-            if (mixed) line.append(el('span', 'dya-tag', KINDS[page.kind] ?? page.kind))
+            if (mixed) line.append(el('span', 'dya-meta', KINDS[page.kind] ?? page.kind))
             item.append(line)
             if (page.diff) item.append(diffBlock(page.diff))
             changes.append(item)
@@ -859,9 +860,9 @@ function mount(ctx, container, handle) {
          * runs, so it and the key that runs it are one strip. The key is Run at rest and Stop while
          * a round is under way, one key in one place rather than two where one cannot be pressed.
          *
-         * It is a set, not one value: a menu of checkboxes, All targets first, then one card per
-         * folder, the folder heading its own targets. A folder ticks every target in it and stands
-         * half ticked when only some are. Nothing ticked is all of them. The key says what is
+         * It is a set, not one value: a menu of checkboxes, All targets first, then each folder as
+         * an eyebrow heading its own targets, set in under it. A folder ticks every target in it
+         * and stands half ticked when only some are. Nothing ticked is all of them. The key says what is
          * chosen, a whole folder by its name and the rest by theirs.
          */
         const selected = new Set()
@@ -975,14 +976,14 @@ function mount(ctx, container, handle) {
             return { groups, names }
         }
 
-        function checkRow(label, checked, mixed, toggle) {
-            const row = el('label', 'dya-menu__item')
+        function checkRow(label, checked, mixed, toggle, kind = '') {
+            const row = el('label', kind ? `dya-menu__item ${kind}` : 'dya-menu__item')
             const box = el('input', 'dya-checkbox')
             box.type = 'checkbox'
             box.checked = checked
             box.indeterminate = mixed
             box.addEventListener('change', toggle)
-            row.append(box, el('span', 'dya-menu__text', label))
+            row.append(box, el('span', kind === 'crw-scope-head' ? 'dya-eyebrow' : 'dya-menu__text', label))
             return row
         }
 
@@ -991,29 +992,22 @@ function mount(ctx, container, handle) {
                 selected.clear()
                 scopeChanged()
             })]
-            const target = (corpus) =>
+            const target = (corpus, kind) =>
                 checkRow(corpus.name, selected.has(corpus.name), false, () => {
                     if (selected.has(corpus.name)) selected.delete(corpus.name)
                     else selected.add(corpus.name)
                     scopeChanged()
-                })
+                }, kind)
+            rows.push(...everything.filter((corpus) => !corpus.group).map((corpus) => target(corpus)))
             for (const group of groupsOf()) {
                 const members = membersOf(group)
                 const some = members.filter((name) => selected.has(name)).length
-                const card = el('div', 'dya-card crw-scope-group crw-scope-folder')
-                card.append(checkRow(group, some > 0 && some === members.length, some > 0 && some < members.length, () => {
+                rows.push(checkRow(group, some > 0 && some === members.length, some > 0 && some < members.length, () => {
                     if (some === members.length) members.forEach((name) => selected.delete(name))
                     else members.forEach((name) => selected.add(name))
                     scopeChanged()
-                }))
-                for (const corpus of everything) if (corpus.group === group) card.append(target(corpus))
-                rows.push(card)
-            }
-            const loose = everything.filter((corpus) => !corpus.group)
-            if (loose.length) {
-                const card = el('div', 'dya-card crw-scope-group')
-                card.append(...loose.map(target))
-                rows.push(card)
+                }, 'crw-scope-head'))
+                for (const corpus of everything) if (corpus.group === group) rows.push(target(corpus, 'crw-scope-member'))
             }
             scopeMenu.replaceChildren(...rows)
             const { groups: whole, names } = chosenParts()
@@ -1060,8 +1054,8 @@ function mount(ctx, container, handle) {
         }
 
         /*
-         * Four columns and every row on them. A group heads its rows once, its name in the target
-         * column and when it was last swept at the row's end, where the change pills stand; the
+         * Four columns and every row on them. A group heads its rows once, its name and when it was
+         * last swept on one line across them, so a date never stands under the changed count; the
          * totals stand under the figures they add up, and only when there is more than one row
          * to add.
          */
@@ -1073,7 +1067,7 @@ function mount(ctx, container, handle) {
                 el('th', undefined, 'Target'),
                 el('th', 'dya-table__num', 'Pages'),
                 el('th', 'dya-table__num', 'Size'),
-                el('th', 'dya-table__end', 'Change')
+                el('th', 'dya-table__end', 'Changed')
             )
             thead.appendChild(header)
 
@@ -1086,17 +1080,21 @@ function mount(ctx, container, handle) {
                 if (group) {
                     const latest = members.map((corpus) => corpus.swept_at).filter(Boolean).sort().at(-1)
                     const section = el('tr', 'dya-table__section')
-                    const date = el('td', 'dya-table__end')
-                    if (latest) date.append(el('span', 'dya-meta', ctx.when(latest)))
-                    section.append(el('td', 'dya-table__fit', group), el('td'), el('td'), date)
+                    const name = el('td', 'dya-table__fit', group)
+                    if (latest) name.append(el('span', 'dya-meta crw-when', ctx.when(latest)))
+                    name.colSpan = 4
+                    section.append(name)
                     body.append(section)
                 }
                 for (const corpus of members) {
                     const row = el('tr', 'dya-row')
                     row.dataset.name = corpus.name
                     const change = el('td', 'dya-table__end')
-                    const badge = stateBadge(corpus)
-                    if (badge) change.append(badge)
+                    const state = stateOf(corpus)
+                    if (state) {
+                        const text = state.moved ? state.moved.toLocaleString('en') : state.text
+                        change.append(el('span', state.tone ? `dya-text--${state.tone}` : state.moved ? 'dya-name' : 'dya-meta', text))
+                    }
                     row.append(
                         el('td', 'dya-table__name', corpus.name),
                         el('td', 'dya-table__num', corpus.never_crawled ? '' : corpus.pages.toLocaleString('en')),
@@ -1317,7 +1315,7 @@ function mount(ctx, container, handle) {
     function buildTargets() {
         /*
          * The targets are what this view is about, so they take the room the window has: a grid of
-         * cards that reflows from one column to five. Opening one raises a sheet over the grid,
+         * cards that reflows from one column to five, a shelf per folder under its name. Opening one raises a sheet over the grid,
          * because a column that pushed the grid aside would leave a list too narrow to read and an
          * editor too narrow to write in.
          */
@@ -1658,8 +1656,22 @@ function mount(ctx, container, handle) {
         inspect.addEventListener('click', () => void inspectTarget())
         save.addEventListener('click', () => void write())
 
+        function shelf(name, cards, swept) {
+            const node = el('section', 'crw-shelf')
+            const tiles = el('div', 'dya-grid')
+            tiles.append(...cards)
+            if (name) {
+                const head = el('div', 'crw-shelf-head')
+                head.append(el('span', 'dya-eyebrow', name))
+                if (swept) head.append(el('span', 'dya-meta', ctx.when(swept)))
+                node.append(head)
+            }
+            node.append(tiles)
+            return node
+        }
+
         async function refreshList() {
-            grid.replaceChildren(newTargetCard(), libraryCard())
+            grid.replaceChildren(shelf('', [newTargetCard(), libraryCard()]))
             try {
                 const [profiles, known] = await Promise.all([ctx.invoke('profiles'), ctx.invoke('state')])
                 if (profiles && profiles.needsEnvironment) {
@@ -1671,7 +1683,16 @@ function mount(ctx, container, handle) {
                     for (const corpus of repo.corpora || []) byName.set(corpus.name, corpus)
                 }
                 corpora = byName
-                for (const profile of profiles) grid.appendChild(targetCard(profile, byName.get(profile.name)))
+                const groups = [...new Set(profiles.map((profile) => profile.group || ''))].sort((a, b) =>
+                    a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)
+                )
+                const loose = profiles.filter((profile) => !profile.group).map((profile) => targetCard(profile, byName.get(profile.name)))
+                grid.firstChild.lastChild.append(...loose)
+                for (const group of groups.filter(Boolean)) {
+                    const members = profiles.filter((profile) => profile.group === group)
+                    const swept = members.map((profile) => byName.get(profile.name)?.swept_at).filter(Boolean).sort().at(-1)
+                    grid.append(shelf(group, members.map((profile) => targetCard(profile, byName.get(profile.name))), swept))
+                }
             } catch (error) {
                 grid.replaceChildren(el('p', 'dya-problem', reason(error)))
             }
@@ -1696,29 +1717,26 @@ function mount(ctx, container, handle) {
         }
 
         /*
-         * A target, as the thing it is rather than as its name. The state badge is the same one the
-         * rounds table carries, so a corpus that changed says so in both places in the same words.
+         * A target, as the thing it is rather than as its name: the name, what it is, and one line
+         * of facts ending in the same words the rounds table carries for its last sweep. The folder
+         * and when it was swept head the shelf it stands on, so the card repeats neither, except
+         * the date of a target that stands on no shelf.
          */
         function targetCard(profile, corpus) {
             const card = button('dya-tile dya-tile--dense')
             const top = el('div', 'dya-tile__head')
             top.append(el('span', 'dya-tile__name', profile.name))
-            const badge = corpus && stateBadge(corpus)
-            if (badge) top.append(badge)
             card.append(top)
 
             if (profile.description) card.append(el('span', 'dya-tile__note', profile.description))
 
+            const state = corpus && stateOf(corpus)
             const facts = corpus
-                ? [corpus.pages ? plural(corpus.pages, 'page') : '', ctx.when(corpus.swept_at)]
+                ? [corpus.pages ? plural(corpus.pages, 'page') : '', profile.group ? '' : ctx.when(corpus.swept_at), state?.tone ? '' : state?.text]
                 : [profile.urls?.length ? plural(profile.urls.length, 'start URL') : '']
             const shown = facts.filter(Boolean)
-            if (profile.group || shown.length) {
-                const line = el('div', 'crw-facts')
-                if (profile.group) line.append(groupTag(profile.group))
-                if (shown.length) line.append(el('span', 'dya-meta', shown.join(' - ')))
-                card.append(line)
-            }
+            if (shown.length) card.append(el('span', 'dya-meta', shown.join(' - ')))
+            if (state?.tone) card.append(el('span', `dya-text--${state.tone}`, state.text))
 
             card.addEventListener('click', () => void open(profile.name, card))
             return card

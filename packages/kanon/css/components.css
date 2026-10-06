@@ -360,11 +360,11 @@
  * wrong.
  *
  * The strip is eleven pixels so it can be caught with a pointer and pulls its own height back out
- * of the layout with a negative margin, so adding one does not move what is above it. At rest it
- * draws nothing: the space between the regions is the division, and the pointer's cursor is how
- * it is found. Under the pointer, while dragging and with the keyboard's focus, a hairline of the
- * accent runs its whole length to say what is held. Nothing on it is a grip. Arrow keys move it
- * for anybody who is not holding one.
+ * of the layout with a negative margin, so adding one does not move what is above it. It draws no
+ * line and no grip: the space between the regions is the division, and a small double arrow in its
+ * middle, pointing the two ways it moves, says it can be moved. The arrow is the faint ink at rest
+ * and the accent under the pointer, while dragging and with the keyboard's focus. Arrow keys move
+ * it for anybody who is not holding one.
  */
 .dya-splitter {
     display: grid;
@@ -381,9 +381,11 @@
 
 .dya-splitter::after {
     content: "";
-    width: 100%;
-    height: var(--dya-border-width);
-    background: transparent;
+    width: 11px;
+    height: 11px;
+    background: var(--dya-text-faint);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='black' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 6h9M1.5 6l2.5-2.5M1.5 6l2.5 2.5M10.5 6 8 3.5M10.5 6 8 8.5'/%3E%3C/svg%3E") center / contain no-repeat;
+    transform: rotate(90deg);
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
@@ -398,7 +400,7 @@
 }
 
 /*
- * The same handle between two regions side by side: eleven pixels wide, the line standing on end.
+ * The same handle between two regions side by side: eleven pixels wide, the arrow lying flat.
  */
 .dya-splitter--column {
     width: 11px;
@@ -409,8 +411,7 @@
 }
 
 .dya-splitter--column::after {
-    width: var(--dya-border-width);
-    height: 100%;
+    transform: none;
 }
 
 /*

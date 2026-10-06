@@ -83,16 +83,16 @@
     --dya-blue: #1970fd;
     --dya-purple: #8559f9;
     --dya-orange: #f07a35;
-    --dya-green: #4bbc6e;
+    --dya-green: #32d74b;
     --dya-yellow: #c9b957;
-    --dya-red: #ec4b3a;
+    --dya-red: #ff2c56;
 
     --dya-blue-ink: #75a8fe;
     --dya-purple-ink: #c790fe;
     --dya-orange-ink: #fe8743;
-    --dya-green-ink: #4dbe70;
+    --dya-green-ink: #32d74b;
     --dya-yellow-ink: #c9b957;
-    --dya-red-ink: #ff8472;
+    --dya-red-ink: #ff5569;
 
     --dya-ansi-red: #ff8472;
     --dya-ansi-green: #7fd18b;
@@ -107,18 +107,18 @@
     --dya-ansi-bright-magenta: #e4cefe;
     --dya-ansi-bright-cyan: #6adef1;
 
-    --dya-success: #4bbc6e;
-    --dya-success-soft: #4bbc6e1f;
-    --dya-success-line: #4bbc6e52;
-    --dya-success-ink: #4dbe70;
+    --dya-success: #32d74b;
+    --dya-success-soft: #32d74b1f;
+    --dya-success-line: #32d74b52;
+    --dya-success-ink: #32d74b;
     --dya-warning: #c9b957;
     --dya-warning-soft: #c9b9571c;
     --dya-warning-line: #c9b9574d;
     --dya-warning-ink: #c9b957;
-    --dya-danger: #ec4b3a;
-    --dya-danger-soft: #ec4b3a1f;
-    --dya-danger-line: #ec4b3a52;
-    --dya-danger-ink: #ff8472;
+    --dya-danger: #ff2c56;
+    --dya-danger-soft: #ff2c561f;
+    --dya-danger-line: #ff2c5652;
+    --dya-danger-ink: #ff5569;
     --dya-idle: #858b95;
 
     --dya-code-keyword: #c792ea;
@@ -126,7 +126,7 @@
     --dya-code-number: #c3e88d;
     --dya-code-function: #82aaff;
     --dya-code-key: #89ddff;
-    --dya-code-deleted: #ff8472;
+    --dya-code-deleted: #ff5569;
     --dya-code-comment: #94938d;
     --dya-code-punct: #b0aea5;
 

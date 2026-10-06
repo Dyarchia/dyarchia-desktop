@@ -30,9 +30,9 @@
 /*
  * A status colour is a light, and its ink is a token of its own. The three lights are saturated
  * enough to read as green, yellow and red from across the room, and that is exactly what stops red
- * being text: `--dya-danger` measures 3.75 on `selected`, the brightest ground. Each light
+ * being text: `--dya-danger` measures 3.83 on `selected`, the brightest ground. Each light
  * therefore has an ink, the same hue lifted toward white, and every one of the three is text on
- * every ground the system has: 5.86 at the least, for red.
+ * every ground the system has: 4.50 at the least, for red.
  */
 .dya-text--danger {
     color: var(--dya-danger-ink);

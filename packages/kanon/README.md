@@ -25,7 +25,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   always**; yellow is a muted lemon, 19° greener than ochre, so a warning is never read as the accent. Blue,
   purple and orange are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a
   glyph, never a pill's word, a fill or a dot inside a pill. **Plugins have no hue.**
-- **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `code-comment` is 4.54 at the least,
+- **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `danger-ink` is 4.50 at the least,
   `text-off` is exempt. Measure with `tools/contrast.py <suffix>`, the wash peaks included, into the commit body.
 - **Components reference tokens, never literals**: no literal colour, radius or duration in `components.css`.
 - **Controls are type, information is filled.** A key, a tile, a tab's action and a window key are their glyph

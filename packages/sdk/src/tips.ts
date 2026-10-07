@@ -1,5 +1,8 @@
+import type { GlyphName } from './glyphs.js'
+
 /*
- * A tip exists only on a key that has no word: kanon's hint popover, which the browser opens on
+ * A tip exists only on a key whose glyph does not say what it does, and never on one that has a
+ * word: kanon's hint popover, which the browser opens on
  * hover or focus and anchors to the control, never the platform's `title`, which is drawn by the
  * operating system in its own face. A control that spells anything gets no tip, since the tip
  * could only repeat what is already on screen; the guard reads the text outside any glyph at the
@@ -10,6 +13,19 @@
  * was showing: an open hint whose anchor is gone falls to the corner of the window.
  */
 export type Tip = (control: HTMLElement, text: string) => void
+
+/*
+ * The glyphs that do not say their action on their own. An X closes, a plus adds, a magnifier
+ * searches, a bin deletes, wherever they are, and a tip on them only reads the glyph aloud. These
+ * are drawn for this system or stand for one action among several, so they keep their tip. A key
+ * holding a glyph that is not the SDK's is the caller's to judge.
+ */
+const NAMELESS = new Set<GlyphName>(['plugin', 'log', 'fold', 'unfold', 'rename', 'clock', 'undo', 'move', 'archive', 'convert', 'cut', 'join', 'extract'])
+
+function saysItself(control: HTMLElement): boolean {
+    const name = control.querySelector<SVGElement>('svg[data-glyph]')?.dataset.glyph
+    return name !== undefined && !NAMELESS.has(name as GlyphName)
+}
 
 function spells(control: HTMLElement): boolean {
     const walker = document.createTreeWalker(control, NodeFilter.SHOW_TEXT)
@@ -44,7 +60,7 @@ export function tips(holder: HTMLElement): Tip {
             queueMicrotask(sweep)
         }
         control.removeAttribute('title')
-        const words = spells(control) ? '' : text
+        const words = spells(control) || saysItself(control) ? '' : text
         let tip = made.get(control)
         if (!tip) {
             if (!words) return

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { glyph } from '@dyarchia/sdk'
 import { getPanel } from '../panels/registry'
-import { Tip, useTipId } from './Tip'
 
 const LIFE_MS = 10_000
 const KEEP = 4
@@ -76,7 +75,6 @@ interface NoticeCardProps {
 }
 
 function NoticeCard({ notice, onActivate, onDrop }: NoticeCardProps): React.JSX.Element {
-    const tip = useTipId()
     const from = getPanel(notice.pluginId)?.descriptor.title
     return (
         <div className="dya-card dya-notice">
@@ -89,11 +87,9 @@ function NoticeCard({ notice, onActivate, onDrop }: NoticeCardProps): React.JSX.
                 type="button"
                 className="dya-key notice-close"
                 aria-label="Close"
-                interestfor={tip}
                 onClick={onDrop}
                 dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
             />
-            <Tip id={tip} label="Close" />
         </div>
     )
 }

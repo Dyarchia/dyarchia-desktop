@@ -339,7 +339,6 @@ export function activate(ctx: PluginContext): void {
             editKey.type = 'button'
             editKey.innerHTML = PENCIL_ICON
             editKey.setAttribute('aria-label', 'Edit')
-            withTip(editKey, 'Edit')
             editKey.onclick = () => setMode(mode === 'edit' ? readMode() : 'edit')
 
             const pagesKey = document.createElement('button')
@@ -357,7 +356,6 @@ export function activate(ctx: PluginContext): void {
             deleteKey.className = 'dya-key dya-key--danger'
             deleteKey.innerHTML = glyph('delete')
             deleteKey.setAttribute('aria-label', 'Delete')
-            withTip(deleteKey, 'Delete')
             deleteKey.onclick = () => {
                 if (!busy && current?.path && current.name) {
                     void deletePage({ name: current.name, path: current.path, size: 0, mtime: 0 })
@@ -389,7 +387,6 @@ export function activate(ctx: PluginContext): void {
                 saveShows = overwrite
                 if (overwrite) {
                     save.className = 'dya-button dya-button--resolve'
-                    withTip(save, '')
                     save.setAttribute('aria-label', 'Overwrite')
                     const state = document.createElement('span')
                     state.className = 'dya-button__state'
@@ -402,7 +399,6 @@ export function activate(ctx: PluginContext): void {
                 }
                 save.className = 'dya-key'
                 save.innerHTML = glyph('save')
-                withTip(save, 'Save')
                 save.setAttribute('aria-label', 'Save')
             }
 

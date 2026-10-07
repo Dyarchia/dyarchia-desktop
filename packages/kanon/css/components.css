@@ -616,7 +616,8 @@
 /*
  * Success is lit rather than filled: a border in green and an ink mixed from it and white, because
  * it is approve. Danger, stop and unmake, is a plain key at rest and turns red under the pointer
- * or the focus, where the hand is about to press it. A key that names a state which needs a
+ * or the focus, where the hand is about to press it. Every X is danger: a key wearing the close
+ * glyph turns red as a tab's and the window's do, wherever it is drawn. A key that names a state which needs a
  * person, a blocked card, stays lit red, because there the light is the state's own.
  */
 .dya-key--success {
@@ -625,6 +626,7 @@
 
 .dya-button--danger,
 .dya-key--danger,
+.dya-key:has(> .dya-glyph--close),
 .dya-button--resolve,
 .dya-tab__action--close,
 .dya-winkey--close {
@@ -674,6 +676,7 @@
 .dya-key.dya-key--success:not(:disabled):hover,
 .dya-button--danger:is(:hover, :focus-visible),
 .dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible),
+.dya-key:has(> .dya-glyph--close):not(:disabled):is(:hover, :focus-visible),
 .dya-tab__action--close:is(:hover, :focus-visible),
 .dya-winkey--close:is(:hover, :focus-visible) {
     border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);

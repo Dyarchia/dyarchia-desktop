@@ -884,6 +884,13 @@ export function activate(ctx: PluginContext): void {
                 for (const token of tokens) {
                     const html = marked.parser(Object.assign([token], { links: tokens.links }))
                     const part = DOMPurify.sanitize(html, { RETURN_DOM_FRAGMENT: true })
+                    for (const image of part.querySelectorAll('img')) {
+                        const src = image.getAttribute('src') ?? ''
+                        if (src && !/^(https?:|data:)/i.test(src)) {
+                            image.dataset.path = src
+                            image.removeAttribute('src')
+                        }
+                    }
                     const first = part.firstElementChild
                     if (first instanceof HTMLElement) first.dataset.sourceLine = String(line)
                     article.append(part)
@@ -914,6 +921,19 @@ export function activate(ctx: PluginContext): void {
                 nearest?.scrollIntoView({ block: 'start' })
             }
 
+            /*
+             * An image the page names by a path, relative to its folder or absolute, is read by the
+             * main module and set as a data URL; one named by a web address loads as it is.
+             */
+            function loadImages(article: HTMLElement, from: string | undefined): void {
+                if (!from) return
+                for (const image of article.querySelectorAll<HTMLImageElement>('img[data-path]')) {
+                    void ctx.invoke('image', { from, src: image.dataset.path }).then((url) => {
+                        if (typeof url === 'string' && image.isConnected) image.src = url
+                    })
+                }
+            }
+
             async function renderCurrent(): Promise<void> {
                 if (!current) return
                 content.className = 'dya-text docviewer-content'
@@ -924,6 +944,7 @@ export function activate(ctx: PluginContext): void {
                 if (current.markdown && mode === 'rendered') {
                     const article = prose(current.content ?? '')
                     content.replaceChildren(article)
+                    loadImages(article, current.path)
                     await renderDiagrams(article)
                 } else {
                     content.replaceChildren(sourceLines())

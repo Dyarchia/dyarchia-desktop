@@ -39,8 +39,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and a button's alone, in the mono.
-- **Scale** body 15, rows 14, controls and meta 13px, prose 72ch centred in its width, code and figures 1.4
-  times it. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
+- **Scale** body 15, rows 14, controls and meta 13px, prose the full width of
+  its pane. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
 - **A plugin's own CSS is layout only.** A new look is declared here first and measured; an unused class goes.
 
 ## Keys and layout

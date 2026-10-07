@@ -2516,33 +2516,15 @@ button.dya-step__subject {
 
 /*
  * Prose: a document somebody wrote, rendered, such as a markdown file. Headings step down the
- * type scale in the top ink, paragraphs and lists keep the reading measure, a code block and a
- * figure sit on the field with a hairline, a link is the top ink underlined in the accent,
- * and a quote steps back to the muted ink behind a rule on its left.
- *
- * The prose takes the whole width it is given and its column sits in the middle of it, so a wide
- * panel is not a narrow strip on the left and a field of nothing. The measure is 72ch of the body
- * type, registered as a length so it is resolved once on the prose and inherited in pixels: a
- * heading in larger type keeps the paragraphs' edges. A code block and a figure may take two fifths
- * more than the text, where lines a program wrote need it, and the full width when there is less.
+ * type scale in the top ink, a code block and a figure sit on the field with a hairline, a link
+ * is the top ink underlined in the accent, and a quote steps back to the muted ink behind a rule
+ * on its left. It takes the whole width it is given, from the left edge, as an editor's preview
+ * does: a line runs until it has to wrap, and an image is as wide as it was drawn, never wider
+ * than the pane.
  */
-@property --dya-prose-measure {
-    syntax: '<length>';
-    inherits: true;
-    initial-value: 0px;
-}
-
-.dya-prose {
-    --dya-prose-measure: 72ch;
-}
-
-.dya-prose > * {
-    max-inline-size: var(--dya-prose-measure);
-    margin-inline: auto;
-}
-
-.dya-prose > :is(pre, table, .dya-prose__figure) {
-    max-inline-size: calc(var(--dya-prose-measure) * 1.4);
+.dya-prose img {
+    max-inline-size: 100%;
+    height: auto;
 }
 
 .dya-prose h1,

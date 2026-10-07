@@ -4,6 +4,18 @@ import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024
+
+const IMAGE_TYPES: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.avif': 'image/avif',
+    '.bmp': 'image/bmp',
+    '.svg': 'image/svg+xml'
+}
 const FIND_LIMIT = 8
 
 const TEXT_EXTENSIONS = [
@@ -233,6 +245,30 @@ export function activate(ctx: PluginMainContext): void {
     ctx.handle('read', async (target: unknown) => {
         if (typeof target !== 'string' || !target) return { error: 'No file to open' }
         return load(target)
+    })
+
+    /*
+     * An image a page names by a path. The renderer cannot load a file, and a relative path would
+     * resolve against the application rather than the page, so the page's folder resolves it here
+     * and the bytes go back as a data URL. Only an image, by its extension, and none too large.
+     */
+    ctx.handle('image', async (payload: unknown) => {
+        const { from, src } = (payload ?? {}) as { from?: unknown; src?: unknown }
+        if (typeof from !== 'string' || typeof src !== 'string' || !src) return null
+        let wanted = src
+        try {
+            wanted = decodeURI(src)
+        } catch {}
+        const path = resolve(dirname(from), wanted)
+        const type = IMAGE_TYPES[extname(path).toLowerCase()]
+        if (!type) return null
+        try {
+            const info = await stat(path)
+            if (!info.isFile() || info.size > MAX_IMAGE_SIZE) return null
+            return `data:${type};base64,${(await readFile(path)).toString('base64')}`
+        } catch {
+            return null
+        }
     })
 
     /*

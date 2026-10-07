@@ -7,7 +7,6 @@ import { pluginIcon } from '../plugins/host'
 import { getSearches } from '../searches'
 import type { Hit } from '../searches'
 import { Svg } from './Svg'
-import { Tip, useTipId } from './Tip'
 
 interface PaletteProps {
     panels: PanelDescriptor[]
@@ -73,7 +72,6 @@ interface AppProps {
 }
 
 function App({ panel, position, selected, open, pinned, onPoint, onRun }: AppProps): React.JSX.Element {
-    const tip = useTipId()
     const label = pinned ? 'Unpin' : 'Pin'
     return (
         <li
@@ -93,12 +91,10 @@ function App({ panel, position, selected, open, pinned, onPoint, onRun }: AppPro
                 tabIndex={-1}
                 aria-label={label}
                 aria-pressed={pinned}
-                interestfor={tip}
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() => togglePin(panel.id)}
                 dangerouslySetInnerHTML={{ __html: PIN }}
             />
-            <Tip id={tip} label={label} />
         </li>
     )
 }

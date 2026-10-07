@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { glyph } from '@dyarchia/sdk'
 import { Svg } from '../components/Svg'
-import { Tip, useTipId } from '../components/Tip'
 import { getPanel, setToolbar } from './registry'
 
 const CLOSE_ICON = glyph('close')
@@ -22,7 +21,6 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
     const tools = useRef<HTMLDivElement>(null)
     const registered = getPanel(id)
     const [title, setTitle] = useState(registered?.descriptor.title ?? '')
-    const closeTip = useTipId()
 
     useEffect(() => {
         const container = body.current
@@ -71,12 +69,10 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
                             type="button"
                             className="dya-key"
                             aria-label="Close"
-                            interestfor={closeTip}
                             onClick={onClose}
                             dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
                         />
                     </div>
-                    <Tip id={closeTip} label="Close" />
                 </header>
                 <div ref={body} className="dya-pane shell-modal-body" />
             </section>

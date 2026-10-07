@@ -587,7 +587,7 @@ function mount(ctx, container, handle) {
         const key = button(tone ? `dya-key ${tone}` : 'dya-key')
         key.innerHTML = ctx.glyph(name)
         key.setAttribute('aria-label', label)
-        withTip(key, label)
+        if (name === 'log') withTip(key, label)
         return key
     }
 

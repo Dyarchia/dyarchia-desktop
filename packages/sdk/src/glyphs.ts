@@ -4,7 +4,9 @@
  * its glyph is an icon key with a tip, never a key spelling the verb, and every panel draws that
  * glyph from here, so browse is the same folder in the board and in the crawler. Plugin is a panel's
  * own start, a bare Π, the Greek P of plugin; home is a page's home, the house of every browser.
- * Close carries `dya-glyph--close`, so kanon can turn every key wearing it red under the hand.
+ * Every glyph names itself in `data-glyph`, so `tips()` can tell the ones that say their action
+ * from the ones that do not; close also carries `dya-glyph--close`, so kanon can turn every key
+ * wearing it red under the hand.
  */
 const OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
 
@@ -56,6 +58,6 @@ const PATHS = {
 export type GlyphName = keyof typeof PATHS
 
 export function glyph(name: GlyphName): string {
-    const open = name === 'close' ? OPEN.replace('<svg', '<svg class="dya-glyph--close"') : OPEN
-    return `${open}${PATHS[name]}</svg>`
+    const mark = name === 'close' ? ` data-glyph="${name}" class="dya-glyph--close"` : ` data-glyph="${name}"`
+    return `${OPEN.replace('<svg', `<svg${mark}`)}${PATHS[name]}</svg>`
 }

@@ -24,7 +24,7 @@ REFERENCE = {
     'purple': '#7646e6',
     'cyan': '#12a4c4',
     'green': '#32d74b',
-    'yellow': '#c9b957',
+    'yellow': '#ffd700',
     'red': '#ff2c56',
 }
 

@@ -35,6 +35,7 @@ const PATHS = {
     fold: '<path d="M2 12h6"/><path d="m5 9 3 3-3 3"/><path d="M22 12h-6"/><path d="m19 9-3 3 3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>',
     unfold: '<path d="M9 12H3"/><path d="m6 9-3 3 3 3"/><path d="M15 12h6"/><path d="m18 9 3 3-3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>',
     terminal: '<path d="m5 7 5 5-5 5"/><path d="M12 18h7"/>',
+    log: '<path d="M4 5h16"/><path d="M4 10h11"/><path d="M4 15h14"/><path d="M4 20h8"/>',
     expand: '<path d="M15 4h5v5"/><path d="M9 20H4v-5"/><path d="m20 4-6 6"/><path d="m4 20 6-6"/>',
     contract: '<path d="M4 10h5V5"/><path d="M20 14h-5v5"/><path d="M9 10 3 4"/><path d="m15 14 6 6"/>',
     chevron: '<path d="m9 6 6 6-6 6"/>',

@@ -156,9 +156,8 @@ const STYLE = `
 .crw-out {
     display: flex;
     flex-direction: column;
-    flex: none;
+    flex: 0 0 50%;
     gap: var(--dya-space-2);
-    height: 180px;
     min-height: 72px;
 }
 .crw-out:has(> .dya-log[hidden]) {
@@ -757,7 +756,8 @@ function mount(ctx, container, handle) {
      * A console somebody can make bigger. The handle drags, the arrow keys move it for anybody not
      * using a pointer, and a double-click swaps between the height it was given and most of the
      * view - which is what a reader wants the moment a round starts failing and the interesting
-     * line is forty lines up. The height is remembered, so the panel opens the way it was left.
+     * line is forty lines up. It opens on half the view, since it is shown only when asked for, and
+     * its share of the view is remembered, so the panel opens the way it was left.
      */
     function buildConsole(key) {
         const MIN = 72
@@ -779,25 +779,24 @@ function mount(ctx, container, handle) {
         head.append(grip, close)
         pane.append(head, log)
 
-        let stored = 0
+        let share = 0
         try {
-            stored = Number(localStorage.getItem(key)) || 0
+            share = Number(localStorage.getItem(key)) || 0
         } catch {}
         let folded = 0
-        if (stored) pane.style.height = `${stored}px`
+        if (share > 0 && share < 1) pane.style.flexBasis = `${share * 100}%`
 
-        function room() {
-            const parent = pane.parentElement
-            return parent ? Math.max(MIN, parent.getBoundingClientRect().height - 120) : 480
-        }
+        const whole = () => pane.parentElement?.getBoundingClientRect().height || 0
+        const room = () => Math.max(MIN, whole() - 120)
 
         function size(next, remember) {
             const height = Math.max(MIN, Math.min(Math.round(next), room()))
-            pane.style.height = `${height}px`
+            const of = whole()
+            if (!of) return height
+            pane.style.flexBasis = `${(height / of) * 100}%`
             if (remember) {
-                stored = height
                 try {
-                    localStorage.setItem(key, String(height))
+                    localStorage.setItem(key, String(height / of))
                 } catch {}
             }
             return height
@@ -875,7 +874,7 @@ function mount(ctx, container, handle) {
         const run = button('dya-button dya-button--primary crw-run', 'Run')
         const ring = el('span', 'dya-ring')
         ring.hidden = true
-        const logKey = iconKey('terminal', 'Log')
+        const logKey = iconKey('log', 'Log')
         logKey.classList.add('crw-log-key')
         logKey.hidden = true
         const controls = el('div', 'crw-bar')

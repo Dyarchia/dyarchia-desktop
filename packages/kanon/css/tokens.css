@@ -85,14 +85,14 @@
     --dya-purple: #8559f9;
     --dya-cyan: #12a4c4;
     --dya-green: #32d74b;
-    --dya-yellow: #c9b957;
+    --dya-yellow: #ffd700;
     --dya-red: #ff2c56;
 
     --dya-blue-ink: #75a8fe;
     --dya-purple-ink: #c790fe;
     --dya-cyan-ink: #2cb1d1;
     --dya-green-ink: #32d74b;
-    --dya-yellow-ink: #c9b957;
+    --dya-yellow-ink: #ffd700;
     --dya-red-ink: #ff5569;
 
     --dya-ansi-red: #ff8472;
@@ -112,10 +112,10 @@
     --dya-success-soft: #32d74b1f;
     --dya-success-line: #32d74b52;
     --dya-success-ink: #32d74b;
-    --dya-warning: #c9b957;
-    --dya-warning-soft: #c9b9571c;
-    --dya-warning-line: #c9b9574d;
-    --dya-warning-ink: #c9b957;
+    --dya-warning: #ffd700;
+    --dya-warning-soft: #ffd7001c;
+    --dya-warning-line: #ffd7004d;
+    --dya-warning-ink: #ffd700;
     --dya-danger: #ff2c56;
     --dya-danger-soft: #ff2c561f;
     --dya-danger-line: #ff2c5652;

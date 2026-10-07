@@ -1,4 +1,4 @@
-import { glyph, injectStyles, tips } from '@dyarchia/sdk'
+import { glyph, injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import type { WebviewTag } from 'electron'
 
@@ -175,15 +175,14 @@ export function activate(ctx: PluginContext): void {
             injectStyles(ctx.pluginId, STYLES)
 
             const root = el('div', 'brw')
-            const tipHolder = el('div')
-            const withTip = tips(tipHolder)
+            const popovers = el('div')
+            popovers.style.display = 'contents'
 
             function key(icon: string, label: string, onClick: () => void): HTMLButtonElement {
                 const button = el('button', 'dya-key')
                 button.type = 'button'
                 button.innerHTML = icon
                 button.setAttribute('aria-label', label)
-                withTip(button, label)
                 button.addEventListener('click', onClick)
                 return button
             }
@@ -275,7 +274,7 @@ export function activate(ctx: PluginContext): void {
             sheet.setAttribute('aria-label', 'Bookmarks')
             sheet.hidden = true
 
-            root.append(bar, marks, stage, scrim, sheet, tipHolder)
+            root.append(bar, marks, stage, scrim, sheet, popovers)
             container.append(root)
 
             let loading = false
@@ -305,7 +304,6 @@ export function activate(ctx: PluginContext): void {
                 star.classList.toggle('dya-key--active', marked)
                 const label = marked ? 'Unbookmark' : 'Bookmark'
                 star.setAttribute('aria-label', label)
-                withTip(star, label)
                 handle.setTitle(kept?.title || view.getTitle() || hostOf(url) || null)
             }
 
@@ -313,7 +311,6 @@ export function activate(ctx: PluginContext): void {
                 loading = next
                 reload.innerHTML = next ? STOP_ICON : RELOAD_ICON
                 reload.setAttribute('aria-label', next ? 'Stop' : 'Reload')
-                withTip(reload, next ? 'Stop' : 'Reload')
             }
 
             /*
@@ -368,7 +365,6 @@ export function activate(ctx: PluginContext): void {
                 make.type = 'button'
                 make.innerHTML = glyph('add')
                 make.setAttribute('aria-label', 'New folder')
-                withTip(make, 'New folder')
                 make.addEventListener('click', () => {
                     const field = el('input', 'dya-field dya-field--auto')
                     field.type = 'text'
@@ -419,7 +415,7 @@ export function activate(ctx: PluginContext): void {
                     }
                     chip.popoverTargetElement = menu
                     menus.push(menu)
-                    tipHolder.append(menu)
+                    popovers.append(menu)
                     return chip
                 })
                 const loose = library.bookmarks

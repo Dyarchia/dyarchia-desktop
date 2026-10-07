@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { glyph } from '@dyarchia/sdk'
 import { registerCommand } from '../commands'
-import { Tip, useTipId } from './Tip'
 
 interface TopBarProps {
     palette: boolean
@@ -18,7 +17,6 @@ const CLOSE_ICON =
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><line x1="2.5" y1="2.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="2.5" x2="2.5" y2="9.5"/></svg>'
 
 function LauncherKey({ active, onClick }: { active: boolean; onClick: () => void }): React.JSX.Element {
-    const id = useTipId()
     return (
         <>
             <button
@@ -26,11 +24,9 @@ function LauncherKey({ active, onClick }: { active: boolean; onClick: () => void
                 aria-label="Apps"
                 aria-haspopup="dialog"
                 aria-expanded={active}
-                interestfor={id}
                 onClick={onClick}
                 dangerouslySetInnerHTML={{ __html: LAUNCHER_ICON }}
             />
-            <Tip id={id} label="Apps" />
         </>
     )
 }

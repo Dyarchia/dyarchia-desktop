@@ -11,7 +11,6 @@ import type {
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
 import { Svg } from '../components/Svg'
-import { Tip, useTipId } from '../components/Tip'
 import { PluginPanel } from '../panels/PluginPanel'
 import {
     basePanelId,
@@ -92,8 +91,6 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 
     const descriptor = getPanel(props.api.id)?.descriptor
     const icon = mark ?? descriptor?.icon
-    const anotherTip = useTipId()
-    const closeTip = useTipId()
     const glyph = mark ? 'dya-glyph dya-glyph--mark' : 'dya-glyph'
 
     /*
@@ -141,7 +138,6 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                         <button
                             className="dya-tab__action"
                             aria-label={`Another ${descriptor.title}`}
-                            interestfor={anotherTip}
                             onPointerDown={(event) => event.stopPropagation()}
                             onClick={(event) => {
                                 event.stopPropagation()
@@ -153,7 +149,6 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                     <button
                         className="dya-tab__action dya-tab__action--close"
                         aria-label={`Close ${shown}`}
-                        interestfor={closeTip}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
                             event.stopPropagation()
@@ -162,8 +157,6 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                         dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
                     />
                 </span>
-                {descriptor?.duplicable && <Tip id={anotherTip} label="Another" />}
-                <Tip id={closeTip} label="Close" />
             </span>
         </div>
     )

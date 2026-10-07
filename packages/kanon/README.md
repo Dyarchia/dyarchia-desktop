@@ -54,8 +54,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `button--resolve`, red, green answer.
 - **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
   focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
-- **A tip exists only on an icon-only key**, one or two words, never a word already on screen beside it. A
-  label, a pill and a key that spells anything have none; the SDK's `tips()` refuses them.
+- **A tip exists only on a key whose glyph does not say its action**, one or two words. An X, a plus, a
+  magnifier, a bin, a folder have none; neither has a label, a pill or a key that spells anything. The SDK's
+  `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (Π, log, fold, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in

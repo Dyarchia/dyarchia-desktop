@@ -49,8 +49,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 - **A field is an underline**, brightening under the pointer and turning the accent with the keyboard. A field and
   its keys are a `join`, the field filling the row. Adjacent icon keys in a `toolbar` join on their own.
 - **One primary per view**: `--primary`, a block of the accent with the ground's black for its word (6.37; 7.77 on
-  the hover step). `key--success` is lit green; `--danger` turns red only under pointer or focus. **A state a
-  person answers is one key**: `button--resolve`, red, green answer.
+  the hover step). `key--success` is lit green; `--danger` turns red only under pointer or focus, and so does every
+  key wearing the close X (`glyph--close`, set by the SDK). **A state a person answers is one key**:
+  `button--resolve`, red, green answer.
 - **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
   focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
 - **A tip exists only on an icon-only key**, one or two words, never a word already on screen beside it. A
@@ -81,7 +82,7 @@ Keys         button (--primary --danger --resolve __state __answer) key (--activ
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
 Input        field (--auto --prose __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
-Hue          hue--<name> dot legend glyph (--mark)   (blue purple cyan)
+Hue          hue--<name> dot legend glyph (--mark --close)   (blue purple cyan)
 Content      table (--bare __num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)

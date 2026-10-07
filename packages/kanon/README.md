@@ -24,7 +24,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 
 - **Six colours and no others**, blue, purple, cyan, green, yellow and red, each a light `--dya-<name>`
   and an `-ink` for text, lifted by `tools/palette.py`. **Green is success, yellow warning, red error,
-  always**; yellow is a muted lemon, far greener than the accent, so a warning is never read as the accent. Blue,
+  always**; yellow is a full gold, #ffd700, far lighter and yellower than the copper, so a warning is never read as
+  the accent. Blue,
   purple and cyan are the only categorical hues (`hue--<name>`, from `ctx.hues`): a dot beside a name or a
   glyph, never a pill's word, a fill or a dot inside a pill. **Plugins have no hue.**
 - **An ink under 4.50 is not text**, above 3.00 it may be a graphic; `danger-ink` is 4.50 at the least,
@@ -38,8 +39,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and a button's alone, in the mono.
-- **Scale** body 15, rows 14, controls and meta 13px, prose 72ch. **Corners are square** except a light, a dot
-  and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
+- **Scale** body 15, rows 14, controls and meta 13px, prose 72ch centred in its width, code and figures 1.4
+  times it. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
 - **A plugin's own CSS is layout only.** A new look is declared here first and measured; an unused class goes.
 
 ## Keys and layout
@@ -56,7 +57,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
 - **A tip exists only on a key whose glyph does not say its action**, one or two words. An X, a plus, a
   magnifier, a bin, a folder have none; neither has a label, a pill or a key that spells anything. The SDK's
-  `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (Π, log, fold, rename...).
+  `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (Π, log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in

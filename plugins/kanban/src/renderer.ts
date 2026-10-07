@@ -803,7 +803,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             fold.classList.toggle('dya-reveal--held', closed || status === 'triage')
             fold.innerHTML = glyph(closed ? 'unfold' : 'fold')
             fold.setAttribute('aria-label', closed ? `show ${label}` : `fold ${label}`)
-            withTip(fold, closed ? 'Show' : 'Fold')
             fold.setAttribute('aria-expanded', String(!closed))
         }
         apply(folded(status))

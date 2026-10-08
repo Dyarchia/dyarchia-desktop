@@ -123,8 +123,8 @@
     --dya-idle: #858b95;
 
     --dya-code-keyword: #c792ea;
-    --dya-code-string: #c3e88d;
-    --dya-code-number: #c3e88d;
+    --dya-code-string: #ffd700;
+    --dya-code-number: #ffd700;
     --dya-code-function: #82aaff;
     --dya-code-key: #89ddff;
     --dya-code-comment: var(--dya-text-faint);

@@ -187,7 +187,7 @@
 
 /*
  * The classes are highlight.js scopes under kanon's prefix, and every scope a grammar emits lands
- * on one of the code inks. Purple is the language's own words, green what is quoted or written
+ * on one of the code inks. Purple is the language's own words, gold what is quoted or written
  * out as a value, blue a name being declared or a heading, cyan the key of a pair, which is what
  * sets a JSON or YAML key apart from its value. A comment steps down to the faint ink and
  * punctuation to the muted one, so the code outranks the notes about it. In a diff an added line is

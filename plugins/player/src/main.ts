@@ -5,6 +5,7 @@ import { createReadStream } from 'node:fs'
 import { mkdir, readdir, readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { Readable } from 'node:stream'
+import { decodeText } from '@dyarchia/sdk'
 import type { PluginMainContext } from '@dyarchia/sdk'
 import { CONVERTIBLE, IMAGE_EXTENSIONS, MIME_TYPES, PLAYABLE_AUDIO, PLAYABLE_VIDEO, VIDEO_EXTENSIONS } from './media.js'
 
@@ -180,7 +181,7 @@ export function activate(ctx: PluginMainContext): void {
             const extension = extname(name).toLowerCase()
             if (!name.startsWith(`${base}.`) || (extension !== '.vtt' && extension !== '.srt')) continue
             const middle = name.slice(base.length + 1, -extension.length)
-            const text = await readFile(join(folder, name), 'utf8').catch(() => '')
+            const text = await readFile(join(folder, name)).then(decodeText, () => '')
             if (!text) continue
             found.push({ lang: middle.split('.')[0] ?? '', label: middle, text: extension === '.srt' ? vtt(text) : text })
         }

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, shell } from 'electron'
 import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path'
+import { decodeText } from '@dyarchia/sdk'
 import type { PluginMainContext } from '@dyarchia/sdk'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -82,7 +83,7 @@ async function load(filePath: string): Promise<Record<string, unknown>> {
              * this against the file on disk at the moment of writing.
              */
             mtime: info.mtimeMs,
-            content: await readFile(filePath, 'utf-8')
+            content: decodeText(await readFile(filePath))
         }
     } catch {
         return { error: 'Cannot read' }
@@ -176,7 +177,7 @@ export function activate(ctx: PluginMainContext): void {
             }
             const info = await stat(path)
             if (info.size > MAX_FILE_SIZE) continue
-            const lines = (await readFile(path, 'utf-8')).split(/\r?\n/)
+            const lines = decodeText(await readFile(path)).split(/\r?\n/)
             const at = lines.findIndex((line) => line.toLowerCase().includes(words))
             if (at >= 0) found.push({ path, name: entry.name, line: at + 1, text: lines[at].trim().slice(0, 120) })
         }

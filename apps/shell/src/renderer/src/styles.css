@@ -135,8 +135,10 @@ body,
 
 /*
  * The launcher fills the dock when nothing is open in it. It is centred rather than pinned to the
- * top because it is the whole content of the window at that moment, and it stops growing at 728px
- * so a maximised window gets three tiles in a row rather than eight in a line.
+ * top because it is the whole content of the window at that moment. Its tiles stand in a square
+ * phalanx, never a column two wide and as long as the plugins are many: 3x3 up to nine, a file more
+ * at ten (4x3), a rank more at thirteen (4x4), and so on, files never fewer than ranks. Each file is 248px at most, so a
+ * maximised window does not stretch them into a line.
  */
 .launcher {
     display: flex;
@@ -157,9 +159,15 @@ body,
     text-align: center;
 }
 
-.launcher-grid {
+.dya-grid.launcher-grid {
+    grid-template-columns: repeat(var(--launcher-files), minmax(0, 1fr));
     width: 100%;
-    max-width: 728px;
+    max-width: calc(var(--launcher-files) * 248px);
+}
+
+.launcher-grid > .dya-tile {
+    align-items: center;
+    text-align: center;
 }
 
 .dv-shell.dockview-theme-abyss-spaced .dv-resize-container .dv-groupview {

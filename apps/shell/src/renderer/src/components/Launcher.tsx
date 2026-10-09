@@ -27,12 +27,13 @@ interface LauncherProps {
 
 export function Launcher({ panels, onOpen }: LauncherProps): React.JSX.Element {
     useApps()
+    const files = Math.max(3, Math.ceil(Math.sqrt(panels.length)))
     return (
         <div className="dya-pane launcher">
             <div className="launcher-head">
                 <span className="dya-carved">Dyarchia Desktop</span>
             </div>
-            <div className="dya-grid launcher-grid">
+            <div className="dya-grid launcher-grid" style={{ '--launcher-files': files } as React.CSSProperties}>
                 {orderApps(panels).map((panel) => (
                     <button
                         key={panel.id}

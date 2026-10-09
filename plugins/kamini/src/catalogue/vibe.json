@@ -1,0 +1,1366 @@
+{
+    "docs": "https://docs.mistral.ai/vibe/code/overview",
+    "agent": [
+        {
+            "key": "display_name",
+            "type": "string",
+            "note": "Name shown in the CLI picker; defaults to the file stem title-cased.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/agents"
+        },
+        {
+            "key": "safety",
+            "type": "enum",
+            "values": [
+                "safe",
+                "neutral",
+                "destructive",
+                "smart",
+                "yolo"
+            ],
+            "default": "neutral",
+            "note": "Input border colour hint only; enforces nothing. smart exists in code for the built-in smart-approve (source).",
+            "url": "https://docs.mistral.ai/vibe/code/cli/agents"
+        },
+        {
+            "key": "base_disabled",
+            "type": "list",
+            "note": "Legacy key, auto-migrated into disabled_tools and rewritten in the file on discovery (source: _migration.py).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/agents/_migration.py"
+        },
+        {
+            "key": "active_model",
+            "type": "string",
+            "default": "",
+            "note": "Model alias to use: a [[models]] alias or built-in ID; empty means the default model.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "allowed_models",
+            "type": "list",
+            "note": "Patterns over model name (not alias); non-empty means only matches are selectable. Glob and re: supported.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "routed_default_model",
+            "type": "string",
+            "default": "",
+            "note": "Experiment-routed default alias set at runtime by GrowthBook; not meant to be written by hand (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "routed_model_config",
+            "type": "object",
+            "note": "Full model definition for routed_default_model, supplied at runtime by GrowthBook (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "routed_extra_models",
+            "type": "list",
+            "note": "Extra models injected into the picker at runtime by GrowthBook (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "providers",
+            "type": "list",
+            "note": "[[providers]] table array of API endpoints; merged by name with the built-in mistral and llamacpp.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.name",
+            "type": "string",
+            "required": true,
+            "note": "Provider identifier referenced by a model's provider key.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.api_base",
+            "type": "string",
+            "required": true,
+            "note": "Base URL of the provider API.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.api_key_env_var",
+            "type": "string",
+            "default": "",
+            "note": "Name of the environment variable that holds the API key.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.api_style",
+            "type": "string",
+            "default": "openai",
+            "note": "Wire API style.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.backend",
+            "type": "enum",
+            "values": [
+                "generic",
+                "mistral"
+            ],
+            "default": "generic",
+            "note": "Client backend implementation.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.reasoning_field_name",
+            "type": "string",
+            "default": "reasoning_content",
+            "note": "Response field carrying reasoning content (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "providers.emits_finish_reason",
+            "type": "bool",
+            "default": true,
+            "note": "Set false for endpoints that never send a finish reason, to avoid spurious retries (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "providers.browser_auth_base_url",
+            "type": "string",
+            "note": "Console URL used for browser sign-in on custom Mistral deployments (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "providers.browser_auth_api_base_url",
+            "type": "string",
+            "note": "API URL used by browser sign-in polling (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "providers.browser_auth_allow_origin_rewrite",
+            "type": "bool",
+            "default": false,
+            "note": "Re-home sign-in URLs onto the configured origins for split-horizon setups (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "providers.project_id",
+            "type": "string",
+            "default": "",
+            "note": "Provider project identifier (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "providers.region",
+            "type": "string",
+            "default": "",
+            "note": "Provider region, enterprise deployments only.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "providers.extra_headers",
+            "type": "map",
+            "note": "Extra HTTP headers sent with every request to the provider.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models",
+            "type": "list",
+            "note": "[[models]] table array of model presets, keyed by alias and deep-merged across layers.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.name",
+            "type": "string",
+            "required": true,
+            "note": "Model ID sent to the provider API.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.provider",
+            "type": "string",
+            "required": true,
+            "note": "Name of the [[providers]] entry serving this model.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.alias",
+            "type": "string",
+            "note": "Local alias used by active_model; defaults to name.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.display_name",
+            "type": "string",
+            "note": "Label shown in the model picker.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.temperature",
+            "type": "int",
+            "default": 0.2,
+            "note": "Sampling temperature.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.input_price",
+            "type": "int",
+            "default": 0,
+            "note": "Price per million input tokens; feeds --max-price.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.output_price",
+            "type": "int",
+            "default": 0,
+            "note": "Price per million output tokens; feeds --max-price.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.cached_input_price",
+            "type": "int",
+            "note": "Price per million cached input tokens; unset bills them at input_price.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.thinking",
+            "type": "enum",
+            "values": [
+                "off",
+                "low",
+                "medium",
+                "high",
+                "max"
+            ],
+            "default": "off",
+            "note": "Default thinking level; reset if outside thinking_levels.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.thinking_levels",
+            "type": "list",
+            "note": "Thinking levels this model offers, in display order; empty means off only.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.supports_images",
+            "type": "bool",
+            "default": false,
+            "note": "Whether the model accepts images directly.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.max_context_length",
+            "type": "int",
+            "note": "Context window in tokens; compaction defaults to 80% of it.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "models.auto_compact_threshold",
+            "type": "int",
+            "note": "Token count that triggers automatic compaction for this model; 0 disables it.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "compaction_model",
+            "type": "object",
+            "note": "Model table used for compaction; ignored unless on the active model's provider (source).",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "vision_model",
+            "type": "object",
+            "note": "Model table that describes images for an active model that cannot see them.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "utility_models.title",
+            "type": "string",
+            "default": "",
+            "note": "Model alias for session titles, or active for the session model; empty means automatic (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "utility_models.smart_approve",
+            "type": "string",
+            "default": "",
+            "note": "Model alias for the smart-approve classifier, or active; empty means automatic (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "auto_compact_threshold",
+            "type": "int",
+            "note": "Global compaction token count for models declaring neither threshold nor window; 0 disables (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "active_transcribe_model",
+            "type": "string",
+            "default": "voxtral-realtime",
+            "note": "Alias of the voice transcription model (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "transcribe_providers",
+            "type": "list",
+            "note": "Transcription providers: name, api_base, api_key_env_var, client (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "transcribe_models",
+            "type": "list",
+            "note": "Transcription models: name, provider, alias, sample_rate, encoding, language, target_streaming_delay_ms (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "active_tts_model",
+            "type": "string",
+            "default": "voxtral-tts",
+            "note": "Alias of the text-to-speech model (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "tts_providers",
+            "type": "list",
+            "note": "Text-to-speech providers: name, api_base, api_key_env_var, client (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "tts_models",
+            "type": "list",
+            "note": "Text-to-speech models: name, provider, alias, voice, response_format (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "tools",
+            "type": "map",
+            "note": "Per-tool configuration tables, [tools.<name>], deep-merged across layers.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "tool_paths",
+            "type": "list",
+            "note": "Extra directories or files searched for custom Python tools.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "enabled_tools",
+            "type": "list",
+            "values": [
+                "read_file",
+                "write_file",
+                "edit",
+                "grep",
+                "bash",
+                "bash_output",
+                "bash_stdin",
+                "bash_sessions",
+                "bash_log_file",
+                "git_bash",
+                "git_bash_output",
+                "git_bash_stdin",
+                "git_bash_sessions",
+                "git_bash_log_file",
+                "powershell",
+                "powershell_output",
+                "powershell_stdin",
+                "powershell_sessions",
+                "powershell_log_file",
+                "todo",
+                "ask_user_question",
+                "task",
+                "skill",
+                "exit_plan_mode",
+                "web_fetch",
+                "web_search",
+                "cron"
+            ],
+            "note": "Allow-list of tool names or patterns (exact, glob, re: regex); non-empty means only these.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "disabled_tools",
+            "type": "list",
+            "values": [
+                "read_file",
+                "write_file",
+                "edit",
+                "grep",
+                "bash",
+                "bash_output",
+                "bash_stdin",
+                "bash_sessions",
+                "bash_log_file",
+                "git_bash",
+                "git_bash_output",
+                "git_bash_stdin",
+                "git_bash_sessions",
+                "git_bash_log_file",
+                "powershell",
+                "powershell_output",
+                "powershell_stdin",
+                "powershell_sessions",
+                "powershell_log_file",
+                "todo",
+                "ask_user_question",
+                "task",
+                "skill",
+                "exit_plan_mode",
+                "web_fetch",
+                "web_search",
+                "cron"
+            ],
+            "note": "Tool names or patterns removed after enabled_tools filtering.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "bypass_tool_permissions",
+            "type": "bool",
+            "default": false,
+            "note": "Approve every tool call without prompting; what auto-approve sets (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/agents/models.py"
+        },
+        {
+            "key": "managed_shell_tools_enabled",
+            "type": "bool",
+            "default": false,
+            "note": "Use managed OS-native shell tools instead of the one-shot bash tool (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "enable_connectors",
+            "type": "bool",
+            "default": true,
+            "note": "Master switch for Mistral connectors.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "connectors",
+            "type": "list",
+            "note": "[[connectors]] entries: name, disabled, disabled_tools, to hide connectors or some of their tools.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "agent_paths",
+            "type": "list",
+            "note": "Extra directories searched for custom agent TOML files (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "enabled_agents",
+            "type": "list",
+            "note": "Allow-list of agent names or patterns; non-empty means only these are available (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "disabled_agents",
+            "type": "list",
+            "note": "Agent names or patterns to hide; ignored when enabled_agents is set (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "installed_agents",
+            "type": "list",
+            "note": "Opt-in built-in agents that were installed, e.g. lean (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "default_agent",
+            "type": "string",
+            "default": "accept-edits",
+            "note": "Agent used when --agent is absent; code applies it in programmatic mode too.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "smart_approve_available",
+            "type": "bool",
+            "default": false,
+            "note": "Expose smart-approve in the mode picker; set by an experiment (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "smart_approve_default",
+            "type": "bool",
+            "default": false,
+            "note": "Make smart-approve the default mode; set by an experiment (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "skill_paths",
+            "type": "list",
+            "note": "Extra directories searched for skills, first in discovery order.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "enabled_skills",
+            "type": "list",
+            "note": "Allow-list of skill names or patterns; non-empty means only these load.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "disabled_skills",
+            "type": "list",
+            "note": "Skill names or patterns to hide when enabled_skills is empty.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "experimental_enable_registry_skills",
+            "type": "bool",
+            "default": false,
+            "note": "Pull shared workspace skills from Mistral and enable /skills (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "enable_otel",
+            "type": "bool",
+            "default": false,
+            "note": "Export OpenTelemetry traces; needs enable_telemetry (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "otel_endpoint",
+            "type": "string",
+            "default": "",
+            "note": "Custom OTLP/HTTP collector base URL; /v1/traces is appended (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "otel_redaction",
+            "type": "enum",
+            "values": [
+                "default",
+                "strict",
+                "none"
+            ],
+            "default": "default",
+            "note": "Span attribute redaction level (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "console_base_url",
+            "type": "string",
+            "default": "https://console.mistral.ai",
+            "note": "Mistral console URL; protected, ignored inside an agent file (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/layers/agent_profile.py"
+        },
+        {
+            "key": "vibe_base_url",
+            "type": "string",
+            "default": "https://chat.mistral.ai",
+            "note": "Le Chat deployment for upgrade and API-key links; protected, ignored inside an agent file (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/layers/agent_profile.py"
+        },
+        {
+            "key": "vibe_code_sessions_base_url",
+            "type": "string",
+            "default": "https://chat.mistral.ai",
+            "note": "Vibe Code Web host for teleport; protected, ignored inside an agent file (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/layers/agent_profile.py"
+        },
+        {
+            "key": "theme",
+            "type": "string",
+            "default": "auto",
+            "note": "Textual UI theme; auto follows the terminal or OS appearance (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "applied_migrations",
+            "type": "list",
+            "note": "Internal record of config migrations already applied (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "disable_welcome_banner_animation",
+            "type": "bool",
+            "default": false,
+            "note": "Turn off the startup banner animation (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "show_greeting",
+            "type": "bool",
+            "default": true,
+            "note": "Show a greeting at startup, Mistral providers only, once per 24h (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "autocopy_to_clipboard",
+            "type": "bool",
+            "default": true,
+            "note": "Copy selected text to the clipboard automatically (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "file_watcher_for_autocomplete",
+            "type": "bool",
+            "default": true,
+            "note": "Watch files to keep @ autocompletion fresh (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "ask_confirmation_on_exit",
+            "type": "bool",
+            "default": true,
+            "note": "Require a second Ctrl+D to quit (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "displayed_workdir",
+            "type": "string",
+            "default": "",
+            "note": "Override the working directory shown in the UI (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "context_warnings",
+            "type": "bool",
+            "default": false,
+            "note": "Warn as the context window fills (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "voice_mode_enabled",
+            "type": "bool",
+            "default": false,
+            "note": "Enable voice input (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "narrator_enabled",
+            "type": "bool",
+            "default": false,
+            "note": "Enable spoken narration of replies (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "show_thinking_nodes",
+            "type": "bool",
+            "default": false,
+            "note": "Show the model's thinking blocks in the transcript (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "show_subagent_status_list",
+            "type": "bool",
+            "default": true,
+            "note": "Show the subagent status list and transcript views under the prompt (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "worktree_limit",
+            "type": "int",
+            "default": 15,
+            "note": "Maximum recent managed worktrees kept locally, 0 to 100 (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "raise_on_compaction_failure",
+            "type": "bool",
+            "default": false,
+            "note": "Fail the turn when compaction fails instead of continuing (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "enable_telemetry",
+            "type": "bool",
+            "default": true,
+            "note": "Send anonymous usage and error telemetry.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "system_prompt_id",
+            "type": "string",
+            "default": "cli",
+            "note": "Built-in prompt (cli, explore, tests, lean, minimal) or a .md stem in a prompts folder.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/agents"
+        },
+        {
+            "key": "compaction_prompt_id",
+            "type": "string",
+            "default": "compact",
+            "note": "Prompt used to summarise history on compaction; built-in compact or a .md stem (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "include_commit_signature",
+            "type": "bool",
+            "default": true,
+            "note": "Ask the model to sign git commits it makes (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "include_model_info",
+            "type": "bool",
+            "default": true,
+            "note": "Add the model name to the system prompt (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "include_project_context",
+            "type": "bool",
+            "default": true,
+            "note": "Add git and directory context to the system prompt (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "include_prompt_detail",
+            "type": "bool",
+            "default": true,
+            "note": "Add OS and tool detail sections to the system prompt (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "enable_update_checks",
+            "type": "bool",
+            "default": true,
+            "note": "Check daily for a newer release and prompt on next launch (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "enable_auto_update",
+            "type": "bool",
+            "default": true,
+            "note": "Install new releases automatically.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "enable_notifications",
+            "type": "bool",
+            "default": true,
+            "note": "OS notifications when a long task ends or input is needed.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/configuration-reference"
+        },
+        {
+            "key": "experimental_enable_tab_status",
+            "type": "bool",
+            "default": true,
+            "note": "Show session status in the terminal tab title (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "enable_system_trust_store",
+            "type": "bool",
+            "default": false,
+            "note": "Use the OS certificate store for TLS (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "api_timeout",
+            "type": "int",
+            "default": 720,
+            "note": "Seconds before a model request times out (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "api_retry_max_elapsed_time",
+            "type": "int",
+            "default": 300,
+            "note": "Total seconds spent retrying a failed model request (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "api_connect_timeout",
+            "type": "int",
+            "default": 10,
+            "note": "Connect timeout in seconds for model requests (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "api_write_timeout",
+            "type": "int",
+            "default": 30,
+            "note": "Write timeout in seconds for model requests (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "api_pool_timeout",
+            "type": "int",
+            "default": 10,
+            "note": "Connection pool timeout in seconds (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "log_level",
+            "type": "enum",
+            "values": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            "note": "Level for ~/.vibe/logs/vibe.log; LOG_LEVEL env overrides it (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/vibe_schema.py"
+        },
+        {
+            "key": "project_context.default_commit_count",
+            "type": "int",
+            "default": 5,
+            "note": "Recent commits included in project context (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "project_context.timeout_seconds",
+            "type": "int",
+            "default": 2,
+            "note": "Time budget for gathering project context (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "session_logging.enabled",
+            "type": "bool",
+            "default": true,
+            "note": "Save sessions to disk; needed for --continue and --resume (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "session_logging.save_dir",
+            "type": "string",
+            "default": "",
+            "note": "Session folder; empty means ~/.vibe/logs/session (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "session_logging.session_prefix",
+            "type": "string",
+            "default": "session",
+            "note": "Filename prefix for saved sessions (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "session_logging.generate_titles",
+            "type": "bool",
+            "default": true,
+            "note": "Generate session titles in the background with a model (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "experiments.enable",
+            "type": "bool",
+            "default": true,
+            "note": "Take part in GrowthBook experiments (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "experiments.api_host",
+            "type": "string",
+            "default": "https://experiments.mistral.services/",
+            "note": "Experiments service host (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        },
+        {
+            "key": "experiments.client_key",
+            "type": "string",
+            "note": "Experiments SDK client key (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+        }
+    ],
+    "skill": [
+        {
+            "key": "license",
+            "type": "string",
+            "note": "License name or a bundled license file.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "compatibility",
+            "type": "string",
+            "note": "Environment requirements, max 500 characters.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "metadata",
+            "type": "map",
+            "note": "Arbitrary string key-value pairs (source: skills/models.py).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/models.py"
+        },
+        {
+            "key": "allowed-tools",
+            "type": "list",
+            "values": [
+                "read_file",
+                "write_file",
+                "edit",
+                "grep",
+                "bash",
+                "bash_output",
+                "bash_stdin",
+                "bash_sessions",
+                "bash_log_file",
+                "git_bash",
+                "git_bash_output",
+                "git_bash_stdin",
+                "git_bash_sessions",
+                "git_bash_log_file",
+                "powershell",
+                "powershell_output",
+                "powershell_stdin",
+                "powershell_sessions",
+                "powershell_log_file",
+                "todo",
+                "ask_user_question",
+                "task",
+                "skill",
+                "exit_plan_mode",
+                "web_fetch",
+                "web_search",
+                "cron"
+            ],
+            "note": "Pre-approved tools, space-separated string or list; experimental.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "user-invocable",
+            "type": "bool",
+            "default": true,
+            "note": "When false the skill is model-only, hidden from the slash menu and /name.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+            "key": "disable-model-invocation",
+            "type": "bool",
+            "default": false,
+            "note": "When true only the user can invoke it; hidden from the model and the skill tool (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        }
+    ],
+    "tools": [
+        "read_file",
+        "write_file",
+        "edit",
+        "grep",
+        "bash",
+        "bash_output",
+        "bash_stdin",
+        "bash_sessions",
+        "bash_log_file",
+        "git_bash",
+        "git_bash_output",
+        "git_bash_stdin",
+        "git_bash_sessions",
+        "git_bash_log_file",
+        "powershell",
+        "powershell_output",
+        "powershell_stdin",
+        "powershell_sessions",
+        "powershell_log_file",
+        "todo",
+        "ask_user_question",
+        "task",
+        "skill",
+        "exit_plan_mode",
+        "web_fetch",
+        "web_search",
+        "cron"
+    ],
+    "events": [
+        {
+            "name": "pre_tool",
+            "note": "Per tool call, before the permission prompt; match is a tool-name glob or re: regex, case-insensitive, default *.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+        },
+        {
+            "name": "post_tool",
+            "note": "Per tool call, only if the tool body ran; same matcher; can replace or append to the output text.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+        },
+        {
+            "name": "post_agent",
+            "note": "Once per turn after the agent stops with no pending tool calls; no matcher; deny forces a retry, max 3.",
+            "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+        }
+    ],
+    "hookFields": {
+        "command": [
+            {
+                "key": "name",
+                "type": "string",
+                "required": true,
+                "note": "Unique hook id; a project hook wins over a user hook with the same name.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+            },
+            {
+                "key": "command",
+                "type": "string",
+                "required": true,
+                "note": "Shell command run in the session cwd; gets the event JSON on stdin.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+            },
+            {
+                "key": "match",
+                "type": "string",
+                "note": "Tool-name matcher, glob or re: regex, case-insensitive; tool hooks only, default * in code.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 60,
+                "note": "Seconds before the whole process tree is killed.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+            },
+            {
+                "key": "strict",
+                "type": "bool",
+                "default": false,
+                "note": "Tool hooks only: any failure denies the call (pre_tool) or clears the output (post_tool).",
+                "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+            },
+            {
+                "key": "description",
+                "type": "string",
+                "note": "Free text shown in diagnostics.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/hooks"
+            }
+        ]
+    },
+    "mcpFields": {
+        "stdio": [
+            {
+                "key": "prompt",
+                "type": "text",
+                "note": "Usage hint appended to every tool description of this server (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "startup_timeout_sec",
+                "type": "int",
+                "default": 10,
+                "note": "Seconds to wait for the server to start and initialise.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "tool_timeout_sec",
+                "type": "int",
+                "default": 60,
+                "note": "Seconds to wait for a tool call.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "sampling_enabled",
+                "type": "bool",
+                "default": true,
+                "note": "Let the server request model completions via sampling/createMessage (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "disabled",
+                "type": "bool",
+                "default": false,
+                "note": "Hide every tool of this server; still discovered (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "disabled_tools",
+                "type": "list",
+                "note": "Tool names without the prefix to hide from this server (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "cwd",
+                "type": "string",
+                "note": "Working directory for the server process (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            }
+        ],
+        "http": [
+            {
+                "key": "prompt",
+                "type": "text",
+                "note": "Usage hint appended to every tool description of this server (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "startup_timeout_sec",
+                "type": "int",
+                "default": 10,
+                "note": "Seconds to wait for the server to start and initialise.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "tool_timeout_sec",
+                "type": "int",
+                "default": 60,
+                "note": "Seconds to wait for a tool call.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "sampling_enabled",
+                "type": "bool",
+                "default": true,
+                "note": "Let the server request model completions via sampling/createMessage (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "disabled",
+                "type": "bool",
+                "default": false,
+                "note": "Hide every tool of this server; still discovered (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "disabled_tools",
+                "type": "list",
+                "note": "Tool names without the prefix to hide from this server (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.type",
+                "type": "enum",
+                "values": [
+                    "static",
+                    "oauth"
+                ],
+                "default": "static",
+                "note": "static sends headers or an env token; oauth runs a browser login (oauth in code only).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.headers",
+                "type": "map",
+                "note": "Extra HTTP headers; legacy top-level headers is promoted here.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.api_key_env",
+                "type": "string",
+                "default": "",
+                "note": "Env var holding a token for HTTP; legacy top-level api_key_env is promoted here.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.api_key_header",
+                "type": "string",
+                "default": "Authorization",
+                "note": "Header that carries the token.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.api_key_format",
+                "type": "string",
+                "default": "Bearer {token}",
+                "note": "Header value template; must contain {token}.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.scopes",
+                "type": "list",
+                "note": "OAuth scopes to request, required with type oauth; empty accepts the server default (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.client_id",
+                "type": "string",
+                "note": "Pre-registered public OAuth client id; exclusive with client_metadata_url (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.client_metadata_url",
+                "type": "string",
+                "note": "Client metadata document URL; exclusive with client_id (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.redirect_port",
+                "type": "int",
+                "default": 47823,
+                "note": "Loopback port for the OAuth callback, 1024 to 65535 (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            }
+        ],
+        "streamable-http": [
+            {
+                "key": "prompt",
+                "type": "text",
+                "note": "Usage hint appended to every tool description of this server (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "startup_timeout_sec",
+                "type": "int",
+                "default": 10,
+                "note": "Seconds to wait for the server to start and initialise.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "tool_timeout_sec",
+                "type": "int",
+                "default": 60,
+                "note": "Seconds to wait for a tool call.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "sampling_enabled",
+                "type": "bool",
+                "default": true,
+                "note": "Let the server request model completions via sampling/createMessage (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "disabled",
+                "type": "bool",
+                "default": false,
+                "note": "Hide every tool of this server; still discovered (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "disabled_tools",
+                "type": "list",
+                "note": "Tool names without the prefix to hide from this server (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.type",
+                "type": "enum",
+                "values": [
+                    "static",
+                    "oauth"
+                ],
+                "default": "static",
+                "note": "static sends headers or an env token; oauth runs a browser login (oauth in code only).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.headers",
+                "type": "map",
+                "note": "Extra HTTP headers; legacy top-level headers is promoted here.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.api_key_env",
+                "type": "string",
+                "default": "",
+                "note": "Env var holding a token for HTTP; legacy top-level api_key_env is promoted here.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.api_key_header",
+                "type": "string",
+                "default": "Authorization",
+                "note": "Header that carries the token.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.api_key_format",
+                "type": "string",
+                "default": "Bearer {token}",
+                "note": "Header value template; must contain {token}.",
+                "url": "https://docs.mistral.ai/vibe/code/cli/mcp-servers"
+            },
+            {
+                "key": "auth.scopes",
+                "type": "list",
+                "note": "OAuth scopes to request, required with type oauth; empty accepts the server default (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.client_id",
+                "type": "string",
+                "note": "Pre-registered public OAuth client id; exclusive with client_metadata_url (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.client_metadata_url",
+                "type": "string",
+                "note": "Client metadata document URL; exclusive with client_id (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            },
+            {
+                "key": "auth.redirect_port",
+                "type": "int",
+                "default": 47823,
+                "note": "Loopback port for the OAuth callback, 1024 to 65535 (source).",
+                "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/config/models.py"
+            }
+        ]
+    },
+    "command": null,
+    "prompt": [],
+    "rule": [],
+    "plugin": [
+        {
+            "key": "$schema",
+            "type": "string",
+            "required": true,
+            "note": "Must be the Agent Plugins 1.0 schema URL.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "author.name",
+            "type": "string",
+            "note": "Author name.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "author.email",
+            "type": "string",
+            "note": "Author email.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "author.url",
+            "type": "string",
+            "note": "Author URL.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "homepage",
+            "type": "string",
+            "note": "Project home page URL.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "repository",
+            "type": "string",
+            "note": "Source repository URL.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "License identifier.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "keywords",
+            "type": "list",
+            "note": "Search tags.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "extensions",
+            "type": "map",
+            "note": "Vendor extension blocks keyed by reverse-DNS id.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "extensions.ai.mistral.vibe.schemaVersion",
+            "type": "int",
+            "required": true,
+            "note": "Required inside the Vibe extension, which gates hooks, knowledge and agents.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "extensions.ai.mistral.vibe.toolNamespace",
+            "type": "string",
+            "note": "Identifier prefixed to component names (ns:skill); derived from name when absent.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        },
+        {
+            "key": "extensions.ai.mistral.vibe.toolOverrides",
+            "type": "map",
+            "note": "Renamed tool identifier.",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/builtins/vibe.py"
+        }
+    ],
+    "skillYaml": [
+        {
+            "key": "policy.allow_implicit_invocation",
+            "type": "bool",
+            "default": true,
+            "note": "false makes the skill explicit-only, same as disable-model-invocation (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/parser.py"
+        },
+        {
+            "key": "policy.products",
+            "type": "list",
+            "note": "Accepted and preserved but not applied by Vibe (source).",
+            "url": "https://github.com/mistralai/mistral-vibe/blob/main/vibe/core/skills/parser.py"
+        }
+    ]
+}

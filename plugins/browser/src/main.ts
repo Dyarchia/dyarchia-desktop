@@ -1,20 +1,19 @@
 import { app, session, shell } from 'electron'
 import type { Session } from 'electron'
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { FiltersEngine, Request } from '@ghostery/adblocker'
 import type { ElectronRequestType } from '@ghostery/adblocker'
 import type { PluginMainContext } from '@dyarchia/sdk'
+import { logins } from './logins.js'
 import { watchVideos } from './video.js'
 
 /*
- * The browser's own session is an in-memory partition: its cookies, logins, cache and site storage
- * are not written to disk and end when the application closes. That is all it is; it is not a
- * private browser and nothing here claims to be one. The folder a persistent session once wrote is
- * removed on the way in.
+ * The browser's own session is a persistent partition: cookies, logins, cache and site storage
+ * outlive the application, so a site somebody signed in to is still signed in tomorrow. Clear data
+ * in the library removes all of it at once, with every kept password.
  */
-const PARTITION = 'dyarchia-browser'
-const RETIRED = join('Partitions', 'dyarchia-browser')
+const PARTITION = 'persist:dyarchia-browser'
 
 /*
  * The permissions a page may be granted: writing to the clipboard after a click, and fullscreen.
@@ -129,7 +128,8 @@ export function activate(ctx: PluginMainContext): void {
      * application's controls on it, and a link that says `target=_blank` is still a link.
      */
     const browsing = session.fromPartition(PARTITION)
-    void rm(join(app.getPath('sessionData'), RETIRED), { recursive: true, force: true })
+    logins(ctx, browsing)
+    app.on('before-quit', () => void browsing.cookies.flushStore())
 
     browsing.setPermissionRequestHandler((_contents, permission, callback) =>
         callback(GRANTED.has(permission))

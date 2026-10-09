@@ -1,0 +1,791 @@
+{
+    "docs": "https://docs.x.ai/build",
+    "agent": [
+        {
+            "key": "promptMode",
+            "type": "enum",
+            "values": [
+                "extend",
+                "full"
+            ],
+            "default": "extend",
+            "note": "extend appends the body to the base prompt; full makes the body the whole system prompt (MiniJinja).",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/README.md#prompt-assembly"
+        },
+        {
+            "key": "tools",
+            "type": "list",
+            "values": [
+                "read_file",
+                "list_dir",
+                "grep",
+                "search_replace",
+                "write",
+                "hashline_edit",
+                "apply_patch",
+                "run_terminal_command",
+                "web_search",
+                "web_fetch",
+                "todo_write",
+                "spawn_subagent",
+                "get_command_or_subagent_output",
+                "kill_command_or_subagent",
+                "wait_commands_or_subagents",
+                "send_subagent_message",
+                "search_tool",
+                "use_tool",
+                "ask_user_question",
+                "image_gen",
+                "image_edit",
+                "image_to_video",
+                "reference_to_video",
+                "lsp",
+                "scheduler_create",
+                "complete_task",
+                "wait_for_instruction"
+            ],
+            "default": "all",
+            "note": "Tool allowlist as a list or comma string; omitted means all, [] none; Agent(type) limits spawnable subagents.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L731-L733"
+        },
+        {
+            "key": "disallowedTools",
+            "type": "list",
+            "values": [
+                "read_file",
+                "list_dir",
+                "grep",
+                "search_replace",
+                "write",
+                "hashline_edit",
+                "apply_patch",
+                "run_terminal_command",
+                "web_search",
+                "web_fetch",
+                "todo_write",
+                "spawn_subagent",
+                "get_command_or_subagent_output",
+                "kill_command_or_subagent",
+                "wait_commands_or_subagents",
+                "send_subagent_message",
+                "search_tool",
+                "use_tool",
+                "ask_user_question",
+                "image_gen",
+                "image_edit",
+                "image_to_video",
+                "reference_to_video",
+                "lsp",
+                "scheduler_create",
+                "complete_task",
+                "wait_for_instruction"
+            ],
+            "default": "[]",
+            "note": "Tool denylist that wins over tools; an Agent(type) entry strips the right to spawn that type.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L734-L736"
+        },
+        {
+            "key": "permissionMode",
+            "type": "enum",
+            "values": [
+                "default",
+                "acceptEdits",
+                "auto",
+                "dontAsk",
+                "bypassPermissions",
+                "plan"
+            ],
+            "default": "default",
+            "note": "Permission mode of the agent; a parent in bypassPermissions, acceptEdits or auto overrides it (source).",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L921"
+        },
+        {
+            "key": "discoverSkills",
+            "type": "bool",
+            "default": true,
+            "note": "source: when false, no skills are discovered from the working directory at build time or mid-session.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L717-L720"
+        },
+        {
+            "key": "inheritSkills",
+            "type": "bool",
+            "default": true,
+            "note": "source: a subagent inherits the parent's discovered skills; ignored for a primary session.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L721-L723"
+        },
+        {
+            "key": "agentsMd",
+            "type": "bool",
+            "default": true,
+            "note": "Discover AGENTS.md and rules files and inject them into the prompt.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/README.md#frontmatter-schema-reference"
+        },
+        {
+            "key": "injectDefaultTools",
+            "type": "bool",
+            "default": true,
+            "note": "source: when false the toolConfig toolset is used verbatim, without session-level optional tools.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L726-L730"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "default": "inherit",
+            "note": "source: model id for the agent; inherit or omitted uses the parent session's model.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L542"
+        },
+        {
+            "key": "effort",
+            "type": "enum",
+            "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+            ],
+            "note": "source: reasoning effort for the agent.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L957"
+        },
+        {
+            "key": "maxTurns",
+            "type": "int",
+            "note": "source: maximum agent turns; must be greater than 0.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L739-L740"
+        },
+        {
+            "key": "isolation",
+            "type": "enum",
+            "values": [
+                "none",
+                "worktree"
+            ],
+            "note": "source: worktree runs the agent in an isolated git worktree; none shares the workspace.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L983"
+        },
+        {
+            "key": "background",
+            "type": "bool",
+            "note": "source: whether the agent runs as a background subagent by default.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L743-L744"
+        },
+        {
+            "key": "color",
+            "type": "enum",
+            "values": [
+                "red",
+                "blue",
+                "green",
+                "yellow",
+                "purple",
+                "orange",
+                "pink",
+                "cyan"
+            ],
+            "note": "source: display colour of the agent; an unknown value is dropped with a warning.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L1007"
+        },
+        {
+            "key": "initialPrompt",
+            "type": "text",
+            "note": "source: parsed into the definition but not consumed anywhere in the published code.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L747-L748"
+        },
+        {
+            "key": "memory",
+            "type": "enum",
+            "values": [
+                "user",
+                "project",
+                "local"
+            ],
+            "note": "source: per-agent memory dir: user ~/.grok/agent-memory, project .grok/agent-memory, local agent-memory-local.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L1060"
+        },
+        {
+            "key": "mcpInheritance",
+            "type": "object",
+            "default": "all",
+            "note": "Parent MCP servers a subagent inherits: all, none, {named: [...]} or {except: [...]}.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#mcp-inheritance"
+        },
+        {
+            "key": "capabilityMode",
+            "type": "enum",
+            "values": [
+                "read-only",
+                "read-write",
+                "execute",
+                "all"
+            ],
+            "note": "source: limits tool kinds when spawned as a subagent.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/common/xai-tool-types/src/task.rs#L270"
+        },
+        {
+            "key": "completionRequirement",
+            "type": "object",
+            "note": "Tool the agent must call before its turn may end (orchestrated workers).",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/README.md#with-completion-requirement-orchestrated-mode"
+        },
+        {
+            "key": "completionRequirement.tool",
+            "type": "string",
+            "note": "Canonical name of the tool that must be called; required when completionRequirement is set.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L793"
+        },
+        {
+            "key": "completionRequirement.reminder",
+            "type": "text",
+            "note": "Reminder injected when the turn ends without the tool; required when completionRequirement is set.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L793"
+        },
+        {
+            "key": "completionRequirement.recovery",
+            "type": "object",
+            "note": "Suggested retry policy for the harness when the tool is not called.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L805"
+        },
+        {
+            "key": "completionRequirement.recovery.maxRetries",
+            "type": "int",
+            "required": true,
+            "note": "Maximum recovery retries.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L805"
+        },
+        {
+            "key": "completionRequirement.recovery.baseDelayMs",
+            "type": "int",
+            "required": true,
+            "note": "Initial retry delay in milliseconds.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L805"
+        },
+        {
+            "key": "completionRequirement.recovery.maxDelayMs",
+            "type": "int",
+            "required": true,
+            "note": "Maximum retry delay in milliseconds.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/config.rs#L805"
+        },
+        {
+            "key": "toolConfig",
+            "type": "object",
+            "note": "source: explicit toolset {tools: [{id, params, ...}], behavior_preset}; replaces the default toolset.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-tools/src/registry/types.rs#L185"
+        },
+        {
+            "key": "toolConfig.tools",
+            "type": "list",
+            "note": "source: tool entries with id, params, name_override, params_name_overrides, description_override.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-tools/src/registry/types.rs#L57"
+        },
+        {
+            "key": "toolConfig.behavior_preset",
+            "type": "string",
+            "note": "source: behaviour version preset for version-managed tools; defaults to current.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-tools/src/registry/types.rs#L187"
+        },
+        {
+            "key": "toolOverrides",
+            "type": "object",
+            "note": "source: hosted search options, keys x_search and web_search.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-sampling-types/src/tool_overrides.rs#L286"
+        },
+        {
+            "key": "userMessageTemplate",
+            "type": "string",
+            "note": "source: default keeps the <user_info> prefix; any other string or {custom: ...} is a MiniJinja template.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/prompt/user_message.rs#L114"
+        }
+    ],
+    "skill": [
+        {
+            "key": "when-to-use",
+            "type": "text",
+            "note": "Extra trigger phrases for automatic invocation; when_to_use is accepted as an alias.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "paths",
+            "type": "list",
+            "note": "Gitignore-style globs; the skill stays hidden until a matching file is touched.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "allowed-tools",
+            "type": "list",
+            "values": [
+                "read_file",
+                "list_dir",
+                "grep",
+                "search_replace",
+                "write",
+                "hashline_edit",
+                "apply_patch",
+                "run_terminal_command",
+                "web_search",
+                "web_fetch",
+                "todo_write",
+                "spawn_subagent",
+                "get_command_or_subagent_output",
+                "kill_command_or_subagent",
+                "wait_commands_or_subagents",
+                "send_subagent_message",
+                "search_tool",
+                "use_tool",
+                "ask_user_question",
+                "image_gen",
+                "image_edit",
+                "image_to_video",
+                "reference_to_video",
+                "lsp",
+                "scheduler_create",
+                "complete_task",
+                "wait_for_instruction"
+            ],
+            "note": "Tools the skill uses, as a list or comma/space string; it neither grants nor restricts tools.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "argument-hint",
+            "type": "string",
+            "note": "Hint shown in slash-command autocomplete.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "user-invocable",
+            "type": "bool",
+            "default": true,
+            "note": "Shows the skill as a slash command; only true (or the string true) counts as on.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "disable-model-invocation",
+            "type": "bool",
+            "default": false,
+            "note": "When true only the slash command runs the skill; the model cannot invoke it.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Model override for running the skill; the live docs say it is accepted and ignored.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "effort",
+            "type": "string",
+            "note": "Reasoning-effort override; the live docs say it is accepted and ignored.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "License identifier, informational only.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "compatibility",
+            "type": "string",
+            "note": "Environment requirements, informational only.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "metadata",
+            "type": "map",
+            "note": "String key-value map; author and short-description are promoted in the UI.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "metadata.author",
+            "type": "string",
+            "note": "Author shown in the UI.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "metadata.short-description",
+            "type": "string",
+            "note": "Short description shown in the UI.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "origin",
+            "type": "string",
+            "note": "source: slug of the tool that wrote the skill, kept only as [a-z0-9-] for telemetry.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-tools/src/implementations/skills/discovery.rs#L164"
+        }
+    ],
+    "tools": [
+        "read_file",
+        "list_dir",
+        "grep",
+        "search_replace",
+        "write",
+        "hashline_edit",
+        "apply_patch",
+        "run_terminal_command",
+        "web_search",
+        "web_fetch",
+        "todo_write",
+        "spawn_subagent",
+        "get_command_or_subagent_output",
+        "kill_command_or_subagent",
+        "wait_commands_or_subagents",
+        "send_subagent_message",
+        "search_tool",
+        "use_tool",
+        "ask_user_question",
+        "image_gen",
+        "image_edit",
+        "image_to_video",
+        "reference_to_video",
+        "lsp",
+        "scheduler_create",
+        "complete_task",
+        "wait_for_instruction"
+    ],
+    "events": [
+        {
+            "name": "SessionStart",
+            "note": "A session starts (not a subagent's own); matcher tests the start source such as startup or resume.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "UserPromptSubmit",
+            "note": "A typed prompt is submitted; can block it (exit 2 or decision block); matcher ignored; 30 s default timeout.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "PreToolUse",
+            "note": "Before a tool runs; matcher tests the tool name; can allow, deny, ask, defer or rewrite input.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "PostToolUse",
+            "note": "A tool finished; matcher tests the tool name; can add context or replace the output the model sees.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "PostToolUseFailure",
+            "note": "A tool failed to dispatch or an MCP tool returned an error; matcher tests the tool name.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "PermissionDenied",
+            "note": "The permission system denied a tool call; matcher tests the tool name.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "Stop",
+            "note": "A turn ends on a genuine completion; can block the stop to keep working; matcher ignored.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "StopFailure",
+            "note": "A turn ends on an API error; matcher tests the error type such as rate_limit or server_error.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "StopCancelled",
+            "note": "A turn ends without completing (interrupt, rejection, max_turns, no_progress); matcher tests the reason.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "Notification",
+            "note": "A user-attention event; matcher tests the notification type such as idle_prompt or permission_prompt.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "SubagentStart",
+            "note": "A subagent starts; matcher tests the subagent type.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "SubagentStop",
+            "note": "A subagent's turn ends; can block the stop; matcher tests the subagent type; SubagentEnd is an alias.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "PreCompact",
+            "note": "Compaction is about to run; matcher tests the trigger, manual or auto.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "PostCompact",
+            "note": "Compaction completed; matcher tests the trigger, manual or auto.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        },
+        {
+            "name": "SessionEnd",
+            "note": "The session ends; matcher tests the end reason; 1.5 s default budget (source).",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#hook-events"
+        }
+    ],
+    "hookFields": {
+        "command": [
+            {
+                "key": "command",
+                "type": "string",
+                "required": true,
+                "note": "Executable path relative to the hook file, or an inline shell command; $VAR expanded at run.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#key-fields"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 5,
+                "note": "Seconds before the hook is killed; 5 by default, 600 for Stop/SubagentStop/PostToolUse, 30 for prompts.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#key-fields"
+            },
+            {
+                "key": "env",
+                "type": "map",
+                "note": "Extra environment variables for the hook; cannot override the reserved GROK_* runner variables.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#environment-variables"
+            }
+        ],
+        "http": [
+            {
+                "key": "url",
+                "type": "string",
+                "required": true,
+                "note": "Endpoint that receives the event JSON as a POST; $VAR and ${VAR} are expanded.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#http-hooks"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 5,
+                "note": "Seconds before the hook is killed; 5 by default, 600 for Stop/SubagentStop/PostToolUse, 30 for prompts.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#key-fields"
+            },
+            {
+                "key": "env",
+                "type": "map",
+                "note": "Extra environment variables for the hook; cannot override the reserved GROK_* runner variables.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md#environment-variables"
+            }
+        ]
+    },
+    "mcpFields": {
+        "stdio": [
+            {
+                "key": "mcp_servers",
+                "type": "map",
+                "required": true,
+                "note": "Executable that starts the server.",
+                "url": "https://docs.x.ai/build/features/mcp-servers"
+            }
+        ],
+        "http": [
+            {
+                "key": "mcp_servers",
+                "type": "map",
+                "note": "source: optional; any value other than sse means streamable HTTP.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-config/src/mcp_server_config.rs#L499"
+            }
+        ],
+        "sse": [
+            {
+                "key": "mcp_servers",
+                "type": "map",
+                "note": "source: selects SSE; a url ending in /sse also selects it.",
+                "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-config/src/mcp_server_config.rs#L499"
+            }
+        ]
+    },
+    "command": [
+        {
+            "key": "when-to-use",
+            "type": "text",
+            "note": "Extra trigger phrases for automatic invocation; when_to_use is accepted as an alias.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "paths",
+            "type": "list",
+            "note": "Gitignore-style globs; the skill stays hidden until a matching file is touched.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "allowed-tools",
+            "type": "list",
+            "note": "Tools the skill uses, as a list or comma/space string; it neither grants nor restricts tools.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "argument-hint",
+            "type": "string",
+            "note": "Hint shown in slash-command autocomplete.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "user-invocable",
+            "type": "bool",
+            "default": true,
+            "note": "Shows the skill as a slash command; only true (or the string true) counts as on.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "disable-model-invocation",
+            "type": "bool",
+            "default": false,
+            "note": "When true only the slash command runs the skill; the model cannot invoke it.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Model override for running the skill; the live docs say it is accepted and ignored.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "effort",
+            "type": "string",
+            "note": "Reasoning-effort override; the live docs say it is accepted and ignored.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "License identifier, informational only.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "compatibility",
+            "type": "string",
+            "note": "Environment requirements, informational only.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md#optional-frontmatter-fields"
+        },
+        {
+            "key": "metadata",
+            "type": "map",
+            "note": "String key-value map; author and short-description are promoted in the UI.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "metadata.author",
+            "type": "string",
+            "note": "Author shown in the UI.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "metadata.short-description",
+            "type": "string",
+            "note": "Short description shown in the UI.",
+            "url": "https://docs.x.ai/build/features/skills-plugins-marketplaces"
+        },
+        {
+            "key": "origin",
+            "type": "string",
+            "note": "source: slug of the tool that wrote the skill, kept only as [a-z0-9-] for telemetry.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-tools/src/implementations/skills/discovery.rs#L164"
+        }
+    ],
+    "prompt": [
+        {
+            "key": "instructions",
+            "type": "text",
+            "note": "Instruction text injected into the subagent as a system-reminder.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#persona-fields"
+        },
+        {
+            "key": "instructions_file",
+            "type": "string",
+            "note": "Path to an instruction file loaded at spawn and merged after instructions.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#persona-fields"
+        },
+        {
+            "key": "inputs",
+            "type": "list",
+            "note": "Declared inputs, each with name, io_type (default file), required and description.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#inputoutput-contracts"
+        },
+        {
+            "key": "outputs",
+            "type": "list",
+            "note": "Declared outputs, each with name, io_type (default file), required and description.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#inputoutput-contracts"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Model applied when the persona is used.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#persona-fields"
+        },
+        {
+            "key": "reasoning_effort",
+            "type": "string",
+            "note": "Reasoning effort applied when the persona is used.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#persona-fields"
+        },
+        {
+            "key": "default_isolation",
+            "type": "enum",
+            "values": [
+                "none",
+                "worktree"
+            ],
+            "default": "none",
+            "note": "Default isolation for subagents using the persona.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md#persona-fields"
+        }
+    ],
+    "rule": [],
+    "plugin": [
+        {
+            "key": "author",
+            "type": "object",
+            "note": "Author with optional name, email and url.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "author.name",
+            "type": "string",
+            "note": "Author name.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "author.email",
+            "type": "string",
+            "note": "Author email.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "author.url",
+            "type": "string",
+            "note": "Author URL.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "homepage",
+            "type": "string",
+            "note": "Homepage URL.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "repository",
+            "type": "string",
+            "note": "Source repository URL.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "License identifier.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "keywords",
+            "type": "list",
+            "note": "Search keywords.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        },
+        {
+            "key": "lspServers",
+            "type": "object",
+            "default": ".lsp.json",
+            "note": "Path to an LSP JSON file, or an inline object.",
+            "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-agent/src/plugins/manifest.rs#L120"
+        }
+    ]
+}

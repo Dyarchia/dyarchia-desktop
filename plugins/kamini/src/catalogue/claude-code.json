@@ -1,0 +1,1277 @@
+{
+    "docs": "https://code.claude.com/docs/en/",
+    "agent": [
+        {
+            "key": "tools",
+            "type": "list",
+            "values": [
+                "Agent",
+                "Artifact",
+                "AskUserQuestion",
+                "Bash",
+                "CronCreate",
+                "CronDelete",
+                "CronList",
+                "Edit",
+                "EndConversation",
+                "EnterPlanMode",
+                "EnterWorktree",
+                "ExitPlanMode",
+                "ExitWorktree",
+                "Glob",
+                "Grep",
+                "ListAgents",
+                "ListMcpResourcesTool",
+                "LSP",
+                "Monitor",
+                "NotebookEdit",
+                "PowerShell",
+                "PushNotification",
+                "Read",
+                "ReadMcpResourceTool",
+                "RemoteTrigger",
+                "ReportFindings",
+                "ScheduleWakeup",
+                "SendFeedback",
+                "SendMessage",
+                "SendUserFile",
+                "ShareOnboardingGuide",
+                "Skill",
+                "SubagentHandback",
+                "TaskCreate",
+                "TaskGet",
+                "TaskList",
+                "TaskOutput",
+                "TaskStop",
+                "TaskUpdate",
+                "TodoWrite",
+                "ToolSearch",
+                "WaitForMcpServers",
+                "WebFetch",
+                "WebSearch",
+                "Workflow",
+                "Write"
+            ],
+            "note": "Tool allowlist as comma string or YAML list; omitted inherits all. Agent(a, b) limits spawnable types for a main agent.",
+            "url": "https://code.claude.com/docs/en/sub-agents#available-tools"
+        },
+        {
+            "key": "disallowedTools",
+            "type": "list",
+            "values": [
+                "Agent",
+                "Artifact",
+                "AskUserQuestion",
+                "Bash",
+                "CronCreate",
+                "CronDelete",
+                "CronList",
+                "Edit",
+                "EndConversation",
+                "EnterPlanMode",
+                "EnterWorktree",
+                "ExitPlanMode",
+                "ExitWorktree",
+                "Glob",
+                "Grep",
+                "ListAgents",
+                "ListMcpResourcesTool",
+                "LSP",
+                "Monitor",
+                "NotebookEdit",
+                "PowerShell",
+                "PushNotification",
+                "Read",
+                "ReadMcpResourceTool",
+                "RemoteTrigger",
+                "ReportFindings",
+                "ScheduleWakeup",
+                "SendFeedback",
+                "SendMessage",
+                "SendUserFile",
+                "ShareOnboardingGuide",
+                "Skill",
+                "SubagentHandback",
+                "TaskCreate",
+                "TaskGet",
+                "TaskList",
+                "TaskOutput",
+                "TaskStop",
+                "TaskUpdate",
+                "TodoWrite",
+                "ToolSearch",
+                "WaitForMcpServers",
+                "WebFetch",
+                "WebSearch",
+                "Workflow",
+                "Write"
+            ],
+            "note": "Tools removed from the inherited or listed pool; applied before tools. mcp__<server> removes a whole server.",
+            "url": "https://code.claude.com/docs/en/sub-agents#available-tools"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Alias sonnet, opus, haiku, fable, a full model ID, or inherit; omitted falls through the subagent model order.",
+            "url": "https://code.claude.com/docs/en/sub-agents#choose-a-model"
+        },
+        {
+            "key": "permissionMode",
+            "type": "enum",
+            "values": [
+                "default",
+                "acceptEdits",
+                "auto",
+                "dontAsk",
+                "bypassPermissions",
+                "plan",
+                "manual"
+            ],
+            "note": "Permission mode for the subagent (manual aliases default); omitted inherits; ignored for plugin agents.",
+            "url": "https://code.claude.com/docs/en/sub-agents#permission-modes"
+        },
+        {
+            "key": "maxTurns",
+            "type": "int",
+            "note": "Maximum agentic turns before the subagent stops and returns output marked partial.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "memory",
+            "type": "enum",
+            "values": [
+                "user",
+                "project",
+                "local"
+            ],
+            "note": "Gives the agent a persistent memory directory at that scope, loading its MEMORY.md at start.",
+            "url": "https://code.claude.com/docs/en/sub-agents#enable-persistent-memory"
+        },
+        {
+            "key": "background",
+            "type": "bool",
+            "default": false,
+            "note": "Keeps this subagent in the background even when Claude asks to run it in the foreground.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "omitClaudeMd",
+            "type": "bool",
+            "default": false,
+            "note": "Launches the subagent without user, project and local CLAUDE.md files; ignored when run as main agent.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "effort",
+            "type": "enum",
+            "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+            ],
+            "note": "Effort level while this subagent is active; overrides the session level but not CLAUDE_CODE_EFFORT_LEVEL.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "isolation",
+            "type": "enum",
+            "values": [
+                "worktree"
+            ],
+            "note": "Runs the subagent in a temporary git worktree, removed automatically if it makes no changes.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "color",
+            "type": "enum",
+            "values": [
+                "red",
+                "blue",
+                "green",
+                "yellow",
+                "purple",
+                "orange",
+                "pink",
+                "cyan"
+            ],
+            "note": "Display color for the subagent in the task list and transcript.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "initialPrompt",
+            "type": "text",
+            "note": "First user turn auto-submitted when this agent runs as the main session agent; commands and skills expand.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "experimental",
+            "type": "map",
+            "note": "Map of experimental options; only cacheTtl is read, and only from agent files.",
+            "url": "https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields"
+        },
+        {
+            "key": "experimental.cacheTtl",
+            "type": "enum",
+            "values": [
+                "5m",
+                "1h"
+            ],
+            "note": "Prompt cache lifetime for this subagent's requests; 1h is ignored while on usage credits.",
+            "url": "https://code.claude.com/docs/en/prompt-caching#choose-the-ttl-yourself"
+        }
+    ],
+    "skill": [
+        {
+            "key": "when_to_use",
+            "type": "text",
+            "note": "Extra trigger context appended to description; both share a 1,536-character listing cap.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "argument-hint",
+            "type": "string",
+            "note": "Hint shown in autocomplete for expected arguments, such as [issue-number].",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "arguments",
+            "type": "list",
+            "note": "Named positional arguments for $name substitution, as a space-separated string or YAML list.",
+            "url": "https://code.claude.com/docs/en/skills#available-string-substitutions"
+        },
+        {
+            "key": "disable-model-invocation",
+            "type": "bool",
+            "default": false,
+            "note": "Stops Claude from loading the skill on its own; it runs only via /name and cannot be preloaded.",
+            "url": "https://code.claude.com/docs/en/skills#control-who-invokes-a-skill"
+        },
+        {
+            "key": "user-invocable",
+            "type": "bool",
+            "default": true,
+            "note": "Set false to hide the skill from the / menu so only Claude can invoke it.",
+            "url": "https://code.claude.com/docs/en/skills#control-who-invokes-a-skill"
+        },
+        {
+            "key": "allowed-tools",
+            "type": "list",
+            "values": [
+                "Agent",
+                "Artifact",
+                "AskUserQuestion",
+                "Bash",
+                "CronCreate",
+                "CronDelete",
+                "CronList",
+                "Edit",
+                "EndConversation",
+                "EnterPlanMode",
+                "EnterWorktree",
+                "ExitPlanMode",
+                "ExitWorktree",
+                "Glob",
+                "Grep",
+                "ListAgents",
+                "ListMcpResourcesTool",
+                "LSP",
+                "Monitor",
+                "NotebookEdit",
+                "PowerShell",
+                "PushNotification",
+                "Read",
+                "ReadMcpResourceTool",
+                "RemoteTrigger",
+                "ReportFindings",
+                "ScheduleWakeup",
+                "SendFeedback",
+                "SendMessage",
+                "SendUserFile",
+                "ShareOnboardingGuide",
+                "Skill",
+                "SubagentHandback",
+                "TaskCreate",
+                "TaskGet",
+                "TaskList",
+                "TaskOutput",
+                "TaskStop",
+                "TaskUpdate",
+                "TodoWrite",
+                "ToolSearch",
+                "WaitForMcpServers",
+                "WebFetch",
+                "WebSearch",
+                "Workflow",
+                "Write"
+            ],
+            "note": "Tools usable without a permission prompt during the invoking turn; space/comma string or YAML list.",
+            "url": "https://code.claude.com/docs/en/skills#pre-approve-tools-for-a-skill"
+        },
+        {
+            "key": "disallowed-tools",
+            "type": "list",
+            "values": [
+                "Agent",
+                "Artifact",
+                "AskUserQuestion",
+                "Bash",
+                "CronCreate",
+                "CronDelete",
+                "CronList",
+                "Edit",
+                "EndConversation",
+                "EnterPlanMode",
+                "EnterWorktree",
+                "ExitPlanMode",
+                "ExitWorktree",
+                "Glob",
+                "Grep",
+                "ListAgents",
+                "ListMcpResourcesTool",
+                "LSP",
+                "Monitor",
+                "NotebookEdit",
+                "PowerShell",
+                "PushNotification",
+                "Read",
+                "ReadMcpResourceTool",
+                "RemoteTrigger",
+                "ReportFindings",
+                "ScheduleWakeup",
+                "SendFeedback",
+                "SendMessage",
+                "SendUserFile",
+                "ShareOnboardingGuide",
+                "Skill",
+                "SubagentHandback",
+                "TaskCreate",
+                "TaskGet",
+                "TaskList",
+                "TaskOutput",
+                "TaskStop",
+                "TaskUpdate",
+                "TodoWrite",
+                "ToolSearch",
+                "WaitForMcpServers",
+                "WebFetch",
+                "WebSearch",
+                "Workflow",
+                "Write"
+            ],
+            "note": "Tools removed from Claude's pool while the skill is active; cleared at the next user message.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Model for the rest of the turn (same values as /model, or inherit); with context: fork, the fork's model.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "effort",
+            "type": "enum",
+            "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+            ],
+            "note": "Effort level while the skill is active, overriding the session effort.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "context",
+            "type": "enum",
+            "values": [
+                "fork"
+            ],
+            "note": "Set to fork to run the skill in its own forked subagent context.",
+            "url": "https://code.claude.com/docs/en/skills#run-skills-in-a-subagent"
+        },
+        {
+            "key": "agent",
+            "type": "string",
+            "note": "Subagent type that runs the skill when context: fork is set.",
+            "url": "https://code.claude.com/docs/en/skills#run-skills-in-a-subagent"
+        },
+        {
+            "key": "background",
+            "type": "bool",
+            "default": true,
+            "note": "With context: fork only; false waits for the fork's result in the invoking turn.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "hooks",
+            "type": "object",
+            "note": "Hooks registered when the skill is invoked and kept for the rest of the session; handlers may set once.",
+            "url": "https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents"
+        },
+        {
+            "key": "paths",
+            "type": "list",
+            "note": "Globs limiting auto-activation to matching files; comma string or YAML list. Not accepted in command files.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "shell",
+            "type": "enum",
+            "values": [
+                "bash",
+                "powershell"
+            ],
+            "default": "bash",
+            "note": "Shell used for !`command` and ```! injection blocks in this skill.",
+            "url": "https://code.claude.com/docs/en/skills#inject-dynamic-context"
+        },
+        {
+            "key": "metadata",
+            "type": "map",
+            "note": "Free-form map for your own tooling; Claude Code ignores it and drops a non-map value.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "Licence covering the skill (Agent Skills spec); accepted but not acted on.",
+            "url": "https://code.claude.com/docs/en/skills#using-skill-frontmatter-outside-claude-code"
+        },
+        {
+            "key": "compatibility",
+            "type": "string",
+            "note": "Environment requirements, up to 500 chars (Agent Skills spec); accepted but not acted on.",
+            "url": "https://code.claude.com/docs/en/skills#using-skill-frontmatter-outside-claude-code"
+        }
+    ],
+    "tools": [
+        "Agent",
+        "Artifact",
+        "AskUserQuestion",
+        "Bash",
+        "CronCreate",
+        "CronDelete",
+        "CronList",
+        "Edit",
+        "EndConversation",
+        "EnterPlanMode",
+        "EnterWorktree",
+        "ExitPlanMode",
+        "ExitWorktree",
+        "Glob",
+        "Grep",
+        "ListAgents",
+        "ListMcpResourcesTool",
+        "LSP",
+        "Monitor",
+        "NotebookEdit",
+        "PowerShell",
+        "PushNotification",
+        "Read",
+        "ReadMcpResourceTool",
+        "RemoteTrigger",
+        "ReportFindings",
+        "ScheduleWakeup",
+        "SendFeedback",
+        "SendMessage",
+        "SendUserFile",
+        "ShareOnboardingGuide",
+        "Skill",
+        "SubagentHandback",
+        "TaskCreate",
+        "TaskGet",
+        "TaskList",
+        "TaskOutput",
+        "TaskStop",
+        "TaskUpdate",
+        "TodoWrite",
+        "ToolSearch",
+        "WaitForMcpServers",
+        "WebFetch",
+        "WebSearch",
+        "Workflow",
+        "Write"
+    ],
+    "events": [
+        {
+            "name": "SessionStart",
+            "note": "Session begins or resumes. Matcher: startup, resume, clear, compact, fork.",
+            "url": "https://code.claude.com/docs/en/hooks#sessionstart"
+        },
+        {
+            "name": "Setup",
+            "note": "Launch with --init-only, or -p with --init or --maintenance. Matcher: init, maintenance.",
+            "url": "https://code.claude.com/docs/en/hooks#setup"
+        },
+        {
+            "name": "UserPromptSubmit",
+            "note": "A prompt is submitted, before Claude processes it; can block. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#userpromptsubmit"
+        },
+        {
+            "name": "UserPromptExpansion",
+            "note": "A typed command expands into a prompt; can block. Matcher: command or skill name.",
+            "url": "https://code.claude.com/docs/en/hooks#userpromptexpansion"
+        },
+        {
+            "name": "MessageDisplay",
+            "note": "While assistant message text is displayed. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#messagedisplay"
+        },
+        {
+            "name": "PreToolUse",
+            "note": "Before a tool call executes; can block or rewrite input. Matcher: tool name.",
+            "url": "https://code.claude.com/docs/en/hooks#pretooluse"
+        },
+        {
+            "name": "PermissionRequest",
+            "note": "A tool call needs a permission decision. Matcher: tool name.",
+            "url": "https://code.claude.com/docs/en/hooks#permissionrequest"
+        },
+        {
+            "name": "PermissionDenied",
+            "note": "Auto mode denies a tool call; may return retry: true. Matcher: tool name.",
+            "url": "https://code.claude.com/docs/en/hooks#permissiondenied"
+        },
+        {
+            "name": "PostToolUse",
+            "note": "After a tool call succeeds. Matcher: tool name.",
+            "url": "https://code.claude.com/docs/en/hooks#posttooluse"
+        },
+        {
+            "name": "PostToolUseFailure",
+            "note": "After a tool call fails. Matcher: tool name.",
+            "url": "https://code.claude.com/docs/en/hooks#posttoolusefailure"
+        },
+        {
+            "name": "PostToolBatch",
+            "note": "A batch of parallel tool calls resolves, before the next model call. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#posttoolbatch"
+        },
+        {
+            "name": "Notification",
+            "note": "Claude Code sends a notification. Matcher: type, e.g. permission_prompt, idle_prompt, auth_success.",
+            "url": "https://code.claude.com/docs/en/hooks#notification"
+        },
+        {
+            "name": "SubagentStart",
+            "note": "A subagent is spawned. Matcher: agent type (Explore, Plan, custom or plugin:name).",
+            "url": "https://code.claude.com/docs/en/hooks#subagentstart"
+        },
+        {
+            "name": "SubagentStop",
+            "note": "A subagent finishes. Matcher: agent type.",
+            "url": "https://code.claude.com/docs/en/hooks#subagentstop"
+        },
+        {
+            "name": "TaskCreated",
+            "note": "A task is being created via TaskCreate. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#taskcreated"
+        },
+        {
+            "name": "TaskCompleted",
+            "note": "A task is being marked completed. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#taskcompleted"
+        },
+        {
+            "name": "Stop",
+            "note": "Claude finishes responding; can force it to continue. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#stop"
+        },
+        {
+            "name": "StopFailure",
+            "note": "The turn ends on an API error. Matcher: error type, e.g. rate_limit, overloaded, server_error.",
+            "url": "https://code.claude.com/docs/en/hooks#stopfailure"
+        },
+        {
+            "name": "TeammateIdle",
+            "note": "An agent team teammate is about to go idle. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#teammateidle"
+        },
+        {
+            "name": "InstructionsLoaded",
+            "note": "A CLAUDE.md or rules file loads. Matcher: session_start, nested_traversal, path_glob_match, include, compact.",
+            "url": "https://code.claude.com/docs/en/hooks#instructionsloaded"
+        },
+        {
+            "name": "ConfigChange",
+            "note": "A config file changes mid-session. Matcher: user_settings, project_settings, local_settings, policy_settings, skills.",
+            "url": "https://code.claude.com/docs/en/hooks#configchange"
+        },
+        {
+            "name": "CwdChanged",
+            "note": "The working directory changes, e.g. after cd. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#cwdchanged"
+        },
+        {
+            "name": "DirectoryAdded",
+            "note": "A directory is added mid-session. Matcher: slash_command, register_repo_root.",
+            "url": "https://code.claude.com/docs/en/hooks#directoryadded"
+        },
+        {
+            "name": "FileChanged",
+            "note": "A watched file changes on disk. Matcher: literal filenames to watch, | separated.",
+            "url": "https://code.claude.com/docs/en/hooks#filechanged"
+        },
+        {
+            "name": "WorktreeCreate",
+            "note": "A worktree is created (--worktree, isolation, background session); replaces git. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#worktreecreate"
+        },
+        {
+            "name": "WorktreeRemove",
+            "note": "A worktree that a WorktreeCreate hook made is being removed. No matcher.",
+            "url": "https://code.claude.com/docs/en/hooks#worktreeremove"
+        },
+        {
+            "name": "PreCompact",
+            "note": "Before context compaction. Matcher: manual, auto.",
+            "url": "https://code.claude.com/docs/en/hooks#precompact"
+        },
+        {
+            "name": "PostCompact",
+            "note": "After context compaction completes. Matcher: manual, auto.",
+            "url": "https://code.claude.com/docs/en/hooks#postcompact"
+        },
+        {
+            "name": "PreModelSwitch",
+            "note": "Before a requested model switch applies; can block. Matcher: canonical target model name.",
+            "url": "https://code.claude.com/docs/en/hooks#premodelswitch"
+        },
+        {
+            "name": "PostModelSwitch",
+            "note": "After the session model changes, including automatic changes. Matcher: canonical model name.",
+            "url": "https://code.claude.com/docs/en/hooks#postmodelswitch"
+        },
+        {
+            "name": "Elicitation",
+            "note": "An MCP server requests user input during a tool call. Matcher: MCP server name.",
+            "url": "https://code.claude.com/docs/en/hooks#elicitation"
+        },
+        {
+            "name": "ElicitationResult",
+            "note": "A user answers an MCP elicitation, before it is sent back. Matcher: MCP server name.",
+            "url": "https://code.claude.com/docs/en/hooks#elicitationresult"
+        },
+        {
+            "name": "SessionEnd",
+            "note": "The session terminates. Matcher: clear, resume, logout, prompt_input_exit, other.",
+            "url": "https://code.claude.com/docs/en/hooks#sessionend"
+        }
+    ],
+    "hookFields": {
+        "command": [
+            {
+                "key": "command",
+                "type": "string",
+                "required": true,
+                "note": "Shell command to run; with args, the executable spawned directly with no shell.",
+                "url": "https://code.claude.com/docs/en/hooks#command-hook-fields"
+            },
+            {
+                "key": "args",
+                "type": "list",
+                "note": "Argument vector; when present the hook runs in exec form, each element one argument, no shell.",
+                "url": "https://code.claude.com/docs/en/hooks#exec-form-and-shell-form"
+            },
+            {
+                "key": "async",
+                "type": "bool",
+                "default": false,
+                "note": "Runs in the background without blocking; results arrive next turn and timeout is not enforced.",
+                "url": "https://code.claude.com/docs/en/hooks#run-hooks-in-the-background"
+            },
+            {
+                "key": "asyncRewake",
+                "type": "bool",
+                "default": false,
+                "note": "Runs in the background and wakes Claude with its output when it exits with code 2.",
+                "url": "https://code.claude.com/docs/en/hooks#command-hook-fields"
+            },
+            {
+                "key": "shell",
+                "type": "enum",
+                "values": [
+                    "bash",
+                    "powershell"
+                ],
+                "default": "bash",
+                "note": "Shell for shell form; defaults to powershell on Windows without Git Bash. Ignored when args is set.",
+                "url": "https://code.claude.com/docs/en/hooks#command-hook-fields"
+            },
+            {
+                "key": "if",
+                "type": "string",
+                "note": "One permission rule, e.g. Bash(git *); tool events only, elsewhere the hook never runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 600,
+                "note": "Seconds before cancelling; default 600, lowered to 30 on prompt/model-switch events and 10 on MessageDisplay.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Custom spinner message shown while the hook runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "once",
+                "type": "bool",
+                "default": false,
+                "note": "Removes the hook after its first successful run; honoured only in skill frontmatter.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            }
+        ],
+        "http": [
+            {
+                "key": "url",
+                "type": "string",
+                "required": true,
+                "note": "Endpoint that receives the POST; must match allowedHttpHookUrls when that setting exists.",
+                "url": "https://code.claude.com/docs/en/hooks#http-hook-fields"
+            },
+            {
+                "key": "headers",
+                "type": "map",
+                "note": "Extra request headers; values may interpolate $VAR or ${VAR} listed in allowedEnvVars.",
+                "url": "https://code.claude.com/docs/en/hooks#http-hook-fields"
+            },
+            {
+                "key": "allowedEnvVars",
+                "type": "list",
+                "note": "Environment variable names allowed in header values; unlisted references become empty.",
+                "url": "https://code.claude.com/docs/en/hooks#http-hook-fields"
+            },
+            {
+                "key": "if",
+                "type": "string",
+                "note": "One permission rule, e.g. Bash(git *); tool events only, elsewhere the hook never runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 600,
+                "note": "Seconds before cancelling; default 600, lowered to 30 on prompt/model-switch events and 10 on MessageDisplay.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Custom spinner message shown while the hook runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "once",
+                "type": "bool",
+                "default": false,
+                "note": "Removes the hook after its first successful run; honoured only in skill frontmatter.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            }
+        ],
+        "mcp_tool": [
+            {
+                "key": "server",
+                "type": "string",
+                "required": true,
+                "note": "Configured MCP server name; plugin servers use plugin:<plugin>:<server>.",
+                "url": "https://code.claude.com/docs/en/hooks#mcp-tool-hook-fields"
+            },
+            {
+                "key": "tool",
+                "type": "string",
+                "required": true,
+                "note": "Name of the tool to call on that server.",
+                "url": "https://code.claude.com/docs/en/hooks#mcp-tool-hook-fields"
+            },
+            {
+                "key": "input",
+                "type": "object",
+                "note": "Tool arguments; string values support ${path} substitution from the hook input JSON.",
+                "url": "https://code.claude.com/docs/en/hooks#mcp-tool-hook-fields"
+            },
+            {
+                "key": "if",
+                "type": "string",
+                "note": "One permission rule, e.g. Bash(git *); tool events only, elsewhere the hook never runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 600,
+                "note": "Seconds before cancelling; default 600, lowered to 30 on prompt/model-switch events and 10 on MessageDisplay.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Custom spinner message shown while the hook runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "once",
+                "type": "bool",
+                "default": false,
+                "note": "Removes the hook after its first successful run; honoured only in skill frontmatter.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            }
+        ],
+        "prompt": [
+            {
+                "key": "prompt",
+                "type": "text",
+                "required": true,
+                "note": "Prompt text; $ARGUMENTS is replaced by the hook input JSON, or the JSON is appended if absent.",
+                "url": "https://code.claude.com/docs/en/hooks#prompt-hook-configuration"
+            },
+            {
+                "key": "model",
+                "type": "string",
+                "note": "Model for the evaluation; defaults to the background-functionality model.",
+                "url": "https://code.claude.com/docs/en/hooks#prompt-hook-configuration"
+            },
+            {
+                "key": "continueOnBlock",
+                "type": "bool",
+                "default": false,
+                "note": "On ok: false, feeds the reason back to Claude and continues instead of ending the turn.",
+                "url": "https://code.claude.com/docs/en/hooks#response-schema"
+            },
+            {
+                "key": "if",
+                "type": "string",
+                "note": "One permission rule, e.g. Bash(git *); tool events only, elsewhere the hook never runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 30,
+                "note": "Seconds before cancelling the evaluation.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Custom spinner message shown while the hook runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "once",
+                "type": "bool",
+                "default": false,
+                "note": "Removes the hook after its first successful run; honoured only in skill frontmatter.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            }
+        ],
+        "agent": [
+            {
+                "key": "prompt",
+                "type": "text",
+                "required": true,
+                "note": "Task for the verifier; $ARGUMENTS is replaced by the hook input JSON.",
+                "url": "https://code.claude.com/docs/en/hooks#agent-hook-configuration"
+            },
+            {
+                "key": "model",
+                "type": "string",
+                "note": "Model for the verifier; defaults to the background-functionality model.",
+                "url": "https://code.claude.com/docs/en/hooks#prompt-and-agent-hook-fields"
+            },
+            {
+                "key": "if",
+                "type": "string",
+                "note": "One permission rule, e.g. Bash(git *); tool events only, elsewhere the hook never runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 60,
+                "note": "Seconds before cancelling the verifier.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Custom spinner message shown while the hook runs.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            },
+            {
+                "key": "once",
+                "type": "bool",
+                "default": false,
+                "note": "Removes the hook after its first successful run; honoured only in skill frontmatter.",
+                "url": "https://code.claude.com/docs/en/hooks#common-fields"
+            }
+        ]
+    },
+    "mcpFields": {
+        "stdio": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "note": "Transport; an entry with no type is read as stdio.",
+                "url": "https://code.claude.com/docs/en/mcp#option-3-add-a-local-stdio-server"
+            }
+        ],
+        "http": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "Streamable HTTP transport; streamable-http is an alias of http.",
+                "url": "https://code.claude.com/docs/en/mcp#option-1-add-a-remote-http-server"
+            }
+        ],
+        "sse": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "Deprecated Server-Sent Events transport; prefer http.",
+                "url": "https://code.claude.com/docs/en/mcp#option-2-add-a-remote-sse-server"
+            }
+        ],
+        "ws": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "WebSocket transport; configurable only by JSON (.mcp.json or claude mcp add-json).",
+                "url": "https://code.claude.com/docs/en/mcp#option-4-add-a-remote-websocket-server"
+            }
+        ]
+    },
+    "command": [
+        {
+            "key": "when_to_use",
+            "type": "text",
+            "note": "Extra trigger context appended to description; both share a 1,536-character listing cap.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "argument-hint",
+            "type": "string",
+            "note": "Hint shown in autocomplete for expected arguments, such as [issue-number].",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "arguments",
+            "type": "list",
+            "note": "Named positional arguments for $name substitution, as a space-separated string or YAML list.",
+            "url": "https://code.claude.com/docs/en/skills#available-string-substitutions"
+        },
+        {
+            "key": "disable-model-invocation",
+            "type": "bool",
+            "default": false,
+            "note": "Stops Claude from running the command on its own; it runs only when typed.",
+            "url": "https://code.claude.com/docs/en/skills#control-who-invokes-a-skill"
+        },
+        {
+            "key": "user-invocable",
+            "type": "bool",
+            "default": true,
+            "note": "Set false to hide it from the / menu so only Claude can invoke it.",
+            "url": "https://code.claude.com/docs/en/skills#control-who-invokes-a-skill"
+        },
+        {
+            "key": "allowed-tools",
+            "type": "list",
+            "note": "Tools usable without a permission prompt during the invoking turn.",
+            "url": "https://code.claude.com/docs/en/skills#pre-approve-tools-for-a-skill"
+        },
+        {
+            "key": "disallowed-tools",
+            "type": "list",
+            "note": "Tools removed from Claude's pool while the command is active.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Model for the rest of the turn (same values as /model, or inherit).",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "effort",
+            "type": "enum",
+            "values": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+            ],
+            "note": "Effort level while the command is active.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "context",
+            "type": "enum",
+            "values": [
+                "fork"
+            ],
+            "note": "Set to fork to run in a forked subagent context.",
+            "url": "https://code.claude.com/docs/en/skills#run-skills-in-a-subagent"
+        },
+        {
+            "key": "agent",
+            "type": "string",
+            "note": "Subagent type used when context: fork is set.",
+            "url": "https://code.claude.com/docs/en/skills#run-skills-in-a-subagent"
+        },
+        {
+            "key": "background",
+            "type": "bool",
+            "default": true,
+            "note": "With context: fork only; false waits for the fork's result in the invoking turn.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "hooks",
+            "type": "object",
+            "note": "Hooks registered on invocation and kept for the rest of the session.",
+            "url": "https://code.claude.com/docs/en/hooks#hooks-in-skills-and-agents"
+        },
+        {
+            "key": "shell",
+            "type": "enum",
+            "values": [
+                "bash",
+                "powershell"
+            ],
+            "default": "bash",
+            "note": "Shell used for !`command` injection blocks.",
+            "url": "https://code.claude.com/docs/en/skills#inject-dynamic-context"
+        },
+        {
+            "key": "metadata",
+            "type": "map",
+            "note": "Free-form map for your own tooling; ignored by Claude Code.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "Licence string; accepted but not acted on.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        },
+        {
+            "key": "compatibility",
+            "type": "string",
+            "note": "Environment requirements up to 500 chars; accepted but not acted on.",
+            "url": "https://code.claude.com/docs/en/skills#frontmatter-reference"
+        }
+    ],
+    "prompt": [
+        {
+            "key": "keep-coding-instructions",
+            "type": "bool",
+            "default": false,
+            "note": "Keeps Claude Code's built-in software engineering section of the full system prompt alongside the style.",
+            "url": "https://code.claude.com/docs/en/output-styles#frontmatter"
+        },
+        {
+            "key": "force-for-plugin",
+            "type": "bool",
+            "default": false,
+            "note": "Plugin styles only: applies the style whenever the plugin is enabled, overriding outputStyle.",
+            "url": "https://code.claude.com/docs/en/output-styles#frontmatter"
+        }
+    ],
+    "rule": [
+        {
+            "key": "paths",
+            "type": "list",
+            "note": "Globs (YAML list or comma string) that load the rule only when Claude works on matching files; the only key read.",
+            "url": "https://code.claude.com/docs/en/memory#rules-frontmatter-reference"
+        }
+    ],
+    "plugin": [
+        {
+            "key": "$schema",
+            "type": "string",
+            "note": "JSON Schema URL for editor autocomplete; ignored at load.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "displayName",
+            "type": "string",
+            "note": "Name shown in the UI in place of name; a marketplace entry's displayName wins.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#displayname"
+        },
+        {
+            "key": "author",
+            "type": "object",
+            "note": "Author object; author.name is required when present.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "author.name",
+            "type": "string",
+            "required": true,
+            "note": "Author name, required inside author.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "author.email",
+            "type": "string",
+            "note": "Author email.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "author.url",
+            "type": "string",
+            "note": "Author URL.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "homepage",
+            "type": "string",
+            "note": "Documentation URL; must parse as a URL or the plugin fails to load.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "repository",
+            "type": "string",
+            "note": "Source repository URL; not validated.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "SPDX licence identifier such as MIT.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "keywords",
+            "type": "list",
+            "note": "Discovery tags.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "metadata",
+            "type": "object",
+            "note": "Free-form object for your own data; Claude Code does not read it.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#metadata"
+        },
+        {
+            "key": "icon",
+            "type": "string",
+            "note": "Image path inside the plugin for Anthropic's directory listing; ignored by Claude Code.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#directory-listing-fields"
+        },
+        {
+            "key": "documentationUrl",
+            "type": "string",
+            "note": "https documentation link for the directory listing; ignored by Claude Code.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#directory-listing-fields"
+        },
+        {
+            "key": "supportUrl",
+            "type": "string",
+            "note": "https support link for the directory listing; ignored by Claude Code.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#directory-listing-fields"
+        },
+        {
+            "key": "privacyPolicyUrl",
+            "type": "string",
+            "note": "https privacy policy link for the directory listing; ignored by Claude Code.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#directory-listing-fields"
+        },
+        {
+            "key": "termsOfServiceUrl",
+            "type": "string",
+            "note": "https terms of service link for the directory listing; ignored by Claude Code.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#directory-listing-fields"
+        },
+        {
+            "key": "defaultEnabled",
+            "type": "bool",
+            "default": true,
+            "note": "Whether the plugin starts enabled when enabledPlugins does not set it.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#defaultenabled"
+        },
+        {
+            "key": "dependencies",
+            "type": "list",
+            "note": "Plugins that must be enabled: \"name\", \"name@marketplace\" or {name, marketplace, version}.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#dependencies"
+        },
+        {
+            "key": "settings",
+            "type": "object",
+            "note": "Settings applied while enabled; only agent and subagentStatusLine take effect. A root settings.json wins.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#settings"
+        },
+        {
+            "key": "userConfig",
+            "type": "map",
+            "note": "Values prompted from the user on enable, keyed by identifier; read as ${user_config.KEY}.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#user-configuration"
+        },
+        {
+            "key": "types",
+            "type": "string",
+            "note": "Path to a .d.ts declaring a mod's $.state values and $ nouns.",
+            "url": "https://code.claude.com/docs/en/plugins/mods/reference#files"
+        },
+        {
+            "key": "channels",
+            "type": "map",
+            "note": "Message channels the plugin provides, each bound to one of its MCP servers.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#channels"
+        },
+        {
+            "key": "lspServers",
+            "type": "map",
+            "note": "LSP .json paths or inline map keyed by server name; merged after .lsp.json.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#lspservers"
+        },
+        {
+            "key": "outputStyles",
+            "type": "list",
+            "note": "Output style files or dirs; replaces the default output-styles/ scan.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#path-only-fields"
+        },
+        {
+            "key": "workflows",
+            "type": "list",
+            "note": "Workflow .js files or dirs; replaces the default workflows/ scan.",
+            "url": "https://code.claude.com/docs/en/workflows#distribute-a-workflow-in-a-plugin"
+        },
+        {
+            "key": "experimental",
+            "type": "object",
+            "note": "Container for themes, monitors and evals, whose shape may still change.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#fields"
+        },
+        {
+            "key": "experimental.themes",
+            "type": "list",
+            "note": "Theme files or dirs; replaces the default themes/ scan.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#path-only-fields"
+        },
+        {
+            "key": "experimental.monitors",
+            "type": "map",
+            "note": "Monitors array or a .json path holding it; defaults to monitors/monitors.json. Interactive sessions only.",
+            "url": "https://code.claude.com/docs/en/plugins/manifest-reference#monitors"
+        },
+        {
+            "key": "experimental.evals",
+            "type": "list",
+            "note": "Eval case directory when not the default evals/; only the first entry is used.",
+            "url": "https://code.claude.com/docs/en/plugin-evals#use-a-different-eval-directory"
+        }
+    ]
+}

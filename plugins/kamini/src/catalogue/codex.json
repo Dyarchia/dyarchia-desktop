@@ -1,0 +1,1953 @@
+{
+    "docs": "https://learn.chatgpt.com/docs",
+    "agent": [
+        {
+            "key": "nickname_candidates",
+            "type": "list",
+            "note": "Nicknames for spawned agents of this role: unique, ASCII letters, digits, spaces, hyphens, underscores (source: agent_role_config.rs).",
+            "url": "https://github.com/openai/codex/blob/main/codex-rs/agent-roles/src/agent_role_config.rs"
+        },
+        {
+            "key": "model",
+            "type": "string",
+            "note": "Model to use (e.g., gpt-6.1-sol).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "review_model",
+            "type": "string",
+            "note": "Optional model override used by /review (defaults to the current session model).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "model_provider",
+            "type": "string",
+            "default": "openai",
+            "note": "Provider id from model_providers (default: openai).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "openai_base_url",
+            "type": "string",
+            "note": "Base URL override for the built-in openai model provider.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "model_context_window",
+            "type": "int",
+            "note": "Context window tokens available to the active model.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "model_auto_compact_token_limit",
+            "type": "int",
+            "note": "Token threshold that triggers automatic history compaction (unset uses model defaults).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "model_auto_compact_token_limit_scope",
+            "type": "enum",
+            "values": [
+                "total",
+                "body_after_prefix"
+            ],
+            "default": "total",
+            "note": "Whether the auto-compaction threshold counts the full context (total) or only growth after the compaction prefix.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "model_catalog_json",
+            "type": "string",
+            "note": "Path to a JSON model catalog loaded on startup; a profile file can override it.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "oss_provider",
+            "type": "enum",
+            "values": [
+                "lmstudio",
+                "ollama"
+            ],
+            "note": "Default local provider used when running with --oss (defaults to prompting if unset).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#oss-mode-local-providers"
+        },
+        {
+            "key": "approval_policy",
+            "type": "enum",
+            "values": [
+                "on-request",
+                "never"
+            ],
+            "note": "When Codex pauses for approval; a granular table can allow or auto-reject single prompt categories. untrusted is retired.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "approval_policy.granular.sandbox_approval",
+            "type": "bool",
+            "note": "When true, sandbox escalation approval prompts are allowed to surface.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "approval_policy.granular.rules",
+            "type": "bool",
+            "note": "When true, approvals triggered by execpolicy prompt rules are allowed to surface.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "approval_policy.granular.mcp_elicitations",
+            "type": "bool",
+            "note": "When true, MCP elicitation prompts are allowed to surface instead of being auto-rejected.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "approval_policy.granular.request_permissions",
+            "type": "bool",
+            "note": "When true, prompts from the request_permissions tool are allowed to surface.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "approval_policy.granular.skill_approval",
+            "type": "bool",
+            "note": "When true, skill-script approval prompts are allowed to surface.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "approvals_reviewer",
+            "type": "enum",
+            "values": [
+                "user",
+                "auto_review"
+            ],
+            "default": "user",
+            "note": "Who answers eligible approval prompts: the user, or auto_review, a reviewer subagent; never widens the sandbox.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#automatic-approval-reviews"
+        },
+        {
+            "key": "auto_review.policy",
+            "type": "text",
+            "note": "Local Markdown policy instructions for automatic review.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#automatic-approval-reviews"
+        },
+        {
+            "key": "auto_review.extra_policy",
+            "type": "text",
+            "note": "Additional local Markdown policy for automatic review, included alongside the main policy.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#automatic-approval-reviews"
+        },
+        {
+            "key": "allow_login_shell",
+            "type": "bool",
+            "default": true,
+            "note": "Allow shell tools to use login-shell semantics; when false, login = true requests are rejected.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "sandbox_mode",
+            "type": "enum",
+            "values": [
+                "read-only",
+                "workspace-write",
+                "danger-full-access"
+            ],
+            "note": "Sandbox policy for filesystem and network access during command execution.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals"
+        },
+        {
+            "key": "sandbox_workspace_write.writable_roots",
+            "type": "list",
+            "note": "Additional writable roots when sandbox_mode = \"workspace-write\".",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#protected-paths-in-writable-roots"
+        },
+        {
+            "key": "sandbox_workspace_write.network_access",
+            "type": "bool",
+            "note": "Allow outbound network access inside the workspace-write sandbox.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "sandbox_workspace_write.exclude_tmpdir_env_var",
+            "type": "bool",
+            "note": "Exclude $TMPDIR from writable roots in workspace-write mode.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#protected-paths-in-writable-roots"
+        },
+        {
+            "key": "sandbox_workspace_write.exclude_slash_tmp",
+            "type": "bool",
+            "note": "Exclude /tmp from writable roots in workspace-write mode.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#protected-paths-in-writable-roots"
+        },
+        {
+            "key": "windows.sandbox",
+            "type": "enum",
+            "values": [
+                "unelevated",
+                "elevated",
+                "mxc"
+            ],
+            "note": "Windows-only native sandbox mode when running Codex natively on Windows.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#windows-sandbox-mode"
+        },
+        {
+            "key": "browser_use.allow_history_access",
+            "type": "bool",
+            "note": "Set to false to restrict browser-history access.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "browser_use.default_origin_policy",
+            "type": "object",
+            "note": "Fallback browser-origin rules: access, uploads, downloads and full_cdp_access, each allow or deny.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "browser_use.origins",
+            "type": "map",
+            "note": "Per-origin browser restrictions with the same fields as browser_use.default_origin_policy.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "computer_use.default_app_access",
+            "type": "enum",
+            "values": [
+                "allow",
+                "deny"
+            ],
+            "note": "Fallback native-app access policy for Computer Use.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "computer_use.macos.bundle_ids",
+            "type": "map",
+            "note": "Native macOS app access keyed by bundle identifier.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "computer_use.windows.aumids",
+            "type": "map",
+            "note": "Packaged Windows app access keyed by Application User Model ID (AUMID).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "computer_use.windows.exes",
+            "type": "list",
+            "note": "Windows executable access rules, each with publisher_name, product_name, access and optional binary_name.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "computer_use.windows.always_allowed_app_ids",
+            "type": "list",
+            "note": "Windows app identifiers Computer Use can open without prompting.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "notify",
+            "type": "list",
+            "note": "Command invoked for notifications; receives a JSON payload from Codex.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#notifications"
+        },
+        {
+            "key": "check_for_update_on_startup",
+            "type": "bool",
+            "note": "Check for Codex updates on startup (set to false only when updates are centrally managed).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "feedback.enabled",
+            "type": "bool",
+            "default": true,
+            "note": "Enable feedback submission via /feedback across local clients (default: true).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#feedback-controls"
+        },
+        {
+            "key": "analytics.enabled",
+            "type": "bool",
+            "note": "Enable or disable analytics for this machine/profile.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "instructions",
+            "type": "text",
+            "note": "Reserved for future use; prefer model_instructions_file or AGENTS.md.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "log_dir",
+            "type": "string",
+            "default": "$CODEX_HOME/log",
+            "note": "Directory where Codex writes log files; defaults to $CODEX_HOME/log.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#log-directory"
+        },
+        {
+            "key": "sqlite_home",
+            "type": "string",
+            "note": "Directory where Codex stores the SQLite-backed state DB used by agent jobs and other resumable runtime state.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "compact_prompt",
+            "type": "text",
+            "note": "Inline override for the history compaction prompt.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "model_instructions_file",
+            "type": "string",
+            "note": "Replacement for built-in instructions instead of AGENTS.md.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "personality",
+            "type": "enum",
+            "values": [
+                "none",
+                "friendly",
+                "pragmatic"
+            ],
+            "note": "Default communication style for models that advertise supportsPersonality; can be overridden per thread/turn or via /personality.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#communication-style"
+        },
+        {
+            "key": "service_tier",
+            "type": "string",
+            "note": "Preferred service tier for new turns, such as fast or another tier the model advertises.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "experimental_compact_prompt_file",
+            "type": "string",
+            "note": "Load the compaction prompt override from a file (experimental).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "skills.max_context_tokens",
+            "type": "int",
+            "note": "Token budget for the available-skills catalog; defaults to 2% of the context window, capped at 10000.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#enable-or-disable-local-codex-skills"
+        },
+        {
+            "key": "skills.config",
+            "type": "map",
+            "note": "Per-skill enablement overrides stored in config.toml.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#enable-or-disable-local-codex-skills"
+        },
+        {
+            "key": "apps",
+            "type": "map",
+            "note": "Enable or disable a specific app/connector by id (default: true).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "apps._default.enabled",
+            "type": "bool",
+            "note": "Default app enabled state for all apps unless overridden per app.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "apps._default.destructive_enabled",
+            "type": "bool",
+            "note": "Default allow/deny for app tools with destructive_hint = true.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "apps._default.open_world_enabled",
+            "type": "bool",
+            "note": "Default allow/deny for app tools with open_world_hint = true.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "apps._default.approvals_reviewer",
+            "type": "enum",
+            "values": [
+                "user",
+                "auto_review"
+            ],
+            "note": "Default reviewer for app tool approval prompts unless overridden per app.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "apps._default.default_tools_approval_mode",
+            "type": "enum",
+            "values": [
+                "auto",
+                "prompt",
+                "writes",
+                "approve"
+            ],
+            "note": "Default approval behavior for app tools without per-app or per-tool overrides.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "tool_suggest.discoverables",
+            "type": "list",
+            "note": "Extra connectors or plugins Codex may suggest, each a table with type (connector|plugin) and id.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "tool_suggest.disabled_tools",
+            "type": "list",
+            "note": "Connectors or plugins Codex must not suggest, each a table with type (connector|plugin) and id.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "features.apps",
+            "type": "bool",
+            "default": true,
+            "note": "Enable app (connector) integrations (on by default); app traffic bypasses the command network proxy.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.hooks",
+            "type": "bool",
+            "default": true,
+            "note": "Enable lifecycle hooks loaded from hooks.json or inline [hooks] config.",
+            "url": "https://learn.chatgpt.com/docs/hooks#turn-hooks-off"
+        },
+        {
+            "key": "features.code_mode.enabled",
+            "type": "bool",
+            "default": false,
+            "note": "Enable code mode (under development, off by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.code_mode.excluded_tool_namespaces",
+            "type": "list",
+            "note": "Tool namespaces code mode excludes from nested code-mode tool guidance and executor exposure.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.code_mode.direct_only_tool_namespaces",
+            "type": "list",
+            "note": "Tool namespaces code mode can use only through direct tool calls.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.context_management.experimental_mode",
+            "type": "bool",
+            "note": "Experimental context-management setting; the feature is not currently available.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.rollout_budget.enabled",
+            "type": "bool",
+            "default": false,
+            "note": "Enable rollout budget tracking (under development, off by default); requires limit_tokens.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.rollout_budget.limit_tokens",
+            "type": "int",
+            "note": "Positive token limit for rollout budget tracking.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.rollout_budget.reminder_interval_tokens",
+            "type": "int",
+            "note": "Positive token interval between rollout budget reminders.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.rollout_budget.sampling_token_weight",
+            "type": "int",
+            "default": 1,
+            "note": "Finite non-negative multiplier for sampled tokens in rollout budget accounting.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.rollout_budget.prefill_token_weight",
+            "type": "int",
+            "default": 1,
+            "note": "Finite non-negative multiplier for prefill tokens in rollout budget accounting.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.memories",
+            "type": "bool",
+            "default": false,
+            "note": "Enable Memories (off by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "mcp_optional_startup_grace_ms",
+            "type": "int",
+            "default": 1000,
+            "note": "Shared wait for optional MCP servers when building the initial tool catalog.",
+            "url": "https://learn.chatgpt.com/docs/extend/mcp#other-configuration-options"
+        },
+        {
+            "key": "agents",
+            "type": "map",
+            "note": "Multi-agent settings and custom role declarations.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "agents.enabled",
+            "type": "bool",
+            "default": true,
+            "note": "Enable or disable multi-agent tools (default: true).",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "agents.max_concurrent_threads_per_session",
+            "type": "int",
+            "note": "Maximum number of spawned-agent threads that can be open concurrently, excluding the primary thread.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "agents.max_threads",
+            "type": "int",
+            "note": "Legacy alias for agents.max_concurrent_threads_per_session.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "agents.default_subagent_model",
+            "type": "string",
+            "note": "Default model for spawned agents.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "agents.default_subagent_reasoning_effort",
+            "type": "string",
+            "note": "Default reasoning effort for spawned agents.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "agents.interrupt_message",
+            "type": "bool",
+            "default": true,
+            "note": "Record a model-visible message when an agent turn is interrupted (default: true).",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents#global-settings"
+        },
+        {
+            "key": "memories.generate_memories",
+            "type": "bool",
+            "default": true,
+            "note": "When false, newly created threads are not stored as memory-generation inputs.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.use_memories",
+            "type": "bool",
+            "default": true,
+            "note": "When false, Codex skips injecting existing memories into future sessions.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.disable_on_external_context",
+            "type": "bool",
+            "default": false,
+            "note": "Keep threads that used MCP, web search or tool search out of memory generation (default false).",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.max_raw_memories_for_consolidation",
+            "type": "int",
+            "default": 256,
+            "note": "Maximum recent raw memories retained for global consolidation.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.max_unused_days",
+            "type": "int",
+            "default": 30,
+            "note": "Maximum days since a memory was last used before it becomes ineligible for consolidation.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.max_rollout_age_days",
+            "type": "int",
+            "default": 30,
+            "note": "Maximum age of threads considered for memory generation.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.max_rollouts_per_startup",
+            "type": "int",
+            "default": 16,
+            "note": "Maximum rollout candidates processed per startup pass.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.min_rollout_idle_hours",
+            "type": "int",
+            "default": 6,
+            "note": "Minimum idle time before a thread is considered for memory generation.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.min_rate_limit_remaining_percent",
+            "type": "int",
+            "default": 25,
+            "note": "Minimum remaining percentage required in Codex rate-limit windows before memory generation starts.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.extract_model",
+            "type": "string",
+            "note": "Optional model override for per-thread memory extraction.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "memories.consolidation_model",
+            "type": "string",
+            "note": "Optional model override for global memory consolidation.",
+            "url": "https://learn.chatgpt.com/docs/customization/memories"
+        },
+        {
+            "key": "features.unified_exec",
+            "type": "bool",
+            "note": "Use the unified PTY-backed exec tool (stable; enabled by default except on Windows).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.shell_snapshot",
+            "type": "bool",
+            "default": true,
+            "note": "Snapshot shell environment to speed up repeated commands (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.multi_agent",
+            "type": "bool",
+            "default": true,
+            "note": "Enable the multi-agent tools spawn_agent, send_input, resume_agent, wait_agent and close_agent (on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.goals",
+            "type": "bool",
+            "default": true,
+            "note": "Enable persisted goals and automatic continuation (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.remote_plugin",
+            "type": "bool",
+            "default": true,
+            "note": "Enable the remote plugin catalog (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.personality",
+            "type": "bool",
+            "default": true,
+            "note": "Enable personality selection controls (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.network_proxy",
+            "type": "bool",
+            "default": false,
+            "note": "Start the network proxy for sandboxed commands; boolean or a table of proxy settings (experimental, off by default).",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.enabled",
+            "type": "bool",
+            "default": false,
+            "note": "Start the sandboxed-command network proxy when command network access is enabled.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.domains",
+            "type": "map",
+            "note": "Domain allow/deny policy for sandboxed networking; unset means no external destination is allowed.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.unix_sockets",
+            "type": "map",
+            "note": "Unix socket policy for sandboxed networking.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.allow_local_binding",
+            "type": "bool",
+            "default": false,
+            "note": "Allow broader local/private-network access.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.enable_socks5",
+            "type": "bool",
+            "default": true,
+            "note": "Expose SOCKS5 support.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.enable_socks5_udp",
+            "type": "bool",
+            "default": true,
+            "note": "Allow UDP over SOCKS5.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.allow_upstream_proxy",
+            "type": "bool",
+            "default": true,
+            "note": "Allow chaining through an upstream proxy from the environment.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.dangerously_allow_non_loopback_proxy",
+            "type": "bool",
+            "default": false,
+            "note": "Permit non-loopback listener addresses.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.dangerously_allow_all_unix_sockets",
+            "type": "bool",
+            "default": false,
+            "note": "Permit arbitrary Unix socket destinations instead of allowlist-only access.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.proxy_url",
+            "type": "string",
+            "default": "http://127.0.0.1:3128",
+            "note": "HTTP listener URL for sandboxed networking.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.network_proxy.socks_url",
+            "type": "string",
+            "default": "http://127.0.0.1:8081",
+            "note": "SOCKS5 listener URL.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#network-access"
+        },
+        {
+            "key": "features.web_search",
+            "type": "bool",
+            "note": "Deprecated legacy toggle; prefer the top-level web_search setting.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.web_search_cached",
+            "type": "bool",
+            "note": "Deprecated legacy toggle; when web_search is unset, true maps to web_search = cached.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.web_search_request",
+            "type": "bool",
+            "note": "Deprecated legacy toggle; when web_search is unset, true maps to web_search = live.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.shell_tool",
+            "type": "bool",
+            "default": true,
+            "note": "Enable the default shell tool for running commands (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.enable_request_compression",
+            "type": "bool",
+            "default": true,
+            "note": "Compress streaming request bodies with zstd when supported (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.skill_mcp_dependency_install",
+            "type": "bool",
+            "default": true,
+            "note": "Allow prompting and installing missing MCP dependencies for skills (stable; on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.fast_mode",
+            "type": "bool",
+            "default": true,
+            "note": "Enable service tier selection in the TUI, including Fast-tier commands when the model offers them (on by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "features.prevent_idle_sleep",
+            "type": "bool",
+            "default": false,
+            "note": "Prevent the machine from sleeping while a turn is actively running (experimental; off by default).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "suppress_unstable_features_warning",
+            "type": "bool",
+            "note": "Suppress the warning that appears when under-development feature flags are enabled.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "model_providers",
+            "type": "map",
+            "note": "Custom provider definition.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#custom-model-providers"
+        },
+        {
+            "key": "model_providers.amazon-bedrock.aws.profile",
+            "type": "string",
+            "note": "AWS profile name used by the built-in amazon-bedrock provider.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#amazon-bedrock-provider"
+        },
+        {
+            "key": "model_providers.amazon-bedrock.aws.region",
+            "type": "string",
+            "note": "AWS region used by the built-in amazon-bedrock provider.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#amazon-bedrock-provider"
+        },
+        {
+            "key": "model_reasoning_effort",
+            "type": "string",
+            "note": "Reasoning effort advertised by the selected model, such as low, medium, high, xhigh, max, or ultra.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "plan_mode_reasoning_effort",
+            "type": "string",
+            "note": "Plan-mode-specific reasoning override using a level supported by the selected model.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "model_reasoning_summary",
+            "type": "enum",
+            "values": [
+                "auto",
+                "concise",
+                "detailed",
+                "none"
+            ],
+            "note": "Select reasoning summary detail or disable summaries entirely.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "model_verbosity",
+            "type": "enum",
+            "values": [
+                "low",
+                "medium",
+                "high"
+            ],
+            "note": "Optional GPT-5 Responses API verbosity override; when unset, the selected model/preset default is used.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "model_supports_reasoning_summaries",
+            "type": "bool",
+            "note": "Force Codex to send or not send reasoning metadata.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#model-reasoning-verbosity-and-limits"
+        },
+        {
+            "key": "shell_environment_policy.inherit",
+            "type": "enum",
+            "values": [
+                "all",
+                "core",
+                "none"
+            ],
+            "note": "Baseline environment inheritance when spawning subprocesses.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "shell_environment_policy.ignore_default_excludes",
+            "type": "bool",
+            "default": true,
+            "note": "Keep variables containing KEY, SECRET, or TOKEN before other filters run (default: true).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "shell_environment_policy.filters",
+            "type": "map",
+            "note": "Case-insensitive include/exclude patterns for environment variables passed to subprocesses.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "shell_environment_policy.exclude",
+            "type": "list",
+            "note": "Legacy environment-variable exclusion patterns.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "shell_environment_policy.include_only",
+            "type": "list",
+            "note": "Legacy allowlist of environment-variable patterns.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "shell_environment_policy.set",
+            "type": "map",
+            "note": "Explicit environment values injected after exclusions; include filters can still remove them.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "shell_environment_policy.experimental_use_profile",
+            "type": "bool",
+            "note": "Use the user shell profile when spawning subprocesses.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#shell-environment-policy"
+        },
+        {
+            "key": "project_root_markers",
+            "type": "list",
+            "note": "List of project root marker filenames; used when searching parent directories for the project root.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#project-root-detection"
+        },
+        {
+            "key": "project_doc_max_bytes",
+            "type": "int",
+            "default": 32768,
+            "note": "Maximum bytes read from AGENTS.md when building project instructions.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/agents-md#customize-fallback-filenames"
+        },
+        {
+            "key": "project_doc_fallback_filenames",
+            "type": "list",
+            "note": "Additional filenames to try when AGENTS.md is missing.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/agents-md#customize-fallback-filenames"
+        },
+        {
+            "key": "history.persistence",
+            "type": "enum",
+            "values": [
+                "save-all",
+                "none"
+            ],
+            "default": "save-all",
+            "note": "Control whether Codex saves session transcripts to history.jsonl.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#history-persistence"
+        },
+        {
+            "key": "tool_output_token_limit",
+            "type": "int",
+            "note": "Token budget for storing individual tool/function outputs in history.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "background_terminal_max_timeout",
+            "type": "int",
+            "default": 300000,
+            "note": "Maximum poll window in milliseconds for empty write_stdin polls (background terminal polling).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "history.max_bytes",
+            "type": "int",
+            "note": "If set, caps the history file size in bytes by dropping oldest entries.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#history-persistence"
+        },
+        {
+            "key": "file_opener",
+            "type": "enum",
+            "values": [
+                "vscode",
+                "vscode-insiders",
+                "windsurf",
+                "cursor",
+                "none"
+            ],
+            "default": "vscode",
+            "note": "URI scheme used to open citations from Codex output (default: vscode).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#clickable-citations"
+        },
+        {
+            "key": "otel.environment",
+            "type": "string",
+            "default": "dev",
+            "note": "Environment tag applied to emitted OpenTelemetry events (default: dev).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#observability-and-telemetry"
+        },
+        {
+            "key": "otel.exporter",
+            "type": "map",
+            "values": [
+                "none",
+                "otlp-http",
+                "otlp-grpc"
+            ],
+            "note": "Select the OpenTelemetry exporter and provide any endpoint metadata.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#observability-and-telemetry"
+        },
+        {
+            "key": "otel.trace_exporter",
+            "type": "map",
+            "values": [
+                "none",
+                "otlp-http",
+                "otlp-grpc"
+            ],
+            "note": "Select the OpenTelemetry trace exporter and provide any endpoint metadata.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#observability-and-telemetry"
+        },
+        {
+            "key": "otel.metrics_exporter",
+            "type": "enum",
+            "values": [
+                "none",
+                "statsig",
+                "otlp-http",
+                "otlp-grpc"
+            ],
+            "default": "statsig",
+            "note": "Select the OpenTelemetry metrics exporter (defaults to statsig).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#observability-and-telemetry"
+        },
+        {
+            "key": "otel.log_user_prompt",
+            "type": "bool",
+            "note": "Opt in to exporting raw user prompts with OpenTelemetry logs.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#observability-and-telemetry"
+        },
+        {
+            "key": "desktop.custom_file_handlers",
+            "type": "map",
+            "note": "User-level only: an extra Open in target for the ChatGPT desktop app.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#add-custom-file-handlers"
+        },
+        {
+            "key": "tui",
+            "type": "object",
+            "note": "TUI-specific options such as enabling inline desktop notifications.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.notifications",
+            "type": "list",
+            "note": "Enable TUI notifications (true/false) or restrict them to a list of event types.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.notification_method",
+            "type": "enum",
+            "values": [
+                "auto",
+                "osc9",
+                "bel"
+            ],
+            "default": "auto",
+            "note": "Notification method for terminal notifications (default: auto).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.notification_condition",
+            "type": "enum",
+            "values": [
+                "unfocused",
+                "always"
+            ],
+            "default": "unfocused",
+            "note": "Control whether TUI notifications fire only when the terminal is unfocused or regardless of focus.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.animations",
+            "type": "bool",
+            "default": true,
+            "note": "Enable terminal animations (welcome screen, shimmer, spinner) (default: true).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.alternate_screen",
+            "type": "enum",
+            "values": [
+                "auto",
+                "always",
+                "never"
+            ],
+            "default": "auto",
+            "note": "Control alternate screen usage for the TUI (default: auto; auto skips it in Zellij to preserve scrollback).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.resume_cwd",
+            "type": "enum",
+            "values": [
+                "current",
+                "session"
+            ],
+            "note": "Working directory to use when resuming or forking a session.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.vim_mode_default",
+            "type": "bool",
+            "default": false,
+            "note": "Start the composer in Vim normal mode instead of insert mode (default: false).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.raw_output_mode",
+            "type": "bool",
+            "default": false,
+            "note": "Start the TUI in raw scrollback mode for copy-friendly terminal selection (default: false).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.show_tooltips",
+            "type": "bool",
+            "default": true,
+            "note": "Show onboarding tooltips in the TUI welcome screen (default: true).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.status_line",
+            "type": "list",
+            "note": "Ordered list of TUI footer status-line item identifiers.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.terminal_title",
+            "type": "list",
+            "note": "Ordered terminal title items; defaults to [\"spinner\", \"project\"], null disables title updates.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.theme",
+            "type": "string",
+            "note": "Syntax-highlighting theme override (kebab-case theme name).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "tui.keymap",
+            "type": "map",
+            "note": "Key binding for one TUI action in a context such as global, chat or composer; an empty array unbinds it.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#tui-keymap"
+        },
+        {
+            "key": "marketplaces",
+            "type": "map",
+            "note": "Source kind for a configured plugin marketplace.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-a-marketplace-from-the-cli"
+        },
+        {
+            "key": "plugins",
+            "type": "map",
+            "note": "Enable or disable a local-marketplace plugin, keyed as plugin-name@marketplace-name.",
+            "url": "https://developers.openai.com/plugins/build/plugins#enable-or-disable-a-plugin-for-a-repo"
+        },
+        {
+            "key": "tui.model_availability_nux",
+            "type": "map",
+            "note": "Internal startup-tooltip state keyed by model slug.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options"
+        },
+        {
+            "key": "hide_agent_reasoning",
+            "type": "bool",
+            "note": "Suppress reasoning events in both the TUI and codex exec output.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#hide-or-surface-reasoning-events"
+        },
+        {
+            "key": "show_raw_agent_reasoning",
+            "type": "bool",
+            "note": "Surface raw reasoning content when the active model emits it.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#hide-or-surface-reasoning-events"
+        },
+        {
+            "key": "disable_paste_burst",
+            "type": "bool",
+            "note": "Disable burst-paste detection in the TUI.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "windows_wsl_setup_acknowledged",
+            "type": "bool",
+            "note": "Track Windows onboarding acknowledgement (Windows only).",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "chatgpt_base_url",
+            "type": "string",
+            "note": "Override the base URL used during the ChatGPT login flow.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "cli_auth_credentials_store",
+            "type": "enum",
+            "values": [
+                "file",
+                "keyring",
+                "auto",
+                "ephemeral"
+            ],
+            "note": "Control where the CLI stores cached credentials.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "mcp_oauth_credentials_store",
+            "type": "enum",
+            "values": [
+                "auto",
+                "file",
+                "keyring"
+            ],
+            "note": "Preferred store for MCP OAuth credentials.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "mcp_oauth_callback_port",
+            "type": "int",
+            "note": "Fixed global port for the local MCP OAuth callback listener; otherwise the OS picks one.",
+            "url": "https://learn.chatgpt.com/docs/extend/mcp#oauth-client-registration-and-callbacks"
+        },
+        {
+            "key": "mcp_oauth_callback_url",
+            "type": "string",
+            "note": "Base callback URL for MCP OAuth login, such as a devbox ingress URL.",
+            "url": "https://learn.chatgpt.com/docs/extend/mcp#oauth-client-registration-and-callbacks"
+        },
+        {
+            "key": "experimental_use_unified_exec_tool",
+            "type": "bool",
+            "note": "Legacy name for enabling unified exec; prefer [features].unified_exec or codex --enable unified_exec.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "tools.web_search",
+            "type": "object",
+            "note": "Web search tool settings: true/false, or a table with context_size, allowed_domains and an approximate location.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#traffic-outside-the-command-network-proxy"
+        },
+        {
+            "key": "tools.view_image",
+            "type": "bool",
+            "note": "Enable the local-image attachment tool view_image.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "web_search",
+            "type": "enum",
+            "values": [
+                "disabled",
+                "cached",
+                "indexed",
+                "live"
+            ],
+            "default": "cached",
+            "note": "Web search mode; cached (default) uses an OpenAI index, live fetches the web, and full-access sandboxes default to live.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#web-search-mode"
+        },
+        {
+            "key": "default_permissions",
+            "type": "string",
+            "note": "Name of the default permissions profile (:read-only, :workspace, :danger-full-access or a custom one); loses to sandbox_mode.",
+            "url": "https://learn.chatgpt.com/docs/permissions#define-and-select-a-profile"
+        },
+        {
+            "key": "permissions",
+            "type": "map",
+            "note": "Human-readable description for this named profile.",
+            "url": "https://learn.chatgpt.com/docs/permissions#configuration-spec"
+        },
+        {
+            "key": "projects",
+            "type": "map",
+            "note": "Mark a project trusted or untrusted; untrusted projects skip project .codex/ config, hooks and rules.",
+            "url": "https://learn.chatgpt.com/docs/agent-approvals-security#migrate-from-the-retired-untrusted-approval-policy"
+        },
+        {
+            "key": "notice.hide_full_access_warning",
+            "type": "bool",
+            "note": "Track acknowledgement of the full access warning prompt.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "notice.hide_world_writable_warning",
+            "type": "bool",
+            "note": "Track acknowledgement of the Windows world-writable directories warning.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "notice.hide_rate_limit_model_nudge",
+            "type": "bool",
+            "note": "Track opt-out of the rate limit model switch reminder.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "notice.hide_gpt5_1_migration_prompt",
+            "type": "bool",
+            "note": "Track acknowledgement of the GPT-5.1 migration prompt.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "notice.hide_gpt-5.1-codex-max_migration_prompt",
+            "type": "bool",
+            "note": "Track acknowledgement of the gpt-5.1-codex-max migration prompt.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "notice.model_migrations",
+            "type": "map",
+            "note": "Track acknowledged model migrations as old->new mappings.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "forced_login_method",
+            "type": "enum",
+            "values": [
+                "chatgpt",
+                "api"
+            ],
+            "note": "Restrict Codex to a specific authentication method.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "forced_chatgpt_workspace_id",
+            "type": "string",
+            "note": "Limit ChatGPT logins to a specific workspace identifier.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-reference#configtoml"
+        },
+        {
+            "key": "agents.max_depth",
+            "type": "int",
+            "note": "Maximum nesting depth for V1 agent threads; ignored by V2 (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "skills.bundled.enabled",
+            "type": "bool",
+            "default": true,
+            "note": "Load the skills bundled with Codex (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "skills.include_instructions",
+            "type": "bool",
+            "note": "Whether turns receive the automatic skills instructions block (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "features",
+            "type": "map",
+            "note": "Any other feature flag; the schema lists about 150 undocumented ones, and codex features list shows them.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-basic#feature-flags"
+        },
+        {
+            "key": "allow_symlinked_codex_home",
+            "type": "bool",
+            "default": false,
+            "note": "Let macOS sandbox writable roots under CODEX_HOME traverse symlinks; user config only (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "apps_mcp_product_sku",
+            "type": "string",
+            "note": "Product SKU forwarded on host-owned Codex Apps MCP requests; ignored in project config (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "audio",
+            "type": "object",
+            "note": "Machine-local realtime voice devices: microphone, microphone_channel, speaker (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "cloud.skills",
+            "type": "object",
+            "note": "Toggle for cloud skills, permitted by default when the host supplies a provider (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "daybreak",
+            "type": "bool",
+            "note": "Default Daybreak preference for new threads and non-interactive turns (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_realtime_start_instructions",
+            "type": "text",
+            "note": "Experimental, do not use: replaces the realtime start instructions (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_realtime_webrtc_call_base_url",
+            "type": "string",
+            "note": "Experimental, do not use: base URL for WebRTC realtime call creation (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_realtime_ws_backend_prompt",
+            "type": "text",
+            "note": "Experimental, do not use: realtime websocket session instructions (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_realtime_ws_base_url",
+            "type": "string",
+            "note": "Experimental, do not use: realtime websocket base URL; ignored in project config (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_realtime_ws_model",
+            "type": "string",
+            "note": "Experimental, do not use: realtime websocket model or snapshot (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_realtime_ws_startup_context",
+            "type": "text",
+            "note": "Experimental, do not use: replaces the realtime startup context; empty disables it (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "experimental_thread_store.type",
+            "type": "enum",
+            "values": [
+                "local"
+            ],
+            "note": "Experimental, do not use: thread store implementation (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "ghost_snapshot",
+            "type": "object",
+            "note": "Legacy no-op table kept so old configs still load (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "goals.max_goal_token_budget",
+            "type": "int",
+            "note": "Maximum token budget for a goal and the default budget for new goals (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "include_apps_instructions",
+            "type": "bool",
+            "note": "Whether to inject the apps_instructions developer block (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "include_collaboration_mode_instructions",
+            "type": "bool",
+            "note": "Whether to inject the collaboration_mode developer block (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "include_environment_context",
+            "type": "bool",
+            "note": "Whether to inject the environment_context user block (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "include_permissions_instructions",
+            "type": "bool",
+            "note": "Whether to inject the permissions instructions developer block (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "mcp_enterprise_managed_auth.idp",
+            "type": "object",
+            "note": "Enterprise IdP (client_id, issuer) shared by EMA-enabled MCP servers and plugins (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "model_post_turn_compact_threshold_percent",
+            "type": "int",
+            "note": "Percent of the usable context that triggers compaction after a final response; 0 or unset disables it (source: schema).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "orchestrator",
+            "type": "object",
+            "note": "Orchestrator-owned toggles mcp and skills; skills is a legacy no-op (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "profile",
+            "type": "string",
+            "note": "Legacy profile selector; no longer supported since 0.134.0 and ignored in project config.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#profiles"
+        },
+        {
+            "key": "profiles",
+            "type": "map",
+            "note": "Legacy [profiles.<name>] tables; --profile no longer reads them since 0.134.0, use <name>.config.toml files.",
+            "url": "https://learn.chatgpt.com/docs/config-file/config-advanced#profiles"
+        },
+        {
+            "key": "realtime",
+            "type": "object",
+            "note": "Experimental, do not use: realtime session transport, type, version and voice (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "responses_api_metadata",
+            "type": "map",
+            "note": "Bounded, product-owned metadata attached to every Responses API request (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        },
+        {
+            "key": "thread_unload_delay_secs",
+            "type": "int",
+            "default": 60,
+            "note": "Idle seconds before app-server unloads a thread with no subscribers; 0 unloads at once (source: config-schema.json).",
+            "url": "https://learn.chatgpt.com/docs/config-schema.json"
+        }
+    ],
+    "skill": [
+        {
+            "key": "metadata.short-description",
+            "type": "string",
+            "note": "Optional short description read from the metadata map (source: codex-rs/skills/src/parser.rs).",
+            "url": "https://github.com/openai/codex/blob/main/codex-rs/skills/src/parser.rs"
+        }
+    ],
+    "tools": [
+        "shell",
+        "exec_command",
+        "write_stdin",
+        "exec)",
+        "apply_patch",
+        "update_plan",
+        "view_image",
+        "web_search",
+        "spawn_agent",
+        "send_input",
+        "resume_agent",
+        "wait_agent",
+        "close_agent",
+        "request_permissions",
+        "app",
+        "tools"
+    ],
+    "events": [
+        {
+            "name": "SessionStart",
+            "note": "A session starts, resumes, clears or compacts; matcher filters source: startup, resume, clear, compact.",
+            "url": "https://learn.chatgpt.com/docs/hooks#sessionstart"
+        },
+        {
+            "name": "SessionEnd",
+            "note": "The main thread ends (close, archive, delete, 30 min idle); matcher filters reason, always other; not for subagents.",
+            "url": "https://learn.chatgpt.com/docs/hooks#sessionend"
+        },
+        {
+            "name": "SubagentStart",
+            "note": "A subagent starts; matcher filters agent_type; can add context, cannot stop it.",
+            "url": "https://learn.chatgpt.com/docs/hooks#subagentstart"
+        },
+        {
+            "name": "SubagentStop",
+            "note": "A subagent stops; matcher filters agent_type; decision block continues the subagent.",
+            "url": "https://learn.chatgpt.com/docs/hooks#subagentstop"
+        },
+        {
+            "name": "PreToolUse",
+            "note": "Before a local tool runs (Bash, apply_patch as Edit|Write, MCP, function tools); matcher filters tool_name; can deny or rewrite.",
+            "url": "https://learn.chatgpt.com/docs/hooks#pretooluse"
+        },
+        {
+            "name": "PermissionRequest",
+            "note": "Codex is about to ask for approval; matcher filters tool_name; can allow or deny.",
+            "url": "https://learn.chatgpt.com/docs/hooks#permissionrequest"
+        },
+        {
+            "name": "PostToolUse",
+            "note": "After a supported tool produces output; matcher filters tool_name; can block or replace the result.",
+            "url": "https://learn.chatgpt.com/docs/hooks#posttooluse"
+        },
+        {
+            "name": "PreCompact",
+            "note": "Before chat compaction; matcher filters trigger: manual or auto; continue false stops compaction.",
+            "url": "https://learn.chatgpt.com/docs/hooks#precompact"
+        },
+        {
+            "name": "PostCompact",
+            "note": "After chat compaction; matcher filters trigger: manual or auto.",
+            "url": "https://learn.chatgpt.com/docs/hooks#postcompact"
+        },
+        {
+            "name": "UserPromptSubmit",
+            "note": "A user prompt is about to be sent; no matcher; can add context or block the prompt.",
+            "url": "https://learn.chatgpt.com/docs/hooks#userpromptsubmit"
+        },
+        {
+            "name": "Stop",
+            "note": "A turn ends; no matcher; decision block continues with reason as a new prompt.",
+            "url": "https://learn.chatgpt.com/docs/hooks#stop"
+        },
+        {
+            "name": "Interrupt",
+            "note": "The user interrupts an active main-thread turn; no matcher; 1 s default, 3 s max timeout.",
+            "url": "https://learn.chatgpt.com/docs/hooks#interrupt"
+        }
+    ],
+    "hookFields": {
+        "command": [
+            {
+                "key": "command",
+                "type": "string",
+                "required": true,
+                "note": "Shell command run in the session cwd; gets the event JSON on stdin; plugin hooks get PLUGIN_ROOT and PLUGIN_DATA.",
+                "url": "https://learn.chatgpt.com/docs/hooks#config-shape"
+            },
+            {
+                "key": "commandWindows",
+                "type": "string",
+                "note": "Windows-only command override; command_windows is also accepted in TOML.",
+                "url": "https://learn.chatgpt.com/docs/hooks#config-shape"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 600,
+                "note": "Timeout in seconds; SessionEnd and Interrupt default to 1 and allow at most 3.",
+                "url": "https://learn.chatgpt.com/docs/hooks#config-shape"
+            },
+            {
+                "key": "async",
+                "type": "bool",
+                "default": false,
+                "note": "Run in the background without blocking; output arrives at the next safe point and cannot block or rewrite.",
+                "url": "https://learn.chatgpt.com/docs/hooks#run-hooks-in-the-background"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Optional message shown while the hook runs.",
+                "url": "https://learn.chatgpt.com/docs/hooks#config-shape"
+            },
+            {
+                "key": "additionalContextLimit",
+                "type": "int",
+                "default": 2500,
+                "note": "Approximate token threshold above which additionalContext is spilled to disk; 0 disables spilling.",
+                "url": "https://learn.chatgpt.com/docs/hooks#large-hook-output"
+            }
+        ],
+        "mcp_tool": [
+            {
+                "key": "server",
+                "type": "string",
+                "required": true,
+                "note": "Name of an already-connected MCP server; hooks never start or reconnect servers.",
+                "url": "https://learn.chatgpt.com/docs/hooks#configure-an-mcp-tool-hook"
+            },
+            {
+                "key": "tool",
+                "type": "string",
+                "required": true,
+                "note": "Name of a tool exposed by that server.",
+                "url": "https://learn.chatgpt.com/docs/hooks#configure-an-mcp-tool-hook"
+            },
+            {
+                "key": "input",
+                "type": "object",
+                "note": "Argument templates; ${field.nested} reads a dotted field from the hook event.",
+                "url": "https://learn.chatgpt.com/docs/hooks#expand-arguments-from-the-hook-event"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 600,
+                "note": "Active execution timeout in seconds; the shorter of hook and server timeout applies.",
+                "url": "https://learn.chatgpt.com/docs/hooks#configure-an-mcp-tool-hook"
+            },
+            {
+                "key": "statusMessage",
+                "type": "string",
+                "note": "Optional message shown while the hook runs.",
+                "url": "https://learn.chatgpt.com/docs/hooks#configure-an-mcp-tool-hook"
+            }
+        ],
+        "prompt": [],
+        "agent": []
+    },
+    "mcpFields": {
+        "stdio": [
+            {
+                "key": "mcp_servers",
+                "type": "map",
+                "required": true,
+                "note": "Command that starts the server.",
+                "url": "https://learn.chatgpt.com/docs/extend/mcp#stdio-servers"
+            }
+        ],
+        "http": [
+            {
+                "key": "mcp_servers",
+                "type": "map",
+                "required": true,
+                "note": "Address of the streamable HTTP server.",
+                "url": "https://learn.chatgpt.com/docs/extend/mcp#streamable-http-servers"
+            }
+        ]
+    },
+    "command": null,
+    "prompt": [
+        {
+            "key": "argument-hint",
+            "type": "string",
+            "note": "Documents expected parameters, such as KEY=<value>.",
+            "url": "https://learn.chatgpt.com/docs/custom-prompts#add-metadata-and-arguments"
+        }
+    ],
+    "rule": [
+        {
+            "key": "pattern",
+            "type": "list",
+            "required": true,
+            "note": "Non-empty command prefix; each element is a literal or a list of alternative literals.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/rules#understand-rule-fields"
+        },
+        {
+            "key": "decision",
+            "type": "enum",
+            "values": [
+                "allow",
+                "prompt",
+                "forbidden"
+            ],
+            "default": "allow",
+            "note": "Action on a match; the most restrictive matching rule wins.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/rules#understand-rule-fields"
+        },
+        {
+            "key": "justification",
+            "type": "string",
+            "note": "Non-empty reason, surfaced in approval prompts or rejection messages.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/rules#understand-rule-fields"
+        },
+        {
+            "key": "match",
+            "type": "list",
+            "note": "Example commands that must match, validated when rules load.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/rules#understand-rule-fields"
+        },
+        {
+            "key": "not_match",
+            "type": "list",
+            "note": "Example commands that must not match, validated when rules load.",
+            "url": "https://learn.chatgpt.com/docs/agent-configuration/rules#understand-rule-fields"
+        }
+    ],
+    "plugin": [
+        {
+            "key": "$schema",
+            "type": "string",
+            "required": true,
+            "note": "Must be https://agent-plugins.org/schemas/1.0.0/plugin.schema.json for a root plugin.json to be read as portable.",
+            "url": "https://developers.openai.com/plugins/build/plugins#create-a-plugin-manually"
+        },
+        {
+            "key": "author.name",
+            "type": "string",
+            "note": "Author name, used as the developer name.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "author.email",
+            "type": "string",
+            "note": "Author email.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "author.url",
+            "type": "string",
+            "note": "Author website.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "homepage",
+            "type": "string",
+            "note": "Plugin homepage, used as the website URL.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "repository",
+            "type": "string",
+            "note": "Source repository URL.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "License identifier, such as MIT.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "keywords",
+            "type": "list",
+            "note": "Search keywords.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-structure"
+        },
+        {
+            "key": "extensions.com.openai.apps",
+            "type": "string",
+            "note": "./-relative path to .app.json, which maps registered MCP servers (plugin_asdk_app ids).",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.hooks",
+            "type": "string",
+            "note": "Hook path, path array, inline hooks object or array; replaces the default hooks/hooks.json.",
+            "url": "https://developers.openai.com/plugins/build/plugins#bundled-mcp-servers-and-lifecycle-hooks"
+        },
+        {
+            "key": "extensions.com.openai.onboardingSkill",
+            "type": "string",
+            "note": "./-relative path to a packaged SKILL.md run as the setup workflow after install.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-an-onboarding-skill"
+        },
+        {
+            "key": "extensions.com.openai.interface.displayName",
+            "type": "string",
+            "note": "Name shown in the plugin directory.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.shortDescription",
+            "type": "string",
+            "note": "One-line description in the directory.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.longDescription",
+            "type": "text",
+            "note": "Longer description on the plugin page.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.developerName",
+            "type": "string",
+            "note": "Publisher name shown with the plugin.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.category",
+            "type": "string",
+            "note": "Directory category, such as Productivity.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.capabilities",
+            "type": "list",
+            "note": "Capability labels, such as Read and Write.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.websiteURL",
+            "type": "string",
+            "note": "Plugin website; websiteUrl also accepted (source: manifest.rs).",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.privacyPolicyURL",
+            "type": "string",
+            "note": "Privacy policy link.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.termsOfServiceURL",
+            "type": "string",
+            "note": "Terms of service link.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.defaultPrompt",
+            "type": "list",
+            "note": "Starter prompts, a string or up to 3 strings of at most 128 characters (limits: source manifest.rs).",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.brandColor",
+            "type": "string",
+            "note": "Brand colour as a hex string.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.composerIcon",
+            "type": "string",
+            "note": "./-relative icon used in the composer, ideally under ./assets/.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.logo",
+            "type": "string",
+            "note": "./-relative logo image, ideally under ./assets/.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "extensions.com.openai.interface.logoDark",
+            "type": "string",
+            "note": "./-relative logo for dark backgrounds (source: core-plugins/src/manifest.rs).",
+            "url": "https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/manifest.rs"
+        },
+        {
+            "key": "extensions.com.openai.interface.screenshots",
+            "type": "list",
+            "note": "./-relative screenshot images.",
+            "url": "https://developers.openai.com/plugins/build/plugins#add-openai-specific-metadata"
+        },
+        {
+            "key": "apps",
+            "type": "string",
+            "note": "Compat manifest only: path to .app.json with registered MCP server mappings.",
+            "url": "https://developers.openai.com/plugins/build/plugins#create-and-test-a-plugin-locally-with-an-mcp-server"
+        },
+        {
+            "key": "interface",
+            "type": "object",
+            "note": "Compat manifest only: same keys as extensions.com.openai.interface, at the top level.",
+            "url": "https://developers.openai.com/plugins/build/plugins#plugin-creator-output"
+        }
+    ],
+    "skillYaml": [
+        {
+            "key": "interface.display_name",
+            "type": "string",
+            "note": "User-facing name in the ChatGPT desktop app, at most 64 characters.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "interface.short_description",
+            "type": "string",
+            "note": "User-facing description, at most 1024 characters.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "interface.icon_small",
+            "type": "string",
+            "note": "Relative path to a small icon, resolved under the skill's assets/ folder.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "interface.icon_large",
+            "type": "string",
+            "note": "Relative path to a large icon, resolved under the skill's assets/ folder.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "interface.brand_color",
+            "type": "string",
+            "note": "Brand colour as a hex string such as #3B82F6.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "interface.default_prompt",
+            "type": "string",
+            "note": "Surrounding prompt to use the skill with, at most 1024 characters.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "policy.allow_implicit_invocation",
+            "type": "bool",
+            "default": true,
+            "note": "When false, Codex never picks the skill by description; explicit $skill invocation still works.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        },
+        {
+            "key": "policy.products",
+            "type": "list",
+            "values": [
+                "chatgpt",
+                "codex",
+                "atlas"
+            ],
+            "note": "Products the skill is restricted to (source: ext/skills/src/loader/metadata.rs).",
+            "url": "https://github.com/openai/codex/blob/main/codex-rs/ext/skills/src/loader/metadata.rs"
+        },
+        {
+            "key": "dependencies.tools",
+            "type": "map",
+            "required": true,
+            "note": "Kind of tool dependency, such as mcp.",
+            "url": "https://learn.chatgpt.com/docs/build-skills#optional-metadata"
+        }
+    ]
+}

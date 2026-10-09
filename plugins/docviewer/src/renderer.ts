@@ -215,6 +215,7 @@ export function activate(ctx: PluginContext): void {
 
             const root = document.createElement('div')
             root.className = 'docviewer'
+            root.tabIndex = -1
             const tipHolder = document.createElement('div')
             const withTip = tips(tipHolder)
 
@@ -341,14 +342,28 @@ export function activate(ctx: PluginContext): void {
             editKey.setAttribute('aria-label', 'Edit')
             editKey.onclick = () => setMode(mode === 'edit' ? readMode() : 'edit')
 
-            const pagesKey = document.createElement('button')
-            pagesKey.type = 'button'
-            pagesKey.className = 'dya-key'
-            pagesKey.innerHTML = glyph('plugin')
-            pagesKey.setAttribute('aria-label', 'Plugin home')
-            withTip(pagesKey, 'Plugin home')
-            pagesKey.onclick = () => {
-                if (!busy && leave()) showEmpty()
+            /*
+             * What is open closes with its X or with Escape, back to the pages. A page made here
+             * and closed before a word was written leaves nothing behind: an empty Untitled file
+             * nobody asked to keep is litter in the person's folder.
+             */
+            const closeKey = document.createElement('button')
+            closeKey.type = 'button'
+            closeKey.className = 'dya-key'
+            closeKey.innerHTML = glyph('close')
+            closeKey.setAttribute('aria-label', 'Close')
+            closeKey.onclick = () => void closePage()
+            let born: string | null = null
+
+            async function closePage(): Promise<void> {
+                if (busy || !current || !leave()) return
+                const litter = born !== null && current.path === born && (current.content ?? '') === '' && saved === ''
+                const path = current.path
+                showEmpty()
+                if (litter && path) {
+                    await ctx.invoke('delete', path).catch(() => undefined)
+                    await refresh()
+                }
             }
 
             const deleteKey = document.createElement('button')
@@ -374,7 +389,7 @@ export function activate(ctx: PluginContext): void {
                 const shown: HTMLElement[] = [editKey]
                 paintSave()
                 if (dirty && !overwrite) shown.push(save)
-                strip.replaceChildren(...shown, deleteKey, pagesKey)
+                strip.replaceChildren(...shown, deleteKey, closeKey)
                 place.hidden = current !== null
                 if (overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
@@ -791,9 +806,11 @@ export function activate(ctx: PluginContext): void {
 
             scrim.onclick = closeLibrary
             root.addEventListener('keydown', (event) => {
-                if (event.key !== 'Escape' || library.hidden || event.defaultPrevented) return
+                if (event.key !== 'Escape' || event.defaultPrevented) return
                 event.preventDefault()
-                closeLibrary()
+                if (!library.hidden) closeLibrary()
+                else if (event.target instanceof HTMLElement && event.target.matches('textarea, input')) root.focus({ preventScroll: true })
+                else void closePage()
             })
 
             /*
@@ -955,6 +972,7 @@ export function activate(ctx: PluginContext): void {
 
             async function present(result: OpenResult, line?: number, start?: Mode): Promise<void> {
                 current = result
+                born = start === 'edit' && (result.content ?? '') === '' ? (result.path ?? null) : null
                 target = line ?? null
                 mode = start ?? (result.markdown ? 'rendered' : 'source')
                 handle.setTitle(result.name ?? null)

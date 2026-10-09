@@ -1,4 +1,4 @@
-import { glyph, injectStyles, tips } from '@dyarchia/sdk'
+import { glyph, injectStyles } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import { CONVERTIBLE, MIME_TYPES } from './media.js'
 
@@ -138,9 +138,7 @@ export function activate(ctx: PluginContext): void {
             root.className = 'player'
             const stage = document.createElement('div')
             stage.className = 'player-stage'
-            const tipHolder = document.createElement('div')
-            const withTip = tips(tipHolder)
-            root.append(stage, tipHolder)
+            root.append(stage)
             container.appendChild(root)
 
             let busy = false
@@ -150,21 +148,27 @@ export function activate(ctx: PluginContext): void {
             let failure: string | undefined
 
             /*
-             * What is playing is the tab's title, and the one key in the tab row takes the panel
-             * back to its gallery. Open lives in the gallery and in the palette.
+             * What is playing is the tab's title, and the one key in the tab row closes it, back to
+             * the gallery; Escape does the same. Open lives in the gallery and in the palette.
              */
             const back = document.createElement('button')
             back.type = 'button'
             back.className = 'dya-key'
-            back.innerHTML = glyph('plugin')
-            back.setAttribute('aria-label', 'Plugin home')
-            withTip(back, 'Plugin home')
-            back.onclick = () => {
+            back.innerHTML = glyph('close')
+            back.setAttribute('aria-label', 'Close')
+            const close = (): void => {
                 void ctx.invoke('release', handle.instanceId)
                 showEmpty()
             }
+            back.onclick = close
             back.hidden = true
             handle.toolbar.append(back)
+            root.tabIndex = -1
+            root.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape' || event.defaultPrevented || back.hidden || document.fullscreenElement) return
+                event.preventDefault()
+                close()
+            })
 
             function tile(icon: string, name: string, act: () => void): HTMLButtonElement {
                 const card = document.createElement('button')

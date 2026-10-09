@@ -2,8 +2,8 @@
  * The glyphs of the actions every panel shares, drawn for this system on a 24 unit grid with a
  * 2 unit round stroke in currentColor, so a key's ink is its glyph's. An action a reader knows by
  * its glyph is an icon key with a tip, never a key spelling the verb, and every panel draws that
- * glyph from here, so browse is the same folder in the board and in the crawler. Plugin is a panel's
- * own start, a bare Π, the Greek P of plugin; home is a page's home, the house of every browser.
+ * glyph from here, so browse is the same folder in the board and in the crawler. What is open
+ * closes with the X; home is a page's home, the house of every browser.
  * Every glyph names itself in `data-glyph`, so `tips()` can tell the ones that say their action
  * from the ones that do not; close also carries `dya-glyph--close`, so kanon can turn every key
  * wearing it red under the hand.
@@ -15,7 +15,6 @@ const PATHS = {
     check: '<path d="M20 6 9 17l-5-5"/>',
     close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     delete: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/>',
-    plugin: '<path d="M4 6h16"/><path d="M8 6v13"/><path d="M16 6v13"/>',
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/>',
     launcher: '<circle cx="5" cy="5" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="19" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/>',
     pin: '<path d="M12 17v5"/><path d="M8 3h8"/><path d="M9 3v6l-3 4v2h12v-2l-3-4V3"/>',
@@ -38,6 +37,7 @@ const PATHS = {
     fold: '<path d="M2 12h6"/><path d="m5 9 3 3-3 3"/><path d="M22 12h-6"/><path d="m19 9-3 3 3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>',
     unfold: '<path d="M9 12H3"/><path d="m6 9-3 3 3 3"/><path d="M15 12h6"/><path d="m18 9 3 3-3 3"/><path d="M12 3v4"/><path d="M12 10v4"/><path d="M12 17v4"/>',
     terminal: '<path d="m5 7 5 5-5 5"/><path d="M12 18h7"/>',
+    key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2.5 2.5"/>',
     log: '<path d="M4 5h16"/><path d="M4 10h11"/><path d="M4 15h14"/><path d="M4 20h8"/>',
     expand: '<path d="M15 4h5v5"/><path d="M9 20H4v-5"/><path d="m20 4-6 6"/><path d="m4 20 6-6"/>',
     contract: '<path d="M4 10h5V5"/><path d="M20 14h-5v5"/><path d="M9 10 3 4"/><path d="m15 14 6 6"/>',

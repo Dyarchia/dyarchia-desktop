@@ -1,4 +1,4 @@
-import { glyph, injectStyles } from '@dyarchia/sdk'
+import { glyph, injectStyles, tips } from '@dyarchia/sdk'
 import type { PluginContext } from '@dyarchia/sdk'
 import type { WebviewTag } from 'electron'
 
@@ -14,7 +14,19 @@ interface Library {
     bookmarks: Bookmark[]
 }
 
-const PARTITION = 'dyarchia-browser'
+interface Offer {
+    host: string
+    username: string
+    update: boolean
+}
+
+interface Kept {
+    origin: string
+    host: string
+    username: string
+}
+
+const PARTITION = 'persist:dyarchia-browser'
 const DEFAULT_HOME = 'https://duckduckgo.com/'
 const SEARCH = 'https://duckduckgo.com/?q='
 const EMPTY: Library = { home: '', folders: [], bookmarks: [] }
@@ -104,6 +116,26 @@ const STYLES = `
 .brw-folder {
     padding-inline-start: calc(18px + var(--dya-space-2));
 }
+.brw-library > .dya-table {
+    width: 100%;
+}
+.brw-library > .dya-table td:first-child {
+    padding-inline-start: 0;
+}
+.brw-library > .dya-table td:last-child {
+    padding-inline-end: 0;
+    text-align: end;
+}
+.brw-offer {
+    flex: none;
+    padding-block-start: 0;
+}
+.brw-offer[hidden] {
+    display: none;
+}
+.brw-offer > .dya-bar__group {
+    margin-inline-start: auto;
+}
 `
 
 /*
@@ -177,6 +209,7 @@ export function activate(ctx: PluginContext): void {
             const root = el('div', 'brw')
             const popovers = el('div')
             popovers.style.display = 'contents'
+            const withTip = tips(popovers)
 
             function key(icon: string, label: string, onClick: () => void): HTMLButtonElement {
                 const button = el('button', 'dya-key')
@@ -204,13 +237,22 @@ export function activate(ctx: PluginContext): void {
             address.setAttribute('aria-label', 'Address')
             address.placeholder = 'Search or address'
             const star = key(STAR_ICON, 'Bookmark', () => void toggleBookmark())
-            const shelf = key(glyph('book'), 'Bookmarks', () => openLibrary())
+            const shelf = key(glyph('book'), 'Library', () => openLibrary())
+            const anchor = `--brw-sign-${handle.instanceId.replace(/\W/g, '')}`
+            const signIn = key(glyph('key'), 'Sign in', () => void signInNow())
+            signIn.hidden = true
+            withTip(signIn, 'Sign in')
+            signIn.style.setProperty('anchor-name', anchor)
+            const accounts = el('div', 'dya-menu brw-menu')
+            accounts.popover = 'auto'
+            accounts.style.setProperty('position-anchor', anchor)
+            let usernames: string[] = []
             let guest = -1
             const save = key(glyph('extract'), 'Save video', () => void ctx.invoke('save', guest))
             save.hidden = true
             const saving = el('span', 'dya-ring dya-ring--busy')
             saving.hidden = true
-            strip.append(back, forward, reload, homeKey, address, save, star, shelf)
+            strip.append(back, forward, reload, homeKey, address, signIn, save, star, shelf)
             bar.append(strip, saving)
             const offVideos = ctx.on('videos', (id: unknown, count: unknown) => {
                 if (id !== guest) return
@@ -232,6 +274,78 @@ export function activate(ctx: PluginContext): void {
 
             const marks = el('div', 'brw-marks')
             marks.hidden = true
+
+            /*
+             * After a form with a password is sent, a strip under the address offers to keep it:
+             * the name and the site it would be kept for, Save, Never for this site, and the X that
+             * lets it go this once. It stays across the page that follows the sign-in until it is
+             * answered, and the password itself is never in this process.
+             */
+            const offerBar = el('div', 'dya-bar brw-offer')
+            offerBar.hidden = true
+
+            function drawOffer(found: Offer): void {
+                const keep = el('button', 'dya-button dya-button--primary', 'Save')
+                keep.type = 'button'
+                keep.addEventListener('click', () => {
+                    offerBar.hidden = true
+                    void ctx.invoke('keep', guest)
+                })
+                const never = el('button', 'dya-button', 'Never')
+                never.type = 'button'
+                never.addEventListener('click', () => {
+                    offerBar.hidden = true
+                    void ctx.invoke('never', guest)
+                })
+                const drop = key(glyph('close'), 'Close', () => {
+                    offerBar.hidden = true
+                    void ctx.invoke('dismiss', guest)
+                })
+                const group = el('div', 'dya-bar__group')
+                group.append(keep, never, drop)
+                offerBar.replaceChildren(
+                    el('span', 'dya-text', found.update ? 'Update password' : 'Save password'),
+                    el('span', 'dya-mono', found.username ? `${found.username} - ${found.host}` : found.host),
+                    group
+                )
+                offerBar.hidden = false
+            }
+
+            /*
+             * The key that signs in shows only on a site with a password kept for it. One name fills
+             * at once; several open a menu of names under the key. Filling is always this press,
+             * never the page loading.
+             */
+            async function refreshSignIn(): Promise<void> {
+                if (!ready) return
+                usernames = ((await ctx.invoke('logins', view.getURL())) as string[]) ?? []
+                signIn.hidden = usernames.length === 0
+            }
+
+            async function signInNow(): Promise<void> {
+                if (usernames.length === 1) {
+                    await ctx.invoke('fill', guest, usernames[0])
+                    return
+                }
+                accounts.replaceChildren(
+                    ...usernames.map((name) => {
+                        const item = el('button', 'dya-menu__item', name || '-')
+                        item.type = 'button'
+                        item.addEventListener('click', () => {
+                            accounts.hidePopover()
+                            void ctx.invoke('fill', guest, name)
+                        })
+                        return item
+                    })
+                )
+                accounts.showPopover()
+            }
+
+            let kept: Kept[] = []
+            async function refreshKept(): Promise<void> {
+                kept = ((await ctx.invoke('passwords')) as Kept[]) ?? []
+                if (!sheet.hidden) drawLibrary()
+            }
 
             const stage = el('div', 'brw-view')
             try {
@@ -271,10 +385,11 @@ export function activate(ctx: PluginContext): void {
             const sheet = el('aside', 'dya-sheet dya-sheet--modal dya-pane brw-library')
             sheet.setAttribute('role', 'dialog')
             sheet.setAttribute('aria-modal', 'true')
-            sheet.setAttribute('aria-label', 'Bookmarks')
+            sheet.setAttribute('aria-label', 'Library')
             sheet.hidden = true
 
-            root.append(bar, marks, stage, scrim, sheet, popovers)
+            popovers.append(accounts)
+            root.append(bar, offerBar, marks, stage, scrim, sheet, popovers)
             container.append(root)
 
             let loading = false
@@ -515,7 +630,7 @@ export function activate(ctx: PluginContext): void {
                 const end = el('div', 'dya-sheet__end')
                 end.append(close)
                 const head = el('div', 'dya-sheet__head')
-                head.append(el('span', 'dya-title', 'Bookmarks'), end)
+                head.append(el('span', 'dya-title', 'Library'), end)
 
                 const form = el('div', 'dya-form')
                 const homeRow = el('div', 'dya-join')
@@ -576,7 +691,38 @@ export function activate(ctx: PluginContext): void {
                     list.append(headRow, inside)
                 }
 
-                sheet.replaceChildren(head, form, ...(list.childElementCount ? [list] : []))
+                /*
+                 * The kept passwords as a table, a site and a name per row with its delete, and under
+                 * everything the one key that forgets it all. The confirm names only what cannot be
+                 * undone; bookmarks and the home page are not part of it.
+                 */
+                const passwords: HTMLElement[] = []
+                if (kept.length) {
+                    const table = el('table', 'dya-table dya-table--bare')
+                    const body = el('tbody')
+                    for (const entry of kept) {
+                        const row = el('tr', 'dya-row')
+                        const user = el('td')
+                        user.append(el('span', 'dya-meta', entry.username || '-'))
+                        const end = el('td', 'dya-table__end')
+                        const forget = key(glyph('delete'), 'Delete', () => void ctx.invoke('forget', entry.origin, entry.username))
+                        forget.classList.add('dya-key--danger')
+                        end.append(forget)
+                        row.append(el('td', 'dya-table__name', entry.host), user, end)
+                        body.append(row)
+                    }
+                    table.append(body)
+                    passwords.push(el('span', 'dya-label', 'Passwords'), table)
+                }
+                const clear = el('button', 'dya-button dya-button--danger', 'Clear data')
+                clear.type = 'button'
+                clear.addEventListener('click', () => {
+                    if (window.confirm('Sign out of every site and delete every saved password?')) void ctx.invoke('clear')
+                })
+                const actions = el('div', 'dya-form__actions')
+                actions.append(clear)
+
+                sheet.replaceChildren(head, form, ...(list.childElementCount ? [list] : []), ...passwords, actions)
             }
 
             let opener: HTMLElement | null = null
@@ -585,6 +731,7 @@ export function activate(ctx: PluginContext): void {
                 if (!sheet.hidden) return
                 opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
                 drawLibrary()
+                void refreshKept()
                 bar.inert = true
                 marks.inert = true
                 stage.inert = true
@@ -633,6 +780,7 @@ export function activate(ctx: PluginContext): void {
                 ready = true
                 if (guest === -1) guest = view.getWebContentsId()
                 sync()
+                void refreshSignIn()
             })
             view.addEventListener('did-start-loading', () => {
                 fail.hidden = true
@@ -666,6 +814,17 @@ export function activate(ctx: PluginContext): void {
             })
 
             const offMarks = ctx.on('library', (next) => receive(next as Library))
+            const offOffer = ctx.on('offer', (id: unknown, found: unknown) => {
+                if (id === guest) drawOffer(found as Offer)
+            })
+            const offLogins = ctx.on('logins', () => {
+                void refreshSignIn()
+                void refreshKept()
+            })
+            const offCleared = ctx.on('cleared', () => {
+                offerBar.hidden = true
+                if (ready) view.reload()
+            })
 
             /*
              * The first page waits for the library, because the home page is in it.
@@ -696,6 +855,9 @@ export function activate(ctx: PluginContext): void {
                     dropOutside = null
                 }
                 offMarks()
+                offOffer()
+                offLogins()
+                offCleared()
                 offVideos()
                 offSaving()
                 offSaved()

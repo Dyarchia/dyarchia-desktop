@@ -8,8 +8,10 @@ you cannot afford to lose.**
 - An Electron shell (Vite, React, TypeScript, dockview) that starts empty: every feature is a
   plugin discovered at runtime, with its own draggable, resizable, persistent panels.
 - Five plugins always load: Setup, the terminal, the reader, the player and Kanon, which offers
-  the themes in the palette. kanban, crawlee, the browser and Media reach outside for something
-  and are a choice made in Setup, which says what each will download and where it will write.
+  the themes in the palette. kanban, crawlee, the browser, Media and Kamini reach outside for
+  something and are a choice made in Setup, which says what each will download and where it will write.
+  Kamini makes agents, skills, commands, prompts, memory, rules and plugins once and exports them to
+  six agent CLIs; see `plugins/kamini/README.md`.
   Choosing Media is choosing FFmpeg and yt-dlp: with them, the player also converts what
   Chromium cannot play and the browser can save a page's video.
 - kanban drives real agent CLIs that spend real money; read `plugins/kanban/README.md` first.

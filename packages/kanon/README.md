@@ -47,8 +47,10 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 
 - **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
   keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size.
-- **A field is an underline**, brightening under the pointer and turning the accent with the keyboard. A field and
-  its keys are a `join`, the field filling the row. Adjacent icon keys in a `toolbar` join on their own.
+- **A field is an underline**, its words starting where its line starts, so a field, a select, a tick and a key in
+  one form share one left edge; it brightens under the pointer and turns the accent with the keyboard. A field and
+  its keys are a `join`, the field filling the row. Data typed into one, an id, a list, JSON, is `--code`: mono,
+  and as tall as what it holds. Adjacent icon keys in a `toolbar` join on their own.
 - **One primary per view**: `--primary`, a block of the accent with the ground's black for its word (6.37; 7.77 on
   the hover step). `key--success` is lit green; `--danger` turns red only under pointer or focus, and so does every
   key wearing the close X (`glyph--close`, set by the SDK). **A state a person answers is one key**:
@@ -57,7 +59,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
 - **A tip exists only on a key whose glyph does not say its action**, one or two words. An X, a plus, a
   magnifier, a bin, a folder have none; neither has a label, a pill or a key that spells anything. The SDK's
-  `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (Π, log, rename...).
+  `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
@@ -82,15 +84,15 @@ Structure    pane bar (--flush --inset __group) card (--lift --selected --danger
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
-Input        field (--auto --prose __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
+Input        field (--auto --prose --code __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark --close)   (blue purple cyan)
-Content      table (--bare __num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
+Content      link table (--bare __num __fit __name __subject __end __prose __section) row (--selected) files file (__name)
              stat (__figure __value __unit __text) title text (--success --warning --danger)
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body; aria-current) notice (__body __title __text)
              steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
-Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) editor terminal log math (--block)
+Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) editor (--field) terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
              palette (__body __apps __app __pin __list __row __icon __name __meta)
 Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading

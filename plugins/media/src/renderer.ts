@@ -156,8 +156,18 @@ export function activate(ctx: PluginContext): void {
             return button
         }
 
-        const back = key('plugin', 'Plugin home', () => show(null))
+        /*
+         * An open tool closes with its X or with Escape, back to the tools.
+         */
+        const back = key('close', 'Close', () => show(null))
         handle.toolbar.append(back)
+        root.tabIndex = -1
+        root.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || event.defaultPrevented || back.hidden) return
+            event.preventDefault()
+            if (event.target instanceof HTMLElement && event.target.matches('textarea, input')) root.focus({ preventScroll: true })
+            else show(null)
+        })
 
         function fail(error: unknown): void {
             const line = body.querySelector('.media-failure')

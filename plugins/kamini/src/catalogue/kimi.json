@@ -1,0 +1,383 @@
+{
+    "docs": "https://moonshotai.github.io/kimi-code/en/",
+    "agent": [
+        {
+            "key": "whenToUse",
+            "type": "text",
+            "note": "Extra hint describing when the agent should be used.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/agents.html#agent-file-format"
+        },
+        {
+            "key": "override",
+            "type": "bool",
+            "default": false,
+            "note": "Lets a directory-discovered file replace a built-in agent of the same name (agent, coder, explore, plan).",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/agents.html#agent-file-format"
+        },
+        {
+            "key": "tools",
+            "type": "list",
+            "values": [
+                "Read",
+                "Write",
+                "Edit",
+                "Grep",
+                "Glob",
+                "ReadMediaFile",
+                "Bash",
+                "WebSearch",
+                "FetchURL",
+                "EnterPlanMode",
+                "ExitPlanMode",
+                "TodoList",
+                "Agent",
+                "AgentSwarm",
+                "AskUserQuestion",
+                "NotifyUser",
+                "Skill",
+                "TaskList",
+                "TaskOutput",
+                "TaskStop",
+                "WaitFor",
+                "CronCreate",
+                "CronList",
+                "CronDelete",
+                "select_tools"
+            ],
+            "default": "all tools",
+            "note": "Tool allowlist, YAML list or comma string; mcp__ entries are globs, a lone * allows all, [] disables all.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/agents.html#agent-file-format"
+        },
+        {
+            "key": "disallowedTools",
+            "type": "list",
+            "values": [
+                "Read",
+                "Write",
+                "Edit",
+                "Grep",
+                "Glob",
+                "ReadMediaFile",
+                "Bash",
+                "WebSearch",
+                "FetchURL",
+                "EnterPlanMode",
+                "ExitPlanMode",
+                "TodoList",
+                "Agent",
+                "AgentSwarm",
+                "AskUserQuestion",
+                "NotifyUser",
+                "Skill",
+                "TaskList",
+                "TaskOutput",
+                "TaskStop",
+                "WaitFor",
+                "CronCreate",
+                "CronList",
+                "CronDelete",
+                "select_tools"
+            ],
+            "note": "Tool denylist with the same syntax as tools, applied after the allowlist.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/agents.html#agent-file-format"
+        },
+        {
+            "key": "subagents",
+            "type": "list",
+            "default": "coder, explore, plan",
+            "note": "Sub-agent types this agent may delegate to; a lone * allows every type.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/agents.html#agent-file-format"
+        }
+    ],
+    "skill": [
+        {
+            "key": "type",
+            "type": "enum",
+            "values": [
+                "prompt",
+                "inline",
+                "flow",
+                "reference"
+            ],
+            "default": "prompt",
+            "note": "Skill kind: prompt and inline are equal, flow is manual-only via /skill:<name>; other values are skipped.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/skills.html#frontmatter-fields"
+        },
+        {
+            "key": "whenToUse",
+            "type": "text",
+            "note": "When the skill should trigger; aliases when-to-use and when_to_use.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/skills.html#frontmatter-fields"
+        },
+        {
+            "key": "disableModelInvocation",
+            "type": "bool",
+            "default": false,
+            "note": "Blocks automatic invocation by the model; aliases disable-model-invocation and disable_model_invocation.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/skills.html#frontmatter-fields"
+        },
+        {
+            "key": "arguments",
+            "type": "list",
+            "note": "Named parameters, list or space-separated string; each is readable in the body as $<name>.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/skills.html#frontmatter-fields"
+        },
+        {
+            "key": "metadata.hasSubSkill",
+            "type": "bool",
+            "default": false,
+            "note": "Source: marks the skill as a bundle whose nested SKILL.md folders register as <parent>.<child>.",
+            "url": "https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/features/skill/catalog/fileSkillDiscovery.ts"
+        }
+    ],
+    "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Grep",
+        "Glob",
+        "ReadMediaFile",
+        "Bash",
+        "WebSearch",
+        "FetchURL",
+        "EnterPlanMode",
+        "ExitPlanMode",
+        "TodoList",
+        "Agent",
+        "AgentSwarm",
+        "AskUserQuestion",
+        "NotifyUser",
+        "Skill",
+        "TaskList",
+        "TaskOutput",
+        "TaskStop",
+        "WaitFor",
+        "CronCreate",
+        "CronList",
+        "CronDelete",
+        "select_tools"
+    ],
+    "events": [
+        {
+            "name": "UserPromptSubmit",
+            "note": "On send; matcher is the submitted text. Blockable; stdout is appended to context, a block skips the model call.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "UserPromptQueued",
+            "note": "A message queued while a turn runs; matcher is the queued text. Payload prompt_id, prompt, queue_length.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PreToolUse",
+            "note": "Before a tool call, ahead of permission checks; matcher is the tool name. Blockable.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "Stop",
+            "note": "Model about to end the turn; matcher is empty. Blockable; a block can append a message to continue.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "TurnStarted",
+            "note": "A new turn begins; matcher is the origin kind (user, task, system_trigger).",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PostToolUse",
+            "note": "After a tool succeeds; matcher is the tool name.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PostToolUseFailure",
+            "note": "After a tool fails or is blocked; matcher is the tool name.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PermissionRequest",
+            "note": "Just before waiting for user approval; matcher is the tool name.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PermissionResult",
+            "note": "After approval completes; matcher is the tool name.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "SessionStart",
+            "note": "Session starts or resumes; matcher is startup or resume. Payload source, model, profile.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "SessionEnd",
+            "note": "Session closes; matcher is exit or archive.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "SessionHeartbeat",
+            "note": "Every 60 s while the session lives, only when configured; matcher is empty. Payload uptime_ms.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "SubagentStart",
+            "note": "Before a sub-agent runs; matcher is the sub-agent name.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "SubagentStop",
+            "note": "After a sub-agent completes successfully; matcher is the sub-agent name.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "TaskStarted",
+            "note": "A background task starts; matcher is agent, process or question. Payload task_id, description, detached.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "StopFailure",
+            "note": "The turn failed with an error; matcher is the error type.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "Interrupt",
+            "note": "User interrupted (Esc), fired instead of Stop; matcher is empty. Payload reason.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PreCompact",
+            "note": "Before context compaction; matcher is manual or auto. Return values are ignored.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "PostCompact",
+            "note": "After context compaction; matcher is manual or auto.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        },
+        {
+            "name": "Notification",
+            "note": "A background task changed status; matcher is the notification type, e.g. task.completed.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#event-reference"
+        }
+    ],
+    "hookFields": {
+        "command": [
+            {
+                "key": "hooks",
+                "type": "map",
+                "required": true,
+                "note": "Lifecycle event that fires the rule.",
+                "url": "https://moonshotai.github.io/kimi-code/en/customization/hooks.html#configuration"
+            }
+        ]
+    },
+    "mcpFields": {
+        "stdio": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "note": "Source: explicit transport; inferred as stdio when command is present.",
+                "url": "https://github.com/MoonshotAI/kimi-code/blob/main/packages/agent-core-v2/src/mcpCore/config-schema.ts"
+            }
+        ],
+        "http": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "note": "Streamable HTTP; inferred when url is present without transport.",
+                "url": "https://moonshotai.github.io/kimi-code/en/customization/mcp.html#configuration"
+            }
+        ],
+        "sse": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "Legacy HTTP+SSE transport; must be set explicitly.",
+                "url": "https://moonshotai.github.io/kimi-code/en/customization/mcp.html#configuration"
+            }
+        ]
+    },
+    "command": [],
+    "prompt": [],
+    "rule": [],
+    "plugin": [
+        {
+            "key": "keywords",
+            "type": "list",
+            "note": "Display keywords.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "author",
+            "type": "object",
+            "note": "Display author: a string, or an object with name and email (source: app/plugin/manifest.ts).",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "homepage",
+            "type": "string",
+            "note": "Display homepage URL.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "license",
+            "type": "string",
+            "note": "Display licence identifier.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "interface.displayName",
+            "type": "string",
+            "note": "Name shown in /plugins.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "interface.shortDescription",
+            "type": "string",
+            "note": "One-line summary shown in /plugins.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "interface.longDescription",
+            "type": "text",
+            "note": "Long description shown in /plugins details.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "interface.developerName",
+            "type": "string",
+            "note": "Developer name shown in /plugins.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "interface.websiteURL",
+            "type": "string",
+            "note": "Website link shown in /plugins.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#plugin-manifest"
+        },
+        {
+            "key": "sessionStart.skill",
+            "type": "string",
+            "note": "Plugin skill loaded into the main agent when a session starts or resumes.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#skills-and-session-start"
+        },
+        {
+            "key": "skillInstructions",
+            "type": "text",
+            "note": "Extra instructions appended whenever a skill from this plugin is loaded.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#skills-and-session-start"
+        },
+        {
+            "key": "systemPrompt",
+            "type": "text",
+            "note": "Inline text added to the system prompt while enabled; 32 KB max.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#system-prompt-instructions"
+        },
+        {
+            "key": "systemPromptPath",
+            "type": "string",
+            "note": "./ path to a UTF-8 file appended after systemPrompt; read on install or reload, 32 KB max.",
+            "url": "https://moonshotai.github.io/kimi-code/en/customization/plugins.html#system-prompt-instructions"
+        }
+    ]
+}

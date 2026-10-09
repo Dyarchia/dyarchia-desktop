@@ -1,0 +1,251 @@
+{
+    "docs": "https://antigravity.google/docs/",
+    "agent": [
+        {
+            "key": "tools",
+            "type": "list",
+            "values": [
+                "view_file",
+                "write_to_file",
+                "replace_file_content",
+                "multi_replace_file_content",
+                "list_dir",
+                "find_by_name",
+                "grep_search",
+                "code_search",
+                "search_web",
+                "read_url_content",
+                "run_command",
+                "manage_task",
+                "schedule",
+                "list_permissions",
+                "ask_permission",
+                "invoke_subagent",
+                "define_subagent",
+                "send_message",
+                "manage_subagents",
+                "ask_question",
+                "generate_image"
+            ],
+            "note": "Tool names the agent may use, such as view_file or run_command; a misspelled name can hang the subagent.",
+            "url": "https://antigravity.google/docs/subagents/#frontmatter-configuration-yaml"
+        },
+        {
+            "key": "model",
+            "type": "enum",
+            "values": [
+                "inherit",
+                "flash",
+                "pro"
+            ],
+            "default": "inherit",
+            "note": "Model tier the agent runs on; inherit uses the parent's model.",
+            "url": "https://antigravity.google/docs/subagents/#frontmatter-configuration-yaml"
+        },
+        {
+            "key": "commandExecutionPolicy",
+            "type": "enum",
+            "values": [
+                "off",
+                "auto",
+                "eager",
+                "sandbox"
+            ],
+            "default": "sandbox",
+            "note": "How eagerly the agent runs shell commands without asking.",
+            "url": "https://antigravity.google/docs/subagents/#frontmatter-configuration-yaml"
+        },
+        {
+            "key": "plugins",
+            "type": "list",
+            "note": "Plugins the agent depends on.",
+            "url": "https://antigravity.google/docs/subagents/#frontmatter-configuration-yaml"
+        },
+        {
+            "key": "rules",
+            "type": "list",
+            "note": "Rule files bound to this agent (changelog only, CLI 1.1.15).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "agents",
+            "type": "list",
+            "note": "Subagents this agent depends on, resolved like skills paths (changelog only, CLI 1.1.27).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "inheritCustomizations",
+            "type": "bool",
+            "note": "Whether the agent adopts the ambient skills, rules, plugins and subagents (changelog only, CLI 1.1.14).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "excludeDefaultComponents",
+            "type": "bool",
+            "note": "Drops the default prompt sections and built-in tools from the agent (changelog only, CLI 1.2.1).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "hidden",
+            "type": "bool",
+            "note": "Named as a supported frontmatter field in CLI 1.1.6; its effect is not documented.",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "inheritMcp",
+            "type": "bool",
+            "note": "Named as a supported frontmatter field in CLI 1.1.6; presumably inherits the parent's MCP servers, undocumented.",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "enable_mcp_tools",
+            "type": "bool",
+            "note": "Gives a custom subagent the MCP tools of its parent (changelog fixes 1.1.23 and 1.2.3 only).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        }
+    ],
+    "skill": [
+        {
+            "key": "disable-slash-command",
+            "type": "bool",
+            "default": false,
+            "note": "Hides the skill from the / menu while the model can still invoke it (changelog only, CLI 1.1.12).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        },
+        {
+            "key": "metadata.icon",
+            "type": "string",
+            "note": "Emoji icon shown for the skill in catalogs and autocomplete (changelog only, CLI 1.1.20).",
+            "url": "https://antigravity.google/docs/changelog/#antigravity-cli"
+        }
+    ],
+    "tools": [
+        "view_file",
+        "write_to_file",
+        "replace_file_content",
+        "multi_replace_file_content",
+        "list_dir",
+        "find_by_name",
+        "grep_search",
+        "code_search",
+        "search_web",
+        "read_url_content",
+        "run_command",
+        "manage_task",
+        "schedule",
+        "list_permissions",
+        "ask_permission",
+        "invoke_subagent",
+        "define_subagent",
+        "send_message",
+        "manage_subagents",
+        "ask_question",
+        "generate_image"
+    ],
+    "events": [
+        {
+            "name": "PreToolUse",
+            "note": "Before a tool runs; matcher is a regex on the tool name; output decision allow, deny, ask, force_ask or deny_unless_prior_grant.",
+            "url": "https://antigravity.google/docs/hooks/#pretooluse"
+        },
+        {
+            "name": "PostToolUse",
+            "note": "After a tool completes; matcher is a regex on the tool name; input carries error, output is {}.",
+            "url": "https://antigravity.google/docs/hooks/#posttooluse"
+        },
+        {
+            "name": "PreInvocation",
+            "note": "Before each model call; no matcher; may return injectSteps (toolCall, userMessage or ephemeralMessage).",
+            "url": "https://antigravity.google/docs/hooks/#preinvocation"
+        },
+        {
+            "name": "PostInvocation",
+            "note": "After each model call; no matcher; may return injectSteps and terminationBehavior force_continue or terminate.",
+            "url": "https://antigravity.google/docs/hooks/#postinvocation"
+        },
+        {
+            "name": "Stop",
+            "note": "When the execution loop terminates; no matcher; decision continue re-enters the loop with reason injected.",
+            "url": "https://antigravity.google/docs/hooks/#stop"
+        }
+    ],
+    "hookFields": {
+        "command": [
+            {
+                "key": "command",
+                "type": "string",
+                "required": true,
+                "note": "Shell command run with the event JSON on stdin; it answers with JSON on stdout.",
+                "url": "https://antigravity.google/docs/hooks/#hook-handler-configuration"
+            },
+            {
+                "key": "timeout",
+                "type": "int",
+                "default": 30,
+                "note": "Seconds before the handler is stopped.",
+                "url": "https://antigravity.google/docs/hooks/#hook-handler-configuration"
+            }
+        ],
+        "http": []
+    },
+    "mcpFields": {
+        "stdio": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "Executable that starts the server; selects the stdio transport.",
+                "url": "https://antigravity.google/docs/mcp/#mcp-configuration-properties"
+            }
+        ],
+        "http": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "URL of a remote server over Streamable HTTP or SSE; selects the remote transport.",
+                "url": "https://antigravity.google/docs/mcp/#mcp-configuration-properties"
+            }
+        ],
+        "sse": [
+            {
+                "key": "mcpServers",
+                "type": "map",
+                "required": true,
+                "note": "Same key as Streamable HTTP; the transport is negotiated, not declared.",
+                "url": "https://antigravity.google/docs/mcp/#mcp-configuration-properties"
+            }
+        ]
+    },
+    "command": null,
+    "prompt": null,
+    "rule": [
+        {
+            "key": "trigger",
+            "type": "enum",
+            "values": [
+                "always_on",
+                "model_decision",
+                "glob",
+                "manual"
+            ],
+            "required": true,
+            "note": "When the rule loads; a missing or unknown value silently discards the file.",
+            "url": "https://antigravity.google/docs/rules/#supported-frontmatter-keys"
+        },
+        {
+            "key": "globs",
+            "type": "string",
+            "note": "Comma-separated file patterns, required for trigger glob; singular glob also accepted.",
+            "url": "https://antigravity.google/docs/rules/#supported-frontmatter-keys"
+        }
+    ],
+    "plugin": [
+        {
+            "key": "$schema",
+            "type": "string",
+            "note": "Schema URL https://antigravity.google/schemas/v1/plugin.json for editor validation.",
+            "url": "https://antigravity.google/docs/plugins/#field-reference"
+        }
+    ]
+}

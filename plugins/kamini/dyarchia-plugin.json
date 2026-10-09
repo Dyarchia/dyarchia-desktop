@@ -1,0 +1,9 @@
+{
+    "id": "kamini",
+    "name": "Kamini",
+    "version": "0.1.0",
+    "toolbar": 9,
+    "description": "Agents, skills and their parts for every CLI",
+    "renderer": "dist/renderer.js",
+    "main": "dist/main.js"
+}

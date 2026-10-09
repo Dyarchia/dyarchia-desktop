@@ -913,7 +913,7 @@
 .dya-field {
     height: var(--dya-size-control);
     width: 100%;
-    padding: 0 var(--dya-space-3);
+    padding: 0;
     border: var(--dya-border-width) solid transparent;
     border-bottom-color: var(--dya-border-strong);
     border-radius: 0;
@@ -945,7 +945,7 @@
 
 textarea.dya-field {
     height: auto;
-    padding: var(--dya-space-2) var(--dya-space-3);
+    padding: var(--dya-space-2) 0;
     line-height: var(--dya-leading-body);
     resize: vertical;
 }
@@ -959,6 +959,24 @@ textarea.dya-field {
     font-size: var(--dya-size-body);
     line-height: var(--dya-leading-body);
     letter-spacing: normal;
+}
+
+/*
+ * Data typed into a field: an id, a matcher, a list of names one to a line, a table as JSON. It is
+ * mono in its own case like every other piece of data, in the field's own ink, and a textarea
+ * wearing it is as tall as what it holds, one line while it is empty.
+ */
+.dya-field--code {
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono);
+    letter-spacing: var(--dya-tracking-mono);
+}
+
+textarea.dya-field--code {
+    field-sizing: content;
+    min-height: var(--dya-size-control);
+    padding-block: calc((var(--dya-size-control) - 1lh) / 2 - var(--dya-border-width));
+    resize: none;
 }
 
 /*
@@ -1095,7 +1113,7 @@ textarea.dya-field {
     display: inline-flex;
     align-items: center;
     height: var(--dya-size-control);
-    padding: 0 var(--dya-space-6) 0 var(--dya-space-3);
+    padding: 0 var(--dya-space-6) 0 0;
     color: var(--dya-text);
     white-space: nowrap;
     overflow: hidden;
@@ -1886,9 +1904,13 @@ textarea.dya-field {
  * the muted ink. The row the keyboard is on is lit like the row under the pointer, and a row that
  * cannot be chosen goes to the muted ink.
  */
+/*
+ * A field above rows keeps the rows' inset, so what is typed stands over the words it finds.
+ */
 .dya-menu__search {
     flex: none;
     margin-bottom: var(--dya-space-1);
+    padding-inline: var(--dya-space-2);
 }
 
 .dya-menu__list {
@@ -2593,7 +2615,12 @@ button.dya-step__subject {
     letter-spacing: var(--dya-tracking-mono);
 }
 
-.dya-prose a {
+/*
+ * A link is the text in the top ink over a line of the accent, inside prose or standing alone, such
+ * as the page that documents a field.
+ */
+.dya-prose a,
+.dya-link {
     color: var(--dya-text);
     text-decoration: underline;
     text-decoration-color: var(--dya-accent);
@@ -2678,6 +2705,22 @@ button.dya-step__subject {
 .dya-editor > textarea::selection {
     background: var(--dya-selected);
     color: transparent;
+}
+
+/*
+ * An editor that is a form's value, a prompt or a body under its fields, is a field: the same
+ * underline, brightening under the pointer and turning the accent while it is being written in.
+ */
+.dya-editor--field {
+    border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
+}
+
+.dya-editor--field:hover {
+    border-bottom-color: var(--dya-text-muted);
+}
+
+.dya-editor--field:focus-within {
+    border-bottom-color: var(--dya-accent);
 }
 
 /*
@@ -2810,6 +2853,7 @@ button.dya-step__subject {
 
 .dya-palette > .dya-field {
     flex: none;
+    padding-inline: var(--dya-space-2);
     font-size: var(--dya-size-body-sm);
 }
 

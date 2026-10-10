@@ -551,8 +551,8 @@
 }
 
 .dya-button > svg {
-    width: 15px;
-    height: 15px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     flex: none;
 }
 
@@ -563,15 +563,28 @@
 }
 
 /*
- * A key that is on, a mode chosen or a panel open, wears the pressed wash and the top ink, still.
+ * A key that is on, a mode chosen, a view shown or a panel open, is never underlined: it stands on the accent's
+ * soft ground with its glyph in the accent. Words keep the top ink, since the accent on its own
+ * wash measures 4.38 over a panel and is a graphic there, not text.
  */
 .dya-key--active,
 .dya-key--active:hover,
 .dya-key[aria-pressed="true"],
+.dya-key[aria-selected="true"],
 .dya-button[aria-pressed="true"],
 .dya-chip[aria-pressed="true"] {
-    background-color: var(--dya-press-wash);
+    background-color: var(--dya-accent-soft);
+    color: var(--dya-accent);
+}
+
+.dya-button[aria-pressed="true"],
+.dya-chip[aria-pressed="true"] {
     color: var(--dya-text);
+}
+
+.dya-button[aria-pressed="true"] > svg,
+.dya-chip[aria-pressed="true"] > svg {
+    color: var(--dya-accent);
 }
 
 /*
@@ -780,8 +793,8 @@
 
 
 .dya-key > svg {
-    width: 15px;
-    height: 15px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
 }
 
 /*
@@ -823,8 +836,8 @@
  * glyph size and a step from its word.
  */
 .dya-chip > svg {
-    width: 15px;
-    height: 15px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
 }
 
 /*
@@ -1384,8 +1397,8 @@ textarea.dya-field--code {
     display: inline-grid;
     place-items: center;
     flex: none;
-    width: 18px;
-    height: 18px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     color: var(--dya-text);
 }
 
@@ -1812,8 +1825,8 @@ textarea.dya-field--code {
 }
 
 .dya-file > svg {
-    width: 15px;
-    height: 15px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     flex: none;
 }
 
@@ -1987,17 +2000,20 @@ textarea.dya-field--code {
 }
 
 /*
- * Tabs are mono words on the ground, with no rule under the strip. The open one is in the first
- * ink with two pixels of the accent under the word alone, drawn as an inset shadow so it adds no height.
+ * Tabs are mono words on the ground, with no rule under the strip and no line under the open one:
+ * the open tab stands on the pressed wash in the first ink, a key's height, as a pressed key does.
  */
 .dya-tabs {
     display: flex;
-    align-items: stretch;
-    gap: var(--dya-space-4);
+    align-items: center;
+    gap: var(--dya-space-1);
 }
 
 .dya-tab {
-    padding: 0 0 9px;
+    display: inline-flex;
+    align-items: center;
+    height: var(--dya-size-control);
+    padding: 0 var(--dya-space-2);
     border: none;
     background: transparent;
     font-family: var(--dya-font-mono);
@@ -2012,12 +2028,12 @@ textarea.dya-field--code {
 }
 
 /*
- * The open tab's line is ink. Copper is spent once per view, and the shell spends it on the open
- * tab of the panel that has the focus.
+ * Copper is spent once per view, and the shell spends it on the open tab of the panel that has the
+ * focus.
  */
 .dya-tab[aria-selected="true"] {
+    background-color: var(--dya-press-wash);
     color: var(--dya-text);
-    box-shadow: inset 0 -2px 0 var(--dya-text);
 }
 
 /*
@@ -2037,8 +2053,8 @@ textarea.dya-field--code {
 }
 
 .dya-tab__action > svg {
-    width: 15px;
-    height: 15px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
 }
 
 .dya-tab[aria-selected="true"] .dya-tab__action {
@@ -2368,8 +2384,8 @@ button.dya-entry__head {
     display: grid;
     flex: none;
     place-items: center;
-    width: 14px;
-    height: 14px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     color: var(--dya-text);
     transition: transform var(--dya-dur-fast) var(--dya-ease);
 }
@@ -2765,16 +2781,12 @@ button.dya-step__subject {
 
 /*
  * The tabs of the dock are the panels themselves, so they read a step larger than a tab inside a
- * panel, and the open one takes the medium weight: across a dock of several groups, weight is what
- * says which tab each group is showing, and the accent's line is kept for the group being worked in.
+ * panel, and the open one takes the medium weight: across a dock of several groups, weight and the
+ * wash say which tab each group is showing, and the accent's wash is kept for the group being
+ * worked in.
  */
 .dya-tab--dock {
-    padding-bottom: 0;
     white-space: nowrap;
-}
-
-.dya-tab--dock[aria-selected="true"] {
-    box-shadow: none;
 }
 
 /*
@@ -2792,8 +2804,8 @@ button.dya-step__subject {
 }
 
 .dya-winkey > svg {
-    width: 12px;
-    height: 12px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
 }
 
 /*
@@ -2987,8 +2999,8 @@ button.dya-step__subject {
     display: grid;
     place-items: center;
     flex: none;
-    width: 18px;
-    height: 18px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     color: var(--dya-text);
 }
 

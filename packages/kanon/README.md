@@ -14,10 +14,12 @@ Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
-#d18743) is the one colour that is not status: the primary's fill, the open tab's line of the focused panel
-(every other open tab is underlined in `text`), the terminal's cursor while it holds the focus (and then
-its tab is in ink), a link, the focus ring, the caret and the wordmark, 6.37 on the ground and 4.84 on
-`selected`. Nothing is raised, nothing glows,
+#d18743) is the one colour that is not status: the primary's fill, the wash (`accent-soft`) of the focused
+panel's open tab (every other open tab stands on `press-wash`), the glyph and wash of a key that is on, the
+terminal's cursor while it holds the focus (and then its tab keeps `press-wash`), a link, the focus ring, the
+caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. On its own wash it measures 4.38 over a
+panel: a glyph there, never a word. **Nothing active is underlined**; only a field is a line, since without
+one nothing says it takes words. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
 `on-accent`; a brand's mark keeps its own colours.
@@ -48,7 +50,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 ## Keys and layout
 
 - **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
-  keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size.
+  keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size. **One glyph size**:
+  every glyph outside a tile, a key's, a tab's mark, a row's, a window key's, is `--dya-size-glyph`, 15px.
 - **A field is an underline**, its words starting where its line starts, so a field, a select, a tick and a key in
   one form share one left edge; it brightens under the pointer and turns the accent with the keyboard. A field and
   its keys are a `join`, the field filling the row. Data typed into one, an id, a list, JSON, is `--code`: mono,

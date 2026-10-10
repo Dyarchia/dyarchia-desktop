@@ -288,7 +288,7 @@ body,
     align-items: center;
     gap: var(--dya-space-2);
     height: 100%;
-    padding-inline-end: var(--dya-space-3);
+    padding-inline-end: var(--dya-space-1);
 }
 
 .panel-toolbar-host {

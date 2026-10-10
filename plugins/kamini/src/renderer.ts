@@ -41,7 +41,7 @@ const STYLES = `
     gap: var(--dya-space-5);
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-6) var(--dya-space-6);
+    padding: var(--dya-space-4);
 }
 .kamini-list .kamini-fold-body {
     padding-bottom: var(--dya-space-2);
@@ -71,9 +71,6 @@ const STYLES = `
     width: max-content;
     max-width: 100%;
 }
-.kamini-section > .kamini-rows {
-    margin-inline-start: calc(-1 * var(--dya-space-2));
-}
 .kamini-group {
     display: flex;
     flex-direction: column;
@@ -93,7 +90,7 @@ const STYLES = `
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-4);
-    padding: var(--dya-space-5) var(--dya-space-6) 0;
+    padding: var(--dya-space-4) var(--dya-space-4) 0;
 }
 .kamini-body {
     display: flex;
@@ -102,7 +99,7 @@ const STYLES = `
     gap: var(--dya-space-5);
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-6) var(--dya-space-6);
+    padding: var(--dya-space-5) var(--dya-space-4) var(--dya-space-4);
 }
 .kamini-form--text {
     flex: 1 0 auto;
@@ -345,8 +342,8 @@ export function activate(ctx: PluginContext): void {
             return button
         }
 
-        function button(words: string, act: () => void, primary = false): HTMLButtonElement {
-            const node = el('button', primary ? 'dya-button dya-button--primary' : 'dya-button', words)
+        function button(words: string, act: () => void): HTMLButtonElement {
+            const node = el('button', 'dya-button', words)
             node.type = 'button'
             node.addEventListener('click', act)
             return node
@@ -360,9 +357,11 @@ export function activate(ctx: PluginContext): void {
         const helpKey = key('help', 'Help', () => openHelp())
         const importKey = key('import', 'Import', () => void importFiles())
         const removeKey = key('delete', 'Delete', () => void removeCurrent())
-        const exportButton = button('Export', () => void exportCurrent(), true)
-        const copyButton = button('Copy', () => void adopt(), true)
-        const doneButton = button('Done', () => toggleDone())
+        const exportButton = key('open', 'Export', () => void exportCurrent())
+        exportButton.classList.add('dya-key--primary')
+        const copyButton = key('add', 'Copy', () => void adopt())
+        copyButton.classList.add('dya-key--primary')
+        const doneButton = key('check', 'Done', () => toggleDone())
         /*
          * Making something starts at one key: the plus opens the seven kinds, anchored under it,
          * and the one chosen opens its editor a level in.
@@ -417,7 +416,8 @@ export function activate(ctx: PluginContext): void {
             importKey.hidden = editing || face !== 'workbench'
             makeKey.hidden = editing
             doneButton.hidden = !(current && editing)
-            doneButton.textContent = current?.done ? 'Reopen' : 'Done'
+            doneButton.setAttribute('aria-pressed', String(Boolean(current?.done)))
+            doneButton.setAttribute('aria-label', current?.done ? 'Reopen' : 'Done')
         }
 
         /*
@@ -534,7 +534,6 @@ export function activate(ctx: PluginContext): void {
             const form = el('div', 'dya-form kamini-project')
             const join = el('div', 'dya-join')
             const field = el('input', 'dya-field dya-field--code')
-            field.placeholder = 'Project'
             field.value = project
             field.setAttribute('aria-label', 'Project')
             field.addEventListener('change', () => void setProject(field.value.trim()))

@@ -186,28 +186,37 @@ body,
     padding-block: 0;
 }
 
+.dv-tab > .dv-react-part {
+    display: flex;
+    align-items: center;
+}
+
+/*
+ * dockview rings a focused tab in its divider colour, which this theme leaves transparent, so a
+ * tab reached with the keyboard showed nothing. The ring is kanon's, round the tab's own face.
+ */
+.dv-tab:focus-visible .panel-tab {
+    outline: 2px solid var(--dya-focus);
+    outline-offset: 2px;
+}
+
 .panel-tab {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-    height: 100%;
 }
 
 /*
- * Every group shows one of its tabs, but only one group is the one the window is working in, and
- * only its tab carries copper; the others are underlined in ink. A terminal holding the focus has
- * its copper in its cursor, so its tab is in ink too: copper once per view.
+ * Every group shows one of its tabs on the pressed wash, but only one group is the one the window
+ * is working in, and only its tab stands on the accent's wash; the marks keep their own ink. A
+ * terminal holding the focus has its copper in its cursor, so its tab keeps the plain wash.
  */
-.dv-groupview .panel-tab[aria-selected='true'] {
-    box-shadow: inset 0 -2px 0 var(--dya-text);
-}
-
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
-    box-shadow: inset 0 -2px 0 var(--dya-accent);
+    background-color: var(--dya-accent-soft);
 }
 
 .dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'] {
-    box-shadow: inset 0 -2px 0 var(--dya-text);
+    background-color: var(--dya-press-wash);
 }
 
 .panel-tab-title {
@@ -276,11 +285,6 @@ body,
     gap: var(--dya-space-4);
 }
 
-.shell-modal-mark {
-    width: 22px;
-    height: 22px;
-}
-
 .shell-modal-body {
     container-type: normal;
     flex: 1;
@@ -293,7 +297,7 @@ body,
     align-items: center;
     gap: var(--dya-space-2);
     height: 100%;
-    padding-inline-end: var(--dya-space-3);
+    padding-inline-end: var(--dya-space-1);
 }
 
 .panel-toolbar-host {

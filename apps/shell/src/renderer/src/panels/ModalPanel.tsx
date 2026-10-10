@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { glyph } from '@dyarchia/sdk'
 import { Svg } from '../components/Svg'
-import { NavKeys } from './NavKeys'
 import { getPanel, setNav, setToolbar } from './registry'
 
 const CLOSE_ICON = glyph('close')
@@ -64,8 +63,7 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
                 aria-label={title}
             >
                 <header className="dya-sheet__head">
-                    <NavKeys instanceId={id} />
-                    <Svg className="dya-glyph shell-modal-mark" svg={registered.descriptor.icon} />
+                    <Svg className="dya-glyph" svg={registered.descriptor.icon} />
                     <span className="dya-title">{title}</span>
                     <div className="dya-sheet__end">
                         <div ref={tools} />

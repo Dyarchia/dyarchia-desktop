@@ -191,7 +191,7 @@ interface CardProgress {
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a phalanx, two ranks of shields with their spears carried forward.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M3 8.4A2.4 2.4 0 0 1 7.8 8.4"/><path d="M9.6 8.4A2.4 2.4 0 0 1 14.4 8.4"/><path d="M16.2 8.4A2.4 2.4 0 0 1 21 8.4"/><path d="M1.9 12.6A2.9 2.9 0 0 1 7.7 12.6"/><path d="M9.1 12.6A2.9 2.9 0 0 1 14.9 12.6"/><path d="M16.3 12.6A2.9 2.9 0 0 1 22.1 12.6"/><circle cx="4.2" cy="17.6" r="3.4"/><circle cx="12" cy="17.6" r="3.4"/><circle cx="19.8" cy="17.6" r="3.4"/></svg>'
@@ -1067,15 +1067,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             for (const status of rules.order) {
                 columns.set(status, buildColumn(status, rules.labels[status]))
             }
-            /*
-             * A folded stage turns its name on its side, so the name's length becomes the header's
-             * height and every folded column put its count and its fold key at a different height.
-             * One measure for all of them: the longest name on this board, in characters, which
-             * the mono face and the label tracking turn into an exact height in CSS.
-             */
-            const names = rules.labels
-            const longest = Math.max(...rules.order.map((status) => names[status].length))
-            board.style.setProperty('--kanban-stage-chars', String(longest))
         }
 
         for (const id of [...problems.keys()]) {
@@ -1101,7 +1092,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (marked.size) clearMarks()
         meta = null
         bar.hidden = registry.length === 0
-        setup.dataset.mode = 'welcome'
         show('form')
         setup.replaceChildren()
 
@@ -1113,7 +1103,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * and the way back to real work was a control in the bar. The boards are the answer to
          * "what now", so they are what the screen shows.
          */
-        if (open.length > 0) setup.dataset.mode = 'gallery'
         setup.appendChild(open.length > 0 ? buildBoardChooser(open) : buildBoardForm())
     }
 
@@ -1127,7 +1116,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardForm = (): HTMLElement => {
-        const shell = el('div', 'dya-card dya-pane kanban-setup-shell kanban-welcome')
+        const shell = el('div', 'kanban-setup-shell')
         const heading = el('div', 'dya-title', 'New board')
 
         const form = el('div', 'dya-form')
@@ -1142,8 +1131,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const browse = key('folder', 'Browse')
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button dya-button--primary', 'Create')
-        create.type = 'button'
+        const create = key('check', 'Create')
+        create.classList.add('dya-key--primary')
 
         browse.addEventListener('click', () => {
             void invoke<string | null>('pickWorkdir')
@@ -1432,10 +1421,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const globalCap = capField(across.maxRunning)
         globalCap.setAttribute('aria-label', 'Max running on all boards')
         capsRow.append(
-            boardCap,
             el('span', 'dya-key-label', 'This board'),
-            globalCap,
-            el('span', 'dya-key-label', 'All boards')
+            boardCap,
+            el('span', 'dya-key-label', 'All boards'),
+            globalCap
         )
 
         const draft: Runners = {
@@ -1450,8 +1439,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return row
         }
 
-        const save = el('button', 'dya-button dya-button--primary', 'Save')
-        save.type = 'button'
+        const save = key('save', 'Save')
+        save.classList.add('dya-key--primary')
         save.addEventListener('click', () => {
             void invoke('updateSettings', { maxRunning: Number(globalCap.value) })
                 .then(() =>
@@ -1670,7 +1659,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const newBoard = (): void => {
-        setup.dataset.mode = 'welcome'
         show('form')
         setup.replaceChildren(buildBoardForm())
     }

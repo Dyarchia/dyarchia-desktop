@@ -26,7 +26,7 @@ const waiting = new Map<string, string>()
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * an aulos, the double pipe the phalanx marched to.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const PLAYER_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(18 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" style="fill:var(--dya-text)"/><circle cx="5" cy="10.4" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="13" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="15.6" r=".55" style="fill:var(--dya-on-accent)"/></g><g transform="rotate(48 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" style="fill:var(--dya-text)"/><circle cx="5" cy="10.4" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="13" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="15.6" r=".55" style="fill:var(--dya-on-accent)"/></g><rect x="3.2" y="18.4" width="3.8" height="2.6" rx=".6" transform="rotate(33 5 20)" style="fill:var(--dya-text)"/><path d="M3.4 21.4 1.8 23" stroke-width="1.6" stroke-linecap="round" style="stroke:var(--dya-text)"/></svg>'
@@ -36,12 +36,6 @@ const STYLES = `
     display: flex;
     flex-direction: column;
     height: 100%;
-}
-.player-rows {
-    width: max-content;
-    min-width: min(100%, 320px);
-    max-width: 100%;
-    margin-inline-start: calc(-1 * var(--dya-space-2));
 }
 .player-stage {
     flex: 1;
@@ -173,39 +167,35 @@ export function activate(ctx: PluginContext): void {
                 close()
             })
 
-            function row(icon: string, name: string, act: () => void): HTMLLIElement {
-                const item = document.createElement('li')
-                const node = document.createElement('button')
-                node.type = 'button'
-                node.className = 'dya-file'
-                node.innerHTML = icon
+            function tile(icon: string, name: string, act: () => void): HTMLButtonElement {
+                const card = document.createElement('button')
+                card.type = 'button'
+                card.className = 'dya-tile'
+                card.innerHTML = `<span class="dya-tile__icon">${icon}</span>`
                 const label = document.createElement('span')
-                label.className = 'dya-file__name'
+                label.className = 'dya-tile__name'
                 label.textContent = name
-                node.append(label)
-                node.onclick = act
-                item.append(node)
-                return item
+                card.append(label)
+                card.onclick = act
+                return card
             }
 
             /*
-             * A panel with nothing in it is a list from the top left, as every list is: Open a file,
-             * and nothing it has played, since the player keeps no history. A failure is said above
-             * the same row, because the row is still what to do.
+             * A panel with nothing in it shows what it can play, as a gallery from the top left:
+             * Open, and nothing it has played: the player keeps no history.
+             * A failure is said over the same gallery, because the gallery is still what to do.
              */
             function paintGallery(): void {
                 if (!gallery || disposed || playing) return
-                const rows: HTMLElement[] = []
+                const cards: HTMLElement[] = []
                 if (failure) {
-                    const item = document.createElement('li')
                     const line = document.createElement('span')
-                    line.className = 'dya-text--danger'
+                    line.className = 'dya-empty dya-text--danger'
                     line.textContent = failure
-                    item.append(line)
-                    rows.push(item)
+                    cards.push(line)
                 }
-                rows.push(row(glyph('folder'), 'Open a file', () => void pick()))
-                gallery.replaceChildren(...rows)
+                cards.push(tile(glyph('folder'), 'Open', () => void pick()))
+                gallery.replaceChildren(...cards)
             }
 
             function showEmpty(message?: string): void {
@@ -213,8 +203,8 @@ export function activate(ctx: PluginContext): void {
                 failure = message
                 handle.setTitle(null)
                 opened(false)
-                gallery = document.createElement('ul')
-                gallery.className = 'dya-files player-rows'
+                gallery = document.createElement('div')
+                gallery.className = 'dya-grid'
                 stage.className = 'player-stage'
                 stage.replaceChildren(gallery)
                 paintGallery()

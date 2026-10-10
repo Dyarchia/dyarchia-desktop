@@ -37,6 +37,12 @@ const STYLES = `
     flex-direction: column;
     height: 100%;
 }
+.player-rows {
+    width: max-content;
+    min-width: min(100%, 320px);
+    max-width: 100%;
+    margin-inline-start: calc(-1 * var(--dya-space-2));
+}
 .player-stage {
     flex: 1;
     min-height: 0;
@@ -167,35 +173,39 @@ export function activate(ctx: PluginContext): void {
                 close()
             })
 
-            function tile(icon: string, name: string, act: () => void): HTMLButtonElement {
-                const card = document.createElement('button')
-                card.type = 'button'
-                card.className = 'dya-tile'
-                card.innerHTML = `<span class="dya-tile__icon">${icon}</span>`
+            function row(icon: string, name: string, act: () => void): HTMLLIElement {
+                const item = document.createElement('li')
+                const node = document.createElement('button')
+                node.type = 'button'
+                node.className = 'dya-file'
+                node.innerHTML = icon
                 const label = document.createElement('span')
-                label.className = 'dya-tile__name'
+                label.className = 'dya-file__name'
                 label.textContent = name
-                card.append(label)
-                card.onclick = act
-                return card
+                node.append(label)
+                node.onclick = act
+                item.append(node)
+                return item
             }
 
             /*
-             * A panel with nothing in it shows what it can play, as a gallery from the top left:
-             * Open, and nothing it has played: the player keeps no history.
-             * A failure is said over the same gallery, because the gallery is still what to do.
+             * A panel with nothing in it is a list from the top left, as every list is: Open a file,
+             * and nothing it has played, since the player keeps no history. A failure is said above
+             * the same row, because the row is still what to do.
              */
             function paintGallery(): void {
                 if (!gallery || disposed || playing) return
-                const cards: HTMLElement[] = []
+                const rows: HTMLElement[] = []
                 if (failure) {
+                    const item = document.createElement('li')
                     const line = document.createElement('span')
-                    line.className = 'dya-empty dya-text--danger'
+                    line.className = 'dya-text--danger'
                     line.textContent = failure
-                    cards.push(line)
+                    item.append(line)
+                    rows.push(item)
                 }
-                cards.push(tile(glyph('folder'), 'Open', () => void pick()))
-                gallery.replaceChildren(...cards)
+                rows.push(row(glyph('folder'), 'Open a file', () => void pick()))
+                gallery.replaceChildren(...rows)
             }
 
             function showEmpty(message?: string): void {
@@ -203,8 +213,8 @@ export function activate(ctx: PluginContext): void {
                 failure = message
                 handle.setTitle(null)
                 opened(false)
-                gallery = document.createElement('div')
-                gallery.className = 'dya-grid'
+                gallery = document.createElement('ul')
+                gallery.className = 'dya-files player-rows'
                 stage.className = 'player-stage'
                 stage.replaceChildren(gallery)
                 paintGallery()

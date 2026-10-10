@@ -50,10 +50,6 @@ const STYLE = `
 .crw-headline {
     flex: none;
 }
-.crw-search,
-.crw-hits {
-    max-width: 880px;
-}
 /*
  * Rounds: the changed targets in a column of their own and the article taking the rest; in a panel
  * too narrow for both, they take turns, the article a level in.
@@ -122,13 +118,13 @@ const STYLE = `
     flex-direction: column;
     gap: var(--dya-space-4);
 }
-.crw-actions {
-    width: max-content;
-    min-width: min(100%, 320px);
-    margin-inline-start: calc(-1 * var(--dya-space-2));
-}
+/*
+ * A suite is its table on the ground, no frame: the cells' own inset is given back so its boxes
+ * stand on the panel's first line, where the search field and the changed list start.
+ */
 .crw-card {
     flex: none;
+    margin-inline: calc(-1 * var(--dya-space-4));
     padding-bottom: var(--dya-space-2);
 }
 .crw-card > .dya-table {
@@ -641,7 +637,7 @@ function mount(ctx, container, handle) {
      * The card's head is the suite and the box that picks all of it.
      */
     function targetTable(group, members, onOpen, repaint) {
-        const node = el('article', 'dya-card crw-card')
+        const node = el('article', 'crw-card')
         if (group) {
             const head = el('header', 'dya-card__header')
             const names = members.map((corpus) => corpus.name)
@@ -744,6 +740,7 @@ function mount(ctx, container, handle) {
             const active = view.id === id
             view.node.hidden = !active
             buttons[index].setAttribute('aria-selected', String(active))
+            if (view.id === 'targets') targetsView.verbs.hidden = !active
         })
         if (id === 'search') searchView.focus()
         nav()
@@ -769,7 +766,7 @@ function mount(ctx, container, handle) {
     const targetsView = buildTargets()
     const searchView = buildSearch()
 
-    handle.toolbar.append(tabs, roundsView.verbs)
+    handle.toolbar.append(targetsView.verbs, tabs, roundsView.verbs)
     root.append(rounds, targets, searching, tipHolder)
     container.appendChild(root)
     select('rounds')
@@ -1694,35 +1691,24 @@ function mount(ctx, container, handle) {
         save.addEventListener('click', () => void write())
 
         /*
-         * Targets is the place for the targets themselves: what to do first, as rows from the top
-         * left (a new target, the library of shipped ones), then a card per suite with its table,
-         * whose boxes pick what the header's Run sweeps. A row opens the target's editor.
+         * Targets is the place for the targets themselves: a table per suite, whose boxes pick what
+         * the header's Run sweeps, a row opening the target's editor. A new target and the library
+         * of shipped ones are keys in the header while Targets is shown.
          */
         let listed = []
 
-        function actionRows() {
-            const rows = el('ul', 'dya-files crw-actions')
-            for (const [icon, words, act] of [
-                ['add', 'New target', (source) => create(source)],
-                ['book', 'Library', (source) => browse(source)]
-            ]) {
-                const item = el('li')
-                const row = button('dya-file')
-                row.innerHTML = ctx.glyph(icon)
-                row.append(el('span', 'dya-file__name', words))
-                row.addEventListener('click', () => act(row))
-                item.append(row)
-                rows.append(item)
-            }
-            return rows
-        }
+        const newKey = iconKey('add', 'New target')
+        newKey.addEventListener('click', () => create(newKey))
+        const libraryKey = iconKey('book', 'Library')
+        libraryKey.addEventListener('click', () => browse(libraryKey))
+        const verbs = el('div', 'dya-toolbar')
+        verbs.append(newKey, libraryKey)
 
         function paintList() {
             const groups = [...new Set(listed.map((corpus) => corpus.group || ''))].sort((a, b) =>
                 a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)
             )
             grid.replaceChildren(
-                actionRows(),
                 ...groups.map((group) =>
                     targetTable(group, listed.filter((corpus) => (corpus.group || '') === group), (corpus, row) => void open(corpus.name, row), paintList)
                 )
@@ -1934,6 +1920,7 @@ function mount(ctx, container, handle) {
         }
 
         return {
+            verbs,
             refresh: refreshList,
             create() {
                 if (!library.hidden) shut()

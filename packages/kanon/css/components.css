@@ -1839,12 +1839,16 @@ textarea.dya-field--code {
  * `meta` says its size or its folder. A name wrapped and centred inside a key read as a
  * column of buttons.
  */
+/*
+ * A list of files hangs its rows' inset out on the leading side, as a fold's head does, so every
+ * glyph stands on the line where the field, the heading or the table above it starts.
+ */
 .dya-files {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    margin: 0;
+    margin: 0 0 0 calc(-1 * var(--dya-space-2));
     padding: 0;
     list-style: none;
 }
@@ -2153,6 +2157,13 @@ textarea.dya-field--code {
     text-wrap: pretty;
 }
 
+/*
+ * Inside a sheet the sheet has already inset its words, so an empty list there says so on the
+ * line its field starts on.
+ */
+.dya-sheet .dya-empty {
+    padding-inline: 0;
+}
 
 .dya-empty__actions {
     display: flex;

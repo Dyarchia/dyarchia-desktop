@@ -66,10 +66,6 @@ const STYLE = `
     padding-inline-end: var(--dya-space-4);
     border-inline-end: var(--dya-border-width) solid var(--dya-hairline);
 }
-.crw-changed > .dya-files,
-.crw-suite > .dya-files {
-    margin-inline-start: calc(-1 * var(--dya-space-2));
-}
 .crw-suite + .crw-suite,
 .crw-changed > .dya-files + .crw-suite {
     margin-top: var(--dya-space-4);

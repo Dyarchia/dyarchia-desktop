@@ -71,9 +71,6 @@ const STYLES = `
     width: max-content;
     max-width: 100%;
 }
-.kamini-section > .kamini-rows {
-    margin-inline-start: calc(-1 * var(--dya-space-2));
-}
 .kamini-group {
     display: flex;
     flex-direction: column;

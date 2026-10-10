@@ -69,8 +69,35 @@ body,
 }
 
 .shell-body {
+    position: relative;
     flex: 1;
     min-height: 0;
+}
+
+/*
+ * Home lays the launcher over the dock rather than taking the dock away: a hidden live page is
+ * reloaded when it is taken out of the document, and a page behind home is only out of sight.
+ */
+.shell-home {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: var(--dya-ground);
+}
+
+.shell-body--home .dock-root {
+    visibility: hidden;
+}
+
+.topbar-home {
+    -webkit-app-region: no-drag;
+}
+
+.panel-nav {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-inline: var(--dya-space-1) var(--dya-space-2);
 }
 
 .shell-palette-scrim {

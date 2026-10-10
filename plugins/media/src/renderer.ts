@@ -157,13 +157,17 @@ export function activate(ctx: PluginContext): void {
         }
 
         /*
-         * An open tool closes with its X or with Escape, back to the tools.
+         * An open tool goes back to the tools with the header's back or home, or with Escape.
          */
-        const back = key('close', 'Close', () => show(null))
-        handle.toolbar.append(back)
+        let open = false
+        const opened = (on: boolean): void => {
+            open = on
+            const leave = on ? () => show(null) : null
+            handle.navigate({ back: leave, home: leave })
+        }
         root.tabIndex = -1
         root.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape' || event.defaultPrevented || back.hidden) return
+            if (event.key !== 'Escape' || event.defaultPrevented || !open) return
             event.preventDefault()
             if (event.target instanceof HTMLElement && event.target.matches('textarea, input')) root.focus({ preventScroll: true })
             else show(null)
@@ -564,7 +568,7 @@ export function activate(ctx: PluginContext): void {
             liveKey = null
             watching = null
             if (!state.ffmpeg) {
-                back.hidden = true
+                opened(false)
                 handle.setTitle(null)
                 const empty = el('div', 'dya-empty')
                 empty.append(el('span', 'dya-text', 'FFmpeg missing'))
@@ -578,7 +582,7 @@ export function activate(ctx: PluginContext): void {
                 return
             }
             const info = TOOLS.find((entry) => entry.id === tool)
-            back.hidden = !info
+            opened(Boolean(info))
             handle.setTitle(info ? info.name : null)
             if (!info) {
                 const grid = el('div', 'dya-grid')
@@ -745,7 +749,7 @@ export function activate(ctx: PluginContext): void {
         })
 
         chooseTool = (tool) => show(tool)
-        back.hidden = true
+        opened(false)
 
         return () => {
             disposed = true

@@ -69,8 +69,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
-- **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions as rows
-  of glyph and word (`files` rows) or a worded button; only `loading` is centred. Never a lone mark in the middle.
+- **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions a `grid`
+  of tiles or a key; only `loading` is centred. Never a lone mark in the middle.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
   sections divided by their heads and space. A diff is a `code` block, lines as they come, its added and removed lines in `code-addition` and `code-deletion`: git's green and red, quietened. **A list of files is `files`**: `file` rows of
   glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.

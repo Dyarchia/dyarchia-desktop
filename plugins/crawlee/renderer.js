@@ -50,10 +50,6 @@ const STYLE = `
 .crw-headline {
     flex: none;
 }
-.crw-search,
-.crw-hits {
-    max-width: 880px;
-}
 /*
  * Rounds: the changed targets in a column of their own and the article taking the rest; in a panel
  * too narrow for both, they take turns, the article a level in.
@@ -69,10 +65,6 @@ const STYLE = `
     overflow: auto;
     padding-inline-end: var(--dya-space-4);
     border-inline-end: var(--dya-border-width) solid var(--dya-hairline);
-}
-.crw-changed > .dya-files,
-.crw-suite > .dya-files {
-    margin-inline-start: calc(-1 * var(--dya-space-2));
 }
 .crw-suite + .crw-suite,
 .crw-changed > .dya-files + .crw-suite {
@@ -95,9 +87,6 @@ const STYLE = `
     align-items: flex-start;
     gap: var(--dya-space-1);
     height: auto;
-}
-.crw-article .dya-code {
-    max-width: 880px;
 }
 @container pane (max-width: 899.98px) {
     .crw-changed {
@@ -125,13 +114,13 @@ const STYLE = `
     flex-direction: column;
     gap: var(--dya-space-4);
 }
-.crw-actions {
-    width: max-content;
-    min-width: min(100%, 320px);
-    margin-inline-start: calc(-1 * var(--dya-space-2));
-}
+/*
+ * A suite is its table on the ground, no frame: the cells' own inset is given back so its boxes
+ * stand on the panel's first line, where the search field and the changed list start.
+ */
 .crw-card {
     flex: none;
+    margin-inline: calc(-1 * var(--dya-space-4));
     padding-bottom: var(--dya-space-2);
 }
 .crw-card > .dya-table {
@@ -261,12 +250,17 @@ const STYLE = `
  * The profile is a field holding an editor: the field is the well and its inset, the editor fills
  * it and scrolls, so the text behind and the textarea over it start on the same pixel.
  */
+/*
+ * The profile fills the sheet's column, so it is kanon's tall editor: the field's ground, inset,
+ * still underlined.
+ */
 .crw-yaml {
     display: flex;
     flex: 1;
     height: auto;
     min-height: 140px;
-    padding-block: var(--dya-space-3);
+    padding: var(--dya-space-3);
+    background-color: var(--dya-field);
 }
 .crw-yaml > .dya-editor {
     flex: 1;
@@ -394,7 +388,9 @@ function bytes(value) {
 function needsEnvironment(ctx) {
     const box = el('div', 'dya-empty')
     const actions = el('div', 'dya-empty__actions')
-    const setup = button('dya-button', 'Setup')
+    const setup = button('dya-key dya-key--primary')
+    setup.innerHTML = ctx.glyph('settings')
+    setup.setAttribute('aria-label', 'Setup')
     setup.addEventListener('click', () => void ctx.shell.show('settings'))
     actions.append(setup)
     box.append(el('span', 'dya-title', 'No Python environment'), actions)
@@ -597,7 +593,8 @@ function mount(ctx, container, handle) {
         return key
     }
 
-    const tabs = el('div', 'dya-tabs')
+    const tabs = el('div', 'dya-toolbar')
+    tabs.setAttribute('role', 'tablist')
     const rounds = el('div', 'crw-view')
     const targets = el('div', 'crw-view')
     const searching = el('div', 'crw-view')
@@ -641,7 +638,7 @@ function mount(ctx, container, handle) {
      * The card's head is the suite and the box that picks all of it.
      */
     function targetTable(group, members, onOpen, repaint) {
-        const node = el('article', 'dya-card crw-card')
+        const node = el('article', 'crw-card')
         if (group) {
             const head = el('header', 'dya-card__header')
             const names = members.map((corpus) => corpus.name)
@@ -718,12 +715,13 @@ function mount(ctx, container, handle) {
     }
 
     const views = [
-        { id: 'rounds', title: 'Rounds', node: rounds },
-        { id: 'targets', title: 'Targets', node: targets },
-        { id: 'search', title: 'Search', node: searching },
+        { id: 'rounds', title: 'Rounds', glyph: 'clock', node: rounds },
+        { id: 'targets', title: 'Targets', glyph: 'link', node: targets },
+        { id: 'search', title: 'Search', glyph: 'search', node: searching },
     ]
     const buttons = views.map((view) => {
-        const tab = button('dya-tab', view.title)
+        const tab = iconKey(view.glyph, view.title)
+        tab.setAttribute('role', 'tab')
         tab.addEventListener('click', () => select(view.id))
         tabs.appendChild(tab)
         return tab
@@ -743,6 +741,7 @@ function mount(ctx, container, handle) {
             const active = view.id === id
             view.node.hidden = !active
             buttons[index].setAttribute('aria-selected', String(active))
+            if (view.id === 'targets') targetsView.verbs.hidden = !active
         })
         if (id === 'search') searchView.focus()
         nav()
@@ -768,7 +767,7 @@ function mount(ctx, container, handle) {
     const targetsView = buildTargets()
     const searchView = buildSearch()
 
-    handle.toolbar.append(tabs, roundsView.verbs)
+    handle.toolbar.append(targetsView.verbs, tabs, roundsView.verbs)
     root.append(rounds, targets, searching, tipHolder)
     container.appendChild(root)
     select('rounds')
@@ -1370,8 +1369,8 @@ function mount(ctx, container, handle) {
         const title = el('span', 'dya-title')
         const state = el('span', 'crw-status')
         const remove = iconKey('delete', 'Delete', 'dya-key--danger')
-        const inspect = button('dya-button', 'Inspect')
-        const save = button('dya-button dya-button--primary', 'Save')
+        const inspect = iconKey('inspect', 'Inspect')
+        const save = iconKey('save', 'Save', 'dya-key--primary')
         const actions = el('div', 'dya-join')
         const close = iconKey('close', 'Close')
         const end = el('div', 'dya-sheet__end')
@@ -1610,7 +1609,7 @@ function mount(ctx, container, handle) {
             const section = el('tr', 'dya-table__section')
             const end = el('td', 'dya-table__end')
             if (missing) {
-                const install = button('dya-button', 'Install')
+                const install = iconKey('download', 'Install')
                 install.addEventListener('click', () => void put(shelf.group, install))
                 end.append(install)
             } else {
@@ -1634,6 +1633,7 @@ function mount(ctx, container, handle) {
 
         async function put(group, key) {
             key.disabled = true
+            key.setAttribute('aria-busy', 'true')
             libraryNote('Installing', 'busy')
             try {
                 await ctx.invoke('install', group)
@@ -1641,6 +1641,7 @@ function mount(ctx, container, handle) {
                 await Promise.all([shelve(), refreshList(), roundsView.refresh()])
             } catch (error) {
                 key.disabled = false
+                key.removeAttribute('aria-busy')
                 libraryNote(reason(error), 'error')
             }
         }
@@ -1691,35 +1692,24 @@ function mount(ctx, container, handle) {
         save.addEventListener('click', () => void write())
 
         /*
-         * Targets is the place for the targets themselves: what to do first, as rows from the top
-         * left (a new target, the library of shipped ones), then a card per suite with its table,
-         * whose boxes pick what the header's Run sweeps. A row opens the target's editor.
+         * Targets is the place for the targets themselves: a table per suite, whose boxes pick what
+         * the header's Run sweeps, a row opening the target's editor. A new target and the library
+         * of shipped ones are keys in the header while Targets is shown.
          */
         let listed = []
 
-        function actionRows() {
-            const rows = el('ul', 'dya-files crw-actions')
-            for (const [icon, words, act] of [
-                ['add', 'New target', (source) => create(source)],
-                ['book', 'Library', (source) => browse(source)]
-            ]) {
-                const item = el('li')
-                const row = button('dya-file')
-                row.innerHTML = ctx.glyph(icon)
-                row.append(el('span', 'dya-file__name', words))
-                row.addEventListener('click', () => act(row))
-                item.append(row)
-                rows.append(item)
-            }
-            return rows
-        }
+        const newKey = iconKey('add', 'New target')
+        newKey.addEventListener('click', () => create(newKey))
+        const libraryKey = iconKey('book', 'Library')
+        libraryKey.addEventListener('click', () => browse(libraryKey))
+        const verbs = el('div', 'dya-toolbar')
+        verbs.append(newKey, libraryKey)
 
         function paintList() {
             const groups = [...new Set(listed.map((corpus) => corpus.group || ''))].sort((a, b) =>
                 a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)
             )
             grid.replaceChildren(
-                actionRows(),
                 ...groups.map((group) =>
                     targetTable(group, listed.filter((corpus) => (corpus.group || '') === group), (corpus, row) => void open(corpus.name, row), paintList)
                 )
@@ -1931,6 +1921,7 @@ function mount(ctx, container, handle) {
         }
 
         return {
+            verbs,
             refresh: refreshList,
             create() {
                 if (!library.hidden) shut()

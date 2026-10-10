@@ -73,16 +73,7 @@ const STYLES = `
     min-height: 0;
     min-width: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-6);
-}
-.docviewer-content--empty {
     padding: var(--dya-space-4);
-}
-.docviewer-rows {
-    width: max-content;
-    min-width: min(100%, 320px);
-    max-width: 100%;
-    margin-inline-start: calc(-1 * var(--dya-space-2));
 }
 .docviewer-editor {
     height: 100%;
@@ -92,7 +83,7 @@ const STYLES = `
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a stele, the Great Rhetra, the written law of Lycurgus.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const DOCS_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M12 6.5C10 5 6.5 4.5 3 5v14c3.5-.5 7 0 9 1.5 2-1.5 5.5-2 9-1.5V5c-3.5-.5-7 0-9 1.5Z"/><path d="M12 6.5v14"/></svg>'
@@ -252,24 +243,8 @@ export function activate(ctx: PluginContext): void {
             header.append(problem, strip)
             header.hidden = true
 
-            /*
-             * With no page open the tab row says where the pages live: the folder's name, on a key
-             * that shows it in the file manager. A page made here that nobody could find again was
-             * the reason. Choosing another folder is rare and is the palette's Docs folder.
-             */
-            const place = document.createElement('div')
-            place.className = 'dya-toolbar'
-            const folderKey = document.createElement('button')
-            folderKey.type = 'button'
-            folderKey.className = 'dya-button'
-            const folderName = document.createElement('span')
-            folderName.className = 'dya-mono'
-            folderKey.innerHTML = glyph('folder')
-            folderKey.append(folderName)
-            let folderPath = ''
-
             const content = document.createElement('div')
-            handle.toolbar.append(header, place)
+            handle.toolbar.append(header)
             root.append(content, tipHolder)
             container.appendChild(root)
 
@@ -392,7 +367,6 @@ export function activate(ctx: PluginContext): void {
                 if (dirty && !overwrite) shown.push(save)
                 strip.replaceChildren(...shown, deleteKey)
                 nav()
-                place.hidden = current !== null
                 if (overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
             }
@@ -442,47 +416,50 @@ export function activate(ctx: PluginContext): void {
             let gallery: HTMLElement | null = null
             let galleryNote: string | undefined
 
-            function row(icon: string, name: string, act: () => void, meta?: string): HTMLLIElement {
-                const item = document.createElement('li')
-                const node = document.createElement('button')
-                node.type = 'button'
-                node.className = 'dya-file'
-                node.innerHTML = icon
+            function tile(className: string, icon: string, name: string, act: () => void): HTMLButtonElement {
+                const card = document.createElement('button')
+                card.type = 'button'
+                card.className = className
+                card.innerHTML = `<span class="dya-tile__icon">${icon}</span>`
                 const label = document.createElement('span')
-                label.className = 'dya-file__name'
+                label.className = 'dya-tile__name'
                 label.textContent = name
-                node.append(label)
-                if (meta) {
-                    const facts = document.createElement('span')
-                    facts.className = 'dya-meta'
-                    facts.textContent = meta
-                    node.append(facts)
-                }
-                node.onclick = act
-                item.append(node)
-                return item
+                card.append(label)
+                card.onclick = act
+                return card
             }
 
-            /*
-             * With no page open the panel is a list from the top left, as every list is: the two
-             * things to do, then the pages, newest first. Never a lone mark in the middle.
-             */
             function paintGallery(): void {
                 if (!gallery) return
-                const rows: HTMLElement[] = []
+                const cards: HTMLElement[] = []
                 if (galleryNote) {
-                    const item = document.createElement('li')
                     const line = document.createElement('span')
-                    line.className = 'dya-text--danger'
+                    line.className = 'dya-empty dya-text--danger'
                     line.textContent = galleryNote
-                    item.append(line)
-                    rows.push(item)
+                    cards.push(line)
                 }
-                rows.push(row(glyph('new-file'), 'New page', () => openLibrary()), row(glyph('folder'), 'Browse', () => void browse()))
+                cards.push(
+                    tile('dya-tile dya-tile--new', glyph('add'), 'New page', () => openLibrary()),
+                    tile('dya-tile', glyph('folder'), 'Browse', () => void browse())
+                )
                 for (const page of pages) {
-                    rows.push(row(glyph('file'), page.name, () => void openPage(page.path), page.size > 0 ? `${when(page.mtime)} - ${size(page.size)}` : when(page.mtime)))
+                    const card = document.createElement('button')
+                    card.type = 'button'
+                    card.className = 'dya-tile dya-tile--dense'
+                    const head = document.createElement('div')
+                    head.className = 'dya-tile__head'
+                    const name = document.createElement('span')
+                    name.className = 'dya-tile__name'
+                    name.textContent = page.name
+                    head.append(name)
+                    const facts = document.createElement('span')
+                    facts.className = 'dya-meta'
+                    facts.textContent = page.size > 0 ? `${when(page.mtime)} - ${size(page.size)}` : when(page.mtime)
+                    card.append(head, facts)
+                    card.onclick = () => void openPage(page.path)
+                    cards.push(card)
                 }
-                gallery.replaceChildren(...rows)
+                gallery.replaceChildren(...cards)
             }
 
             function showEmpty(message?: string): void {
@@ -494,9 +471,9 @@ export function activate(ctx: PluginContext): void {
                 dirty = false
                 say()
                 syncModes()
-                content.className = 'dya-text docviewer-content docviewer-content--empty'
-                gallery = document.createElement('ul')
-                gallery.className = 'dya-files docviewer-rows'
+                content.className = 'dya-text docviewer-content'
+                gallery = document.createElement('div')
+                gallery.className = 'dya-grid'
                 galleryNote = message
                 content.replaceChildren(gallery)
                 paintGallery()
@@ -521,9 +498,9 @@ export function activate(ctx: PluginContext): void {
              * The pages: every file in the data home's docs folder, in a sheet over the panel.
              * It is the whole of what can be done to a page. The one field finds a page as it is
              * typed and makes one of that name on Enter when none matches, a row opens on a click,
-             * and the row under the pointer or the focus shows its rename and its delete. A file
-             * kept anywhere else is the gallery's Browse. The sheet covers, so it is modal: a
-             * scrim, the rest inert, Escape out.
+             * and the row under the pointer or the focus shows its rename and its delete. Browse
+             * shows the folder in the file manager; a file kept anywhere else is the palette's Open
+             * file. The sheet covers, so it is modal: a scrim, the rest inert, Escape out.
              */
             const scrim = document.createElement('div')
             scrim.className = 'dya-scrim'
@@ -621,19 +598,10 @@ export function activate(ctx: PluginContext): void {
                 list.replaceChildren(files)
             }
 
-            async function paintFolder(): Promise<void> {
-                const where = (await ctx.invoke('folder')) as { path: string }
-                folderPath = where.path
-                folderName.textContent = where.path.split(/[\\/]/).filter(Boolean).at(-1) ?? where.path
-                place.replaceChildren(folderKey)
-            }
-
-            folderKey.onclick = () => void ctx.shell.reveal(folderPath)
             const repaint = (): void => void refresh()
             galleries.add(repaint)
 
             async function refresh(): Promise<void> {
-                void paintFolder().catch(() => undefined)
                 try {
                     pages = (await ctx.invoke('list')) as Page[]
                 } catch {
@@ -711,8 +679,13 @@ export function activate(ctx: PluginContext): void {
                 return shift(() => ctx.invoke('read', path) as Promise<OpenResult>)
             }
 
-            function browse(): Promise<void> {
-                return shift(() => ctx.invoke('open') as Promise<OpenResult>)
+            async function browse(): Promise<void> {
+                try {
+                    const where = (await ctx.invoke('folder')) as { path: string }
+                    await ctx.shell.reveal(where.path)
+                } catch {
+                    complain('Cannot open')
+                }
             }
 
             async function makePage(): Promise<void> {

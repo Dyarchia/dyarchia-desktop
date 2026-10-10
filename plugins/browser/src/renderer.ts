@@ -37,7 +37,7 @@ const svg = (body: string): string =>
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a scytale, the rod a Spartan wrapped a message round so only its twin could read it.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const GLOBE_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.6 21.4 21.4 2.6" stroke-width="2.6" stroke-linecap="round" style="stroke:var(--dya-text-muted)"/><path d="M2.51 16.40 L8.66 20.43 L9.86 19.23 L3.71 15.20Z" style="fill:var(--dya-text)"/><path d="M4.28 16.89 L5.47 17.68 M6.48 18.36 L7.67 19.16" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M5.91 13.00 L12.06 17.03 L13.26 15.83 L7.11 11.80Z" style="fill:var(--dya-text)"/><path d="M7.68 13.49 L8.87 14.28 M9.88 14.96 L11.07 15.76" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M9.31 9.60 L15.46 13.63 L16.66 12.43 L10.51 8.40Z" style="fill:var(--dya-text)"/><path d="M11.08 10.09 L12.27 10.88 M13.28 11.56 L14.47 12.36" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M12.71 6.20 L18.86 10.23 L20.06 9.03 L13.91 5.00Z" style="fill:var(--dya-text)"/><path d="M14.48 6.69 L15.67 7.48 M16.68 8.16 L17.87 8.96" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M19.43 9.38 C22.26 10.79 24.10 8.39 27.21 8.96" fill="none" stroke-width="2.2" stroke-linecap="round" style="stroke:var(--dya-text)"/></svg>'

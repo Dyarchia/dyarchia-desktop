@@ -5,7 +5,7 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a Laconian bronze mirror, the polished disc a standing figure holds up with both arms, which
- * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
+ * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 15px.
  */
 const MEDIA_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M2.3 20.3l1.4 1.4M3 21 13 11"/><path d="M13 11Q16.4 8.6 22.4 7.4L16.6 1.6Q15.4 7.6 13 11Z"/></svg>'
@@ -275,8 +275,9 @@ export function activate(ctx: PluginContext): void {
             const failure = el('span', 'dya-text dya-text--danger media-failure')
             if (tool.verb) {
                 const actions = el('div', 'dya-form__actions')
-                const go = el('button', 'dya-button dya-button--primary', tool.verb)
+                const go = el('button', 'dya-key dya-key--primary')
                 go.type = 'button'
+                face(go, tool.icon, tool.verb)
                 go.addEventListener('click', () => {
                     failure.textContent = ''
                     if (live && watching !== null) {
@@ -290,18 +291,18 @@ export function activate(ctx: PluginContext): void {
                         .then((id) => {
                             if (live) {
                                 watching = id
-                                go.textContent = 'Stop'
+                                face(go, 'stop', 'Stop')
                             }
                         })
                         .catch(fail)
                         .finally(() => (go.disabled = false))
                 })
                 if (live) {
-                    liveKey = { go, verb: tool.verb }
+                    liveKey = { go, icon: tool.icon, verb: tool.verb }
                     const running = jobs.find((job) => job.tool === tool.id && job.state === 'running')
                     if (running) {
                         watching = running.id
-                        go.textContent = 'Stop'
+                        face(go, 'stop', 'Stop')
                     }
                 }
                 actions.append(go)
@@ -311,7 +312,16 @@ export function activate(ctx: PluginContext): void {
             return node
         }
 
-        let liveKey: { go: HTMLButtonElement; verb: string } | null = null
+        let liveKey: { go: HTMLButtonElement; icon: GlyphName; verb: string } | null = null
+
+        /*
+         * A tool's action is its own glyph on the primary key, the glyph its tile wears, and a
+         * capture under way turns it to stop.
+         */
+        function face(go: HTMLButtonElement, icon: GlyphName, words: string): void {
+            go.innerHTML = glyph(icon)
+            go.setAttribute('aria-label', words)
+        }
 
         function needFile(file: { path: () => string }): string | null {
             if (file.path()) return file.path()
@@ -573,8 +583,10 @@ export function activate(ctx: PluginContext): void {
                 const empty = el('div', 'dya-empty')
                 empty.append(el('span', 'dya-text', 'FFmpeg missing'))
                 const actions = el('div', 'dya-empty__actions')
-                const setup = el('button', 'dya-button dya-button--primary', 'Setup')
+                const setup = el('button', 'dya-key dya-key--primary')
                 setup.type = 'button'
+                setup.innerHTML = glyph('settings')
+                setup.setAttribute('aria-label', 'Setup')
                 setup.addEventListener('click', () => void ctx.shell.show('settings'))
                 actions.append(setup)
                 empty.append(actions)
@@ -730,7 +742,7 @@ export function activate(ctx: PluginContext): void {
             if (at === -1) jobs.push(job)
             else jobs[at] = job
             if (job.id === watching && job.state !== 'running' && liveKey) {
-                liveKey.go.textContent = liveKey.verb
+                face(liveKey.go, liveKey.icon, liveKey.verb)
                 watching = null
             }
             paintJobs()

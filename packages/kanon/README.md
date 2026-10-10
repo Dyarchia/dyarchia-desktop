@@ -14,10 +14,12 @@ Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
-#d18743) is the one colour that is not status: the primary's fill, the open tab's line of the focused panel
-(every other open tab is underlined in `text`), the terminal's cursor while it holds the focus (and then
-its tab is in ink), a link, the focus ring, the caret and the wordmark, 6.37 on the ground and 4.84 on
-`selected`. Nothing is raised, nothing glows,
+#d18743) is the one colour that is not status: the primary's fill, the wash (`accent-soft`) of the focused
+panel's open tab (every other open tab stands on `press-wash`), the glyph and wash of a key that is on, the
+terminal's cursor while it holds the focus (and then its tab keeps `press-wash`), a link, the focus ring, the
+caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. On its own wash it measures 4.38 over a
+panel: a glyph there, never a word. **Nothing active is underlined**; only a field is a line, since without
+one nothing says it takes words. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
 `on-accent`; a brand's mark keeps its own colours.
@@ -36,7 +38,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 - **Controls are type, information is filled.** A key, a tile, a tab's action and a window key are their glyph
   or word in the muted ink, brightening under the pointer; a worded button is a mono capital word in a
   hairline. A pill is the one filled thing that cannot be pressed: a square code chip, a breath of white.
-- **Colour is status or which-one, never emphasis**, with the one exception of the accent, spent once per view.
+- **Colour is status or which-one, never emphasis**, with the one exception of the accent: the primary, the
+  focused panel's tab and what is on.
 - **Hover changes the background and the ink**; a transition names only `transform`, `opacity` and
   `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
@@ -48,7 +51,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 ## Keys and layout
 
 - **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
-  keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size.
+  keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size. **One glyph size**:
+  every glyph, a key's, a tab's mark, a row's, a tile's, a window key's, is `--dya-size-glyph`, 15px, and a
+  `title` names what it holds at the size of what it holds: a row's, 15px.
 - **A field is an underline**, its words starting where its line starts, so a field, a select, a tick and a key in
   one form share one left edge; it brightens under the pointer and turns the accent with the keyboard. A field and
   its keys are a `join`, the field filling the row. Data typed into one, an id, a list, JSON, is `--code`: mono,
@@ -64,14 +69,15 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
-- **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions as rows
-  of glyph and word (`files` rows) or a worded button; only `loading` is centred. Never a lone mark in the middle.
+- **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions a `grid`
+  of tiles or a key; only `loading` is centred. Never a lone mark in the middle.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
   sections divided by their heads and space. A diff is a `code` block, lines as they come, its added and removed lines in `code-addition` and `code-deletion`: git's green and red, quietened. **A list of files is `files`**: `file` rows of
   glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.
 - **A panel is a hairline on the ground** and measures itself as a `pane` (`@container pane`), never a media
-  query: width changes how many regions it shows, never how far things stretch. `grid` is a gallery of
-  fixed-width things, `tile--new` first; table columns are content width; `form` values up to 560px.
+  query: width changes how many regions it shows, never how far things stretch. `grid` is a formation:
+  files of at least 240px sharing the width edge to edge, each `tile` a face one step up (`panel`), 96px
+  tall, its glyph at the top and its name at the foot, `tile--new` first; table columns are content width; `form` values up to 560px.
 - **What opens in place is a `fold`**: `details.fold`, a `__head` summary led by `__mark`, the SDK chevron
   turned down while open. **One scroller per region**: nothing in a region that scrolls scrolls again; a code
   block wraps (`code--wrap`); a live log is sized by a handle.
@@ -86,7 +92,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
              --pending --ghosted --carried) card__header masthead carved splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
-Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
+Keys         button (--primary --danger --resolve __state __answer) key (--active --primary --success --danger)
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey reveal (--held) reveals
 Input        field (--auto --prose --code __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)

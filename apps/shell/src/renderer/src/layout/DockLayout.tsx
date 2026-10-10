@@ -11,6 +11,7 @@ import type {
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
 import { Svg } from '../components/Svg'
+import { NavKeys } from '../panels/NavKeys'
 import { PluginPanel } from '../panels/PluginPanel'
 import {
     basePanelId,
@@ -182,6 +183,14 @@ function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
     return <div ref={host} className="panel-toolbar-host" />
 }
 
+/*
+ * Back and home of the panel the group shows, before its tabs: the way out sits where a reader
+ * starts every header.
+ */
+function PanelNavHost(props: IDockviewHeaderActionsProps): React.JSX.Element {
+    return <NavKeys instanceId={props.activePanel?.id} />
+}
+
 interface DockLayoutProps {
     onReady: (api: DockviewApi) => void
     onOpen: (id: string) => void
@@ -234,6 +243,7 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
             theme={dyarchiaTheme}
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
+            prefixHeaderActionsComponent={PanelNavHost}
             rightHeaderActionsComponent={PanelToolbar}
             watermarkComponent={watermark}
             onReady={handleReady}

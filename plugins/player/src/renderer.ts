@@ -148,24 +148,21 @@ export function activate(ctx: PluginContext): void {
             let failure: string | undefined
 
             /*
-             * What is playing is the tab's title, and the one key in the tab row closes it, back to
-             * the gallery; Escape does the same. Open lives in the gallery and in the palette.
+             * What is playing is the tab's title; the header's back and home put it away, back to
+             * the gallery, and Escape does the same. Open lives in the gallery and in the palette.
              */
-            const back = document.createElement('button')
-            back.type = 'button'
-            back.className = 'dya-key'
-            back.innerHTML = glyph('close')
-            back.setAttribute('aria-label', 'Close')
+            let open = false
             const close = (): void => {
                 void ctx.invoke('release', handle.instanceId)
                 showEmpty()
             }
-            back.onclick = close
-            back.hidden = true
-            handle.toolbar.append(back)
+            const opened = (on: boolean): void => {
+                open = on
+                handle.navigate({ back: on ? close : null, home: on ? close : null })
+            }
             root.tabIndex = -1
             root.addEventListener('keydown', (event) => {
-                if (event.key !== 'Escape' || event.defaultPrevented || back.hidden || document.fullscreenElement) return
+                if (event.key !== 'Escape' || event.defaultPrevented || !open || document.fullscreenElement) return
                 event.preventDefault()
                 close()
             })
@@ -205,7 +202,7 @@ export function activate(ctx: PluginContext): void {
                 playing = false
                 failure = message
                 handle.setTitle(null)
-                back.hidden = true
+                opened(false)
                 gallery = document.createElement('div')
                 gallery.className = 'dya-grid'
                 stage.className = 'player-stage'
@@ -231,7 +228,7 @@ export function activate(ctx: PluginContext): void {
                 stage.className = 'player-stage'
                 stage.replaceChildren(wait)
                 handle.setTitle(media.name)
-                back.hidden = false
+                opened(true)
                 const off = ctx.on('progress', (instance: unknown, percent: unknown) => {
                     if (instance !== handle.instanceId) return
                     ring.style.setProperty('--dya-ring-done', String(Math.floor(Number(percent) / 5)))
@@ -299,7 +296,7 @@ export function activate(ctx: PluginContext): void {
                 playing = true
                 gallery = null
                 handle.setTitle(media.name)
-                back.hidden = false
+                opened(true)
                 stage.className = 'player-stage player-stage--image'
                 stage.replaceChildren(picture)
             }
@@ -325,7 +322,7 @@ export function activate(ctx: PluginContext): void {
                 playing = true
                 gallery = null
                 handle.setTitle(media.name)
-                back.hidden = false
+                opened(true)
                 stage.className = media.kind === 'video' ? 'player-stage player-stage--video' : 'player-stage'
                 stage.replaceChildren(element)
             }

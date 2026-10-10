@@ -616,13 +616,29 @@ function mount(ctx, container, handle) {
         return tab
     })
 
-    function select(id) {
+    /*
+     * The views visited are a trail: back returns to the one before, home to Rounds, where the
+     * panel opens.
+     */
+    const trail = []
+    let at = null
+
+    function select(id, going = true) {
+        if (going && at && at !== id) trail.push(at)
+        at = id
         views.forEach((view, index) => {
             const active = view.id === id
             view.node.hidden = !active
             buttons[index].setAttribute('aria-selected', String(active))
         })
         if (id === 'search') searchView.focus()
+        handle.navigate({
+            back: trail.length ? () => select(trail.pop(), false) : null,
+            home: id !== 'rounds' ? () => {
+                trail.length = 0
+                select('rounds', false)
+            } : null
+        })
     }
 
     const roundsView = buildRounds()

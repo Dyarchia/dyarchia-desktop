@@ -211,6 +211,7 @@ export function activate(ctx: PluginContext): void {
             duplicable: true
         },
         (container, handle) => {
+            let navReady = false
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
@@ -343,16 +344,10 @@ export function activate(ctx: PluginContext): void {
             editKey.onclick = () => setMode(mode === 'edit' ? readMode() : 'edit')
 
             /*
-             * What is open closes with its X or with Escape, back to the pages. A page made here
-             * and closed before a word was written leaves nothing behind: an empty Untitled file
-             * nobody asked to keep is litter in the person's folder.
+             * What is open goes back to the pages with the header's back or home, or with Escape. A
+             * page made here and closed before a word was written leaves nothing behind: an empty
+             * Untitled file nobody asked to keep is litter in the person's folder.
              */
-            const closeKey = document.createElement('button')
-            closeKey.type = 'button'
-            closeKey.className = 'dya-key'
-            closeKey.innerHTML = glyph('close')
-            closeKey.setAttribute('aria-label', 'Close')
-            closeKey.onclick = () => void closePage()
             let born: string | null = null
 
             async function closePage(): Promise<void> {
@@ -389,7 +384,8 @@ export function activate(ctx: PluginContext): void {
                 const shown: HTMLElement[] = [editKey]
                 paintSave()
                 if (dirty && !overwrite) shown.push(save)
-                strip.replaceChildren(...shown, deleteKey, closeKey)
+                strip.replaceChildren(...shown, deleteKey)
+                nav()
                 place.hidden = current !== null
                 if (overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
@@ -656,6 +652,7 @@ export function activate(ctx: PluginContext): void {
                 complain()
                 void refresh()
                 find.focus()
+                nav()
             }
 
             function closeLibrary(): void {
@@ -666,6 +663,17 @@ export function activate(ctx: PluginContext): void {
                 content.inert = false
                 opener?.focus()
                 opener = null
+                nav()
+            }
+
+            function nav(): void {
+                if (!navReady) return
+                const away = !library.hidden || current !== null
+                const back = (): void => {
+                    if (!library.hidden) closeLibrary()
+                    else void closePage()
+                }
+                handle.navigate({ back: away ? back : null, home: away ? () => { closeLibrary(); void closePage() } : null })
             }
 
             /*
@@ -804,6 +812,8 @@ export function activate(ctx: PluginContext): void {
                 await refresh()
             }
 
+            navReady = true
+            nav()
             scrim.onclick = closeLibrary
             root.addEventListener('keydown', (event) => {
                 if (event.key !== 'Escape' || event.defaultPrevented) return

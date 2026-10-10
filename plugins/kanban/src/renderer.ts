@@ -413,6 +413,26 @@ async function instance(ctx: PluginContext): Promise<Commands | undefined> {
 }
 
 function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle): () => void {
+    let navReady = false
+    /*
+     * Back leaves the innermost thing open: a sheet, then the card's drawer, then the list of every
+     * board. Home leaves all of them, back to the board.
+     */
+    const nav = (): void => {
+        if (!navReady) return
+        const away = sheet !== null || watching || !drawer.hidden
+        const back = (): void => {
+            if (sheet) closeSheet()
+            else if (!drawer.hidden) select(null)
+            else if (watching) closeWatch()
+        }
+        const home = (): void => {
+            closeSheet(false)
+            if (!drawer.hidden) select(null)
+            if (watching) closeWatch()
+        }
+        handle.navigate({ back: away ? back : null, home: away ? home : null })
+    }
     const pinKey = `${PIN}${handle.instanceId}`
     const foldKey = (status: Status): string => `${pinKey}:fold:${status}`
     const folded = (status: Status): boolean => {
@@ -603,6 +623,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         marks.inert = false
         if (refocus) (returnFocus?.isConnected ? returnFocus : boardButton).focus()
         returnFocus = null
+        nav()
     }
 
     const openSheet = (content: HTMLElement): void => {
@@ -614,6 +635,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         marks.inert = true
         root.append(content)
         ;(content.querySelector<HTMLElement>('input') ?? content.querySelector<HTMLElement>('button'))?.focus()
+        nav()
     }
 
     const show = (next: View): void => {
@@ -622,6 +644,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         watch.hidden = next !== 'watch'
         setup.hidden = next !== 'form'
         marks.hidden = next !== 'board' || marked.size === 0
+        queueMicrotask(nav)
 
         const onBoard = meta !== null && next === 'board'
         if (!onBoard) closeSheet(false)
@@ -2283,6 +2306,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             closeTerminal()
             drawer.hidden = true
             drawer.replaceChildren()
+            nav()
             drawnId = null
             drawnRev = -1
             drawerPaint += 1
@@ -2305,6 +2329,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         drawnRev = card.rev
         const painted = ++drawerPaint
         drawer.hidden = false
+        nav()
         drawer.dataset.status = shown(card)
         drawer.dataset.stage = String(card.runs.length > 0)
         drawer.replaceChildren()
@@ -3312,6 +3337,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             showBoardSettings()
         }
     }
+    navReady = true
+    nav()
     void refresh()
         .catch(fail)
         .finally(() => {

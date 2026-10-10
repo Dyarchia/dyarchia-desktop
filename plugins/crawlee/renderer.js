@@ -311,6 +311,12 @@ function reason(error) {
     return error instanceof Error ? error.message : String(error)
 }
 
+/*
+ * The glyphs that do not say their action, the SDK's own list for the ones used here: only these
+ * keys carry a tip.
+ */
+const NAMELESS = new Set(['log', 'clock', 'link'])
+
 function el(tag, className, text) {
     const node = document.createElement(tag)
     if (className) node.className = className
@@ -589,7 +595,7 @@ function mount(ctx, container, handle) {
         const key = button(tone ? `dya-key ${tone}` : 'dya-key')
         key.innerHTML = ctx.glyph(name)
         key.setAttribute('aria-label', label)
-        if (name === 'log') withTip(key, label)
+        if (NAMELESS.has(name)) withTip(key, label)
         return key
     }
 

@@ -978,20 +978,24 @@
     width: auto;
 }
 
+/*
+ * A field of several lines starts its first line where its label's line is, and its words where
+ * every value in the form starts.
+ */
 textarea.dya-field {
     height: auto;
-    padding: var(--dya-space-2) 0;
+    padding: calc((var(--dya-size-control) - 1lh) / 2) 0;
     line-height: var(--dya-leading-body);
     resize: vertical;
 }
 
 /*
  * A sentence typed into a field: a title, a brief, a description. It keeps the field's face and
- * takes the body's leading, because it is prose and wraps.
+ * size, the size of every value beside it, and takes the body's leading, because it wraps.
  */
 .dya-field--prose {
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body);
+    font-size: var(--dya-size-body-xs);
     line-height: var(--dya-leading-body);
     letter-spacing: normal;
 }
@@ -2792,6 +2796,20 @@ button.dya-step__subject {
  */
 .dya-editor--field {
     border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
+}
+
+/*
+ * An editor that fills a region, a prompt or a body as tall as the room left, stands on the field's
+ * ground, inset, with its underline: a line alone at the foot of a tall box said nothing about
+ * where the box began.
+ */
+.dya-editor--field {
+    background-color: var(--dya-field);
+}
+
+.dya-editor--field > pre,
+.dya-editor--field > textarea {
+    padding: var(--dya-space-2) var(--dya-space-3);
 }
 
 .dya-editor--field:hover {

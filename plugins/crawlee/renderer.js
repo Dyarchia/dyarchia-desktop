@@ -96,9 +96,6 @@ const STYLE = `
     gap: var(--dya-space-1);
     height: auto;
 }
-.crw-article .dya-code {
-    max-width: 880px;
-}
 @container pane (max-width: 899.98px) {
     .crw-changed {
         flex: 1;
@@ -597,7 +594,8 @@ function mount(ctx, container, handle) {
         return key
     }
 
-    const tabs = el('div', 'dya-tabs')
+    const tabs = el('div', 'dya-toolbar')
+    tabs.setAttribute('role', 'tablist')
     const rounds = el('div', 'crw-view')
     const targets = el('div', 'crw-view')
     const searching = el('div', 'crw-view')
@@ -718,12 +716,13 @@ function mount(ctx, container, handle) {
     }
 
     const views = [
-        { id: 'rounds', title: 'Rounds', node: rounds },
-        { id: 'targets', title: 'Targets', node: targets },
-        { id: 'search', title: 'Search', node: searching },
+        { id: 'rounds', title: 'Rounds', glyph: 'clock', node: rounds },
+        { id: 'targets', title: 'Targets', glyph: 'link', node: targets },
+        { id: 'search', title: 'Search', glyph: 'search', node: searching },
     ]
     const buttons = views.map((view) => {
-        const tab = button('dya-tab', view.title)
+        const tab = iconKey(view.glyph, view.title)
+        tab.setAttribute('role', 'tab')
         tab.addEventListener('click', () => select(view.id))
         tabs.appendChild(tab)
         return tab

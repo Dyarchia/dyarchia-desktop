@@ -621,9 +621,10 @@
 /*
  * Success is lit rather than filled: a border in green and an ink mixed from it and white, because
  * it is approve. Danger, stop and unmake, is a plain key at rest and turns red under the pointer
- * or the focus, where the hand is about to press it. Every X is danger: a key wearing the close
- * glyph turns red as a tab's and the window's do, wherever it is drawn. A key that names a state which needs a
- * person, a blocked card, stays lit red, because there the light is the state's own.
+ * or the focus, where the hand is about to press it. An X is not danger: closing a panel, a tab, a
+ * sheet or the window unmakes nothing, so it answers the pointer like every key, in ink. A key that
+ * names a state which needs a person, a blocked card, stays lit red, because there the light is the
+ * state's own.
  */
 .dya-key--success {
     --dya-lit: var(--dya-success);
@@ -631,10 +632,7 @@
 
 .dya-button--danger,
 .dya-key--danger,
-.dya-key:has(> .dya-glyph--close),
-.dya-button--resolve,
-.dya-tab__action--close,
-.dya-winkey--close {
+.dya-button--resolve {
     --dya-lit: var(--dya-danger);
 }
 
@@ -680,10 +678,7 @@
 .dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
 .dya-button--danger:is(:hover, :focus-visible),
-.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible),
-.dya-key:has(> .dya-glyph--close):not(:disabled):is(:hover, :focus-visible),
-.dya-tab__action--close:is(:hover, :focus-visible),
-.dya-winkey--close:is(:hover, :focus-visible) {
+.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible) {
     border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
@@ -2783,8 +2778,8 @@ button.dya-step__subject {
 }
 
 /*
- * The window's own keys: minimise, maximise, close. Keys like every other, at the one height;
- * close is a danger key and turns red under the pointer.
+ * The window's own keys: minimise, maximise, close. Keys like every other, at the one height,
+ * close included: it answers the pointer in ink, never in red.
  */
 .dya-winkey {
     display: grid;

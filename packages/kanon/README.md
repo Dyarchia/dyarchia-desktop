@@ -54,8 +54,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   its keys are a `join`, the field filling the row. Data typed into one, an id, a list, JSON, is `--code`: mono,
   and as tall as what it holds. Adjacent icon keys in a `toolbar` join on their own.
 - **One primary per view**: `--primary`, a block of the accent with the ground's black for its word (6.37; 7.77 on
-  the hover step). `key--success` is lit green; `--danger` turns red only under pointer or focus, and so does every
-  key wearing the close X (`glyph--close`, set by the SDK). **A state a person answers is one key**:
+  the hover step). `key--success` is lit green; `--danger` turns red only under pointer or focus. An X is never
+  red: closing unmakes nothing. **A state a person answers is one key**:
   `button--resolve`, red, green answer.
 - **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
   focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
@@ -87,7 +87,7 @@ Structure    pane bar (--flush --inset __group) card (--lift --selected --danger
              --pending --ghosted --carried) card__header masthead carved splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
 Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
-             chip (--accept) join tile (--dense --new __icon __head __name __note) winkey (--close) reveal (--held) reveals
+             chip (--accept) join tile (--dense --new __icon __head __name __note) winkey reveal (--held) reveals
 Input        field (--auto --prose --code __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)
 Hue          hue--<name> dot legend glyph (--mark --close)   (blue purple cyan)
@@ -99,5 +99,5 @@ Content      link table (--bare __num __fit __name __subject __end __prose __sec
 Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) editor (--field) terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
              palette (__body __apps __app __pin __list __row __icon __name __meta)
-Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading
+Navigation   tabs tab (--dock __action)   Absence  empty (__actions) loading
 ```

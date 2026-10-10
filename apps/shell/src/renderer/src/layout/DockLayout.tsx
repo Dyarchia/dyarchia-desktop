@@ -150,7 +150,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                         />
                     )}
                     <button
-                        className="dya-tab__action dya-tab__action--close"
+                        className="dya-tab__action"
                         aria-label={`Close ${shown}`}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {

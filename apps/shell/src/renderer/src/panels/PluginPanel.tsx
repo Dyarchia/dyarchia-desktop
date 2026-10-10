@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { IDockviewPanelProps } from 'dockview-react'
-import { getPanel, setTabIcon, setToolbar } from './registry'
+import { getNav, getPanel, setNav, setTabIcon, setToolbar } from './registry'
 
 /*
  * A plugin whose panel cannot be drawn, because it is gone or its mount threw, gets one word in its
@@ -24,10 +24,17 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
                 instanceId: props.api.id,
                 toolbar,
                 close: () => props.api.close(),
+                navigate: (nav) => setNav(props.api.id, nav),
                 setTitle: (title, icon) => {
                     props.api.setTitle(title ?? registered.descriptor.title)
                     setTabIcon(props.api.id, title === null ? null : (icon ?? null))
                 }
+            })
+            /*
+             * The mouse's back button goes back in the panel under it, as it does in a browser.
+             */
+            container.addEventListener('mouseup', (event) => {
+                if (event.button === 3) getNav(props.api.id)?.back?.()
             })
         } catch (error) {
             console.error(`[shell] ${props.api.id} could not be drawn`, error)
@@ -37,6 +44,7 @@ export function PluginPanel(props: IDockviewPanelProps): React.JSX.Element {
         return () => {
             setTabIcon(props.api.id, null)
             setToolbar(props.api.id, null)
+            setNav(props.api.id, null)
             dispose?.()
             container.replaceChildren()
         }

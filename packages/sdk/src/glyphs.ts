@@ -2,8 +2,8 @@
  * The glyphs of the actions every panel shares, drawn for this system on a 24 unit grid with a
  * 2 unit round stroke in currentColor, so a key's ink is its glyph's. An action a reader knows by
  * its glyph is an icon key with a tip, never a key spelling the verb, and every panel draws that
- * glyph from here, so browse is the same folder in the board and in the crawler. What is open
- * closes with the X; home is a page's home, the house of every browser.
+ * glyph from here, so browse is the same folder in the board and in the crawler. Back and home lead
+ * every panel's header, drawn by the shell; the X closes.
  * Every glyph names itself in `data-glyph`, so `tips()` can tell the ones that say their action
  * from the ones that do not; close also carries `dya-glyph--close`, so kanon can turn every key
  * wearing it red under the hand.
@@ -14,6 +14,7 @@ const PATHS = {
     add: '<path d="M12 5v14"/><path d="M5 12h14"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
     close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    back: '<path d="m15 18-6-6 6-6"/>',
     delete: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/>',
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/>',
     launcher: '<circle cx="5" cy="5" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="19" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/>',

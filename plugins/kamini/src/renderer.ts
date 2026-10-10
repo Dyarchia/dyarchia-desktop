@@ -340,12 +340,11 @@ export function activate(ctx: PluginContext): void {
         const helpKey = key('help', 'Help', () => openHelp())
         const importKey = key('import', 'Import', () => void importFiles())
         const removeKey = key('delete', 'Delete', () => void removeCurrent())
-        const closeKey = key('close', 'Close', () => void closeCurrent())
         const exportButton = button('Export', () => void exportCurrent(), true)
         const copyButton = button('Copy', () => void adopt(), true)
         const doneButton = button('Done', () => toggleDone())
         const strip = el('div', 'dya-toolbar')
-        strip.append(helpKey, importKey, removeKey, closeKey)
+        strip.append(helpKey, importKey, removeKey)
         handle.toolbar.append(strip, doneButton, exportButton, copyButton)
 
         function toggleDone(): void {
@@ -353,11 +352,15 @@ export function activate(ctx: PluginContext): void {
             current.done = !current.done
             face = current.done ? 'library' : 'workbench'
             changed(true)
+            void closeCurrent()
         }
 
         function paintBar(): void {
             const editing = root.dataset.view === 'editor'
-            closeKey.hidden = !editing
+            handle.navigate({
+                back: editing ? () => void closeCurrent() : null,
+                home: editing || face !== 'workbench' ? () => void closeCurrent().then(() => switchFace('workbench')) : null
+            })
             removeKey.hidden = !(current && !draft && editing)
             exportButton.hidden = !(current && editing)
             copyButton.hidden = !(viewing && editing)

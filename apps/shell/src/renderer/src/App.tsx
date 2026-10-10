@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { DockviewApi } from 'dockview-react'
 import { loadApps } from './apps'
 import { DockLayout } from './layout/DockLayout'
+import { Launcher } from './components/Launcher'
 import { Notices } from './components/Notices'
 import { Palette } from './components/Palette'
 import { TopBar } from './components/TopBar'
@@ -18,6 +19,11 @@ export function App(): React.JSX.Element {
     const [openPanelIds, setOpenPanelIds] = useState<Set<string>>(new Set())
     const [modal, setModal] = useState<string | null>(null)
     const [palette, setPalette] = useState(false)
+    /*
+     * Home is the window with nothing in front: the launcher over the dock, every panel kept as it
+     * was behind it, so leaving home finds the work where it stood.
+     */
+    const [home, setHome] = useState(false)
     const isModal = (id: string): boolean =>
         getRegisteredPanels().some((panel) => panel.descriptor.id === id && panel.descriptor.modal)
 
@@ -86,6 +92,7 @@ export function App(): React.JSX.Element {
     const handleOpen = useCallback(
         (id: string, instanceId?: string | null): string | undefined => {
             if (!api) return undefined
+            setHome(false)
             if (isModal(id)) {
                 setModal(id)
                 return id
@@ -133,12 +140,36 @@ export function App(): React.JSX.Element {
         return installOpeners(handleOpen)
     }, [api, handleOpen])
 
+    useEffect(() => {
+        if (openPanelIds.size === 0) setHome(false)
+    }, [openPanelIds])
+
+    useEffect(() => {
+        if (!home) return
+        const onKey = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape' && !event.defaultPrevented) setHome(false)
+        }
+        document.addEventListener('keydown', onKey)
+        return () => document.removeEventListener('keydown', onKey)
+    }, [home])
+
     return (
         <div className="shell">
             <div className="shell-top" inert={palette}>
-                <TopBar palette={palette} onLauncher={() => setPalette((open) => !open)} />
+                <TopBar
+                    palette={palette}
+                    onLauncher={() => setPalette((open) => !open)}
+                    home={home}
+                    canHome={openPanelIds.size > 0}
+                    onHome={() => setHome((at) => !at)}
+                />
             </div>
-            <div className="shell-body" inert={modal !== null || palette}>
+            <div className={home ? 'shell-body shell-body--home' : 'shell-body'} inert={modal !== null || palette}>
+                {home && (
+                    <div className="shell-home">
+                        <Launcher panels={getRegisteredPanels().map((panel) => panel.descriptor)} onOpen={handleOpen} />
+                    </div>
+                )}
                 {pluginsReady ? (
                     <DockLayout onReady={handleReady} onOpen={handleOpen} />
                 ) : (

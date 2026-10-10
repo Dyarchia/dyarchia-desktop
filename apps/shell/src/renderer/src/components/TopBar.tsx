@@ -5,9 +5,13 @@ import { registerCommand } from '../commands'
 interface TopBarProps {
     palette: boolean
     onLauncher: () => void
+    home: boolean
+    canHome: boolean
+    onHome: () => void
 }
 
 const LAUNCHER_ICON = glyph('launcher')
+const HOME_ICON = glyph('home')
 
 const MINIMIZE_ICON =
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><line x1="2" y1="6" x2="10" y2="6"/></svg>'
@@ -137,10 +141,18 @@ function windowAction(action: string): void {
     void window.dyarchia?.invoke(`shell:window:${action}`)
 }
 
-export function TopBar({ palette, onLauncher }: TopBarProps): React.JSX.Element {
+export function TopBar({ palette, onLauncher, home, canHome, onHome }: TopBarProps): React.JSX.Element {
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="dya-toolbar topbar-build">
+                <button
+                    className={`dya-key topbar-home${home ? ' dya-key--active' : ''}`}
+                    aria-label="Home"
+                    aria-pressed={home}
+                    disabled={!canHome}
+                    onClick={onHome}
+                    dangerouslySetInnerHTML={{ __html: HOME_ICON }}
+                />
                 <Build />
             </div>
             <div className="topbar-right">

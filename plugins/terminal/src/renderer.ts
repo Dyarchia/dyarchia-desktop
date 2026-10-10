@@ -11,7 +11,7 @@ const STYLES =
     xtermCss +
     '\n.dyarchia-terminal {' +
     ' position: relative;' +
-    ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
+    ' height: 100%; padding: var(--dya-space-4) 0 0 var(--dya-space-4); }' +
     '\n.dyarchia-terminal-connecting { position: absolute; inset: 0; }'
 
 /*

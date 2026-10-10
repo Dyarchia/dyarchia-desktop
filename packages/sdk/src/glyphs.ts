@@ -5,8 +5,7 @@
  * glyph from here, so browse is the same folder in the board and in the crawler. Back and home lead
  * every panel's header, drawn by the shell; the X closes.
  * Every glyph names itself in `data-glyph`, so `tips()` can tell the ones that say their action
- * from the ones that do not; close also carries `dya-glyph--close`, so kanon can turn every key
- * wearing it red under the hand.
+ * from the ones that do not.
  */
 const OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
 
@@ -59,6 +58,5 @@ const PATHS = {
 export type GlyphName = keyof typeof PATHS
 
 export function glyph(name: GlyphName): string {
-    const mark = name === 'close' ? ` data-glyph="${name}" class="dya-glyph--close"` : ` data-glyph="${name}"`
-    return `${OPEN.replace('<svg', `<svg${mark}`)}${PATHS[name]}</svg>`
+    return `${OPEN.replace('<svg', `<svg data-glyph="${name}"`)}${PATHS[name]}</svg>`
 }

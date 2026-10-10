@@ -285,6 +285,22 @@
     color: var(--dya-text);
 }
 
+/*
+ * A line that was rewritten rather than removed is one line: the words that went struck in the
+ * faint ink and the words that came in the top ink on the wash, the rest in the muted ink, so the
+ * three words that changed in a paragraph are the three words seen.
+ */
+.dya-diff__word--del {
+    color: var(--dya-text-faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--dya-text-faint);
+}
+
+.dya-diff__word--ins {
+    background: var(--dya-press-wash);
+    color: var(--dya-text);
+}
+
 .dya-diff__gap {
     height: var(--dya-space-3);
 }

@@ -788,7 +788,6 @@
 .dya-tile--dense .dya-tile__name {
     flex: 1 0 auto;
     max-width: 100%;
-    font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
     text-transform: none;
     overflow-wrap: anywhere;

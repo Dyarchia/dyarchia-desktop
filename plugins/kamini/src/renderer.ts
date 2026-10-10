@@ -41,7 +41,7 @@ const STYLES = `
     gap: var(--dya-space-5);
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-6) var(--dya-space-6);
+    padding: var(--dya-space-4);
 }
 .kamini-list .kamini-fold-body {
     padding-bottom: var(--dya-space-2);
@@ -93,7 +93,7 @@ const STYLES = `
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-4);
-    padding: var(--dya-space-5) var(--dya-space-6) 0;
+    padding: var(--dya-space-4) var(--dya-space-4) 0;
 }
 .kamini-body {
     display: flex;
@@ -102,7 +102,7 @@ const STYLES = `
     gap: var(--dya-space-5);
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-6) var(--dya-space-6);
+    padding: var(--dya-space-5) var(--dya-space-4) var(--dya-space-4);
 }
 .kamini-form--text {
     flex: 1 0 auto;

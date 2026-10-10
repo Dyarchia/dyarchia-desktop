@@ -271,8 +271,24 @@ export function activate(ctx: PluginContext): void {
         }
         const observer = new ResizeObserver(refit)
         observer.observe(container)
+        /*
+         * The cursor is copper only while the terminal holds the focus: copper is spent once per
+         * view, and a terminal nobody is typing in has not been given it.
+         */
+        let focused = false
+        const paintCursor = (): void => {
+            terminal.options.theme = { ...terminalTheme(ctx.token), ...(focused ? { cursor: ctx.token('accent') } : {}) }
+        }
+        terminal.textarea?.addEventListener('focus', () => {
+            focused = true
+            paintCursor()
+        })
+        terminal.textarea?.addEventListener('blur', () => {
+            focused = false
+            paintCursor()
+        })
         const offTheme = ctx.theme.on(() => {
-            terminal.options.theme = terminalTheme(ctx.token)
+            paintCursor()
             terminal.options.fontFamily = ctx.token('font-mono')
             refit()
         })

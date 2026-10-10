@@ -14,8 +14,10 @@ Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
-#d18743) is the one colour that is not status: the primary's fill, the open tab's line, a link, the focus,
-the caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. Nothing is raised, nothing glows,
+#d18743) is the one colour that is not status: the primary's fill, the open tab's line of the focused panel
+(every other open tab is underlined in `text`), the terminal's cursor while it holds the focus (and then
+its tab is in ink), a link, the focus ring, the caret and the wordmark, 6.37 on the ground and 4.84 on
+`selected`. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
 `on-accent`; a brand's mark keeps its own colours.

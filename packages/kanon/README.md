@@ -65,7 +65,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
 - **A change in a text is a `diff`, not a verdict**: no green, no red; what went struck in the faint ink, what came in
-  the top ink on a wash, on the field; a rewritten line is one line with its changed words marked. The diff of code a run produced keeps `code`'s addition and deletion inks.
+  the top ink on a wash, on the field. The diff of code a run produced keeps `code`'s addition and deletion inks.
 - **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions as rows
   of glyph and word (`files` rows) or a worded button; only `loading` is centred. Never a lone mark in the middle.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
@@ -98,7 +98,7 @@ Content      link table (--bare __num __fit __name __subject __end __prose __sec
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body; aria-current) notice (__body __title __text)
              steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
-Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) diff (__line --del --ins __word --del --ins __gap) editor (--field) terminal log math (--block)
+Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) diff (__line --del --ins __gap) editor (--field) terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
              palette (__body __apps __app __pin __list __row __icon __name __meta)
 Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading

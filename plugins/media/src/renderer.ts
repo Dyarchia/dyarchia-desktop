@@ -53,7 +53,7 @@ const STYLES = `
 }
 .media-unit > .dya-field,
 .media-time {
-    width: 96px;
+    width: 112px;
 }
 .media .dya-form__stack > .dya-key {
     align-self: flex-start;
@@ -70,10 +70,7 @@ const STYLES = `
     display: block;
 }
 .media-jobs .dya-table__name {
-    max-width: 360px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 `
 

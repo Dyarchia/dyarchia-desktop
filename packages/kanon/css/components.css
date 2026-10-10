@@ -563,28 +563,29 @@
 }
 
 /*
- * A key that is on, a mode chosen, a view shown or a panel open, is never underlined: it stands on the accent's
- * soft ground with its glyph in the accent. Words keep the top ink, since the accent on its own
- * wash measures 4.38 over a panel and is a graphic there, not text.
+ * A key that is on, a mode chosen, a view shown or a panel open, is never underlined: it stands on
+ * the accent itself, copper and not a tint of it, its glyph and words in the ground's black, 6.37
+ * on the accent as the primary's word is. Under the pointer it steps toward the ink as the primary
+ * does.
  */
 .dya-key--active,
-.dya-key--active:hover,
 .dya-key[aria-pressed="true"],
 .dya-key[aria-selected="true"],
 .dya-button[aria-pressed="true"],
 .dya-chip[aria-pressed="true"] {
-    background-color: var(--dya-accent-soft);
-    color: var(--dya-accent);
+    border-color: var(--dya-accent);
+    background-color: var(--dya-accent);
+    color: var(--dya-on-accent);
 }
 
-.dya-button[aria-pressed="true"],
-.dya-chip[aria-pressed="true"] {
-    color: var(--dya-text);
-}
-
-.dya-button[aria-pressed="true"] > svg,
-.dya-chip[aria-pressed="true"] > svg {
-    color: var(--dya-accent);
+.dya-key--active:hover,
+.dya-key[aria-pressed="true"]:hover,
+.dya-key[aria-selected="true"]:hover,
+.dya-button[aria-pressed="true"]:hover,
+.dya-chip[aria-pressed="true"]:hover {
+    border-color: var(--dya-accent-hover);
+    background-color: var(--dya-accent-hover);
+    color: var(--dya-on-accent);
 }
 
 /*
@@ -721,7 +722,7 @@
     flex-direction: column;
     justify-content: space-between;
     gap: var(--dya-space-2);
-    min-height: 96px;
+    min-height: 112px;
     padding: var(--dya-space-4);
     background-color: var(--dya-panel);
     background-image: none;
@@ -1025,7 +1026,7 @@ textarea.dya-field--code {
  */
 .dya-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     align-content: start;
     gap: var(--dya-space-3);
 }
@@ -1051,7 +1052,7 @@ textarea.dya-field--code {
  */
 .dya-form {
     display: grid;
-    grid-template-columns: max-content minmax(0, 560px);
+    grid-template-columns: max-content minmax(0, 660px);
     align-items: center;
     column-gap: var(--dya-space-5);
     row-gap: var(--dya-space-3);
@@ -1160,9 +1161,7 @@ textarea.dya-field--code {
 
 .dya-field__label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-select > .dya-field::picker-icon {
@@ -1230,8 +1229,7 @@ textarea.dya-field--code {
 }
 
 .dya-select selectedcontent {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .dya-select selectedcontent .dya-select__note {
@@ -1271,8 +1269,8 @@ textarea.dya-field--code {
     appearance: none;
     display: grid;
     place-items: center;
-    width: 14px;
-    height: 14px;
+    width: 17px;
+    height: 17px;
     flex: none;
     border: var(--dya-border-width) solid var(--dya-border-strong);
     border-radius: var(--dya-radius-sm);
@@ -1283,8 +1281,8 @@ textarea.dya-field--code {
 
 .dya-checkbox::after {
     content: "";
-    width: 7px;
-    height: 4px;
+    width: 8.5px;
+    height: 5px;
     border-left: 1.5px solid var(--dya-text);
     border-bottom: 1.5px solid var(--dya-text);
     transform: rotate(-45deg) translate(0.5px, -1px);
@@ -1340,8 +1338,8 @@ textarea.dya-field--code {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 20px;
-    padding: 0 6px;
+    height: 24px;
+    padding: 0 7px;
     border: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius-sm);
     background: var(--dya-hover-wash);
@@ -1832,9 +1830,7 @@ textarea.dya-field--code {
 
 .dya-sheet__head > .dya-title {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-sheet__end {
@@ -1846,8 +1842,8 @@ textarea.dya-field--code {
 }
 
 /*
- * A list of files: rows, never keys. A file glyph and the name in the mono on one line, cut with
- * an ellipsis, left aligned; the row is pressable and answers the pointer with its ground, as a
+ * A list of files: rows, never keys. A file glyph and the name in the mono, whole, wrapping where
+ * it has to and never cut, left aligned; the row is pressable and answers the pointer with its ground, as a
  * menu row does, and the file being read (`aria-current`) stands on `selected`. A trailing
  * `meta` says its size or its folder. A name wrapped and centred inside a key read as a
  * column of buttons.
@@ -1903,9 +1899,7 @@ textarea.dya-field--code {
 .dya-file__name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-file > .dya-meta {
@@ -1936,9 +1930,7 @@ textarea.dya-field--code {
     letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     color: var(--dya-text-faint);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 /*
@@ -2006,7 +1998,7 @@ textarea.dya-field--code {
 
 .dya-menu__item--tall {
     height: auto;
-    min-height: 26px;
+    min-height: 30px;
     padding: var(--dya-space-1) var(--dya-space-2);
 }
 
@@ -2520,16 +2512,14 @@ button.dya-entry__head {
 }
 
 /*
- * A subject that is a command or a path: in the mono, on one line, cut with an ellipsis, since the
- * step opens to show the whole of it.
+ * A subject that is a command or a path: in the mono, whole, a long path broken where it has to
+ * be. No text is ever cut short.
  */
 .dya-step__subject--code {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 button.dya-step__subject {
@@ -2961,7 +2951,7 @@ button.dya-step__subject {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-2);
-    width: min(560px, calc(100% - 2 * var(--dya-space-4)));
+    width: min(660px, calc(100% - 2 * var(--dya-space-4)));
     max-height: 64vh;
     margin-inline: auto;
     padding: var(--dya-space-2);
@@ -2989,7 +2979,7 @@ button.dya-step__subject {
 .dya-palette__apps {
     display: grid;
     flex: none;
-    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
     grid-auto-rows: 1fr;
     gap: var(--dya-space-2);
     max-height: 40vh;
@@ -3022,10 +3012,8 @@ button.dya-step__subject {
 
 .dya-palette__app > .dya-tile > .dya-tile__name {
     max-width: 100%;
-    overflow: hidden;
     font-size: var(--dya-size-body-xs);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-palette__app[aria-selected="true"] > .dya-tile {
@@ -3072,7 +3060,7 @@ button.dya-step__subject {
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
-    min-height: 36px;
+    min-height: 42px;
     padding: 0 var(--dya-space-2);
     border-radius: var(--dya-radius-sm);
     font-family: var(--dya-font-sans);
@@ -3108,9 +3096,7 @@ button.dya-step__subject {
 .dya-palette__name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 /*
@@ -3119,10 +3105,7 @@ button.dya-step__subject {
  */
 .dya-palette__meta {
     flex: 0 1 auto;
-    max-width: 50%;
-    overflow: hidden;
     font-size: var(--dya-size-body-xs);
     color: var(--dya-text-faint);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }

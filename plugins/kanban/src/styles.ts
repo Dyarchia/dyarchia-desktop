@@ -71,8 +71,8 @@ export const STYLES = `
 }
 
 .kanban-column[data-collapsed='true'] {
-    flex: 0 0 36px;
-    min-width: 36px;
+    flex: 0 0 calc(var(--dya-size-control) + var(--dya-space-2));
+    min-width: calc(var(--dya-size-control) + var(--dya-space-2));
 }
 
 /*
@@ -123,7 +123,7 @@ export const STYLES = `
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-    min-height: 44px;
+    min-height: calc(var(--dya-size-control) + var(--dya-space-4));
     padding: var(--dya-space-2) var(--dya-space-4) 0;
 }
 
@@ -333,10 +333,7 @@ export const STYLES = `
 
 .kanban-clip {
     display: block;
-    max-width: 20rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .kanban-menu {

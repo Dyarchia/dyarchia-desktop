@@ -14,11 +14,10 @@ Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
-#d18743) is the one colour that is not status: the primary's fill, the wash (`accent-soft`) of the focused
-panel's open tab (every other open tab stands on `press-wash`), the glyph and wash of a key that is on, the
+#d18743) is the one colour that is not status: the primary's fill, the ground of the focused panel's open tab
+(every other open tab stands on `press-wash`) and of a key that is on, its ink then the ground's black, the
 terminal's cursor while it holds the focus (and then its tab keeps `press-wash`), a link, the focus ring, the
-caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. On its own wash it measures 4.38 over a
-panel: a glyph there, never a word. **Nothing active is underlined**; only a field is a line, since without
+caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. The ground's black on it measures 6.37. **Nothing active is underlined**; only a field is a line, since without
 one nothing says it takes words. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
@@ -44,16 +43,17 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and a button's alone, in the mono.
-- **Scale** body 15, rows 14, controls and meta 13px, prose the full width of
-  its pane. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
+- **Scale** is modular, a ratio of 1.2 on the body's 18px, one step per role: 15 for rows, controls, meta,
+  mono and values, 18 for body, titles and names, 21.5, 26 and 31 for prose heads, 45 display, 54 the
+  wordmark, and 12.5 for labels; prose the full width of its pane. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
 - **A plugin's own CSS is layout only.** A new look is declared here first and measured; an unused class goes.
 
 ## Keys and layout
 
 - **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
-  keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size. **One glyph size**:
-  every glyph, a key's, a tab's mark, a row's, a tile's, a window key's, is `--dya-size-glyph`, 15px, and a
-  `title` names what it holds at the size of what it holds: a row's, 15px.
+  keys) is `--dya-size-control`, 34px. Only a textarea grows. There is no small size. **One glyph size**:
+  every glyph, a key's, a tab's mark, a row's, a tile's, a window key's, is `--dya-size-glyph`, 20px, and a
+  `title` names what it holds at the size of what it holds: a row's, 18px.
 - **A field is an underline**, its words starting where its line starts, so a field, a select, a tick and a key in
   one form share one left edge; it brightens under the pointer and turns the accent with the keyboard. A field and
   its keys are a `join`, the field filling the row. Data typed into one, an id, a list, JSON, is `--code`: mono,
@@ -63,21 +63,23 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   red: closing unmakes nothing. **A state a person answers is one key**:
   `button--resolve`, red, green answer.
 - **A row's own key shows when the row is looked at**: `reveal` in a `reveals` row, unpressable until hover or
-  focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a 15px glyph.
+  focus; `reveal--held` keeps the key a row cannot be left without. A chip may lead with a glyph of the one size.
 - **A tip exists only on a key whose glyph does not say its action**, one or two words. An X, a plus, a
   magnifier, a bin, a folder have none; neither has a label, a pill or a key that spells anything. The SDK's
   `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
+- **No text is cut**: a word, a name, a path or a title is shown whole; what does not fit goes on to the
+  next line, never into an ellipsis.
 - **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions a `grid`
   of tiles or a key; only `loading` is centred. Never a lone mark in the middle.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
   sections divided by their heads and space. A diff is a `code` block, lines as they come, its added and removed lines in `code-addition` and `code-deletion`: git's green and red, quietened. **A list of files is `files`**: `file` rows of
-  glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.
+  glyph and mono `__name`, whole and wrapping, never cut, flat hover, `aria-current` on `selected`.
 - **A panel is a hairline on the ground** and measures itself as a `pane` (`@container pane`), never a media
   query: width changes how many regions it shows, never how far things stretch. `grid` is a formation:
-  files of at least 240px sharing the width edge to edge, each `tile` a face one step up (`panel`), 96px
-  tall, its glyph at the top and its name at the foot, `tile--new` first; table columns are content width; `form` values up to 560px.
+  files of at least 280px sharing the width edge to edge, each `tile` a face one step up (`panel`), 112px
+  tall, its glyph at the top and its name at the foot, `tile--new` first; table columns are content width; `form` values up to 660px.
 - **What opens in place is a `fold`**: `details.fold`, a `__head` summary led by `__mark`, the SDK chevron
   turned down while open. **One scroller per region**: nothing in a region that scrolls scrolls again; a code
   block wraps (`code--wrap`); a live log is sized by a handle.

@@ -241,6 +241,54 @@
     color: var(--dya-danger-ink);
 }
 
+/*
+ * What changed in a text that is read rather than run: a page of documentation between two sweeps.
+ * It is not good news and bad news, so it wears no green and no red. A hunk stands on the field,
+ * as code does; what stayed is in the muted ink (8.48 on the field), what went is struck through in
+ * the faint ink (6.12), and what came is the top ink on a wash (13.43 even at press-peak, the
+ * lightest ground). A hunk's place is a quiet gap, never a line of @@ coordinates.
+ */
+.dya-diff {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: var(--dya-space-3) 0;
+    background: var(--dya-field);
+    font-family: var(--dya-font-mono);
+    font-size: var(--dya-size-mono-sm);
+    line-height: var(--dya-leading-body);
+    color: var(--dya-text-muted);
+}
+
+.dya-diff__line {
+    display: grid;
+    grid-template-columns: var(--dya-space-6) minmax(0, 1fr);
+    padding-inline-end: var(--dya-space-3);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.dya-diff__line::before {
+    content: attr(data-sign);
+    text-align: center;
+    color: var(--dya-text-faint);
+}
+
+.dya-diff__line--del {
+    color: var(--dya-text-faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--dya-text-faint);
+}
+
+.dya-diff__line--ins {
+    background: var(--dya-press-wash);
+    color: var(--dya-text);
+}
+
+.dya-diff__gap {
+    height: var(--dya-space-3);
+}
+
 .dya-code__comment,
 .dya-code__quote,
 .dya-code__doctag {
@@ -2011,9 +2059,13 @@ textarea.dya-field--code {
     color: var(--dya-text-muted);
 }
 
+/*
+ * The open tab's line is ink. Copper is spent once per view, and the shell spends it on the open
+ * tab of the panel that has the focus.
+ */
 .dya-tab[aria-selected="true"] {
     color: var(--dya-text);
-    box-shadow: inset 0 -2px 0 var(--dya-accent);
+    box-shadow: inset 0 -2px 0 var(--dya-text);
 }
 
 /*
@@ -2044,7 +2096,9 @@ textarea.dya-field--code {
 /*
  * `min-width` and `overflow-wrap` are what keep this centred instead of clipped. A centred flex
  * item that cannot shrink grows past its container on both sides; a word that will not fit is
- * broken, and nothing is ever read from off the left edge.
+ * broken, and nothing is ever read from off the left edge. Only waiting is centred: an empty
+ * region is not an island in the middle but a list from the top left, its words and its actions
+ * where every list in the panel starts.
  */
 .dya-empty,
 .dya-loading {
@@ -2070,11 +2124,19 @@ textarea.dya-field--code {
     max-width: 44ch;
 }
 
+.dya-empty {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: var(--dya-space-4);
+    text-align: left;
+    text-wrap: pretty;
+}
+
 
 .dya-empty__actions {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }

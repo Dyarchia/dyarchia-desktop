@@ -14,8 +14,10 @@ Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
-#d18743) is the one colour that is not status: the primary's fill, the open tab's line, a link, the focus,
-the caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. Nothing is raised, nothing glows,
+#d18743) is the one colour that is not status: the primary's fill, the open tab's line of the focused panel
+(every other open tab is underlined in `text`), the terminal's cursor while it holds the focus (and then
+its tab is in ink), a link, the focus ring, the caret and the wordmark, 6.37 on the ground and 4.84 on
+`selected`. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and
 `on-accent`; a brand's mark keeps its own colours.
@@ -62,6 +64,10 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
+- **A change in a text is a `diff`, not a verdict**: no green, no red; what went struck in the faint ink, what came in
+  the top ink on a wash, on the field. The diff of code a run produced keeps `code`'s addition and deletion inks.
+- **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions as rows
+  of glyph and word (`files` rows) or a worded button; only `loading` is centred. Never a lone mark in the middle.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
   sections divided by their heads and space. A diff's added and removed lines wear success and error. **A list of files is `files`**: `file` rows of
   glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.
@@ -92,7 +98,7 @@ Content      link table (--bare __num __fit __name __subject __end __prose __sec
              label eyebrow value name meta (--sm --lift --wrap) mono key-label (--leave) problem (--box)
              entry (--row __head __text __body; aria-current) notice (__body __title __text)
              steps step (--said --error --warning --quiet __time __verb __subject (--code) __said __detail)
-Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) editor (--field) terminal log math (--block)
+Documents    prose (__figure) prose__scroll code (--wrap __line --at __<highlight.js scope>) diff (__line --del --ins __gap) editor (--field) terminal log math (--block)
 Layers       menu (__search __list __group __text __note __arrow __empty) menu__item (--selected --active --tall) tip scrim
              palette (__body __apps __app __pin __list __row __icon __name __meta)
 Navigation   tabs tab (--dock __action --close)   Absence  empty (__actions) loading

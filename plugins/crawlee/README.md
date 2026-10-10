@@ -88,8 +88,10 @@ Run as `uv run dyarchia-crawlee <command>`; `--help` lists each command's flags.
 
 ## The panel
 
-Lists the corpora, runs a round over all of them, a group or one target with per-target progress, edits
-and commits profiles, and searches, opening a hit in a markdown reader or the file manager. The palette
+Rounds reads what changed: only the targets whose last sweep moved something, by suite, and the one
+chosen as an article, a section per changed page with what went and what came. Targets holds the
+targets themselves (pages, size, last sweep, the boxes that pick what the header's Run sweeps) and edits
+and commits profiles. Search opens a hit in a markdown reader or the file manager. The palette
 offers Run round, New target and Search corpus. It shells out to this package's CLI, so it
 needs `uv sync --dev` here; restart the shell after changing `main.py`.
 

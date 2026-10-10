@@ -86,7 +86,7 @@ const STYLES = `
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a stele, the Great Rhetra, the written law of Lycurgus.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const DOCS_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M12 6.5C10 5 6.5 4.5 3 5v14c3.5-.5 7 0 9 1.5 2-1.5 5.5-2 9-1.5V5c-3.5-.5-7 0-9 1.5Z"/><path d="M12 6.5v14"/></svg>'

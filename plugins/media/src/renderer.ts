@@ -5,7 +5,7 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a Laconian bronze mirror, the polished disc a standing figure holds up with both arms, which
- * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
+ * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 15px.
  */
 const MEDIA_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M2.3 20.3l1.4 1.4M3 21 13 11"/><path d="M13 11Q16.4 8.6 22.4 7.4L16.6 1.6Q15.4 7.6 13 11Z"/></svg>'

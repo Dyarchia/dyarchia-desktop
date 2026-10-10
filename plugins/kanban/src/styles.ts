@@ -366,26 +366,17 @@ export const STYLES = `
 }
 
 /*
- * A form sits near the top of the panel, not in the middle of it: centred vertically it floats in
- * whatever height the panel happens to have.
+ * A form or the boards start at the top left, where every list in a panel starts: centred, the
+ * form floated as an island in whatever room the panel happened to have.
  */
 .kanban-setup {
     flex: 1;
     min-height: 0;
     display: flex;
     align-items: flex-start;
-    justify-content: center;
-    padding: var(--dya-space-6) var(--dya-space-5);
-    overflow-y: auto;
-}
-
-.kanban-setup[data-mode='welcome'] {
-    align-items: center;
-}
-
-.kanban-setup[data-mode='gallery'] {
     justify-content: flex-start;
     padding: var(--dya-space-4);
+    overflow-y: auto;
 }
 
 .kanban-gallery { width: 100%; }

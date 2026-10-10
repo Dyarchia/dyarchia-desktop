@@ -51,7 +51,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 
 - **One height**: every single-line control (button, key, chip, select, field, a tab's actions, the window's
   keys) is `--dya-size-control`, 28px. Only a textarea grows. There is no small size. **One glyph size**:
-  every glyph outside a tile, a key's, a tab's mark, a row's, a window key's, is `--dya-size-glyph`, 15px.
+  every glyph, a key's, a tab's mark, a row's, a tile's, a window key's, is `--dya-size-glyph`, 15px, and a
+  `title` names what it holds at the size of what it holds: a row's, 15px.
 - **A field is an underline**, its words starting where its line starts, so a field, a select, a tick and a key in
   one form share one left edge; it brightens under the pointer and turns the accent with the keyboard. A field and
   its keys are a `join`, the field filling the row. Data typed into one, an id, a list, JSON, is `--code`: mono,
@@ -89,7 +90,7 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 Structure    pane bar (--flush --inset __group) card (--lift --selected --danger --warning --marked
              --pending --ghosted --carried) card__header masthead carved splitter stack
              sheet (--side --modal __head __end) well lanes lane (--accept --refuse) drop-line drop-box grid toolbar
-Keys         button (--primary --danger --resolve __state __answer) key (--active --success --danger)
+Keys         button (--primary --danger --resolve __state __answer) key (--active --primary --success --danger)
              chip (--accept) join tile (--dense --new __icon __head __name __note) winkey reveal (--held) reveals
 Input        field (--auto --prose --code __label) select checkbox (:indeterminate) form (__value __stack __split __actions)
 Pills        tag pills badge light (both --success --warning --danger --busy) ring (--current --busy)

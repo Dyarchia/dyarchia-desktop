@@ -26,7 +26,7 @@ const waiting = new Map<string, string>()
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * an aulos, the double pipe the phalanx marched to.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const PLAYER_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(18 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" style="fill:var(--dya-text)"/><circle cx="5" cy="10.4" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="13" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="15.6" r=".55" style="fill:var(--dya-on-accent)"/></g><g transform="rotate(48 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" style="fill:var(--dya-text)"/><circle cx="5" cy="10.4" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="13" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="15.6" r=".55" style="fill:var(--dya-on-accent)"/></g><rect x="3.2" y="18.4" width="3.8" height="2.6" rx=".6" transform="rotate(33 5 20)" style="fill:var(--dya-text)"/><path d="M3.4 21.4 1.8 23" stroke-width="1.6" stroke-linecap="round" style="stroke:var(--dya-text)"/></svg>'

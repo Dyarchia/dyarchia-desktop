@@ -191,7 +191,7 @@ interface CardProgress {
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a phalanx, two ranks of shields with their spears carried forward.
- * Solid shapes rather than hairlines, so it reads as a key at 18px.
+ * Solid shapes rather than hairlines, so it reads as a key at 15px.
  */
 const ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M3 8.4A2.4 2.4 0 0 1 7.8 8.4"/><path d="M9.6 8.4A2.4 2.4 0 0 1 14.4 8.4"/><path d="M16.2 8.4A2.4 2.4 0 0 1 21 8.4"/><path d="M1.9 12.6A2.9 2.9 0 0 1 7.7 12.6"/><path d="M9.1 12.6A2.9 2.9 0 0 1 14.9 12.6"/><path d="M16.3 12.6A2.9 2.9 0 0 1 22.1 12.6"/><circle cx="4.2" cy="17.6" r="3.4"/><circle cx="12" cy="17.6" r="3.4"/><circle cx="19.8" cy="17.6" r="3.4"/></svg>'
@@ -1101,7 +1101,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (marked.size) clearMarks()
         meta = null
         bar.hidden = registry.length === 0
-        setup.dataset.mode = 'welcome'
         show('form')
         setup.replaceChildren()
 
@@ -1113,7 +1112,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * and the way back to real work was a control in the bar. The boards are the answer to
          * "what now", so they are what the screen shows.
          */
-        if (open.length > 0) setup.dataset.mode = 'gallery'
         setup.appendChild(open.length > 0 ? buildBoardChooser(open) : buildBoardForm())
     }
 
@@ -1670,7 +1668,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const newBoard = (): void => {
-        setup.dataset.mode = 'welcome'
         show('form')
         setup.replaceChildren(buildBoardForm())
     }

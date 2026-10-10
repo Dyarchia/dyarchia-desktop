@@ -51,9 +51,9 @@
  */
 .dya-title {
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-h2);
+    font-size: var(--dya-size-body);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-h3);
+    letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-heading);
     color: var(--dya-text);
     overflow-wrap: anywhere;
@@ -609,23 +609,29 @@
 
 /*
  * The primary is the one action a view is about, at most one per view: run, make, install,
- * finish. It is the accent, filled, its word the ground's black at 6.37; under the pointer the fill
- * steps toward the ink. Red is never a key's fill: filled red reads as destroy.
+ * finish. It is the accent, filled, its word or its glyph the ground's black at 6.37; under the
+ * pointer the fill steps toward the ink. A primary whose glyph says it is a key, as every key is.
+ * Red is never a key's fill: filled red reads as destroy.
  */
 .dya-button--primary,
-.dya-button--primary:hover {
+.dya-button--primary:hover,
+.dya-key--primary,
+.dya-key--primary:hover {
     border-color: var(--dya-accent);
     background-color: var(--dya-accent);
     color: var(--dya-on-accent);
 }
 
-.dya-button--primary:hover {
+.dya-button--primary:hover,
+.dya-key--primary:hover {
     border-color: var(--dya-accent-hover);
     background-color: var(--dya-accent-hover);
 }
 
 .dya-button--primary:disabled,
-.dya-button--primary:disabled:hover {
+.dya-button--primary:disabled:hover,
+.dya-key--primary:disabled,
+.dya-key--primary:disabled:hover {
     border-color: var(--dya-border);
     background-color: transparent;
     color: var(--dya-text-off);
@@ -716,8 +722,8 @@
  */
 .dya-tile__icon {
     display: block;
-    width: 32px;
-    height: 32px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     color: var(--dya-text);
 }
 
@@ -2917,11 +2923,6 @@ button.dya-step__subject {
     min-width: 0;
     padding: var(--dya-space-4) var(--dya-space-2) var(--dya-space-3);
     text-align: center;
-}
-
-.dya-palette__app > .dya-tile > .dya-tile__icon {
-    width: 24px;
-    height: 24px;
 }
 
 .dya-palette__app > .dya-tile > .dya-tile__name {

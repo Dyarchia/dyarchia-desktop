@@ -53,7 +53,7 @@ const STYLES = `
 }
 .media-unit > .dya-field,
 .media-time {
-    width: 96px;
+    width: 112px;
 }
 .media .dya-form__stack > .dya-key {
     align-self: flex-start;

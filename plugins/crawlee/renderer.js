@@ -250,12 +250,17 @@ const STYLE = `
  * The profile is a field holding an editor: the field is the well and its inset, the editor fills
  * it and scrolls, so the text behind and the textarea over it start on the same pixel.
  */
+/*
+ * The profile fills the sheet's column, so it is kanon's tall editor: the field's ground, inset,
+ * still underlined.
+ */
 .crw-yaml {
     display: flex;
     flex: 1;
     height: auto;
     min-height: 140px;
-    padding-block: var(--dya-space-3);
+    padding: var(--dya-space-3);
+    background-color: var(--dya-field);
 }
 .crw-yaml > .dya-editor {
     flex: 1;

@@ -2744,10 +2744,9 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             label('Files'),
             files,
             ...settingRows,
-            ...runnerRows,
-            label('Depends on'),
-            parents
+            ...runnerRows
         )
+        if (parents.childElementCount) fields.append(label('Depends on'), parents)
         if (parkable) fields.append(label('Park until'), schedule)
         const threadLabel = label('Thread')
         fields.append(threadLabel, thread, label(''), removeRow)

@@ -253,6 +253,7 @@ interface CardNode {
 interface Column extends DragColumn {
     count: HTMLElement
     empty: HTMLElement
+    setVacant: (vacant: boolean) => void
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -817,8 +818,13 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         /*
          * Folding is there when a column is being looked at, not eight times over at rest. A folded
          * column keeps its key, because it is the only way back, and so does triage, whose fold
-         * stands in one strip with the add key that is always there.
+         * stands in one strip with the add key that is always there. A column with no card in it
+         * folds by itself into its strip and opens when a card arrives; its key opens it anyway,
+         * until the board is left. Triage stays open, since that is where a card is written.
          */
+        let vacant = false
+        let opened = false
+        const closedNow = (): boolean => folded(status) || (vacant && !opened && status !== 'triage')
         const fold = el('button', 'dya-key dya-reveal kanban-fold')
         fold.type = 'button'
         const apply = (closed: boolean): void => {
@@ -828,12 +834,18 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             fold.setAttribute('aria-label', closed ? `show ${label}` : `fold ${label}`)
             fold.setAttribute('aria-expanded', String(!closed))
         }
-        apply(folded(status))
+        apply(closedNow())
         fold.addEventListener('click', () => {
             const next = shell.dataset.collapsed !== 'true'
             write(foldKey(status), String(next))
-            apply(next)
+            opened = !next
+            apply(closedNow())
         })
+        const setVacant = (next: boolean): void => {
+            if (next === vacant) return
+            vacant = next
+            apply(closedNow())
+        }
         keys.prepend(fold)
         head.appendChild(keys)
 
@@ -841,7 +853,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.append(head, scroller)
         board.appendChild(shell)
 
-        return { status, root: shell, scroller, list, indicator, count, empty }
+        return { status, root: shell, scroller, list, indicator, count, empty, setVacant }
     }
 
     const buildCard = (card: Card): CardNode => {
@@ -1014,6 +1026,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             column.count.textContent = wantedHere.length > 0 ? String(wantedHere.length) : ''
             column.empty.hidden = wantedHere.length > 0
             column.root.dataset.empty = String(wantedHere.length === 0)
+            column.setVacant(wantedHere.length === 0)
         }
 
         for (const [id, node] of nodes) {

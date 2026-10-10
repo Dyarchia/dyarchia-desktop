@@ -96,7 +96,7 @@ const STYLE = `
     gap: var(--dya-space-1);
     height: auto;
 }
-.crw-article .dya-diff {
+.crw-article .dya-code {
     max-width: 880px;
 }
 @container pane (max-width: 899.98px) {
@@ -421,29 +421,24 @@ function stateOf(corpus) {
 }
 
 /*
- * What a page's text lost and gained, line by line as the diff gives it, in kanon's diff: no green
- * and no red, since a page that changed is neither good news nor bad. The two file lines go, they
- * name the page the fold already names; a hunk's coordinates become a quiet gap.
+ * A unified diff as it comes, one element per line, its added and removed lines in kanon's quiet
+ * git colours. The two file lines go: they name the page the fold already names. A hunk's place
+ * steps down to the faint ink, since it says where, not what.
  */
 function diffBlock(text) {
-    const box = el('div', 'dya-diff')
-    const lines = String(text).split('\n')
-    while (lines.length && lines.at(-1) === '') lines.pop()
-    let started = false
-    for (const line of lines) {
+    const pre = el('pre', 'dya-code dya-code--wrap')
+    for (const line of String(text).split('\n')) {
         if (line.startsWith('+++') || line.startsWith('---')) continue
-        if (line.startsWith('@@')) {
-            if (started) box.append(el('div', 'dya-diff__gap'))
-            continue
-        }
-        started = true
-        const sign = line[0]
-        const kind = sign === '+' ? ' dya-diff__line--ins' : sign === '-' ? ' dya-diff__line--del' : ''
-        const node = el('div', `dya-diff__line${kind}`, line.slice(1) || ' ')
-        node.dataset.sign = sign === '+' || sign === '-' ? sign : ''
-        box.append(node)
+        const tone = line.startsWith('+')
+            ? 'dya-code__addition'
+            : line.startsWith('-')
+              ? 'dya-code__deletion'
+              : line.startsWith('@@')
+                ? 'dya-code__comment'
+                : undefined
+        pre.append(el('span', tone ? `dya-code__line ${tone}` : 'dya-code__line', line))
     }
-    return box
+    return pre
 }
 
 /*

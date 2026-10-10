@@ -145,14 +145,15 @@ export function TopBar({ palette, onLauncher, home, canHome, onHome }: TopBarPro
     return (
         <div className="dya-bar dya-bar--flush topbar">
             <div className="dya-toolbar topbar-build">
-                <button
-                    className={`dya-key topbar-home${home ? ' dya-key--active' : ''}`}
-                    aria-label="Home"
-                    aria-pressed={home}
-                    disabled={!canHome}
-                    onClick={onHome}
-                    dangerouslySetInnerHTML={{ __html: HOME_ICON }}
-                />
+                {canHome && (
+                    <button
+                        className={`dya-key topbar-home${home ? ' dya-key--active' : ''}`}
+                        aria-label="Home"
+                        aria-pressed={home}
+                        onClick={onHome}
+                        dangerouslySetInnerHTML={{ __html: HOME_ICON }}
+                    />
+                )}
                 <Build />
             </div>
             <div className="topbar-right">

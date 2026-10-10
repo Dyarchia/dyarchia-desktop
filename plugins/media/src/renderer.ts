@@ -275,8 +275,9 @@ export function activate(ctx: PluginContext): void {
             const failure = el('span', 'dya-text dya-text--danger media-failure')
             if (tool.verb) {
                 const actions = el('div', 'dya-form__actions')
-                const go = el('button', 'dya-button dya-button--primary', tool.verb)
+                const go = el('button', 'dya-key dya-key--primary')
                 go.type = 'button'
+                face(go, tool.icon, tool.verb)
                 go.addEventListener('click', () => {
                     failure.textContent = ''
                     if (live && watching !== null) {
@@ -290,18 +291,18 @@ export function activate(ctx: PluginContext): void {
                         .then((id) => {
                             if (live) {
                                 watching = id
-                                go.textContent = 'Stop'
+                                face(go, 'stop', 'Stop')
                             }
                         })
                         .catch(fail)
                         .finally(() => (go.disabled = false))
                 })
                 if (live) {
-                    liveKey = { go, verb: tool.verb }
+                    liveKey = { go, icon: tool.icon, verb: tool.verb }
                     const running = jobs.find((job) => job.tool === tool.id && job.state === 'running')
                     if (running) {
                         watching = running.id
-                        go.textContent = 'Stop'
+                        face(go, 'stop', 'Stop')
                     }
                 }
                 actions.append(go)
@@ -311,7 +312,16 @@ export function activate(ctx: PluginContext): void {
             return node
         }
 
-        let liveKey: { go: HTMLButtonElement; verb: string } | null = null
+        let liveKey: { go: HTMLButtonElement; icon: GlyphName; verb: string } | null = null
+
+        /*
+         * A tool's action is its own glyph on the primary key, the glyph its tile wears, and a
+         * capture under way turns it to stop.
+         */
+        function face(go: HTMLButtonElement, icon: GlyphName, words: string): void {
+            go.innerHTML = glyph(icon)
+            go.setAttribute('aria-label', words)
+        }
 
         function needFile(file: { path: () => string }): string | null {
             if (file.path()) return file.path()
@@ -732,7 +742,7 @@ export function activate(ctx: PluginContext): void {
             if (at === -1) jobs.push(job)
             else jobs[at] = job
             if (job.id === watching && job.state !== 'running' && liveKey) {
-                liveKey.go.textContent = liveKey.verb
+                face(liveKey.go, liveKey.icon, liveKey.verb)
                 watching = null
             }
             paintJobs()

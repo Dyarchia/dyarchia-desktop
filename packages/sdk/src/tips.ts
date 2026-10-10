@@ -20,7 +20,7 @@ export type Tip = (control: HTMLElement, text: string) => void
  * are drawn for this system or stand for one action among several, so they keep their tip. A key
  * holding a glyph that is not the SDK's is the caller's to judge.
  */
-const NAMELESS = new Set<GlyphName>(['log', 'key', 'rename', 'clock', 'undo', 'move', 'archive', 'convert', 'cut', 'join', 'extract'])
+const NAMELESS = new Set<GlyphName>(['log', 'key', 'rename', 'clock', 'link', 'open', 'undo', 'move', 'archive', 'convert', 'cut', 'join', 'extract'])
 
 function saysItself(control: HTMLElement): boolean {
     const name = control.querySelector<SVGElement>('svg[data-glyph]')?.dataset.glyph

@@ -46,6 +46,16 @@ const STYLES = `
 .kamini-list .kamini-fold-body {
     padding-bottom: var(--dya-space-2);
 }
+.kamini-menu {
+    position-area: bottom span-left;
+    margin: var(--dya-space-1) 0 0;
+    min-width: 12rem;
+}
+.kamini-menu .dya-menu__item > svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+}
 .kamini-section {
     display: flex;
     flex-direction: column;
@@ -222,6 +232,16 @@ const TABS: Record<Kind, string[]> = {
  * command, a herald's staff for a prompt, a wax tablet for memory, a column for a rule, an amphora
  * for a plugin, and Athena's owl for help. None of them means anything else anywhere in the app.
  */
+const SINGULAR: Record<Kind, string> = {
+    agent: 'Agent',
+    skill: 'Skill',
+    command: 'Command',
+    prompt: 'Prompt',
+    memory: 'Memory',
+    rule: 'Rule',
+    plugin: 'Plugin'
+}
+
 const MARK = (paths: string): string =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
 
@@ -343,8 +363,32 @@ export function activate(ctx: PluginContext): void {
         const exportButton = button('Export', () => void exportCurrent(), true)
         const copyButton = button('Copy', () => void adopt(), true)
         const doneButton = button('Done', () => toggleDone())
+        /*
+         * Making something starts at one key: the plus opens the seven kinds, anchored under it,
+         * and the one chosen opens its editor a level in.
+         */
+        const anchor = `--kamini-make-${handle.instanceId.replace(/\W/g, '')}`
+        const makeMenu = el('div', 'dya-menu kamini-menu')
+        makeMenu.popover = 'auto'
+        makeMenu.setAttribute('role', 'menu')
+        makeMenu.style.setProperty('position-anchor', anchor)
+        for (const { kind } of KINDS) {
+            const item = el('button', 'dya-menu__item')
+            item.type = 'button'
+            item.setAttribute('role', 'menuitem')
+            item.innerHTML = MARKS[kind]
+            item.append(el('span', '', SINGULAR[kind]))
+            item.addEventListener('click', () => {
+                makeMenu.hidePopover()
+                void create(kind)
+            })
+            makeMenu.append(item)
+        }
+        const makeKey = key('add', 'New', () => makeMenu.togglePopover())
+        makeKey.style.setProperty('anchor-name', anchor)
+        root.append(makeMenu)
         const strip = el('div', 'dya-toolbar')
-        strip.append(helpKey, importKey, removeKey)
+        strip.append(makeKey, helpKey, importKey, removeKey)
         handle.toolbar.append(strip, doneButton, exportButton, copyButton)
 
         function toggleDone(): void {
@@ -371,6 +415,7 @@ export function activate(ctx: PluginContext): void {
             exportButton.hidden = !(current && editing)
             copyButton.hidden = !(viewing && editing)
             importKey.hidden = editing || face !== 'workbench'
+            makeKey.hidden = editing
             doneButton.hidden = !(current && editing)
             doneButton.textContent = current?.done ? 'Reopen' : 'Done'
         }
@@ -565,14 +610,19 @@ export function activate(ctx: PluginContext): void {
                 const done = face === 'library'
                 for (const { kind, title } of KINDS) {
                     const entries = listing[kind].filter((entry) => entry.done === done)
-                    if (done && !entries.length) continue
+                    if (!entries.length) continue
                     const node = el('div', 'kamini-section')
                     const head = el('div', 'kamini-section__head')
                     head.append(el('span', 'dya-eyebrow', title))
-                    if (!done) head.append(key('add', `New ${kind}`, () => void create(kind)))
-                    node.append(head)
-                    if (entries.length) node.append(rows(entries.map((entry) => ({ kind, words: entry.name, selected: false, open: () => void select(kind, entry.id) }))))
+                    node.append(head, rows(entries.map((entry) => ({ kind, words: entry.name, selected: false, open: () => void select(kind, entry.id) }))))
                     sectionsList.push(node)
+                }
+                /*
+                 * An empty Workbench is not a blank: it offers the seven kinds as rows, from the top
+                 * left like every list, each opening its editor.
+                 */
+                if (!done && sectionsList.length === 1) {
+                    sectionsList.push(rows(KINDS.map(({ kind }) => ({ kind, words: SINGULAR[kind], selected: false, open: () => void create(kind) }))))
                 }
             }
             list.replaceChildren(...sectionsList)
@@ -621,6 +671,10 @@ export function activate(ctx: PluginContext): void {
 
         async function create(kind: Kind): Promise<void> {
             await flush()
+            if (face !== 'workbench') {
+                trail.push(face)
+                face = 'workbench'
+            }
             open((await ctx.invoke('blank', kind)) as Definition, true)
         }
 

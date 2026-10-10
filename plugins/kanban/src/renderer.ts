@@ -1067,15 +1067,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             for (const status of rules.order) {
                 columns.set(status, buildColumn(status, rules.labels[status]))
             }
-            /*
-             * A folded stage turns its name on its side, so the name's length becomes the header's
-             * height and every folded column put its count and its fold key at a different height.
-             * One measure for all of them: the longest name on this board, in characters, which
-             * the mono face and the label tracking turn into an exact height in CSS.
-             */
-            const names = rules.labels
-            const longest = Math.max(...rules.order.map((status) => names[status].length))
-            board.style.setProperty('--kanban-stage-chars', String(longest))
         }
 
         for (const id of [...problems.keys()]) {

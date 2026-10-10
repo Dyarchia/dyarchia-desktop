@@ -301,29 +301,26 @@ body,
 .panel-actions {
     display: flex;
     align-items: center;
+    gap: var(--dya-space-2);
     height: 100%;
+    padding-inline-end: var(--dya-space-3);
 }
 
 .panel-toolbar-host {
     display: flex;
     align-items: center;
     height: 100%;
-    padding-inline-end: var(--dya-space-2);
 }
 
+.panel-toolbar-host:empty {
+    display: none;
+}
+
+/*
+ * Maximize stands as close to the panel's last key as those keys stand to each other.
+ */
 .panel-frame {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding-inline-end: var(--dya-space-3);
-}
-
-.panel-frame::before {
-    content: "";
-    width: var(--dya-border-width);
-    height: 16px;
-    margin-inline-end: var(--dya-space-2);
-    background: var(--dya-hairline);
+    margin-inline-start: calc(-1 * (var(--dya-space-2) + var(--dya-border-width)));
 }
 
 .panel-toolbar:empty {

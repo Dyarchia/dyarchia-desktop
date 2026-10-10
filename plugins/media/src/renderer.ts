@@ -573,8 +573,10 @@ export function activate(ctx: PluginContext): void {
                 const empty = el('div', 'dya-empty')
                 empty.append(el('span', 'dya-text', 'FFmpeg missing'))
                 const actions = el('div', 'dya-empty__actions')
-                const setup = el('button', 'dya-button dya-button--primary', 'Setup')
+                const setup = el('button', 'dya-key dya-key--primary')
                 setup.type = 'button'
+                setup.innerHTML = glyph('settings')
+                setup.setAttribute('aria-label', 'Setup')
                 setup.addEventListener('click', () => void ctx.shell.show('settings'))
                 actions.append(setup)
                 empty.append(actions)

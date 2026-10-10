@@ -163,7 +163,9 @@ export function activate(ctx: PluginContext): void {
         /*
          * The panel's one action sits in the tab row, and only while a choice is waiting for it.
          */
-        const restart = el('button', 'dya-button dya-button--primary', 'Restart') as HTMLButtonElement
+        const restart = el('button', 'dya-key dya-key--primary') as HTMLButtonElement
+        restart.innerHTML = glyph('refresh')
+        restart.setAttribute('aria-label', 'Restart')
         restart.hidden = true
         handle.toolbar.append(restart)
         container.append(table)
@@ -222,7 +224,8 @@ export function activate(ctx: PluginContext): void {
             }
             const fetchable = statuses?.some((status) => !status.met && status.acquirable) ?? false
             if (fetchable && !row.install) {
-                const install = el('button', 'dya-button', 'Install') as HTMLButtonElement
+                const install = el('button', 'dya-key') as HTMLButtonElement
+                install.innerHTML = glyph('download')
                 install.addEventListener('click', () => acquire(row, false))
                 row.install = install
                 row.end.append(install)
@@ -231,7 +234,8 @@ export function activate(ctx: PluginContext): void {
                 const busy = installing === row.entry.manifest.id
                 row.install.hidden = !fetchable && !busy
                 row.install.disabled = busy
-                row.install.textContent = busy ? 'Installing…' : 'Install'
+                row.install.setAttribute('aria-busy', String(busy))
+                row.install.setAttribute('aria-label', busy ? 'Installing' : 'Install')
             }
             if (row.pending) row.pending.hidden = row.install ? !row.install.hidden : false
         }
@@ -296,7 +300,12 @@ export function activate(ctx: PluginContext): void {
 
             const switchCell = cell('dya-table__fit set-switch')
             if (entry.core) {
-                switchCell.append(el('span', 'dya-tag', 'Core'))
+                const kept = el('input', 'dya-checkbox') as HTMLInputElement
+                kept.type = 'checkbox'
+                kept.checked = true
+                kept.disabled = true
+                kept.setAttribute('aria-label', `${entry.manifest.name}, always installed`)
+                switchCell.append(kept)
             } else {
                 const tick = el('input', 'dya-checkbox') as HTMLInputElement
                 tick.type = 'checkbox'

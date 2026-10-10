@@ -74,8 +74,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   sections divided by their heads and space. A diff is a `code` block, lines as they come, its added and removed lines in `code-addition` and `code-deletion`: git's green and red, quietened. **A list of files is `files`**: `file` rows of
   glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.
 - **A panel is a hairline on the ground** and measures itself as a `pane` (`@container pane`), never a media
-  query: width changes how many regions it shows, never how far things stretch. `grid` is a gallery of
-  fixed-width things, `tile--new` first; table columns are content width; `form` values up to 560px.
+  query: width changes how many regions it shows, never how far things stretch. `grid` is a formation:
+  files of at least 240px sharing the width edge to edge, each `tile` a face one step up (`panel`), 96px
+  tall, its glyph at the top and its name at the foot, `tile--new` first; table columns are content width; `form` values up to 560px.
 - **What opens in place is a `fold`**: `details.fold`, a `__head` summary led by `__mark`, the SDK chevron
   turned down while open. **One scroller per region**: nothing in a region that scrolls scrolls again; a code
   block wraps (`code--wrap`); a live log is sized by a handle.

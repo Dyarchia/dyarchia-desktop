@@ -345,8 +345,8 @@ export function activate(ctx: PluginContext): void {
             return button
         }
 
-        function button(words: string, act: () => void, primary = false): HTMLButtonElement {
-            const node = el('button', primary ? 'dya-button dya-button--primary' : 'dya-button', words)
+        function button(words: string, act: () => void): HTMLButtonElement {
+            const node = el('button', 'dya-button', words)
             node.type = 'button'
             node.addEventListener('click', act)
             return node
@@ -360,9 +360,11 @@ export function activate(ctx: PluginContext): void {
         const helpKey = key('help', 'Help', () => openHelp())
         const importKey = key('import', 'Import', () => void importFiles())
         const removeKey = key('delete', 'Delete', () => void removeCurrent())
-        const exportButton = button('Export', () => void exportCurrent(), true)
-        const copyButton = button('Copy', () => void adopt(), true)
-        const doneButton = button('Done', () => toggleDone())
+        const exportButton = key('open', 'Export', () => void exportCurrent())
+        exportButton.classList.add('dya-key--primary')
+        const copyButton = key('add', 'Copy', () => void adopt())
+        copyButton.classList.add('dya-key--primary')
+        const doneButton = key('check', 'Done', () => toggleDone())
         /*
          * Making something starts at one key: the plus opens the seven kinds, anchored under it,
          * and the one chosen opens its editor a level in.
@@ -417,7 +419,8 @@ export function activate(ctx: PluginContext): void {
             importKey.hidden = editing || face !== 'workbench'
             makeKey.hidden = editing
             doneButton.hidden = !(current && editing)
-            doneButton.textContent = current?.done ? 'Reopen' : 'Done'
+            doneButton.setAttribute('aria-pressed', String(Boolean(current?.done)))
+            doneButton.setAttribute('aria-label', current?.done ? 'Reopen' : 'Done')
         }
 
         /*

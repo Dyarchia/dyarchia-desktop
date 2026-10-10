@@ -391,7 +391,9 @@ function bytes(value) {
 function needsEnvironment(ctx) {
     const box = el('div', 'dya-empty')
     const actions = el('div', 'dya-empty__actions')
-    const setup = button('dya-button', 'Setup')
+    const setup = button('dya-key dya-key--primary')
+    setup.innerHTML = ctx.glyph('settings')
+    setup.setAttribute('aria-label', 'Setup')
     setup.addEventListener('click', () => void ctx.shell.show('settings'))
     actions.append(setup)
     box.append(el('span', 'dya-title', 'No Python environment'), actions)
@@ -1369,8 +1371,8 @@ function mount(ctx, container, handle) {
         const title = el('span', 'dya-title')
         const state = el('span', 'crw-status')
         const remove = iconKey('delete', 'Delete', 'dya-key--danger')
-        const inspect = button('dya-button', 'Inspect')
-        const save = button('dya-button dya-button--primary', 'Save')
+        const inspect = iconKey('inspect', 'Inspect')
+        const save = iconKey('save', 'Save', 'dya-key--primary')
         const actions = el('div', 'dya-join')
         const close = iconKey('close', 'Close')
         const end = el('div', 'dya-sheet__end')
@@ -1609,7 +1611,7 @@ function mount(ctx, container, handle) {
             const section = el('tr', 'dya-table__section')
             const end = el('td', 'dya-table__end')
             if (missing) {
-                const install = button('dya-button', 'Install')
+                const install = iconKey('download', 'Install')
                 install.addEventListener('click', () => void put(shelf.group, install))
                 end.append(install)
             } else {
@@ -1633,6 +1635,7 @@ function mount(ctx, container, handle) {
 
         async function put(group, key) {
             key.disabled = true
+            key.setAttribute('aria-busy', 'true')
             libraryNote('Installing', 'busy')
             try {
                 await ctx.invoke('install', group)
@@ -1640,6 +1643,7 @@ function mount(ctx, container, handle) {
                 await Promise.all([shelve(), refreshList(), roundsView.refresh()])
             } catch (error) {
                 key.disabled = false
+                key.removeAttribute('aria-busy')
                 libraryNote(reason(error), 'error')
             }
         }

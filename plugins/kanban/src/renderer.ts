@@ -1125,7 +1125,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardForm = (): HTMLElement => {
-        const shell = el('div', 'dya-card dya-pane kanban-setup-shell kanban-welcome')
+        const shell = el('div', 'kanban-setup-shell')
         const heading = el('div', 'dya-title', 'New board')
 
         const form = el('div', 'dya-form')
@@ -1140,8 +1140,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const browse = key('folder', 'Browse')
         dirRow.append(dir, browse)
 
-        const create = el('button', 'dya-button dya-button--primary', 'Create')
-        create.type = 'button'
+        const create = key('check', 'Create')
+        create.classList.add('dya-key--primary')
 
         browse.addEventListener('click', () => {
             void invoke<string | null>('pickWorkdir')
@@ -1448,8 +1448,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return row
         }
 
-        const save = el('button', 'dya-button dya-button--primary', 'Save')
-        save.type = 'button'
+        const save = key('save', 'Save')
+        save.classList.add('dya-key--primary')
         save.addEventListener('click', () => {
             void invoke('updateSettings', { maxRunning: Number(globalCap.value) })
                 .then(() =>

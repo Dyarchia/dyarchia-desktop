@@ -588,6 +588,14 @@
 }
 
 /*
+ * A key at work, an install under way, keeps its place and its glyph, and the glyph breathes
+ * until the work ends: the one thing on a view that moves, and only while something happens.
+ */
+.dya-key[aria-busy="true"] > svg {
+    animation: dya-blink 1.2s var(--dya-ease) infinite;
+}
+
+/*
  * A key that cannot be pressed keeps its shape and loses its ink. An inactive control is exempt
  * from the contrast floor, and `--dya-text-off` is chosen to look off rather than to be read.
  */
@@ -703,17 +711,25 @@
 }
 
 /*
- * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
- * nothing on it yet offers what to do next, rather than stating that there is nothing. It is a
- * key, as large as it needs to be, with the same corners, edge and drop.
+ * A pressable card: a glyph, a name and one line saying what it is. It is how a screen with
+ * nothing on it yet offers what to do next, rather than stating that there is nothing. It is one
+ * man of the formation: a face of the panel's ground a step up, of one height, the glyph at its
+ * top and the name at its foot, so a gallery reads as ranks and files and never as words afloat.
  */
 .dya-tile {
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     gap: var(--dya-space-2);
-    padding: var(--dya-space-5);
+    min-height: 96px;
+    padding: var(--dya-space-4);
+    background-color: var(--dya-panel);
     background-image: none;
     text-align: left;
+}
+
+.dya-tile:hover {
+    background-color: var(--dya-hover);
 }
 
 /*
@@ -735,7 +751,7 @@
 
 .dya-tile__name {
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-h4);
+    font-size: var(--dya-size-body);
     letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
 }
@@ -999,13 +1015,14 @@ textarea.dya-field--code {
 }
 
 /*
- * A grid is a gallery of things of one kind, tiles, boards, targets, each of a fixed width. A wider
- * pane holds more of them to a row and never makes them wider. There is no column system: a panel
- * is not a page, and what it shows beside what is decided by the panel, region by region.
+ * A grid is a gallery of things of one kind, tiles, boards, targets, set as a formation: as many
+ * files as 240px each allows, sharing the pane's width edge to edge, so a wider pane holds more
+ * of them to a rank and no rank ends short of the edge. What a panel shows beside what is decided
+ * by the panel, region by region.
  */
 .dya-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 280px));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
     align-content: start;
     gap: var(--dya-space-3);
 }
@@ -1278,6 +1295,20 @@ textarea.dya-field--code {
 
 .dya-checkbox:checked::after {
     opacity: 1;
+}
+
+/*
+ * A box that cannot be changed, a part that is always there, keeps its tick and gives up its ink:
+ * the rim and the tick in the faint ink, and no hand over it.
+ */
+.dya-checkbox:disabled {
+    border-color: var(--dya-text-faint);
+    background-color: transparent;
+    cursor: default;
+}
+
+.dya-checkbox:disabled::after {
+    border-color: var(--dya-text-faint);
 }
 
 /*
@@ -1627,6 +1658,18 @@ textarea.dya-field--code {
     font-size: var(--dya-size-body-sm);
     overflow-wrap: anywhere;
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
+}
+
+/*
+ * A mark or a tick alone in its cell is a block, so it stands on the row's middle with the words
+ * beside it instead of on a line's baseline a few pixels above them.
+ */
+.dya-table td > .dya-glyph:only-child {
+    display: grid;
+}
+
+.dya-table td > .dya-checkbox:only-child {
+    display: block;
 }
 
 .dya-table .dya-table__num {

@@ -381,10 +381,6 @@ export const STYLES = `
 
 .kanban-gallery { width: 100%; }
 
-.kanban-welcome {
-    padding: var(--dya-space-5);
-}
-
 .kanban-setup-shell {
     display: flex;
     flex-direction: column;

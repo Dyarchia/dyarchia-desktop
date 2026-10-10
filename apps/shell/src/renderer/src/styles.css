@@ -191,6 +191,15 @@ body,
     align-items: center;
 }
 
+/*
+ * dockview rings a focused tab in its divider colour, which this theme leaves transparent, so a
+ * tab reached with the keyboard showed nothing. The ring is kanon's, round the tab's own face.
+ */
+.dv-tab:focus-visible .panel-tab {
+    outline: 2px solid var(--dya-focus);
+    outline-offset: 2px;
+}
+
 .panel-tab {
     display: flex;
     align-items: center;

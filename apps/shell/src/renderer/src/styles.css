@@ -220,9 +220,7 @@ body,
 }
 
 .panel-tab-title {
-    max-inline-size: 28ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .panel-tab-actions {

@@ -23,18 +23,18 @@
     --dya-weight: 400;
     --dya-weight-medium: 500;
 
-    --dya-size-display: 50px;
-    --dya-size-inscription: 67px;
-    --dya-size-h2: 30px;
-    --dya-size-h3: 23px;
-    --dya-size-h4: 19px;
+    --dya-size-display: 45px;
+    --dya-size-inscription: 54px;
+    --dya-size-h2: 31px;
+    --dya-size-h3: 26px;
+    --dya-size-h4: 21.5px;
     --dya-size-body: 18px;
-    --dya-size-body-sm: 17px;
-    --dya-size-body-xs: 15.5px;
-    --dya-size-mono: 15.5px;
+    --dya-size-body-sm: 15px;
+    --dya-size-body-xs: 15px;
+    --dya-size-mono: 15px;
     --dya-size-mono-sm: 15px;
-    --dya-size-mono-xs: 14.5px;
-    --dya-size-label: 13px;
+    --dya-size-mono-xs: 15px;
+    --dya-size-label: 12.5px;
     --dya-size-label-sm: 12.5px;
 
     --dya-size-control: 34px;

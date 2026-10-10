@@ -1970,7 +1970,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     /*
      * A file a run named, as a row of the files list: the glyph and the path as the worker wrote
-     * it, one line, cut with an ellipsis. It opens in whatever panel reads it, or is shown in its
+     * it, whole, wrapping where it has to. It opens in whatever panel reads it, or is shown in its
      * folder when nothing does.
      */
     const fileRow = (name: string, open: () => void, note?: string): HTMLButtonElement => {

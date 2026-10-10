@@ -333,10 +333,7 @@ export const STYLES = `
 
 .kanban-clip {
     display: block;
-    max-width: 20rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .kanban-menu {

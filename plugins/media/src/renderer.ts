@@ -70,10 +70,7 @@ const STYLES = `
     display: block;
 }
 .media-jobs .dya-table__name {
-    max-width: 360px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 `
 

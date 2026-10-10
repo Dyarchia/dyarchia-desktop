@@ -1160,9 +1160,7 @@ textarea.dya-field--code {
 
 .dya-field__label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-select > .dya-field::picker-icon {
@@ -1230,8 +1228,7 @@ textarea.dya-field--code {
 }
 
 .dya-select selectedcontent {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .dya-select selectedcontent .dya-select__note {
@@ -1832,9 +1829,7 @@ textarea.dya-field--code {
 
 .dya-sheet__head > .dya-title {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-sheet__end {
@@ -1846,8 +1841,8 @@ textarea.dya-field--code {
 }
 
 /*
- * A list of files: rows, never keys. A file glyph and the name in the mono on one line, cut with
- * an ellipsis, left aligned; the row is pressable and answers the pointer with its ground, as a
+ * A list of files: rows, never keys. A file glyph and the name in the mono, whole, wrapping where
+ * it has to and never cut, left aligned; the row is pressable and answers the pointer with its ground, as a
  * menu row does, and the file being read (`aria-current`) stands on `selected`. A trailing
  * `meta` says its size or its folder. A name wrapped and centred inside a key read as a
  * column of buttons.
@@ -1903,9 +1898,7 @@ textarea.dya-field--code {
 .dya-file__name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-file > .dya-meta {
@@ -1936,9 +1929,7 @@ textarea.dya-field--code {
     letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     color: var(--dya-text-faint);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 /*
@@ -2520,16 +2511,14 @@ button.dya-entry__head {
 }
 
 /*
- * A subject that is a command or a path: in the mono, on one line, cut with an ellipsis, since the
- * step opens to show the whole of it.
+ * A subject that is a command or a path: in the mono, whole, a long path broken where it has to
+ * be. No text is ever cut short.
  */
 .dya-step__subject--code {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 button.dya-step__subject {
@@ -3022,10 +3011,8 @@ button.dya-step__subject {
 
 .dya-palette__app > .dya-tile > .dya-tile__name {
     max-width: 100%;
-    overflow: hidden;
     font-size: var(--dya-size-body-xs);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 .dya-palette__app[aria-selected="true"] > .dya-tile {
@@ -3108,9 +3095,7 @@ button.dya-step__subject {
 .dya-palette__name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 /*
@@ -3119,10 +3104,7 @@ button.dya-step__subject {
  */
 .dya-palette__meta {
     flex: 0 1 auto;
-    max-width: 50%;
-    overflow: hidden;
     font-size: var(--dya-size-body-xs);
     color: var(--dya-text-faint);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }

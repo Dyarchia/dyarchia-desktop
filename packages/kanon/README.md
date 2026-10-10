@@ -44,8 +44,9 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's
   and a button's alone, in the mono.
-- **Scale** body 18, rows 17, controls and meta 15.5px, prose the full width of
-  its pane. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
+- **Scale** is modular, a ratio of 1.2 on the body's 18px, one step per role: 15 for rows, controls, meta,
+  mono and values, 18 for body, titles and names, 21.5, 26 and 31 for prose heads, 45 display, 54 the
+  wordmark, and 12.5 for labels; prose the full width of its pane. **Corners are square** except a light, a dot and a ring (999px). **Weights 300, 400, 500.** No WebGL, shaders or `backdrop-filter`.
 - **A plugin's own CSS is layout only.** A new look is declared here first and measured; an unused class goes.
 
 ## Keys and layout
@@ -69,11 +70,13 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
   `tips()` refuses them all and keeps a tip only for the glyphs it lists as nameless (log, rename...).
 - **Pills never touch the next line**: a pill row and what follows stand in a `stack`, 8px apart. A
   `sheet__head` is the title, a status pill (never a key) and the `__end` strip, one line at control height.
+- **No text is cut**: a word, a name, a path or a title is shown whole; what does not fit goes on to the
+  next line, never into an ellipsis.
 - **Nothing is an island**: an empty region is `empty`, anchored top left like every list, its actions a `grid`
   of tiles or a key; only `loading` is centred. Never a lone mark in the middle.
 - **A list is lines**: every table row ends on a hairline rule, except in a `--bare` table, whose rows come in
   sections divided by their heads and space. A diff is a `code` block, lines as they come, its added and removed lines in `code-addition` and `code-deletion`: git's green and red, quietened. **A list of files is `files`**: `file` rows of
-  glyph and mono `__name`, one line, ellipsis, flat hover, `aria-current` on `selected`.
+  glyph and mono `__name`, whole and wrapping, never cut, flat hover, `aria-current` on `selected`.
 - **A panel is a hairline on the ground** and measures itself as a `pane` (`@container pane`), never a media
   query: width changes how many regions it shows, never how far things stretch. `grid` is a formation:
   files of at least 280px sharing the width edge to edge, each `tile` a face one step up (`panel`), 112px

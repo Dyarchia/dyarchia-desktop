@@ -534,7 +534,6 @@ export function activate(ctx: PluginContext): void {
             const form = el('div', 'dya-form kamini-project')
             const join = el('div', 'dya-join')
             const field = el('input', 'dya-field dya-field--code')
-            field.placeholder = 'Project'
             field.value = project
             field.setAttribute('aria-label', 'Project')
             field.addEventListener('change', () => void setProject(field.value.trim()))

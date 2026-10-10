@@ -1421,10 +1421,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const globalCap = capField(across.maxRunning)
         globalCap.setAttribute('aria-label', 'Max running on all boards')
         capsRow.append(
-            boardCap,
             el('span', 'dya-key-label', 'This board'),
-            globalCap,
-            el('span', 'dya-key-label', 'All boards')
+            boardCap,
+            el('span', 'dya-key-label', 'All boards'),
+            globalCap
         )
 
         const draft: Runners = {

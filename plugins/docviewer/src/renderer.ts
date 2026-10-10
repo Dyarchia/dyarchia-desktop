@@ -78,6 +78,12 @@ const STYLES = `
 .docviewer-content--empty {
     padding: var(--dya-space-4);
 }
+.docviewer-rows {
+    width: max-content;
+    min-width: min(100%, 320px);
+    max-width: 100%;
+    margin-inline-start: calc(-1 * var(--dya-space-2));
+}
 .docviewer-editor {
     height: 100%;
 }
@@ -436,50 +442,47 @@ export function activate(ctx: PluginContext): void {
             let gallery: HTMLElement | null = null
             let galleryNote: string | undefined
 
-            function tile(className: string, icon: string, name: string, act: () => void): HTMLButtonElement {
-                const card = document.createElement('button')
-                card.type = 'button'
-                card.className = className
-                card.innerHTML = `<span class="dya-tile__icon">${icon}</span>`
+            function row(icon: string, name: string, act: () => void, meta?: string): HTMLLIElement {
+                const item = document.createElement('li')
+                const node = document.createElement('button')
+                node.type = 'button'
+                node.className = 'dya-file'
+                node.innerHTML = icon
                 const label = document.createElement('span')
-                label.className = 'dya-tile__name'
+                label.className = 'dya-file__name'
                 label.textContent = name
-                card.append(label)
-                card.onclick = act
-                return card
-            }
-
-            function paintGallery(): void {
-                if (!gallery) return
-                const cards: HTMLElement[] = []
-                if (galleryNote) {
-                    const line = document.createElement('span')
-                    line.className = 'dya-empty dya-text--danger'
-                    line.textContent = galleryNote
-                    cards.push(line)
-                }
-                cards.push(
-                    tile('dya-tile dya-tile--new', glyph('add'), 'New page', () => openLibrary()),
-                    tile('dya-tile', glyph('folder'), 'Browse', () => void browse())
-                )
-                for (const page of pages) {
-                    const card = document.createElement('button')
-                    card.type = 'button'
-                    card.className = 'dya-tile dya-tile--dense'
-                    const head = document.createElement('div')
-                    head.className = 'dya-tile__head'
-                    const name = document.createElement('span')
-                    name.className = 'dya-tile__name'
-                    name.textContent = page.name
-                    head.append(name)
+                node.append(label)
+                if (meta) {
                     const facts = document.createElement('span')
                     facts.className = 'dya-meta'
-                    facts.textContent = page.size > 0 ? `${when(page.mtime)} - ${size(page.size)}` : when(page.mtime)
-                    card.append(head, facts)
-                    card.onclick = () => void openPage(page.path)
-                    cards.push(card)
+                    facts.textContent = meta
+                    node.append(facts)
                 }
-                gallery.replaceChildren(...cards)
+                node.onclick = act
+                item.append(node)
+                return item
+            }
+
+            /*
+             * With no page open the panel is a list from the top left, as every list is: the two
+             * things to do, then the pages, newest first. Never a lone mark in the middle.
+             */
+            function paintGallery(): void {
+                if (!gallery) return
+                const rows: HTMLElement[] = []
+                if (galleryNote) {
+                    const item = document.createElement('li')
+                    const line = document.createElement('span')
+                    line.className = 'dya-text--danger'
+                    line.textContent = galleryNote
+                    item.append(line)
+                    rows.push(item)
+                }
+                rows.push(row(glyph('new-file'), 'New page', () => openLibrary()), row(glyph('folder'), 'Browse', () => void browse()))
+                for (const page of pages) {
+                    rows.push(row(glyph('file'), page.name, () => void openPage(page.path), page.size > 0 ? `${when(page.mtime)} - ${size(page.size)}` : when(page.mtime)))
+                }
+                gallery.replaceChildren(...rows)
             }
 
             function showEmpty(message?: string): void {
@@ -492,8 +495,8 @@ export function activate(ctx: PluginContext): void {
                 say()
                 syncModes()
                 content.className = 'dya-text docviewer-content docviewer-content--empty'
-                gallery = document.createElement('div')
-                gallery.className = 'dya-grid'
+                gallery = document.createElement('ul')
+                gallery.className = 'dya-files docviewer-rows'
                 galleryNote = message
                 content.replaceChildren(gallery)
                 paintGallery()

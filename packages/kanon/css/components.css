@@ -2048,7 +2048,9 @@ textarea.dya-field--code {
 /*
  * `min-width` and `overflow-wrap` are what keep this centred instead of clipped. A centred flex
  * item that cannot shrink grows past its container on both sides; a word that will not fit is
- * broken, and nothing is ever read from off the left edge.
+ * broken, and nothing is ever read from off the left edge. Only waiting is centred: an empty
+ * region is not an island in the middle but a list from the top left, its words and its actions
+ * where every list in the panel starts.
  */
 .dya-empty,
 .dya-loading {
@@ -2074,11 +2076,19 @@ textarea.dya-field--code {
     max-width: 44ch;
 }
 
+.dya-empty {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: var(--dya-space-4);
+    text-align: left;
+    text-wrap: pretty;
+}
+
 
 .dya-empty__actions {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }

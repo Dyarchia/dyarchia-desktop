@@ -1673,7 +1673,8 @@ textarea.dya-field--code {
 }
 
 .dya-table td > .dya-checkbox:only-child {
-    display: block;
+    display: grid;
+    margin-block: 0;
 }
 
 .dya-table .dya-table__num {

@@ -168,9 +168,8 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 /*
  * The open panel's own actions, at the right of its group's tab row. The element belongs to the
  * panel and is only lent to the header: it moves here when its panel becomes the group's open tab
- * and leaves when another does, keeping its state and its listeners. After them, the frame: the
- * key that gives the group the whole window and gives the place back, faint while the group is
- * alone and has the window already.
+ * and leaves when another does, keeping its state and its listeners. The last key is one more of
+ * them: maximize, whose arrows turn inward to restore, faint while the group is alone.
  */
 function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
     const host = useRef<HTMLDivElement>(null)
@@ -201,10 +200,9 @@ function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
     return (
         <div className="panel-actions">
             <div ref={host} className="panel-toolbar-host" />
-            <div className="dya-toolbar panel-frame">
-                <button
+            <button
                     type="button"
-                    className="dya-key"
+                    className="dya-key panel-frame"
                     aria-label={maximized ? 'Restore' : 'Maximize'}
                     disabled={alone && !maximized}
                     onPointerDown={(event) => event.stopPropagation()}
@@ -214,7 +212,6 @@ function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
                     }}
                     dangerouslySetInnerHTML={{ __html: maximized ? CONTRACT_ICON : EXPAND_ICON }}
                 />
-            </div>
         </div>
     )
 }

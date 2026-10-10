@@ -1668,6 +1668,19 @@ textarea.dya-field--code {
  * A mark or a tick alone in its cell is a block, so it stands on the row's middle with the words
  * beside it instead of on a line's baseline a few pixels above them.
  */
+/*
+ * A table that is a form's value starts its first column where every value in the form starts,
+ * and its first row on its label's line.
+ */
+.dya-form .dya-table td:first-child,
+.dya-form .dya-table th:first-child {
+    padding-inline-start: 0;
+}
+
+.dya-form .dya-table tr:first-child > td {
+    padding-top: calc((var(--dya-size-control) - 1lh) / 2);
+}
+
 .dya-table td > .dya-glyph:only-child {
     display: grid;
 }

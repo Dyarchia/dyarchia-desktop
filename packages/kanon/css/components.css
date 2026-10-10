@@ -2011,9 +2011,13 @@ textarea.dya-field--code {
     color: var(--dya-text-muted);
 }
 
+/*
+ * The open tab's line is ink. Copper is spent once per view, and the shell spends it on the open
+ * tab of the panel that has the focus.
+ */
 .dya-tab[aria-selected="true"] {
     color: var(--dya-text);
-    box-shadow: inset 0 -2px 0 var(--dya-accent);
+    box-shadow: inset 0 -2px 0 var(--dya-text);
 }
 
 /*

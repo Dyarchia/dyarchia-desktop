@@ -214,10 +214,19 @@ body,
 
 /*
  * Every group shows one of its tabs, but only one group is the one the window is working in, and
- * only its tab carries the accent's underline. The others keep the top ink and the weight.
+ * only its tab carries copper; the others are underlined in ink. A terminal holding the focus has
+ * its copper in its cursor, so its tab is in ink too: copper once per view.
  */
+.dv-groupview .panel-tab[aria-selected='true'] {
+    box-shadow: inset 0 -2px 0 var(--dya-text);
+}
+
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
     box-shadow: inset 0 -2px 0 var(--dya-accent);
+}
+
+.dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'] {
+    box-shadow: inset 0 -2px 0 var(--dya-text);
 }
 
 .panel-tab-title {

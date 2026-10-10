@@ -32,6 +32,8 @@ const dyarchiaTheme: DockviewTheme = {
 }
 
 const ANOTHER_ICON = glyph('add')
+const EXPAND_ICON = glyph('expand')
+const CONTRACT_ICON = glyph('contract')
 const CLOSE_ICON = glyph('close')
 
 const titleListeners = new Set<() => void>()
@@ -166,7 +168,9 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 /*
  * The open panel's own actions, at the right of its group's tab row. The element belongs to the
  * panel and is only lent to the header: it moves here when its panel becomes the group's open tab
- * and leaves when another does, keeping its state and its listeners.
+ * and leaves when another does, keeping its state and its listeners. After them, the frame: the
+ * key that gives the group the whole window and gives the place back, faint while the group is
+ * alone and has the window already.
  */
 function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
     const host = useRef<HTMLDivElement>(null)
@@ -180,7 +184,39 @@ function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
         host.current?.replaceChildren(...(element ? [element] : []))
     }, [active, revision])
 
-    return <div ref={host} className="panel-toolbar-host" />
+    const [, setFrame] = useState(0)
+    useEffect(() => {
+        const bump = (): void => setFrame((value) => value + 1)
+        const subscriptions = [
+            props.containerApi.onDidMaximizedGroupChange(bump),
+            props.containerApi.onDidAddGroup(bump),
+            props.containerApi.onDidRemoveGroup(bump)
+        ]
+        return () => subscriptions.forEach((subscription) => subscription.dispose())
+    }, [props.containerApi])
+
+    const maximized = props.api.isMaximized()
+    const alone = props.containerApi.groups.length < 2
+
+    return (
+        <div className="panel-actions">
+            <div ref={host} className="panel-toolbar-host" />
+            <div className="dya-toolbar panel-frame">
+                <button
+                    type="button"
+                    className="dya-key"
+                    aria-label={maximized ? 'Restore' : 'Maximize'}
+                    disabled={alone && !maximized}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => {
+                        if (maximized) props.api.exitMaximized()
+                        else if (props.activePanel) props.containerApi.maximizeGroup(props.activePanel)
+                    }}
+                    dangerouslySetInnerHTML={{ __html: maximized ? CONTRACT_ICON : EXPAND_ICON }}
+                />
+            </div>
+        </div>
+    )
 }
 
 /*
@@ -232,6 +268,13 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
                     }, 500)
                 })
             }
+            /*
+             * A maximized group gives its place back on Escape, unless the panel inside used the
+             * key for something of its own.
+             */
+            document.addEventListener('keydown', (keyEvent) => {
+                if (keyEvent.key === 'Escape' && !keyEvent.defaultPrevented && api.hasMaximizedGroup()) api.exitMaximizedGroup()
+            })
             onReady(api)
         },
         [onReady]

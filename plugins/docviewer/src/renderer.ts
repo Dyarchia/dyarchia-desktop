@@ -817,9 +817,11 @@ export function activate(ctx: PluginContext): void {
             scrim.onclick = closeLibrary
             root.addEventListener('keydown', (event) => {
                 if (event.key !== 'Escape' || event.defaultPrevented) return
+                const typing = event.target instanceof HTMLElement && event.target.matches('textarea, input')
+                if (library.hidden && !typing && !current) return
                 event.preventDefault()
                 if (!library.hidden) closeLibrary()
-                else if (event.target instanceof HTMLElement && event.target.matches('textarea, input')) root.focus({ preventScroll: true })
+                else if (typing) root.focus({ preventScroll: true })
                 else void closePage()
             })
 

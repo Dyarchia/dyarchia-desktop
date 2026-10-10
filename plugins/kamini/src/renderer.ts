@@ -358,8 +358,14 @@ export function activate(ctx: PluginContext): void {
         function paintBar(): void {
             const editing = root.dataset.view === 'editor'
             handle.navigate({
-                back: editing ? () => void closeCurrent() : null,
-                home: editing || face !== 'workbench' ? () => void closeCurrent().then(() => switchFace('workbench')) : null
+                back: editing ? () => void closeCurrent() : trail.length ? () => void switchFace(trail.pop()!, false) : null,
+                home:
+                    editing || face !== 'workbench'
+                        ? () => {
+                              trail.length = 0
+                              void closeCurrent().then(() => switchFace('workbench', false))
+                          }
+                        : null
             })
             removeKey.hidden = !(current && !draft && editing)
             exportButton.hidden = !(current && editing)
@@ -421,9 +427,15 @@ export function activate(ctx: PluginContext): void {
             return tabs
         }
 
-        async function switchFace(next: Face): Promise<void> {
+        /*
+         * The faces visited are a trail, so back returns to the one before as it does anywhere.
+         */
+        const trail: Face[] = []
+
+        async function switchFace(next: Face, going = true): Promise<void> {
             if (next === face) return
             await closeCurrent()
+            if (going) trail.push(face)
             face = next
             if (face === 'installed') await discover()
             paintList()
@@ -737,10 +749,12 @@ export function activate(ctx: PluginContext): void {
         scrim.addEventListener('click', closeHelp)
         root.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape' || event.defaultPrevented) return
+            const typing = event.target instanceof HTMLElement && event.target.matches('textarea, input, select')
+            if (sheet.hidden && !typing && !current && !viewing) return
             event.preventDefault()
             if (!sheet.hidden) closeHelp()
-            else if (event.target instanceof HTMLElement && event.target.matches('textarea, input, select')) root.focus({ preventScroll: true })
-            else if (current || viewing) void closeCurrent()
+            else if (typing) root.focus({ preventScroll: true })
+            else void closeCurrent()
         })
 
         /*

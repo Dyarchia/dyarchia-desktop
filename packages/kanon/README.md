@@ -14,10 +14,11 @@ Black and copper. One warm black in three roles: `ground` #141413, `panel` #1a1a
 how a thing answers the pointer. Three inks: `text` #faf9f5; `text-muted` #b0aea5, a control's word;
 `text-faint` #94938d, what is about a thing rather than the thing (meta, a time, an eyebrow, a table head, an
 idle tab, a pill's word, a placeholder, a comment), 4.54 on `selected`. **Copper** (`accent`
-#d18743) is the one colour that is not status: the primary's fill, the name and mark of the focused panel's
-open tab (every open tab stands on `press-wash`), the glyph of a key that is on, with no ground behind it, the
+#d18743) is the one colour that is not status: the primary's fill, the mark of the focused panel's open tab
+(every open tab stands on `press-wash`, its name in ink) and the glyph of a key that is on, with no ground
+behind it; colour goes on a glyph, never on words. Also the
 terminal's cursor while it holds the focus (and then its tab keeps `press-wash`), a link, the focus ring, the
-caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. On `press-wash` it measures 4.89. **Nothing active is underlined**; only a field is a line, since without
+caret and the wordmark, 6.37 on the ground and 4.84 on `selected`. **Nothing active is underlined**; only a field is a line, since without
 one nothing says it takes words. Nothing is raised, nothing glows,
 nothing moves at rest. Inter is the interface with tabular figures; Geist Mono is every label, head, meta,
 button word, tab, title, path and line of code. A Dyarchia mark is drawn in `text`, `text-muted` and

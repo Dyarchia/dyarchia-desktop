@@ -207,26 +207,28 @@ body,
 }
 
 /*
- * Every open tab stands on the pressed wash, as the Claude desktop app's open tab does. The one in
- * the group the window is working in has its name and a monochrome mark in the accent, 4.89 on
- * that wash; a mark with colours of its own keeps them. A terminal holding the focus has its
- * copper in its cursor, so its tab stays in ink.
+ * Every open tab stands on the pressed wash, as the Claude desktop app's open tab does, its name
+ * in the ink. The one in the group the window is working in draws its monochrome mark in the
+ * accent, as a key that is on draws its glyph: colour on the glyph, never on the words. A mark with
+ * colours of its own keeps them. A terminal holding the focus has its copper in its cursor, so its
+ * tab's mark stays in ink.
  */
 .dv-groupview .panel-tab[aria-selected='true'] {
     background-color: var(--dya-press-wash);
 }
 
-.dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
+/*
+ * A mark draws its strokes in var(--dya-text) by its own inline style, so the accent reaches it by
+ * that variable, inside the mark alone; the mark itself is not touched.
+ */
+.dv-groupview.dv-active-group .panel-tab[aria-selected='true'] > .dya-glyph {
+    --dya-text: var(--dya-accent);
     color: var(--dya-accent);
 }
 
-.dv-groupview.dv-active-group .panel-tab[aria-selected='true'] .dya-glyph {
-    color: var(--dya-accent);
-}
-
-.dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'],
-.dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'] .dya-glyph {
-    color: var(--dya-text);
+.dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'] > .dya-glyph {
+    --dya-text: inherit;
+    color: inherit;
 }
 
 .panel-tab-title {

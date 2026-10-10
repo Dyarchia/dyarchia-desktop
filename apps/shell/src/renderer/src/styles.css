@@ -200,8 +200,7 @@ body,
 /*
  * Every group shows one of its tabs on the pressed wash, but only one group is the one the window
  * is working in, and only its tab stands on the accent's wash; the marks keep their own ink. A
- * terminal holding the focus has its copper in its cursor, so its tab keeps the plain wash: copper
- * once per view.
+ * terminal holding the focus has its copper in its cursor, so its tab keeps the plain wash.
  */
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
     background-color: var(--dya-accent-soft);

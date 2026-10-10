@@ -38,7 +38,8 @@ button word, tab, title, path and line of code. A Dyarchia mark is drawn in `tex
 - **Controls are type, information is filled.** A key, a tile, a tab's action and a window key are their glyph
   or word in the muted ink, brightening under the pointer; a worded button is a mono capital word in a
   hairline. A pill is the one filled thing that cannot be pressed: a square code chip, a breath of white.
-- **Colour is status or which-one, never emphasis**, with the one exception of the accent, spent once per view.
+- **Colour is status or which-one, never emphasis**, with the one exception of the accent: the primary, the
+  focused panel's tab and what is on.
 - **Hover changes the background and the ink**; a transition names only `transform`, `opacity` and
   `background-color`; the focus ring is an outline in the accent.
 - **Interface text is sentence case; data keeps its own case.** Capitals are the eyebrow's, the table head's

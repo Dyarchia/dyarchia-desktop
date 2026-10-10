@@ -2085,8 +2085,8 @@ textarea.dya-field--code {
 }
 
 /*
- * Copper is spent once per view, and the shell spends it on the open tab of the panel that has the
- * focus.
+ * A tab inside a panel is a choice of view, never the focus, so its wash is the plain one: copper
+ * on a tab is the shell's, for the panel being worked in.
  */
 .dya-tab[aria-selected="true"] {
     background-color: var(--dya-press-wash);

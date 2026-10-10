@@ -2632,6 +2632,10 @@ button.dya-step__subject {
     height: auto;
 }
 
+.dya-prose > :first-child {
+    margin-top: 0;
+}
+
 .dya-prose h1,
 .dya-prose h2,
 .dya-prose h3 {

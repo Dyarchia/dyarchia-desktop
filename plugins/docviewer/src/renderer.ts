@@ -73,9 +73,6 @@ const STYLES = `
     min-height: 0;
     min-width: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-6);
-}
-.docviewer-content--empty {
     padding: var(--dya-space-4);
 }
 .docviewer-editor {
@@ -474,7 +471,7 @@ export function activate(ctx: PluginContext): void {
                 dirty = false
                 say()
                 syncModes()
-                content.className = 'dya-text docviewer-content docviewer-content--empty'
+                content.className = 'dya-text docviewer-content'
                 gallery = document.createElement('div')
                 gallery.className = 'dya-grid'
                 galleryNote = message

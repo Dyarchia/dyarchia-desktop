@@ -228,7 +228,12 @@ export function activate(ctx: PluginContext): void {
             const bar = el('div', 'dya-bar brw-bar')
             const strip = el('div', 'dya-join')
             const forward = key(FORWARD_ICON, 'Forward', () => view.goForward())
-            const reload = key(RELOAD_ICON, 'Reload', () => (loading ? view.stop() : view.reload()))
+            let failed = ''
+            const reload = key(RELOAD_ICON, 'Reload', () => {
+                if (loading) view.stop()
+                else if (!fail.hidden && failed) go(failed)
+                else view.reload()
+            })
             const goHome = (): void => go(home())
             handle.navigate({ back: null, home: goHome })
             const address = el('input', 'dya-field')
@@ -794,20 +799,16 @@ export function activate(ctx: PluginContext): void {
             view.addEventListener('page-title-updated', sync)
 
             /*
-             * An error the page could not paint itself. A navigation that was replaced by another
-             * reports -3 and is not a failure, so it is left alone.
+             * An error the page could not paint itself, said with the host and the reason and no
+             * key of its own: the bar's reload, a line above, tries the address that failed. A
+             * navigation that was replaced by another reports -3 and is not a failure.
              */
             view.addEventListener('did-fail-load', (event) => {
                 if (!event.isMainFrame || event.errorCode === -3) return
-                const retry = el('button', 'dya-button', 'Retry')
-                retry.type = 'button'
-                retry.addEventListener('click', () => go(event.validatedURL))
-                const actions = el('div', 'dya-empty__actions')
-                actions.append(retry)
+                failed = event.validatedURL
                 fail.replaceChildren(
                     el('span', 'dya-title', hostOf(event.validatedURL)),
-                    el('span', 'dya-mono', event.errorDescription || String(event.errorCode)),
-                    actions
+                    el('span', 'dya-mono', event.errorDescription || String(event.errorCode))
                 )
                 fail.hidden = false
             })

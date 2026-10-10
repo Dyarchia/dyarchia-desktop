@@ -2992,11 +2992,17 @@ button.dya-step__subject {
     min-width: 0;
 }
 
+/*
+ * In the palette an app is a key on the sheet, not a man of a formation: no face of its own and
+ * its own height, the light of an open panel in its corner.
+ */
 .dya-palette__app > .dya-tile {
     align-items: center;
     justify-content: center;
     gap: var(--dya-space-2);
     min-width: 0;
+    min-height: 0;
+    background-color: transparent;
     padding: var(--dya-space-4) var(--dya-space-2) var(--dya-space-3);
     text-align: center;
 }

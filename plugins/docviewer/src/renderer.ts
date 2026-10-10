@@ -246,24 +246,8 @@ export function activate(ctx: PluginContext): void {
             header.append(problem, strip)
             header.hidden = true
 
-            /*
-             * With no page open the tab row says where the pages live: the folder's name, on a key
-             * that shows it in the file manager. A page made here that nobody could find again was
-             * the reason. Choosing another folder is rare and is the palette's Docs folder.
-             */
-            const place = document.createElement('div')
-            place.className = 'dya-toolbar'
-            const folderKey = document.createElement('button')
-            folderKey.type = 'button'
-            folderKey.className = 'dya-button'
-            const folderName = document.createElement('span')
-            folderName.className = 'dya-mono'
-            folderKey.innerHTML = glyph('folder')
-            folderKey.append(folderName)
-            let folderPath = ''
-
             const content = document.createElement('div')
-            handle.toolbar.append(header, place)
+            handle.toolbar.append(header)
             root.append(content, tipHolder)
             container.appendChild(root)
 
@@ -386,7 +370,6 @@ export function activate(ctx: PluginContext): void {
                 if (dirty && !overwrite) shown.push(save)
                 strip.replaceChildren(...shown, deleteKey)
                 nav()
-                place.hidden = current !== null
                 if (overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
             }
@@ -518,9 +501,9 @@ export function activate(ctx: PluginContext): void {
              * The pages: every file in the data home's docs folder, in a sheet over the panel.
              * It is the whole of what can be done to a page. The one field finds a page as it is
              * typed and makes one of that name on Enter when none matches, a row opens on a click,
-             * and the row under the pointer or the focus shows its rename and its delete. A file
-             * kept anywhere else is the gallery's Browse. The sheet covers, so it is modal: a
-             * scrim, the rest inert, Escape out.
+             * and the row under the pointer or the focus shows its rename and its delete. Browse
+             * shows the folder in the file manager; a file kept anywhere else is the palette's Open
+             * file. The sheet covers, so it is modal: a scrim, the rest inert, Escape out.
              */
             const scrim = document.createElement('div')
             scrim.className = 'dya-scrim'
@@ -618,19 +601,10 @@ export function activate(ctx: PluginContext): void {
                 list.replaceChildren(files)
             }
 
-            async function paintFolder(): Promise<void> {
-                const where = (await ctx.invoke('folder')) as { path: string }
-                folderPath = where.path
-                folderName.textContent = where.path.split(/[\\/]/).filter(Boolean).at(-1) ?? where.path
-                place.replaceChildren(folderKey)
-            }
-
-            folderKey.onclick = () => void ctx.shell.reveal(folderPath)
             const repaint = (): void => void refresh()
             galleries.add(repaint)
 
             async function refresh(): Promise<void> {
-                void paintFolder().catch(() => undefined)
                 try {
                     pages = (await ctx.invoke('list')) as Page[]
                 } catch {
@@ -708,8 +682,13 @@ export function activate(ctx: PluginContext): void {
                 return shift(() => ctx.invoke('read', path) as Promise<OpenResult>)
             }
 
-            function browse(): Promise<void> {
-                return shift(() => ctx.invoke('open') as Promise<OpenResult>)
+            async function browse(): Promise<void> {
+                try {
+                    const where = (await ctx.invoke('folder')) as { path: string }
+                    await ctx.shell.reveal(where.path)
+                } catch {
+                    complain('Cannot open')
+                }
             }
 
             async function makePage(): Promise<void> {

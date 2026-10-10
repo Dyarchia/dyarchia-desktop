@@ -421,27 +421,90 @@ function stateOf(corpus) {
 }
 
 /*
+ * The words two versions of a line share, in order: the longest common run of tokens, a token
+ * being a word or the space after it. What is not shared went or came.
+ */
+function wordDiff(before, after) {
+    const a = before.split(/(\s+)/).filter(Boolean)
+    const b = after.split(/(\s+)/).filter(Boolean)
+    const table = Array.from({ length: a.length + 1 }, () => new Uint16Array(b.length + 1))
+    for (let i = a.length - 1; i >= 0; i--) {
+        for (let j = b.length - 1; j >= 0; j--) {
+            table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1])
+        }
+    }
+    const parts = []
+    const push = (kind, text) => {
+        const last = parts.at(-1)
+        if (last && last.kind === kind) last.text += text
+        else parts.push({ kind, text })
+    }
+    let i = 0
+    let j = 0
+    while (i < a.length || j < b.length) {
+        if (i < a.length && j < b.length && a[i] === b[j]) {
+            push('same', a[i])
+            i++
+            j++
+        } else if (j < b.length && (i === a.length || table[i][j + 1] >= table[i + 1][j])) {
+            push('ins', b[j++])
+        } else {
+            push('del', a[i++])
+        }
+    }
+    return parts
+}
+
+/*
  * What a page's text lost and gained, as kanon's diff: no green and no red, since a page that
  * changed is neither good news nor bad. The two file lines go, they name the page the fold already
- * names; a hunk's coordinates become a quiet gap.
+ * names; a hunk's coordinates become a quiet gap. A run of removed lines followed by as many added
+ * ones is a rewrite, not a removal and an addition: each pair becomes one line with only its
+ * changed words marked, so a sentence that gained three words shows those three words.
  */
 function diffBlock(text) {
     const box = el('div', 'dya-diff')
     const lines = String(text).split('\n')
     while (lines.length && lines.at(-1) === '') lines.pop()
+    const line = (kind, content) => {
+        const node = el('div', `dya-diff__line${kind ? ` dya-diff__line--${kind}` : ''}`, content || ' ')
+        node.dataset.sign = kind === 'ins' ? '+' : kind === 'del' ? '-' : ''
+        return node
+    }
     let started = false
-    for (const line of lines) {
-        if (line.startsWith('+++') || line.startsWith('---')) continue
-        if (line.startsWith('@@')) {
+    for (let index = 0; index < lines.length; index++) {
+        const current = lines[index]
+        if (current.startsWith('+++') || current.startsWith('---')) continue
+        if (current.startsWith('@@')) {
             if (started) box.append(el('div', 'dya-diff__gap'))
             continue
         }
         started = true
-        const sign = line[0]
-        const kind = sign === '+' ? ' dya-diff__line--ins' : sign === '-' ? ' dya-diff__line--del' : ''
-        const node = el('div', `dya-diff__line${kind}`, line.slice(1) || ' ')
-        node.dataset.sign = sign === '+' || sign === '-' ? sign : ''
-        box.append(node)
+        if (current[0] === '-') {
+            let end = index
+            while (end < lines.length && lines[end][0] === '-' && !lines[end].startsWith('---')) end++
+            let after = end
+            while (after < lines.length && lines[after][0] === '+' && !lines[after].startsWith('+++')) after++
+            const removed = lines.slice(index, end)
+            const added = lines.slice(end, after)
+            if (removed.length === added.length) {
+                removed.forEach((old, n) => {
+                    const node = el('div', 'dya-diff__line')
+                    node.dataset.sign = ''
+                    const words = el('span')
+                    for (const part of wordDiff(old.slice(1), added[n].slice(1))) {
+                        words.append(part.kind === 'same' ? document.createTextNode(part.text) : el('span', `dya-diff__word--${part.kind}`, part.text))
+                    }
+                    if (!words.textContent) words.textContent = ' '
+                    node.append(words)
+                    box.append(node)
+                })
+                index = after - 1
+                continue
+            }
+        }
+        const sign = current[0]
+        box.append(line(sign === '+' ? 'ins' : sign === '-' ? 'del' : '', current.slice(1)))
     }
     return box
 }

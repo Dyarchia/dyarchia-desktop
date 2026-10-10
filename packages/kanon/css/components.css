@@ -563,28 +563,29 @@
 }
 
 /*
- * A key that is on, a mode chosen, a view shown or a panel open, is never underlined: it stands on the accent's
- * soft ground with its glyph in the accent. Words keep the top ink, since the accent on its own
- * wash measures 4.38 over a panel and is a graphic there, not text.
+ * A key that is on, a mode chosen, a view shown or a panel open, is never underlined: it stands on
+ * the accent itself, copper and not a tint of it, its glyph and words in the ground's black, 6.37
+ * on the accent as the primary's word is. Under the pointer it steps toward the ink as the primary
+ * does.
  */
 .dya-key--active,
-.dya-key--active:hover,
 .dya-key[aria-pressed="true"],
 .dya-key[aria-selected="true"],
 .dya-button[aria-pressed="true"],
 .dya-chip[aria-pressed="true"] {
-    background-color: var(--dya-accent-soft);
-    color: var(--dya-accent);
+    border-color: var(--dya-accent);
+    background-color: var(--dya-accent);
+    color: var(--dya-on-accent);
 }
 
-.dya-button[aria-pressed="true"],
-.dya-chip[aria-pressed="true"] {
-    color: var(--dya-text);
-}
-
-.dya-button[aria-pressed="true"] > svg,
-.dya-chip[aria-pressed="true"] > svg {
-    color: var(--dya-accent);
+.dya-key--active:hover,
+.dya-key[aria-pressed="true"]:hover,
+.dya-key[aria-selected="true"]:hover,
+.dya-button[aria-pressed="true"]:hover,
+.dya-chip[aria-pressed="true"]:hover {
+    border-color: var(--dya-accent-hover);
+    background-color: var(--dya-accent-hover);
+    color: var(--dya-on-accent);
 }
 
 /*

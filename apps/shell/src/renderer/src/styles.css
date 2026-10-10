@@ -106,7 +106,7 @@ body,
     --dv-icon-hover-background-color: var(--dya-hover);
     --dv-border-radius: var(--dya-radius-chassis);
     --dv-tab-border-radius: 0;
-    --dv-tabs-and-actions-container-height: 40px;
+    --dv-tabs-and-actions-container-height: calc(var(--dya-size-control) + 12px);
     --dv-tab-margin-block: 0;
     --dv-floating-border: var(--dya-border-width) solid var(--dya-border);
     --dv-floating-group-border: var(--dya-border-width) solid var(--dya-border);
@@ -208,11 +208,17 @@ body,
 
 /*
  * Every group shows one of its tabs on the pressed wash, but only one group is the one the window
- * is working in, and only its tab stands on the accent's wash; the marks keep their own ink. A
- * terminal holding the focus has its copper in its cursor, so its tab keeps the plain wash.
+ * is working in, and only its tab stands on the accent itself, its name, keys and a monochrome
+ * mark in the ground's black (6.37); a mark with colours of its own keeps them. A terminal holding
+ * the focus has its copper in its cursor, so its tab keeps the plain wash.
  */
 .dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
-    background-color: var(--dya-accent-soft);
+    background-color: var(--dya-accent);
+    color: var(--dya-on-accent);
+}
+
+.dv-groupview.dv-active-group .panel-tab[aria-selected='true'] :is(.dya-tab__action, .dya-glyph) {
+    color: var(--dya-on-accent);
 }
 
 .dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'] {
@@ -220,9 +226,7 @@ body,
 }
 
 .panel-tab-title {
-    max-inline-size: 28ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
 .panel-tab-actions {

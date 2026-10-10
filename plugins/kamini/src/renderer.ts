@@ -52,8 +52,8 @@ const STYLES = `
     min-width: 12rem;
 }
 .kamini-menu .dya-menu__item > svg {
-    width: 15px;
-    height: 15px;
+    width: var(--dya-size-glyph);
+    height: var(--dya-size-glyph);
     flex: none;
 }
 .kamini-section {
@@ -107,7 +107,7 @@ const STYLES = `
     grid-template-rows: var(--kamini-rows);
 }
 .kamini-form--text > :not(.dya-label, .kamini-text__editor) {
-    max-width: 560px;
+    max-width: 660px;
 }
 .kamini-text__editor {
     align-self: stretch;

@@ -61,7 +61,7 @@ const STYLE = `
 }
 .crw-changed {
     flex: none;
-    width: 264px;
+    width: 316px;
     overflow: auto;
     padding-inline-end: var(--dya-space-4);
     border-inline-end: var(--dya-border-width) solid var(--dya-hairline);
@@ -131,14 +131,14 @@ const STYLE = `
     width: auto;
 }
 .crw-card .dya-table__num {
-    width: 80px;
+    width: 96px;
     padding-inline: var(--dya-space-2);
 }
 .crw-card .crw-swept {
-    width: 112px;
+    width: 134px;
 }
 .crw-card .crw-pick {
-    width: 40px;
+    width: 48px;
     padding-inline: var(--dya-space-4) 0;
 }
 .crw-card .dya-card__header > label {

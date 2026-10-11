@@ -11,7 +11,6 @@ import type {
 } from 'dockview-react'
 import { Launcher } from '../components/Launcher'
 import { Svg } from '../components/Svg'
-import { NavKeys } from '../panels/NavKeys'
 import { PluginPanel } from '../panels/PluginPanel'
 import {
     basePanelId,
@@ -32,8 +31,6 @@ const dyarchiaTheme: DockviewTheme = {
 }
 
 const ANOTHER_ICON = glyph('add')
-const EXPAND_ICON = glyph('expand')
-const CONTRACT_ICON = glyph('contract')
 const CLOSE_ICON = glyph('close')
 
 const titleListeners = new Set<() => void>()
@@ -150,7 +147,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
                         />
                     )}
                     <button
-                        className="dya-tab__action"
+                        className="dya-tab__action dya-tab__action--close"
                         aria-label={`Close ${shown}`}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
@@ -168,8 +165,7 @@ function PanelTab(props: IDockviewPanelHeaderProps): React.JSX.Element {
 /*
  * The open panel's own actions, at the right of its group's tab row. The element belongs to the
  * panel and is only lent to the header: it moves here when its panel becomes the group's open tab
- * and leaves when another does, keeping its state and its listeners. The last key is one more of
- * them: maximize, whose arrows turn inward to restore, faint while the group is alone.
+ * and leaves when another does, keeping its state and its listeners.
  */
 function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
     const host = useRef<HTMLDivElement>(null)
@@ -183,45 +179,7 @@ function PanelToolbar(props: IDockviewHeaderActionsProps): React.JSX.Element {
         host.current?.replaceChildren(...(element ? [element] : []))
     }, [active, revision])
 
-    const [, setFrame] = useState(0)
-    useEffect(() => {
-        const bump = (): void => setFrame((value) => value + 1)
-        const subscriptions = [
-            props.containerApi.onDidMaximizedGroupChange(bump),
-            props.containerApi.onDidAddGroup(bump),
-            props.containerApi.onDidRemoveGroup(bump)
-        ]
-        return () => subscriptions.forEach((subscription) => subscription.dispose())
-    }, [props.containerApi])
-
-    const maximized = props.api.isMaximized()
-    const alone = props.containerApi.groups.length < 2
-
-    return (
-        <div className="panel-actions">
-            <div ref={host} className="panel-toolbar-host" />
-            <button
-                    type="button"
-                    className="dya-key panel-frame"
-                    aria-label={maximized ? 'Restore' : 'Maximize'}
-                    disabled={alone && !maximized}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={() => {
-                        if (maximized) props.api.exitMaximized()
-                        else if (props.activePanel) props.containerApi.maximizeGroup(props.activePanel)
-                    }}
-                    dangerouslySetInnerHTML={{ __html: maximized ? CONTRACT_ICON : EXPAND_ICON }}
-                />
-        </div>
-    )
-}
-
-/*
- * Back and home of the panel the group shows, before its tabs: the way out sits where a reader
- * starts every header.
- */
-function PanelNavHost(props: IDockviewHeaderActionsProps): React.JSX.Element {
-    return <NavKeys instanceId={props.activePanel?.id} />
+    return <div ref={host} className="panel-toolbar-host" />
 }
 
 interface DockLayoutProps {
@@ -265,13 +223,6 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
                     }, 500)
                 })
             }
-            /*
-             * A maximized group gives its place back on Escape, unless the panel inside used the
-             * key for something of its own.
-             */
-            document.addEventListener('keydown', (keyEvent) => {
-                if (keyEvent.key === 'Escape' && !keyEvent.defaultPrevented && api.hasMaximizedGroup()) api.exitMaximizedGroup()
-            })
             onReady(api)
         },
         [onReady]
@@ -283,7 +234,6 @@ export function DockLayout({ onReady, onOpen }: DockLayoutProps): React.JSX.Elem
             theme={dyarchiaTheme}
             components={{ 'plugin-panel': PluginPanel }}
             defaultTabComponent={PanelTab}
-            prefixHeaderActionsComponent={PanelNavHost}
             rightHeaderActionsComponent={PanelToolbar}
             watermarkComponent={watermark}
             onReady={handleReady}

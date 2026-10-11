@@ -23,24 +23,22 @@
     --dya-weight: 400;
     --dya-weight-medium: 500;
 
-    --dya-size-display: 45px;
-    --dya-size-inscription: 54px;
-    --dya-size-h2: 31px;
-    --dya-size-h3: 26px;
-    --dya-size-h4: 21.5px;
-    --dya-size-body: 18px;
-    --dya-size-body-sm: 15px;
-    --dya-size-body-xs: 15px;
-    --dya-size-mono: 15px;
-    --dya-size-mono-sm: 15px;
-    --dya-size-mono-xs: 15px;
-    --dya-size-label: 12.5px;
-    --dya-size-label-sm: 12.5px;
+    --dya-size-display: 42px;
+    --dya-size-inscription: 56px;
+    --dya-size-h2: 25px;
+    --dya-size-h3: 19px;
+    --dya-size-h4: 16px;
+    --dya-size-body: 15px;
+    --dya-size-body-sm: 14px;
+    --dya-size-body-xs: 13px;
+    --dya-size-mono: 13px;
+    --dya-size-mono-sm: 12.5px;
+    --dya-size-mono-xs: 12px;
+    --dya-size-label: 11px;
+    --dya-size-label-sm: 10.5px;
 
-    --dya-size-control: 34px;
-    --dya-size-glyph: 20px;
-
-    --dya-size-bar: 38px;
+    --dya-size-control: 28px;
+    --dya-size-bar: 32px;
 
     --dya-tracking-ui: 0;
     --dya-tracking-key: -0.005em;
@@ -131,8 +129,6 @@
     --dya-code-key: #89ddff;
     --dya-code-comment: var(--dya-text-faint);
     --dya-code-punct: #b0aea5;
-    --dya-code-addition: #8fb98c;
-    --dya-code-deletion: #c9918e;
 
     --dya-elev-popover: 0 4px 16px #0000001a;
     --dya-elev-overlay: 0 40px 110px #000000a6;

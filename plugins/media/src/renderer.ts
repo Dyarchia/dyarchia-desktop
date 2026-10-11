@@ -5,7 +5,7 @@ import type { Job, Probe, Ready, Sources, Spec, Tool } from './types.js'
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a Laconian bronze mirror, the polished disc a standing figure holds up with both arms, which
- * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 15px.
+ * Spartan workshops made and sent across the Greek world. Solid shapes, so it reads at 18px.
  */
 const MEDIA_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M2.3 20.3l1.4 1.4M3 21 13 11"/><path d="M13 11Q16.4 8.6 22.4 7.4L16.6 1.6Q15.4 7.6 13 11Z"/></svg>'
@@ -53,7 +53,7 @@ const STYLES = `
 }
 .media-unit > .dya-field,
 .media-time {
-    width: 112px;
+    width: 96px;
 }
 .media .dya-form__stack > .dya-key {
     align-self: flex-start;
@@ -70,7 +70,10 @@ const STYLES = `
     display: block;
 }
 .media-jobs .dya-table__name {
-    overflow-wrap: anywhere;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 `
 
@@ -154,17 +157,13 @@ export function activate(ctx: PluginContext): void {
         }
 
         /*
-         * An open tool goes back to the tools with the header's back or home, or with Escape.
+         * An open tool closes with its X or with Escape, back to the tools.
          */
-        let open = false
-        const opened = (on: boolean): void => {
-            open = on
-            const leave = on ? () => show(null) : null
-            handle.navigate({ back: leave, home: leave })
-        }
+        const back = key('close', 'Close', () => show(null))
+        handle.toolbar.append(back)
         root.tabIndex = -1
         root.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape' || event.defaultPrevented || !open) return
+            if (event.key !== 'Escape' || event.defaultPrevented || back.hidden) return
             event.preventDefault()
             if (event.target instanceof HTMLElement && event.target.matches('textarea, input')) root.focus({ preventScroll: true })
             else show(null)
@@ -272,9 +271,8 @@ export function activate(ctx: PluginContext): void {
             const failure = el('span', 'dya-text dya-text--danger media-failure')
             if (tool.verb) {
                 const actions = el('div', 'dya-form__actions')
-                const go = el('button', 'dya-key dya-key--primary')
+                const go = el('button', 'dya-button dya-button--primary', tool.verb)
                 go.type = 'button'
-                face(go, tool.icon, tool.verb)
                 go.addEventListener('click', () => {
                     failure.textContent = ''
                     if (live && watching !== null) {
@@ -288,18 +286,18 @@ export function activate(ctx: PluginContext): void {
                         .then((id) => {
                             if (live) {
                                 watching = id
-                                face(go, 'stop', 'Stop')
+                                go.textContent = 'Stop'
                             }
                         })
                         .catch(fail)
                         .finally(() => (go.disabled = false))
                 })
                 if (live) {
-                    liveKey = { go, icon: tool.icon, verb: tool.verb }
+                    liveKey = { go, verb: tool.verb }
                     const running = jobs.find((job) => job.tool === tool.id && job.state === 'running')
                     if (running) {
                         watching = running.id
-                        face(go, 'stop', 'Stop')
+                        go.textContent = 'Stop'
                     }
                 }
                 actions.append(go)
@@ -309,16 +307,7 @@ export function activate(ctx: PluginContext): void {
             return node
         }
 
-        let liveKey: { go: HTMLButtonElement; icon: GlyphName; verb: string } | null = null
-
-        /*
-         * A tool's action is its own glyph on the primary key, the glyph its tile wears, and a
-         * capture under way turns it to stop.
-         */
-        function face(go: HTMLButtonElement, icon: GlyphName, words: string): void {
-            go.innerHTML = glyph(icon)
-            go.setAttribute('aria-label', words)
-        }
+        let liveKey: { go: HTMLButtonElement; verb: string } | null = null
 
         function needFile(file: { path: () => string }): string | null {
             if (file.path()) return file.path()
@@ -575,15 +564,13 @@ export function activate(ctx: PluginContext): void {
             liveKey = null
             watching = null
             if (!state.ffmpeg) {
-                opened(false)
+                back.hidden = true
                 handle.setTitle(null)
                 const empty = el('div', 'dya-empty')
                 empty.append(el('span', 'dya-text', 'FFmpeg missing'))
                 const actions = el('div', 'dya-empty__actions')
-                const setup = el('button', 'dya-key dya-key--primary')
+                const setup = el('button', 'dya-button dya-button--primary', 'Setup')
                 setup.type = 'button'
-                setup.innerHTML = glyph('settings')
-                setup.setAttribute('aria-label', 'Setup')
                 setup.addEventListener('click', () => void ctx.shell.show('settings'))
                 actions.append(setup)
                 empty.append(actions)
@@ -591,7 +578,7 @@ export function activate(ctx: PluginContext): void {
                 return
             }
             const info = TOOLS.find((entry) => entry.id === tool)
-            opened(Boolean(info))
+            back.hidden = !info
             handle.setTitle(info ? info.name : null)
             if (!info) {
                 const grid = el('div', 'dya-grid')
@@ -739,7 +726,7 @@ export function activate(ctx: PluginContext): void {
             if (at === -1) jobs.push(job)
             else jobs[at] = job
             if (job.id === watching && job.state !== 'running' && liveKey) {
-                face(liveKey.go, liveKey.icon, liveKey.verb)
+                liveKey.go.textContent = liveKey.verb
                 watching = null
             }
             paintJobs()
@@ -758,7 +745,7 @@ export function activate(ctx: PluginContext): void {
         })
 
         chooseTool = (tool) => show(tool)
-        opened(false)
+        back.hidden = true
 
         return () => {
             disposed = true

@@ -41,16 +41,6 @@ export interface PanelDescriptor {
 
 export type PanelDispose = () => void
 
-/*
- * Where a panel can go from where it stands: one step back, and to its own home, the view it opens
- * on. The shell draws both at the head of the panel's header and greys out the one that is absent
- * or null, so a panel at its home with nothing behind it shows them faint rather than not at all.
- */
-export interface PanelNav {
-    back?: (() => void) | null
-    home?: (() => void) | null
-}
-
 export interface PanelHandle {
     readonly instanceId: string
     close(): void
@@ -68,11 +58,6 @@ export interface PanelHandle {
      * out of the header as the group changes tab.
      */
     readonly toolbar: HTMLElement
-    /*
-     * Tell the shell what back and home do now. Call it whenever the panel's view changes; the
-     * last call wins.
-     */
-    navigate(nav: PanelNav): void
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void

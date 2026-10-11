@@ -29,17 +29,11 @@ export function basePanelId(instanceId: string): string {
 
 export type PanelDispose = () => void
 
-export interface PanelNav {
-    back?: (() => void) | null
-    home?: (() => void) | null
-}
-
 export interface PanelHandle {
     readonly instanceId: string
     close(): void
     setTitle(title: string | null, icon?: string | null): void
     readonly toolbar: HTMLElement
-    navigate(nav: PanelNav): void
 }
 
 export type PanelMount = (container: HTMLElement, handle: PanelHandle) => PanelDispose | void
@@ -120,26 +114,4 @@ export function getToolbar(instanceId: string): HTMLElement | undefined {
 export function onToolbarChange(listener: () => void): () => void {
     toolbarListeners.add(listener)
     return () => toolbarListeners.delete(listener)
-}
-
-/*
- * What back and home do for each panel instance, as the panel last said. The header reads it for
- * the panel its group shows, and a modal for its own.
- */
-const navs = new Map<string, PanelNav>()
-const navListeners = new Set<(instanceId: string) => void>()
-
-export function setNav(instanceId: string, nav: PanelNav | null): void {
-    if (nav) navs.set(instanceId, nav)
-    else navs.delete(instanceId)
-    for (const listener of navListeners) listener(instanceId)
-}
-
-export function getNav(instanceId: string): PanelNav | undefined {
-    return navs.get(instanceId)
-}
-
-export function onNavChange(listener: (instanceId: string) => void): () => void {
-    navListeners.add(listener)
-    return () => navListeners.delete(listener)
 }

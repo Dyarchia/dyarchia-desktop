@@ -11,13 +11,13 @@ const STYLES =
     xtermCss +
     '\n.dyarchia-terminal {' +
     ' position: relative;' +
-    ' height: 100%; padding: var(--dya-space-4) 0 0 var(--dya-space-4); }' +
+    ' height: 100%; padding: var(--dya-space-2) 0 0 var(--dya-space-2); }' +
     '\n.dyarchia-terminal-connecting { position: absolute; inset: 0; }'
 
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * the prompt turned upright, which is a lambda: Lacedaemon on every shield.
- * Solid shapes rather than hairlines, so it reads as a key at 15px.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const TERMINAL_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.4 18.6 7.8 5.4 13.2 18.6" fill="none" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--dya-text)"/><rect x="15.4" y="16.9" width="8.2" height="3" rx=".6" style="fill:var(--dya-text)"/></svg>'
@@ -271,24 +271,8 @@ export function activate(ctx: PluginContext): void {
         }
         const observer = new ResizeObserver(refit)
         observer.observe(container)
-        /*
-         * The cursor is copper only while the terminal holds the focus: copper is spent once per
-         * view, and a terminal nobody is typing in has not been given it.
-         */
-        let focused = false
-        const paintCursor = (): void => {
-            terminal.options.theme = { ...terminalTheme(ctx.token), ...(focused ? { cursor: ctx.token('accent') } : {}) }
-        }
-        terminal.textarea?.addEventListener('focus', () => {
-            focused = true
-            paintCursor()
-        })
-        terminal.textarea?.addEventListener('blur', () => {
-            focused = false
-            paintCursor()
-        })
         const offTheme = ctx.theme.on(() => {
-            paintCursor()
+            terminal.options.theme = terminalTheme(ctx.token)
             terminal.options.fontFamily = ctx.token('font-mono')
             refit()
         })

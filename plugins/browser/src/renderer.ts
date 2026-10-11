@@ -37,10 +37,11 @@ const svg = (body: string): string =>
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a scytale, the rod a Spartan wrapped a message round so only its twin could read it.
- * Solid shapes rather than hairlines, so it reads as a key at 15px.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const GLOBE_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.6 21.4 21.4 2.6" stroke-width="2.6" stroke-linecap="round" style="stroke:var(--dya-text-muted)"/><path d="M2.51 16.40 L8.66 20.43 L9.86 19.23 L3.71 15.20Z" style="fill:var(--dya-text)"/><path d="M4.28 16.89 L5.47 17.68 M6.48 18.36 L7.67 19.16" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M5.91 13.00 L12.06 17.03 L13.26 15.83 L7.11 11.80Z" style="fill:var(--dya-text)"/><path d="M7.68 13.49 L8.87 14.28 M9.88 14.96 L11.07 15.76" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M9.31 9.60 L15.46 13.63 L16.66 12.43 L10.51 8.40Z" style="fill:var(--dya-text)"/><path d="M11.08 10.09 L12.27 10.88 M13.28 11.56 L14.47 12.36" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M12.71 6.20 L18.86 10.23 L20.06 9.03 L13.91 5.00Z" style="fill:var(--dya-text)"/><path d="M14.48 6.69 L15.67 7.48 M16.68 8.16 L17.87 8.96" stroke-width=".7" stroke-linecap="round" style="stroke:var(--dya-on-accent)"/><path d="M19.43 9.38 C22.26 10.79 24.10 8.39 27.21 8.96" fill="none" stroke-width="2.2" stroke-linecap="round" style="stroke:var(--dya-text)"/></svg>'
+const BACK_ICON = svg('<path d="m15 18-6-6 6-6"/>')
 const FORWARD_ICON = svg('<path d="m9 18 6-6-6-6"/>')
 const RELOAD_ICON = glyph('refresh')
 const STOP_ICON = glyph('close')
@@ -220,22 +221,17 @@ export function activate(ctx: PluginContext): void {
             }
 
             /*
-             * One strip: forward and reload, the address, the star that keeps it, and the book that
-             * opens what is kept; back and home are the header's, as in every panel. Opening the page outside is a
+             * One strip: the three keys that move through the history, home, the address, the star
+             * that keeps it, and the book that opens what is kept. Opening the page outside is a
              * palette command. A page that plays a video FFmpeg can
              * read adds a save key to the strip; while it saves, the ring beside the strip fills.
              */
             const bar = el('div', 'dya-bar brw-bar')
             const strip = el('div', 'dya-join')
+            const back = key(BACK_ICON, 'Back', () => view.goBack())
             const forward = key(FORWARD_ICON, 'Forward', () => view.goForward())
-            let failed = ''
-            const reload = key(RELOAD_ICON, 'Reload', () => {
-                if (loading) view.stop()
-                else if (!fail.hidden && failed) go(failed)
-                else view.reload()
-            })
-            const goHome = (): void => go(home())
-            handle.navigate({ back: null, home: goHome })
+            const reload = key(RELOAD_ICON, 'Reload', () => (loading ? view.stop() : view.reload()))
+            const homeKey = key(glyph('home'), 'Home', () => go(home()))
             const address = el('input', 'dya-field')
             address.type = 'text'
             address.setAttribute('aria-label', 'Address')
@@ -256,7 +252,7 @@ export function activate(ctx: PluginContext): void {
             save.hidden = true
             const saving = el('span', 'dya-ring dya-ring--busy')
             saving.hidden = true
-            strip.append(forward, reload, address, signIn, save, star, shelf)
+            strip.append(back, forward, reload, homeKey, address, signIn, save, star, shelf)
             bar.append(strip, saving)
             const offVideos = ctx.on('videos', (id: unknown, count: unknown) => {
                 if (id !== guest) return
@@ -416,7 +412,7 @@ export function activate(ctx: PluginContext): void {
                 if (!ready) return
                 const url = view.getURL()
                 if (document.activeElement !== address) address.value = url
-                handle.navigate({ back: view.canGoBack() ? () => view.goBack() : null, home: goHome })
+                back.disabled = !view.canGoBack()
                 forward.disabled = !view.canGoForward()
                 const kept = library.bookmarks.find((entry) => entry.url === url)
                 const marked = kept !== undefined
@@ -799,16 +795,20 @@ export function activate(ctx: PluginContext): void {
             view.addEventListener('page-title-updated', sync)
 
             /*
-             * An error the page could not paint itself, said with the host and the reason and no
-             * key of its own: the bar's reload, a line above, tries the address that failed. A
-             * navigation that was replaced by another reports -3 and is not a failure.
+             * An error the page could not paint itself. A navigation that was replaced by another
+             * reports -3 and is not a failure, so it is left alone.
              */
             view.addEventListener('did-fail-load', (event) => {
                 if (!event.isMainFrame || event.errorCode === -3) return
-                failed = event.validatedURL
+                const retry = el('button', 'dya-button', 'Retry')
+                retry.type = 'button'
+                retry.addEventListener('click', () => go(event.validatedURL))
+                const actions = el('div', 'dya-empty__actions')
+                actions.append(retry)
                 fail.replaceChildren(
                     el('span', 'dya-title', hostOf(event.validatedURL)),
-                    el('span', 'dya-mono', event.errorDescription || String(event.errorCode))
+                    el('span', 'dya-mono', event.errorDescription || String(event.errorCode)),
+                    actions
                 )
                 fail.hidden = false
             })
@@ -844,6 +844,7 @@ export function activate(ctx: PluginContext): void {
                 .catch(() => undefined)
                 .finally(start)
 
+            back.disabled = true
             forward.disabled = true
 
             return () => {

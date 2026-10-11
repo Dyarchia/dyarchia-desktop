@@ -161,7 +161,7 @@ export function TopBar({ palette, onLauncher }: TopBarProps): React.JSX.Element 
                         dangerouslySetInnerHTML={{ __html: MAXIMIZE_ICON }}
                     />
                     <button
-                        className="dya-winkey"
+                        className="dya-winkey dya-winkey--close"
                         aria-label="Close"
                         onClick={() => windowAction('close')}
                         dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}

@@ -41,20 +41,10 @@ const STYLES = `
     gap: var(--dya-space-5);
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-4);
+    padding: var(--dya-space-5) var(--dya-space-6) var(--dya-space-6);
 }
 .kamini-list .kamini-fold-body {
     padding-bottom: var(--dya-space-2);
-}
-.kamini-menu {
-    position-area: bottom span-left;
-    margin: var(--dya-space-1) 0 0;
-    min-width: 12rem;
-}
-.kamini-menu .dya-menu__item > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
-    flex: none;
 }
 .kamini-section {
     display: flex;
@@ -70,6 +60,9 @@ const STYLES = `
 .kamini-rows {
     width: max-content;
     max-width: 100%;
+}
+.kamini-section > .kamini-rows {
+    margin-inline-start: calc(-1 * var(--dya-space-2));
 }
 .kamini-group {
     display: flex;
@@ -90,7 +83,7 @@ const STYLES = `
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-4);
-    padding: var(--dya-space-4) var(--dya-space-4) 0;
+    padding: var(--dya-space-5) var(--dya-space-6) 0;
 }
 .kamini-body {
     display: flex;
@@ -99,7 +92,7 @@ const STYLES = `
     gap: var(--dya-space-5);
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-5) var(--dya-space-4) var(--dya-space-4);
+    padding: var(--dya-space-5) var(--dya-space-6) var(--dya-space-6);
 }
 .kamini-form--text {
     flex: 1 0 auto;
@@ -107,7 +100,7 @@ const STYLES = `
     grid-template-rows: var(--kamini-rows);
 }
 .kamini-form--text > :not(.dya-label, .kamini-text__editor) {
-    max-width: 660px;
+    max-width: 560px;
 }
 .kamini-text__editor {
     align-self: stretch;
@@ -229,16 +222,6 @@ const TABS: Record<Kind, string[]> = {
  * command, a herald's staff for a prompt, a wax tablet for memory, a column for a rule, an amphora
  * for a plugin, and Athena's owl for help. None of them means anything else anywhere in the app.
  */
-const SINGULAR: Record<Kind, string> = {
-    agent: 'Agent',
-    skill: 'Skill',
-    command: 'Command',
-    prompt: 'Prompt',
-    memory: 'Memory',
-    rule: 'Rule',
-    plugin: 'Plugin'
-}
-
 const MARK = (paths: string): string =>
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
 
@@ -342,8 +325,8 @@ export function activate(ctx: PluginContext): void {
             return button
         }
 
-        function button(words: string, act: () => void): HTMLButtonElement {
-            const node = el('button', 'dya-button', words)
+        function button(words: string, act: () => void, primary = false): HTMLButtonElement {
+            const node = el('button', primary ? 'dya-button dya-button--primary' : 'dya-button', words)
             node.type = 'button'
             node.addEventListener('click', act)
             return node
@@ -357,37 +340,12 @@ export function activate(ctx: PluginContext): void {
         const helpKey = key('help', 'Help', () => openHelp())
         const importKey = key('import', 'Import', () => void importFiles())
         const removeKey = key('delete', 'Delete', () => void removeCurrent())
-        const exportButton = key('open', 'Export', () => void exportCurrent())
-        exportButton.classList.add('dya-key--primary')
-        const copyButton = key('add', 'Copy', () => void adopt())
-        copyButton.classList.add('dya-key--primary')
-        const doneButton = key('check', 'Done', () => toggleDone())
-        /*
-         * Making something starts at one key: the plus opens the seven kinds, anchored under it,
-         * and the one chosen opens its editor a level in.
-         */
-        const anchor = `--kamini-make-${handle.instanceId.replace(/\W/g, '')}`
-        const makeMenu = el('div', 'dya-menu kamini-menu')
-        makeMenu.popover = 'auto'
-        makeMenu.setAttribute('role', 'menu')
-        makeMenu.style.setProperty('position-anchor', anchor)
-        for (const { kind } of KINDS) {
-            const item = el('button', 'dya-menu__item')
-            item.type = 'button'
-            item.setAttribute('role', 'menuitem')
-            item.innerHTML = MARKS[kind]
-            item.append(el('span', '', SINGULAR[kind]))
-            item.addEventListener('click', () => {
-                makeMenu.hidePopover()
-                void create(kind)
-            })
-            makeMenu.append(item)
-        }
-        const makeKey = key('add', 'New', () => makeMenu.togglePopover())
-        makeKey.style.setProperty('anchor-name', anchor)
-        root.append(makeMenu)
+        const closeKey = key('close', 'Close', () => void closeCurrent())
+        const exportButton = button('Export', () => void exportCurrent(), true)
+        const copyButton = button('Copy', () => void adopt(), true)
+        const doneButton = button('Done', () => toggleDone())
         const strip = el('div', 'dya-toolbar')
-        strip.append(makeKey, helpKey, importKey, removeKey)
+        strip.append(helpKey, importKey, removeKey, closeKey)
         handle.toolbar.append(strip, doneButton, exportButton, copyButton)
 
         function toggleDone(): void {
@@ -395,29 +353,17 @@ export function activate(ctx: PluginContext): void {
             current.done = !current.done
             face = current.done ? 'library' : 'workbench'
             changed(true)
-            void closeCurrent()
         }
 
         function paintBar(): void {
             const editing = root.dataset.view === 'editor'
-            handle.navigate({
-                back: editing ? () => void closeCurrent() : trail.length ? () => void switchFace(trail.pop()!, false) : null,
-                home:
-                    editing || face !== 'workbench'
-                        ? () => {
-                              trail.length = 0
-                              void closeCurrent().then(() => switchFace('workbench', false))
-                          }
-                        : null
-            })
+            closeKey.hidden = !editing
             removeKey.hidden = !(current && !draft && editing)
             exportButton.hidden = !(current && editing)
             copyButton.hidden = !(viewing && editing)
             importKey.hidden = editing || face !== 'workbench'
-            makeKey.hidden = editing
             doneButton.hidden = !(current && editing)
-            doneButton.setAttribute('aria-pressed', String(Boolean(current?.done)))
-            doneButton.setAttribute('aria-label', current?.done ? 'Reopen' : 'Done')
+            doneButton.textContent = current?.done ? 'Reopen' : 'Done'
         }
 
         /*
@@ -472,15 +418,9 @@ export function activate(ctx: PluginContext): void {
             return tabs
         }
 
-        /*
-         * The faces visited are a trail, so back returns to the one before as it does anywhere.
-         */
-        const trail: Face[] = []
-
-        async function switchFace(next: Face, going = true): Promise<void> {
+        async function switchFace(next: Face): Promise<void> {
             if (next === face) return
             await closeCurrent()
-            if (going) trail.push(face)
             face = next
             if (face === 'installed') await discover()
             paintList()
@@ -534,6 +474,7 @@ export function activate(ctx: PluginContext): void {
             const form = el('div', 'dya-form kamini-project')
             const join = el('div', 'dya-join')
             const field = el('input', 'dya-field dya-field--code')
+            field.placeholder = 'Project'
             field.value = project
             field.setAttribute('aria-label', 'Project')
             field.addEventListener('change', () => void setProject(field.value.trim()))
@@ -609,19 +550,14 @@ export function activate(ctx: PluginContext): void {
                 const done = face === 'library'
                 for (const { kind, title } of KINDS) {
                     const entries = listing[kind].filter((entry) => entry.done === done)
-                    if (!entries.length) continue
+                    if (done && !entries.length) continue
                     const node = el('div', 'kamini-section')
                     const head = el('div', 'kamini-section__head')
                     head.append(el('span', 'dya-eyebrow', title))
-                    node.append(head, rows(entries.map((entry) => ({ kind, words: entry.name, selected: false, open: () => void select(kind, entry.id) }))))
+                    if (!done) head.append(key('add', `New ${kind}`, () => void create(kind)))
+                    node.append(head)
+                    if (entries.length) node.append(rows(entries.map((entry) => ({ kind, words: entry.name, selected: false, open: () => void select(kind, entry.id) }))))
                     sectionsList.push(node)
-                }
-                /*
-                 * An empty Workbench is not a blank: it offers the seven kinds as rows, from the top
-                 * left like every list, each opening its editor.
-                 */
-                if (!done && sectionsList.length === 1) {
-                    sectionsList.push(rows(KINDS.map(({ kind }) => ({ kind, words: SINGULAR[kind], selected: false, open: () => void create(kind) }))))
                 }
             }
             list.replaceChildren(...sectionsList)
@@ -670,10 +606,6 @@ export function activate(ctx: PluginContext): void {
 
         async function create(kind: Kind): Promise<void> {
             await flush()
-            if (face !== 'workbench') {
-                trail.push(face)
-                face = 'workbench'
-            }
             open((await ctx.invoke('blank', kind)) as Definition, true)
         }
 
@@ -802,12 +734,10 @@ export function activate(ctx: PluginContext): void {
         scrim.addEventListener('click', closeHelp)
         root.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape' || event.defaultPrevented) return
-            const typing = event.target instanceof HTMLElement && event.target.matches('textarea, input, select')
-            if (sheet.hidden && !typing && !current && !viewing) return
             event.preventDefault()
             if (!sheet.hidden) closeHelp()
-            else if (typing) root.focus({ preventScroll: true })
-            else void closeCurrent()
+            else if (event.target instanceof HTMLElement && event.target.matches('textarea, input, select')) root.focus({ preventScroll: true })
+            else if (current || viewing) void closeCurrent()
         })
 
         /*

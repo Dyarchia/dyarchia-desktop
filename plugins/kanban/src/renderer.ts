@@ -191,7 +191,7 @@ interface CardProgress {
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a phalanx, two ranks of shields with their spears carried forward.
- * Solid shapes rather than hairlines, so it reads as a key at 15px.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M3 8.4A2.4 2.4 0 0 1 7.8 8.4"/><path d="M9.6 8.4A2.4 2.4 0 0 1 14.4 8.4"/><path d="M16.2 8.4A2.4 2.4 0 0 1 21 8.4"/><path d="M1.9 12.6A2.9 2.9 0 0 1 7.7 12.6"/><path d="M9.1 12.6A2.9 2.9 0 0 1 14.9 12.6"/><path d="M16.3 12.6A2.9 2.9 0 0 1 22.1 12.6"/><circle cx="4.2" cy="17.6" r="3.4"/><circle cx="12" cy="17.6" r="3.4"/><circle cx="19.8" cy="17.6" r="3.4"/></svg>'
@@ -253,7 +253,6 @@ interface CardNode {
 interface Column extends DragColumn {
     count: HTMLElement
     empty: HTMLElement
-    setVacant: (vacant: boolean) => void
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -414,26 +413,6 @@ async function instance(ctx: PluginContext): Promise<Commands | undefined> {
 }
 
 function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle): () => void {
-    let navReady = false
-    /*
-     * Back leaves the innermost thing open: a sheet, then the card's drawer, then the list of every
-     * board. Home leaves all of them, back to the board.
-     */
-    const nav = (): void => {
-        if (!navReady) return
-        const away = sheet !== null || watching || !drawer.hidden
-        const back = (): void => {
-            if (sheet) closeSheet()
-            else if (!drawer.hidden) select(null)
-            else if (watching) closeWatch()
-        }
-        const home = (): void => {
-            closeSheet(false)
-            if (!drawer.hidden) select(null)
-            if (watching) closeWatch()
-        }
-        handle.navigate({ back: away ? back : null, home: away ? home : null })
-    }
     const pinKey = `${PIN}${handle.instanceId}`
     const foldKey = (status: Status): string => `${pinKey}:fold:${status}`
     const folded = (status: Status): boolean => {
@@ -624,7 +603,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         marks.inert = false
         if (refocus) (returnFocus?.isConnected ? returnFocus : boardButton).focus()
         returnFocus = null
-        nav()
     }
 
     const openSheet = (content: HTMLElement): void => {
@@ -636,7 +614,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         marks.inert = true
         root.append(content)
         ;(content.querySelector<HTMLElement>('input') ?? content.querySelector<HTMLElement>('button'))?.focus()
-        nav()
     }
 
     const show = (next: View): void => {
@@ -645,7 +622,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         watch.hidden = next !== 'watch'
         setup.hidden = next !== 'form'
         marks.hidden = next !== 'board' || marked.size === 0
-        queueMicrotask(nav)
 
         const onBoard = meta !== null && next === 'board'
         if (!onBoard) closeSheet(false)
@@ -818,13 +794,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         /*
          * Folding is there when a column is being looked at, not eight times over at rest. A folded
          * column keeps its key, because it is the only way back, and so does triage, whose fold
-         * stands in one strip with the add key that is always there. A column with no card in it
-         * folds by itself into its strip and opens when a card arrives; its key opens it anyway,
-         * until the board is left. Triage stays open, since that is where a card is written.
+         * stands in one strip with the add key that is always there.
          */
-        let vacant = false
-        let opened = false
-        const closedNow = (): boolean => folded(status) || (vacant && !opened && status !== 'triage')
         const fold = el('button', 'dya-key dya-reveal kanban-fold')
         fold.type = 'button'
         const apply = (closed: boolean): void => {
@@ -834,18 +805,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             fold.setAttribute('aria-label', closed ? `show ${label}` : `fold ${label}`)
             fold.setAttribute('aria-expanded', String(!closed))
         }
-        apply(closedNow())
+        apply(folded(status))
         fold.addEventListener('click', () => {
             const next = shell.dataset.collapsed !== 'true'
             write(foldKey(status), String(next))
-            opened = !next
-            apply(closedNow())
+            apply(next)
         })
-        const setVacant = (next: boolean): void => {
-            if (next === vacant) return
-            vacant = next
-            apply(closedNow())
-        }
         keys.prepend(fold)
         head.appendChild(keys)
 
@@ -853,7 +818,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         shell.append(head, scroller)
         board.appendChild(shell)
 
-        return { status, root: shell, scroller, list, indicator, count, empty, setVacant }
+        return { status, root: shell, scroller, list, indicator, count, empty }
     }
 
     const buildCard = (card: Card): CardNode => {
@@ -1026,7 +991,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             column.count.textContent = wantedHere.length > 0 ? String(wantedHere.length) : ''
             column.empty.hidden = wantedHere.length > 0
             column.root.dataset.empty = String(wantedHere.length === 0)
-            column.setVacant(wantedHere.length === 0)
         }
 
         for (const [id, node] of nodes) {
@@ -1067,6 +1031,15 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             for (const status of rules.order) {
                 columns.set(status, buildColumn(status, rules.labels[status]))
             }
+            /*
+             * A folded stage turns its name on its side, so the name's length becomes the header's
+             * height and every folded column put its count and its fold key at a different height.
+             * One measure for all of them: the longest name on this board, in characters, which
+             * the mono face and the label tracking turn into an exact height in CSS.
+             */
+            const names = rules.labels
+            const longest = Math.max(...rules.order.map((status) => names[status].length))
+            board.style.setProperty('--kanban-stage-chars', String(longest))
         }
 
         for (const id of [...problems.keys()]) {
@@ -1092,6 +1065,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         if (marked.size) clearMarks()
         meta = null
         bar.hidden = registry.length === 0
+        setup.dataset.mode = 'welcome'
         show('form')
         setup.replaceChildren()
 
@@ -1103,6 +1077,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
          * and the way back to real work was a control in the bar. The boards are the answer to
          * "what now", so they are what the screen shows.
          */
+        if (open.length > 0) setup.dataset.mode = 'gallery'
         setup.appendChild(open.length > 0 ? buildBoardChooser(open) : buildBoardForm())
     }
 
@@ -1116,7 +1091,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const buildBoardForm = (): HTMLElement => {
-        const shell = el('div', 'kanban-setup-shell')
+        const shell = el('div', 'dya-card dya-pane kanban-setup-shell kanban-welcome')
         const heading = el('div', 'dya-title', 'New board')
 
         const form = el('div', 'dya-form')
@@ -1131,8 +1106,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const browse = key('folder', 'Browse')
         dirRow.append(dir, browse)
 
-        const create = key('check', 'Create')
-        create.classList.add('dya-key--primary')
+        const create = el('button', 'dya-button dya-button--primary', 'Create')
+        create.type = 'button'
 
         browse.addEventListener('click', () => {
             void invoke<string | null>('pickWorkdir')
@@ -1421,10 +1396,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         const globalCap = capField(across.maxRunning)
         globalCap.setAttribute('aria-label', 'Max running on all boards')
         capsRow.append(
-            el('span', 'dya-key-label', 'This board'),
             boardCap,
-            el('span', 'dya-key-label', 'All boards'),
-            globalCap
+            el('span', 'dya-key-label', 'This board'),
+            globalCap,
+            el('span', 'dya-key-label', 'All boards')
         )
 
         const draft: Runners = {
@@ -1439,8 +1414,8 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             return row
         }
 
-        const save = key('save', 'Save')
-        save.classList.add('dya-key--primary')
+        const save = el('button', 'dya-button dya-button--primary', 'Save')
+        save.type = 'button'
         save.addEventListener('click', () => {
             void invoke('updateSettings', { maxRunning: Number(globalCap.value) })
                 .then(() =>
@@ -1659,6 +1634,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     }
 
     const newBoard = (): void => {
+        setup.dataset.mode = 'welcome'
         show('form')
         setup.replaceChildren(buildBoardForm())
     }
@@ -1970,7 +1946,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     /*
      * A file a run named, as a row of the files list: the glyph and the path as the worker wrote
-     * it, whole, wrapping where it has to. It opens in whatever panel reads it, or is shown in its
+     * it, one line, cut with an ellipsis. It opens in whatever panel reads it, or is shown in its
      * folder when nothing does.
      */
     const fileRow = (name: string, open: () => void, note?: string): HTMLButtonElement => {
@@ -2307,7 +2283,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             closeTerminal()
             drawer.hidden = true
             drawer.replaceChildren()
-            nav()
             drawnId = null
             drawnRev = -1
             drawerPaint += 1
@@ -2330,7 +2305,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         drawnRev = card.rev
         const painted = ++drawerPaint
         drawer.hidden = false
-        nav()
         drawer.dataset.status = shown(card)
         drawer.dataset.stage = String(card.runs.length > 0)
         drawer.replaceChildren()
@@ -2744,9 +2718,10 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             label('Files'),
             files,
             ...settingRows,
-            ...runnerRows
+            ...runnerRows,
+            label('Depends on'),
+            parents
         )
-        if (parents.childElementCount) fields.append(label('Depends on'), parents)
         if (parkable) fields.append(label('Park until'), schedule)
         const threadLabel = label('Thread')
         fields.append(threadLabel, thread, label(''), removeRow)
@@ -3337,8 +3312,6 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             showBoardSettings()
         }
     }
-    navReady = true
-    nav()
     void refresh()
         .catch(fail)
         .finally(() => {

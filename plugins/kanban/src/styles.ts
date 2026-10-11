@@ -71,32 +71,33 @@ export const STYLES = `
 }
 
 .kanban-column[data-collapsed='true'] {
-    flex: 0 0 calc(var(--dya-size-control) + var(--dya-space-2));
-    min-width: calc(var(--dya-size-control) + var(--dya-space-2));
+    flex: 0 0 36px;
+    min-width: 36px;
 }
 
 /*
- * A folded stage leads with its key, on the line where an open stage's keys stand, then its count,
- * so every key and count of the board is on one line across it whatever the stage is called, and
- * its name hangs under them, read down the strip.
+ * The header, not the name, carries the measure. Its height is the longest stage name on this
+ * board, one character being 1ch plus the label tracking, plus room for the controls, and the
+ * controls are pushed to the bottom of it, so the count and the keys of every folded stage land
+ * on one line across the board.
  */
 .kanban-column[data-collapsed='true'] .kanban-column-head {
     flex-direction: column;
-    padding: var(--dya-space-3) 0 var(--dya-space-2);
+    height: calc(var(--kanban-stage-chars, 9) * (1ch + var(--dya-tracking-label)) + var(--dya-space-12));
+    padding: var(--dya-space-2) 0;
     gap: var(--dya-space-2);
 }
 
 .kanban-column[data-collapsed='true'] .kanban-column-keys {
     flex-direction: column;
-    order: -2;
-}
-
-.kanban-column[data-collapsed='true'] .kanban-count {
-    order: -1;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-column-keys > .dya-key:not(.kanban-fold) {
     display: none;
+}
+
+.kanban-column[data-collapsed='true'] .kanban-count {
+    margin-top: auto;
 }
 
 .kanban-column[data-collapsed='true'] .kanban-column-title {
@@ -123,8 +124,8 @@ export const STYLES = `
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
-    min-height: calc(var(--dya-size-control) + var(--dya-space-4));
-    padding: var(--dya-space-2) var(--dya-space-4) 0;
+    min-height: 44px;
+    padding: var(--dya-space-2) var(--dya-space-3) 0;
 }
 
 .kanban-column-title { flex: 1; min-width: 0; }
@@ -138,7 +139,7 @@ export const STYLES = `
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--dya-space-2) var(--dya-space-4) var(--dya-space-3);
+    padding: var(--dya-space-2) var(--dya-space-3) var(--dya-space-3);
 }
 
 .kanban-list {
@@ -333,7 +334,10 @@ export const STYLES = `
 
 .kanban-clip {
     display: block;
-    overflow-wrap: anywhere;
+    max-width: 20rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kanban-menu {
@@ -362,20 +366,33 @@ export const STYLES = `
 }
 
 /*
- * A form or the boards start at the top left, where every list in a panel starts: centred, the
- * form floated as an island in whatever room the panel happened to have.
+ * A form sits near the top of the panel, not in the middle of it: centred vertically it floats in
+ * whatever height the panel happens to have.
  */
 .kanban-setup {
     flex: 1;
     min-height: 0;
     display: flex;
     align-items: flex-start;
-    justify-content: flex-start;
-    padding: var(--dya-space-4);
+    justify-content: center;
+    padding: var(--dya-space-6) var(--dya-space-5);
     overflow-y: auto;
 }
 
+.kanban-setup[data-mode='welcome'] {
+    align-items: center;
+}
+
+.kanban-setup[data-mode='gallery'] {
+    justify-content: flex-start;
+    padding: var(--dya-space-4);
+}
+
 .kanban-gallery { width: 100%; }
+
+.kanban-welcome {
+    padding: var(--dya-space-5);
+}
 
 .kanban-setup-shell {
     display: flex;

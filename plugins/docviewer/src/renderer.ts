@@ -73,6 +73,9 @@ const STYLES = `
     min-height: 0;
     min-width: 0;
     overflow-y: auto;
+    padding: var(--dya-space-5) var(--dya-space-6);
+}
+.docviewer-content--empty {
     padding: var(--dya-space-4);
 }
 .docviewer-editor {
@@ -83,7 +86,7 @@ const STYLES = `
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * a stele, the Great Rhetra, the written law of Lycurgus.
- * Solid shapes rather than hairlines, so it reads as a key at 15px.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const DOCS_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--dya-text)"><path d="M12 6.5C10 5 6.5 4.5 3 5v14c3.5-.5 7 0 9 1.5 2-1.5 5.5-2 9-1.5V5c-3.5-.5-7 0-9 1.5Z"/><path d="M12 6.5v14"/></svg>'
@@ -208,7 +211,6 @@ export function activate(ctx: PluginContext): void {
             duplicable: true
         },
         (container, handle) => {
-            let navReady = false
             injectStyles(ctx.pluginId, STYLES)
 
             const root = document.createElement('div')
@@ -243,8 +245,24 @@ export function activate(ctx: PluginContext): void {
             header.append(problem, strip)
             header.hidden = true
 
+            /*
+             * With no page open the tab row says where the pages live: the folder's name, on a key
+             * that shows it in the file manager. A page made here that nobody could find again was
+             * the reason. Choosing another folder is rare and is the palette's Docs folder.
+             */
+            const place = document.createElement('div')
+            place.className = 'dya-toolbar'
+            const folderKey = document.createElement('button')
+            folderKey.type = 'button'
+            folderKey.className = 'dya-button'
+            const folderName = document.createElement('span')
+            folderName.className = 'dya-mono'
+            folderKey.innerHTML = glyph('folder')
+            folderKey.append(folderName)
+            let folderPath = ''
+
             const content = document.createElement('div')
-            handle.toolbar.append(header)
+            handle.toolbar.append(header, place)
             root.append(content, tipHolder)
             container.appendChild(root)
 
@@ -325,10 +343,16 @@ export function activate(ctx: PluginContext): void {
             editKey.onclick = () => setMode(mode === 'edit' ? readMode() : 'edit')
 
             /*
-             * What is open goes back to the pages with the header's back or home, or with Escape. A
-             * page made here and closed before a word was written leaves nothing behind: an empty
-             * Untitled file nobody asked to keep is litter in the person's folder.
+             * What is open closes with its X or with Escape, back to the pages. A page made here
+             * and closed before a word was written leaves nothing behind: an empty Untitled file
+             * nobody asked to keep is litter in the person's folder.
              */
+            const closeKey = document.createElement('button')
+            closeKey.type = 'button'
+            closeKey.className = 'dya-key'
+            closeKey.innerHTML = glyph('close')
+            closeKey.setAttribute('aria-label', 'Close')
+            closeKey.onclick = () => void closePage()
             let born: string | null = null
 
             async function closePage(): Promise<void> {
@@ -365,8 +389,8 @@ export function activate(ctx: PluginContext): void {
                 const shown: HTMLElement[] = [editKey]
                 paintSave()
                 if (dirty && !overwrite) shown.push(save)
-                strip.replaceChildren(...shown, deleteKey)
-                nav()
+                strip.replaceChildren(...shown, deleteKey, closeKey)
+                place.hidden = current !== null
                 if (overwrite) header.insertBefore(save, strip)
                 else if (save.parentElement === header) save.remove()
             }
@@ -471,7 +495,7 @@ export function activate(ctx: PluginContext): void {
                 dirty = false
                 say()
                 syncModes()
-                content.className = 'dya-text docviewer-content'
+                content.className = 'dya-text docviewer-content docviewer-content--empty'
                 gallery = document.createElement('div')
                 gallery.className = 'dya-grid'
                 galleryNote = message
@@ -498,9 +522,9 @@ export function activate(ctx: PluginContext): void {
              * The pages: every file in the data home's docs folder, in a sheet over the panel.
              * It is the whole of what can be done to a page. The one field finds a page as it is
              * typed and makes one of that name on Enter when none matches, a row opens on a click,
-             * and the row under the pointer or the focus shows its rename and its delete. Browse
-             * shows the folder in the file manager; a file kept anywhere else is the palette's Open
-             * file. The sheet covers, so it is modal: a scrim, the rest inert, Escape out.
+             * and the row under the pointer or the focus shows its rename and its delete. A file
+             * kept anywhere else is the gallery's Browse. The sheet covers, so it is modal: a
+             * scrim, the rest inert, Escape out.
              */
             const scrim = document.createElement('div')
             scrim.className = 'dya-scrim'
@@ -598,10 +622,19 @@ export function activate(ctx: PluginContext): void {
                 list.replaceChildren(files)
             }
 
+            async function paintFolder(): Promise<void> {
+                const where = (await ctx.invoke('folder')) as { path: string }
+                folderPath = where.path
+                folderName.textContent = where.path.split(/[\\/]/).filter(Boolean).at(-1) ?? where.path
+                place.replaceChildren(folderKey)
+            }
+
+            folderKey.onclick = () => void ctx.shell.reveal(folderPath)
             const repaint = (): void => void refresh()
             galleries.add(repaint)
 
             async function refresh(): Promise<void> {
+                void paintFolder().catch(() => undefined)
                 try {
                     pages = (await ctx.invoke('list')) as Page[]
                 } catch {
@@ -623,7 +656,6 @@ export function activate(ctx: PluginContext): void {
                 complain()
                 void refresh()
                 find.focus()
-                nav()
             }
 
             function closeLibrary(): void {
@@ -634,17 +666,6 @@ export function activate(ctx: PluginContext): void {
                 content.inert = false
                 opener?.focus()
                 opener = null
-                nav()
-            }
-
-            function nav(): void {
-                if (!navReady) return
-                const away = !library.hidden || current !== null
-                const back = (): void => {
-                    if (!library.hidden) closeLibrary()
-                    else void closePage()
-                }
-                handle.navigate({ back: away ? back : null, home: away ? () => { closeLibrary(); void closePage() } : null })
             }
 
             /*
@@ -679,13 +700,8 @@ export function activate(ctx: PluginContext): void {
                 return shift(() => ctx.invoke('read', path) as Promise<OpenResult>)
             }
 
-            async function browse(): Promise<void> {
-                try {
-                    const where = (await ctx.invoke('folder')) as { path: string }
-                    await ctx.shell.reveal(where.path)
-                } catch {
-                    complain('Cannot open')
-                }
+            function browse(): Promise<void> {
+                return shift(() => ctx.invoke('open') as Promise<OpenResult>)
             }
 
             async function makePage(): Promise<void> {
@@ -788,16 +804,12 @@ export function activate(ctx: PluginContext): void {
                 await refresh()
             }
 
-            navReady = true
-            nav()
             scrim.onclick = closeLibrary
             root.addEventListener('keydown', (event) => {
                 if (event.key !== 'Escape' || event.defaultPrevented) return
-                const typing = event.target instanceof HTMLElement && event.target.matches('textarea, input')
-                if (library.hidden && !typing && !current) return
                 event.preventDefault()
                 if (!library.hidden) closeLibrary()
-                else if (typing) root.focus({ preventScroll: true })
+                else if (event.target instanceof HTMLElement && event.target.matches('textarea, input')) root.focus({ preventScroll: true })
                 else void closePage()
             })
 

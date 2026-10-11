@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { glyph } from '@dyarchia/sdk'
 import { Svg } from '../components/Svg'
-import { getPanel, setNav, setToolbar } from './registry'
+import { getPanel, setToolbar } from './registry'
 
 const CLOSE_ICON = glyph('close')
 
@@ -34,7 +34,6 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
             instanceId: id,
             toolbar,
             close: onClose,
-            navigate: (nav) => setNav(id, nav),
             setTitle: (next) => setTitle(next ?? registered.descriptor.title)
         })
         const onKey = (event: KeyboardEvent): void => {
@@ -44,7 +43,6 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
         return () => {
             document.removeEventListener('keydown', onKey)
             setToolbar(id, null)
-            setNav(id, null)
             dispose?.()
             container.replaceChildren()
             opener?.focus()
@@ -63,7 +61,7 @@ export function ModalPanel({ id, onClose }: ModalPanelProps): React.JSX.Element 
                 aria-label={title}
             >
                 <header className="dya-sheet__head">
-                    <Svg className="dya-glyph" svg={registered.descriptor.icon} />
+                    <Svg className="dya-glyph shell-modal-mark" svg={registered.descriptor.icon} />
                     <span className="dya-title">{title}</span>
                     <div className="dya-sheet__end">
                         <div ref={tools} />

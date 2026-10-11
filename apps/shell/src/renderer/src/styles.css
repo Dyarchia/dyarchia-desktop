@@ -69,16 +69,8 @@ body,
 }
 
 .shell-body {
-    position: relative;
     flex: 1;
     min-height: 0;
-}
-
-.panel-nav {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding-inline: var(--dya-space-1) var(--dya-space-2);
 }
 
 .shell-palette-scrim {
@@ -106,7 +98,7 @@ body,
     --dv-icon-hover-background-color: var(--dya-hover);
     --dv-border-radius: var(--dya-radius-chassis);
     --dv-tab-border-radius: 0;
-    --dv-tabs-and-actions-container-height: calc(var(--dya-size-control) + 12px);
+    --dv-tabs-and-actions-container-height: 40px;
     --dv-tab-margin-block: 0;
     --dv-floating-border: var(--dya-border-width) solid var(--dya-border);
     --dv-floating-group-border: var(--dya-border-width) solid var(--dya-border);
@@ -186,53 +178,25 @@ body,
     padding-block: 0;
 }
 
-.dv-tab > .dv-react-part {
-    display: flex;
-    align-items: center;
-}
-
-/*
- * dockview rings a focused tab in its divider colour, which this theme leaves transparent, so a
- * tab reached with the keyboard showed nothing. The ring is kanon's, round the tab's own face.
- */
-.dv-tab:focus-visible .panel-tab {
-    outline: 2px solid var(--dya-focus);
-    outline-offset: 2px;
-}
-
 .panel-tab {
     display: flex;
     align-items: center;
     gap: var(--dya-space-2);
+    height: 100%;
 }
 
 /*
- * Every open tab stands on the pressed wash, as the Claude desktop app's open tab does, its name
- * in the ink. The one in the group the window is working in draws its monochrome mark in the
- * accent, as a key that is on draws its glyph: colour on the glyph, never on the words. A mark with
- * colours of its own keeps them. A terminal holding the focus has its copper in its cursor, so its
- * tab's mark stays in ink.
+ * Every group shows one of its tabs, but only one group is the one the window is working in, and
+ * only its tab carries the accent's underline. The others keep the top ink and the weight.
  */
-.dv-groupview .panel-tab[aria-selected='true'] {
-    background-color: var(--dya-press-wash);
-}
-
-/*
- * A mark draws its strokes in var(--dya-text) by its own inline style, so the accent reaches it by
- * that variable, inside the mark alone; the mark itself is not touched.
- */
-.dv-groupview.dv-active-group .panel-tab[aria-selected='true'] > .dya-glyph {
-    --dya-text: var(--dya-accent);
-    color: var(--dya-accent);
-}
-
-.dv-groupview.dv-active-group:has(.xterm.focus) .panel-tab[aria-selected='true'] > .dya-glyph {
-    --dya-text: inherit;
-    color: inherit;
+.dv-groupview.dv-active-group .panel-tab[aria-selected='true'] {
+    box-shadow: inset 0 -2px 0 var(--dya-accent);
 }
 
 .panel-tab-title {
-    overflow-wrap: anywhere;
+    max-inline-size: 28ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .panel-tab-actions {
@@ -295,6 +259,11 @@ body,
     gap: var(--dya-space-4);
 }
 
+.shell-modal-mark {
+    width: 22px;
+    height: 22px;
+}
+
 .shell-modal-body {
     container-type: normal;
     flex: 1;
@@ -302,29 +271,11 @@ body,
     overflow-y: auto;
 }
 
-.panel-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--dya-space-2);
-    height: 100%;
-    padding-inline-end: var(--dya-space-1);
-}
-
 .panel-toolbar-host {
     display: flex;
     align-items: center;
     height: 100%;
-}
-
-.panel-toolbar-host:empty {
-    display: none;
-}
-
-/*
- * Maximize stands as close to the panel's last key as those keys stand to each other.
- */
-.panel-frame {
-    margin-inline-start: calc(-1 * (var(--dya-space-2) + var(--dya-border-width)));
+    padding-inline-end: var(--dya-space-3);
 }
 
 .panel-toolbar:empty {

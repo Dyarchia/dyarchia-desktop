@@ -26,7 +26,7 @@ const waiting = new Map<string, string>()
 /*
  * The panel's mark, one of a set in black and white and nothing else, each a thing of Sparta:
  * an aulos, the double pipe the phalanx marched to.
- * Solid shapes rather than hairlines, so it reads as a key at 15px.
+ * Solid shapes rather than hairlines, so it reads as a key at 18px.
  */
 const PLAYER_ICON =
     '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="rotate(18 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" style="fill:var(--dya-text)"/><circle cx="5" cy="10.4" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="13" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="15.6" r=".55" style="fill:var(--dya-on-accent)"/></g><g transform="rotate(48 5 20)"><path d="M4.1 20 4.4 6.4 3.2 3.2H6.8L5.6 6.4 5.9 20z" style="fill:var(--dya-text)"/><circle cx="5" cy="10.4" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="13" r=".55" style="fill:var(--dya-on-accent)"/><circle cx="5" cy="15.6" r=".55" style="fill:var(--dya-on-accent)"/></g><rect x="3.2" y="18.4" width="3.8" height="2.6" rx=".6" transform="rotate(33 5 20)" style="fill:var(--dya-text)"/><path d="M3.4 21.4 1.8 23" stroke-width="1.6" stroke-linecap="round" style="stroke:var(--dya-text)"/></svg>'
@@ -148,21 +148,24 @@ export function activate(ctx: PluginContext): void {
             let failure: string | undefined
 
             /*
-             * What is playing is the tab's title; the header's back and home put it away, back to
-             * the gallery, and Escape does the same. Open lives in the gallery and in the palette.
+             * What is playing is the tab's title, and the one key in the tab row closes it, back to
+             * the gallery; Escape does the same. Open lives in the gallery and in the palette.
              */
-            let open = false
+            const back = document.createElement('button')
+            back.type = 'button'
+            back.className = 'dya-key'
+            back.innerHTML = glyph('close')
+            back.setAttribute('aria-label', 'Close')
             const close = (): void => {
                 void ctx.invoke('release', handle.instanceId)
                 showEmpty()
             }
-            const opened = (on: boolean): void => {
-                open = on
-                handle.navigate({ back: on ? close : null, home: on ? close : null })
-            }
+            back.onclick = close
+            back.hidden = true
+            handle.toolbar.append(back)
             root.tabIndex = -1
             root.addEventListener('keydown', (event) => {
-                if (event.key !== 'Escape' || event.defaultPrevented || !open || document.fullscreenElement) return
+                if (event.key !== 'Escape' || event.defaultPrevented || back.hidden || document.fullscreenElement) return
                 event.preventDefault()
                 close()
             })
@@ -202,7 +205,7 @@ export function activate(ctx: PluginContext): void {
                 playing = false
                 failure = message
                 handle.setTitle(null)
-                opened(false)
+                back.hidden = true
                 gallery = document.createElement('div')
                 gallery.className = 'dya-grid'
                 stage.className = 'player-stage'
@@ -228,7 +231,7 @@ export function activate(ctx: PluginContext): void {
                 stage.className = 'player-stage'
                 stage.replaceChildren(wait)
                 handle.setTitle(media.name)
-                opened(true)
+                back.hidden = false
                 const off = ctx.on('progress', (instance: unknown, percent: unknown) => {
                     if (instance !== handle.instanceId) return
                     ring.style.setProperty('--dya-ring-done', String(Math.floor(Number(percent) / 5)))
@@ -296,7 +299,7 @@ export function activate(ctx: PluginContext): void {
                 playing = true
                 gallery = null
                 handle.setTitle(media.name)
-                opened(true)
+                back.hidden = false
                 stage.className = 'player-stage player-stage--image'
                 stage.replaceChildren(picture)
             }
@@ -322,7 +325,7 @@ export function activate(ctx: PluginContext): void {
                 playing = true
                 gallery = null
                 handle.setTitle(media.name)
-                opened(true)
+                back.hidden = false
                 stage.className = media.kind === 'video' ? 'player-stage player-stage--video' : 'player-stage'
                 stage.replaceChildren(element)
             }

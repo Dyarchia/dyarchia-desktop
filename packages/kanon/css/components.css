@@ -51,9 +51,9 @@
  */
 .dya-title {
     font-family: var(--dya-font-mono);
-    font-size: var(--dya-size-body);
+    font-size: var(--dya-size-h2);
     font-weight: var(--dya-weight);
-    letter-spacing: var(--dya-tracking-ui);
+    letter-spacing: var(--dya-tracking-h3);
     line-height: var(--dya-leading-heading);
     color: var(--dya-text);
     overflow-wrap: anywhere;
@@ -210,13 +210,8 @@
     color: var(--dya-code-string);
 }
 
-/*
- * A diff's lines in the colours of git in a terminal, quietened: a green and a red of low
- * saturation, so a page full of changes reads as text and not as an alarm. Each is text on every
- * ground: addition 6.32 and deletion 5.28 at their lowest, on selected.
- */
 .dya-code__addition {
-    color: var(--dya-code-addition);
+    color: var(--dya-success-ink);
 }
 
 .dya-code__number,
@@ -243,7 +238,7 @@
 }
 
 .dya-code__deletion {
-    color: var(--dya-code-deletion);
+    color: var(--dya-danger-ink);
 }
 
 .dya-code__comment,
@@ -551,8 +546,8 @@
 }
 
 .dya-button > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 15px;
+    height: 15px;
     flex: none;
 }
 
@@ -563,25 +558,15 @@
 }
 
 /*
- * A key that is on, a mode chosen, a view shown or a panel open, is drawn in the accent and stands
- * on nothing, as the Claude desktop app draws its toggles: copper on the ground measures 6.37, on
- * the panel 6.02, under the pointer's wash 5.37. Never underlined, never filled.
+ * A key that is on, a mode chosen or a panel open, wears the pressed wash and the top ink, still.
  */
 .dya-key--active,
 .dya-key--active:hover,
 .dya-key[aria-pressed="true"],
-.dya-key[aria-selected="true"],
 .dya-button[aria-pressed="true"],
 .dya-chip[aria-pressed="true"] {
-    color: var(--dya-accent);
-}
-
-/*
- * A key at work, an install under way, keeps its place and its glyph, and the glyph breathes
- * until the work ends: the one thing on a view that moves, and only while something happens.
- */
-.dya-key[aria-busy="true"] > svg {
-    animation: dya-blink 1.2s var(--dya-ease) infinite;
+    background-color: var(--dya-press-wash);
+    color: var(--dya-text);
 }
 
 /*
@@ -606,29 +591,23 @@
 
 /*
  * The primary is the one action a view is about, at most one per view: run, make, install,
- * finish. It is the accent, filled, its word or its glyph the ground's black at 6.37; under the
- * pointer the fill steps toward the ink. A primary whose glyph says it is a key, as every key is.
- * Red is never a key's fill: filled red reads as destroy.
+ * finish. It is the accent, filled, its word the ground's black at 6.37; under the pointer the fill
+ * steps toward the ink. Red is never a key's fill: filled red reads as destroy.
  */
 .dya-button--primary,
-.dya-button--primary:hover,
-.dya-key--primary,
-.dya-key--primary:hover {
+.dya-button--primary:hover {
     border-color: var(--dya-accent);
     background-color: var(--dya-accent);
     color: var(--dya-on-accent);
 }
 
-.dya-button--primary:hover,
-.dya-key--primary:hover {
+.dya-button--primary:hover {
     border-color: var(--dya-accent-hover);
     background-color: var(--dya-accent-hover);
 }
 
 .dya-button--primary:disabled,
-.dya-button--primary:disabled:hover,
-.dya-key--primary:disabled,
-.dya-key--primary:disabled:hover {
+.dya-button--primary:disabled:hover {
     border-color: var(--dya-border);
     background-color: transparent;
     color: var(--dya-text-off);
@@ -637,10 +616,9 @@
 /*
  * Success is lit rather than filled: a border in green and an ink mixed from it and white, because
  * it is approve. Danger, stop and unmake, is a plain key at rest and turns red under the pointer
- * or the focus, where the hand is about to press it. An X is not danger: closing a panel, a tab, a
- * sheet or the window unmakes nothing, so it answers the pointer like every key, in ink. A key that
- * names a state which needs a person, a blocked card, stays lit red, because there the light is the
- * state's own.
+ * or the focus, where the hand is about to press it. Every X is danger: a key wearing the close
+ * glyph turns red as a tab's and the window's do, wherever it is drawn. A key that names a state which needs a
+ * person, a blocked card, stays lit red, because there the light is the state's own.
  */
 .dya-key--success {
     --dya-lit: var(--dya-success);
@@ -648,7 +626,10 @@
 
 .dya-button--danger,
 .dya-key--danger,
-.dya-button--resolve {
+.dya-key:has(> .dya-glyph--close),
+.dya-button--resolve,
+.dya-tab__action--close,
+.dya-winkey--close {
     --dya-lit: var(--dya-danger);
 }
 
@@ -694,31 +675,26 @@
 .dya-button--resolve:hover,
 .dya-key.dya-key--success:not(:disabled):hover,
 .dya-button--danger:is(:hover, :focus-visible),
-.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible) {
+.dya-key.dya-key--danger:not(:disabled):is(:hover, :focus-visible),
+.dya-key:has(> .dya-glyph--close):not(:disabled):is(:hover, :focus-visible),
+.dya-tab__action--close:is(:hover, :focus-visible),
+.dya-winkey--close:is(:hover, :focus-visible) {
     border-color: color-mix(in srgb, var(--dya-lit) 75%, transparent);
     color: color-mix(in srgb, var(--dya-lit) 55%, var(--dya-text));
 }
 
 /*
- * A pressable card: a glyph, a name and one line saying what it is. It is how a screen with
- * nothing on it yet offers what to do next, rather than stating that there is nothing. It is one
- * man of the formation: a face of the panel's ground a step up, of one height, the glyph at its
- * top and the name at its foot, so a gallery reads as ranks and files and never as words afloat.
+ * A pressable card: an icon, a name and one line saying what it is. It is how a screen with
+ * nothing on it yet offers what to do next, rather than stating that there is nothing. It is a
+ * key, as large as it needs to be, with the same corners, edge and drop.
  */
 .dya-tile {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     gap: var(--dya-space-2);
-    min-height: 112px;
-    padding: var(--dya-space-4);
-    background-color: var(--dya-panel);
+    padding: var(--dya-space-5);
     background-image: none;
     text-align: left;
-}
-
-.dya-tile:hover {
-    background-color: var(--dya-hover);
 }
 
 /*
@@ -727,8 +703,8 @@
  */
 .dya-tile__icon {
     display: block;
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 32px;
+    height: 32px;
     color: var(--dya-text);
 }
 
@@ -740,7 +716,7 @@
 
 .dya-tile__name {
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body);
+    font-size: var(--dya-size-h4);
     letter-spacing: var(--dya-tracking-ui);
     color: var(--dya-text);
 }
@@ -777,6 +753,7 @@
 .dya-tile--dense .dya-tile__name {
     flex: 1 0 auto;
     max-width: 100%;
+    font-size: var(--dya-size-body-xs);
     letter-spacing: var(--dya-tracking-ui);
     text-transform: none;
     overflow-wrap: anywhere;
@@ -803,8 +780,8 @@
 
 
 .dya-key > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 15px;
+    height: 15px;
 }
 
 /*
@@ -846,8 +823,8 @@
  * glyph size and a step from its word.
  */
 .dya-chip > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 15px;
+    height: 15px;
 }
 
 /*
@@ -966,24 +943,20 @@
     width: auto;
 }
 
-/*
- * A field of several lines starts its first line where its label's line is, and its words where
- * every value in the form starts.
- */
 textarea.dya-field {
     height: auto;
-    padding: calc((var(--dya-size-control) - 1lh) / 2) 0;
+    padding: var(--dya-space-2) 0;
     line-height: var(--dya-leading-body);
     resize: vertical;
 }
 
 /*
  * A sentence typed into a field: a title, a brief, a description. It keeps the field's face and
- * size, the size of every value beside it, and takes the body's leading, because it wraps.
+ * takes the body's leading, because it is prose and wraps.
  */
 .dya-field--prose {
     font-family: var(--dya-font-sans);
-    font-size: var(--dya-size-body-xs);
+    font-size: var(--dya-size-body);
     line-height: var(--dya-leading-body);
     letter-spacing: normal;
 }
@@ -1007,14 +980,13 @@ textarea.dya-field--code {
 }
 
 /*
- * A grid is a gallery of things of one kind, tiles, boards, targets, set as a formation: as many
- * files as 240px each allows, sharing the pane's width edge to edge, so a wider pane holds more
- * of them to a rank and no rank ends short of the edge. What a panel shows beside what is decided
- * by the panel, region by region.
+ * A grid is a gallery of things of one kind, tiles, boards, targets, each of a fixed width. A wider
+ * pane holds more of them to a row and never makes them wider. There is no column system: a panel
+ * is not a page, and what it shows beside what is decided by the panel, region by region.
  */
 .dya-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 280px));
     align-content: start;
     gap: var(--dya-space-3);
 }
@@ -1040,7 +1012,7 @@ textarea.dya-field--code {
  */
 .dya-form {
     display: grid;
-    grid-template-columns: max-content minmax(0, 660px);
+    grid-template-columns: max-content minmax(0, 560px);
     align-items: center;
     column-gap: var(--dya-space-5);
     row-gap: var(--dya-space-3);
@@ -1149,7 +1121,9 @@ textarea.dya-field--code {
 
 .dya-field__label {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dya-select > .dya-field::picker-icon {
@@ -1217,7 +1191,8 @@ textarea.dya-field--code {
 }
 
 .dya-select selectedcontent {
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dya-select selectedcontent .dya-select__note {
@@ -1257,8 +1232,8 @@ textarea.dya-field--code {
     appearance: none;
     display: grid;
     place-items: center;
-    width: 17px;
-    height: 17px;
+    width: 14px;
+    height: 14px;
     flex: none;
     border: var(--dya-border-width) solid var(--dya-border-strong);
     border-radius: var(--dya-radius-sm);
@@ -1269,8 +1244,8 @@ textarea.dya-field--code {
 
 .dya-checkbox::after {
     content: "";
-    width: 8.5px;
-    height: 5px;
+    width: 7px;
+    height: 4px;
     border-left: 1.5px solid var(--dya-text);
     border-bottom: 1.5px solid var(--dya-text);
     transform: rotate(-45deg) translate(0.5px, -1px);
@@ -1284,20 +1259,6 @@ textarea.dya-field--code {
 
 .dya-checkbox:checked::after {
     opacity: 1;
-}
-
-/*
- * A box that cannot be changed, a part that is always there, keeps its tick and gives up its ink:
- * the rim and the tick in the faint ink, and no hand over it.
- */
-.dya-checkbox:disabled {
-    border-color: var(--dya-text-faint);
-    background-color: transparent;
-    cursor: default;
-}
-
-.dya-checkbox:disabled::after {
-    border-color: var(--dya-text-faint);
 }
 
 /*
@@ -1326,8 +1287,8 @@ textarea.dya-field--code {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 24px;
-    padding: 0 7px;
+    height: 20px;
+    padding: 0 6px;
     border: var(--dya-border-width) solid var(--dya-hairline);
     border-radius: var(--dya-radius-sm);
     background: var(--dya-hover-wash);
@@ -1423,8 +1384,8 @@ textarea.dya-field--code {
     display: inline-grid;
     place-items: center;
     flex: none;
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 18px;
+    height: 18px;
     color: var(--dya-text);
 }
 
@@ -1649,32 +1610,6 @@ textarea.dya-field--code {
     transition: background-color var(--dya-dur-fast) var(--dya-ease);
 }
 
-/*
- * A mark or a tick alone in its cell is a block, so it stands on the row's middle with the words
- * beside it instead of on a line's baseline a few pixels above them.
- */
-/*
- * A table that is a form's value starts its first column where every value in the form starts,
- * and its first row on its label's line.
- */
-.dya-form .dya-table td:first-child,
-.dya-form .dya-table th:first-child {
-    padding-inline-start: 0;
-}
-
-.dya-form .dya-table tr:first-child > td {
-    padding-top: calc((var(--dya-size-control) - 1lh) / 2);
-}
-
-.dya-table td > .dya-glyph:only-child {
-    display: grid;
-}
-
-.dya-table td > .dya-checkbox:only-child {
-    display: grid;
-    margin-block: 0;
-}
-
 .dya-table .dya-table__num {
     text-align: right;
 }
@@ -1818,7 +1753,9 @@ textarea.dya-field--code {
 
 .dya-sheet__head > .dya-title {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dya-sheet__end {
@@ -1830,22 +1767,18 @@ textarea.dya-field--code {
 }
 
 /*
- * A list of files: rows, never keys. A file glyph and the name in the mono, whole, wrapping where
- * it has to and never cut, left aligned; the row is pressable and answers the pointer with its ground, as a
+ * A list of files: rows, never keys. A file glyph and the name in the mono on one line, cut with
+ * an ellipsis, left aligned; the row is pressable and answers the pointer with its ground, as a
  * menu row does, and the file being read (`aria-current`) stands on `selected`. A trailing
  * `meta` says its size or its folder. A name wrapped and centred inside a key read as a
  * column of buttons.
- */
-/*
- * A list of files hangs its rows' inset out on the leading side, as a fold's head does, so every
- * glyph stands on the line where the field, the heading or the table above it starts.
  */
 .dya-files {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    margin: 0 0 0 calc(-1 * var(--dya-space-2));
+    margin: 0;
     padding: 0;
     list-style: none;
 }
@@ -1879,15 +1812,17 @@ textarea.dya-field--code {
 }
 
 .dya-file > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 15px;
+    height: 15px;
     flex: none;
 }
 
 .dya-file__name {
     flex: 1;
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dya-file > .dya-meta {
@@ -1918,7 +1853,9 @@ textarea.dya-field--code {
     letter-spacing: var(--dya-tracking-ui);
     line-height: var(--dya-leading-body);
     color: var(--dya-text-faint);
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /*
@@ -1986,7 +1923,7 @@ textarea.dya-field--code {
 
 .dya-menu__item--tall {
     height: auto;
-    min-height: 30px;
+    min-height: 26px;
     padding: var(--dya-space-1) var(--dya-space-2);
 }
 
@@ -2050,20 +1987,17 @@ textarea.dya-field--code {
 }
 
 /*
- * Tabs are mono words on the ground, with no rule under the strip and no line under the open one:
- * the open tab stands on the pressed wash in the first ink, a key's height, as a pressed key does.
+ * Tabs are mono words on the ground, with no rule under the strip. The open one is in the first
+ * ink with two pixels of the accent under the word alone, drawn as an inset shadow so it adds no height.
  */
 .dya-tabs {
     display: flex;
-    align-items: center;
-    gap: var(--dya-space-1);
+    align-items: stretch;
+    gap: var(--dya-space-4);
 }
 
 .dya-tab {
-    display: inline-flex;
-    align-items: center;
-    height: var(--dya-size-control);
-    padding: 0 var(--dya-space-2);
+    padding: 0 0 9px;
     border: none;
     background: transparent;
     font-family: var(--dya-font-mono);
@@ -2077,13 +2011,9 @@ textarea.dya-field--code {
     color: var(--dya-text-muted);
 }
 
-/*
- * A tab inside a panel is a choice of view, never the focus, so its wash is the plain one: copper
- * on a tab is the shell's, for the panel being worked in.
- */
 .dya-tab[aria-selected="true"] {
-    background-color: var(--dya-press-wash);
     color: var(--dya-text);
+    box-shadow: inset 0 -2px 0 var(--dya-accent);
 }
 
 /*
@@ -2103,8 +2033,8 @@ textarea.dya-field--code {
 }
 
 .dya-tab__action > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 15px;
+    height: 15px;
 }
 
 .dya-tab[aria-selected="true"] .dya-tab__action {
@@ -2114,9 +2044,7 @@ textarea.dya-field--code {
 /*
  * `min-width` and `overflow-wrap` are what keep this centred instead of clipped. A centred flex
  * item that cannot shrink grows past its container on both sides; a word that will not fit is
- * broken, and nothing is ever read from off the left edge. Only waiting is centred: an empty
- * region is not an island in the middle but a list from the top left, its words and its actions
- * where every list in the panel starts.
+ * broken, and nothing is ever read from off the left edge.
  */
 .dya-empty,
 .dya-loading {
@@ -2142,26 +2070,11 @@ textarea.dya-field--code {
     max-width: 44ch;
 }
 
-.dya-empty {
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: var(--dya-space-4);
-    text-align: left;
-    text-wrap: pretty;
-}
-
-/*
- * Inside a sheet the sheet has already inset its words, so an empty list there says so on the
- * line its field starts on.
- */
-.dya-sheet .dya-empty {
-    padding-inline: 0;
-}
 
 .dya-empty__actions {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     gap: var(--dya-space-2);
     flex-wrap: wrap;
 }
@@ -2441,8 +2354,8 @@ button.dya-entry__head {
     display: grid;
     flex: none;
     place-items: center;
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 14px;
+    height: 14px;
     color: var(--dya-text);
     transition: transform var(--dya-dur-fast) var(--dya-ease);
 }
@@ -2500,14 +2413,16 @@ button.dya-entry__head {
 }
 
 /*
- * A subject that is a command or a path: in the mono, whole, a long path broken where it has to
- * be. No text is ever cut short.
+ * A subject that is a command or a path: in the mono, on one line, cut with an ellipsis, since the
+ * step opens to show the whole of it.
  */
 .dya-step__subject--code {
     font-family: var(--dya-font-mono);
     font-size: var(--dya-size-mono-sm);
     letter-spacing: var(--dya-tracking-mono);
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 button.dya-step__subject {
@@ -2632,10 +2547,6 @@ button.dya-step__subject {
 .dya-prose img {
     max-inline-size: 100%;
     height: auto;
-}
-
-.dya-prose > :first-child {
-    margin-top: 0;
 }
 
 .dya-prose h1,
@@ -2804,20 +2715,6 @@ button.dya-step__subject {
     border-bottom: var(--dya-border-width) solid var(--dya-border-strong);
 }
 
-/*
- * An editor that fills a region, a prompt or a body as tall as the room left, stands on the field's
- * ground, inset, with its underline: a line alone at the foot of a tall box said nothing about
- * where the box began.
- */
-.dya-editor--field {
-    background-color: var(--dya-field);
-}
-
-.dya-editor--field > pre,
-.dya-editor--field > textarea {
-    padding: var(--dya-space-2) var(--dya-space-3);
-}
-
 .dya-editor--field:hover {
     border-bottom-color: var(--dya-text-muted);
 }
@@ -2854,17 +2751,21 @@ button.dya-step__subject {
 
 /*
  * The tabs of the dock are the panels themselves, so they read a step larger than a tab inside a
- * panel, and the open one takes the medium weight: across a dock of several groups, weight and the
- * wash say which tab each group is showing, and the accent's wash is kept for the group being
- * worked in.
+ * panel, and the open one takes the medium weight: across a dock of several groups, weight is what
+ * says which tab each group is showing, and the accent's line is kept for the group being worked in.
  */
 .dya-tab--dock {
+    padding-bottom: 0;
     white-space: nowrap;
 }
 
+.dya-tab--dock[aria-selected="true"] {
+    box-shadow: none;
+}
+
 /*
- * The window's own keys: minimise, maximise, close. Keys like every other, at the one height,
- * close included: it answers the pointer in ink, never in red.
+ * The window's own keys: minimise, maximise, close. Keys like every other, at the one height;
+ * close is a danger key and turns red under the pointer.
  */
 .dya-winkey {
     display: grid;
@@ -2877,8 +2778,8 @@ button.dya-step__subject {
 }
 
 .dya-winkey > svg {
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 12px;
+    height: 12px;
 }
 
 /*
@@ -2939,7 +2840,7 @@ button.dya-step__subject {
     display: flex;
     flex-direction: column;
     gap: var(--dya-space-2);
-    width: min(660px, calc(100% - 2 * var(--dya-space-4)));
+    width: min(560px, calc(100% - 2 * var(--dya-space-4)));
     max-height: 64vh;
     margin-inline: auto;
     padding: var(--dya-space-2);
@@ -2967,7 +2868,7 @@ button.dya-step__subject {
 .dya-palette__apps {
     display: grid;
     flex: none;
-    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
     grid-auto-rows: 1fr;
     gap: var(--dya-space-2);
     max-height: 40vh;
@@ -2983,25 +2884,26 @@ button.dya-step__subject {
     min-width: 0;
 }
 
-/*
- * In the palette an app is a key on the sheet, not a man of a formation: no face of its own and
- * its own height, the light of an open panel in its corner.
- */
 .dya-palette__app > .dya-tile {
     align-items: center;
     justify-content: center;
     gap: var(--dya-space-2);
     min-width: 0;
-    min-height: 0;
-    background-color: transparent;
     padding: var(--dya-space-4) var(--dya-space-2) var(--dya-space-3);
     text-align: center;
 }
 
+.dya-palette__app > .dya-tile > .dya-tile__icon {
+    width: 24px;
+    height: 24px;
+}
+
 .dya-palette__app > .dya-tile > .dya-tile__name {
     max-width: 100%;
+    overflow: hidden;
     font-size: var(--dya-size-body-xs);
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dya-palette__app[aria-selected="true"] > .dya-tile {
@@ -3048,7 +2950,7 @@ button.dya-step__subject {
     display: flex;
     align-items: center;
     gap: var(--dya-space-3);
-    min-height: 42px;
+    min-height: 36px;
     padding: 0 var(--dya-space-2);
     border-radius: var(--dya-radius-sm);
     font-family: var(--dya-font-sans);
@@ -3071,8 +2973,8 @@ button.dya-step__subject {
     display: grid;
     place-items: center;
     flex: none;
-    width: var(--dya-size-glyph);
-    height: var(--dya-size-glyph);
+    width: 18px;
+    height: 18px;
     color: var(--dya-text);
 }
 
@@ -3084,7 +2986,9 @@ button.dya-step__subject {
 .dya-palette__name {
     flex: 1;
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /*
@@ -3093,7 +2997,10 @@ button.dya-step__subject {
  */
 .dya-palette__meta {
     flex: 0 1 auto;
+    max-width: 50%;
+    overflow: hidden;
     font-size: var(--dya-size-body-xs);
     color: var(--dya-text-faint);
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

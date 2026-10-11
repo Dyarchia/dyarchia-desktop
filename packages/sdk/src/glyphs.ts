@@ -2,10 +2,11 @@
  * The glyphs of the actions every panel shares, drawn for this system on a 24 unit grid with a
  * 2 unit round stroke in currentColor, so a key's ink is its glyph's. An action a reader knows by
  * its glyph is an icon key with a tip, never a key spelling the verb, and every panel draws that
- * glyph from here, so browse is the same folder in the board and in the crawler. Back and home lead
- * every panel's header, drawn by the shell; the X closes.
+ * glyph from here, so browse is the same folder in the board and in the crawler. What is open
+ * closes with the X; home is a page's home, the house of every browser.
  * Every glyph names itself in `data-glyph`, so `tips()` can tell the ones that say their action
- * from the ones that do not.
+ * from the ones that do not; close also carries `dya-glyph--close`, so kanon can turn every key
+ * wearing it red under the hand.
  */
 const OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
 
@@ -13,7 +14,6 @@ const PATHS = {
     add: '<path d="M12 5v14"/><path d="M5 12h14"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
     close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
-    back: '<path d="m15 18-6-6 6-6"/>',
     delete: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/>',
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/>',
     launcher: '<circle cx="5" cy="5" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="19" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/>',
@@ -40,7 +40,7 @@ const PATHS = {
     key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2.5 2.5"/>',
     log: '<path d="M4 5h16"/><path d="M4 10h11"/><path d="M4 15h14"/><path d="M4 20h8"/>',
     expand: '<path d="M15 4h5v5"/><path d="M9 20H4v-5"/><path d="m20 4-6 6"/><path d="m4 20 6-6"/>',
-    contract: '<path d="M14 5v5h5"/><path d="M10 19v-5H5"/><path d="m20 4-6 6"/><path d="m4 20 6-6"/>',
+    contract: '<path d="M4 10h5V5"/><path d="M20 14h-5v5"/><path d="M9 10 3 4"/><path d="m15 14 6 6"/>',
     chevron: '<path d="m9 6 6 6-6 6"/>',
     settings: '<path d="M4 6h9"/><path d="M19 6h1"/><circle cx="16" cy="6" r="2"/><path d="M4 12h1"/><path d="M11 12h9"/><circle cx="8" cy="12" r="2"/><path d="M4 18h9"/><path d="M19 18h1"/><circle cx="16" cy="18" r="2"/>',
     book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
@@ -58,5 +58,6 @@ const PATHS = {
 export type GlyphName = keyof typeof PATHS
 
 export function glyph(name: GlyphName): string {
-    return `${OPEN.replace('<svg', `<svg data-glyph="${name}"`)}${PATHS[name]}</svg>`
+    const mark = name === 'close' ? ` data-glyph="${name}" class="dya-glyph--close"` : ` data-glyph="${name}"`
+    return `${OPEN.replace('<svg', `<svg${mark}`)}${PATHS[name]}</svg>`
 }

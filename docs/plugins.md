@@ -53,9 +53,7 @@ export function activate(ctx: PluginContext): void {
   shows it only where the glyph does not say the action itself.
 - `duplicable` allows `<id>#<n>` instances, `keepAlive` keeps a covered panel mounted, `width` and
   `maxWidth` size its column and content, `modal` opens it over the window instead of the dock.
-- Actions go in `handle.toolbar`. Back and home are the shell's, at the head of every header: call
-  `handle.navigate({ back, home })` whenever the view changes, `null` for the one that leads nowhere.
-  Never draw your own close, back or home key. `registerOpener` goes in `activate`; the first opener per
+- Actions go in `handle.toolbar`. `registerOpener` goes in `activate`; the first opener per
   extension wins. A finder never names the reader: it asks `ctx.shell.canOpen`, else `reveal`.
 - `ctx.registerCommand({ id, title, icon?, run })` joins the Ctrl+K palette and returns its removal.
 - `ctx.registerSearch(query => hits)` answers the palette's words with `{ id, title, detail?, run }`.

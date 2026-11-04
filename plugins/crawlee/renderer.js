@@ -444,11 +444,26 @@ function scalar(value) {
     return /^[\w][\w .,'()/-]*$/.test(value) ? value : JSON.stringify(value)
 }
 
-function draft({ name, url, group, description, snapshot }) {
-    const lines = name ? [`name: ${scalar(name)}`] : []
+function yamlValue(value) {
+    return typeof value === 'number' || typeof value === 'boolean' ? String(value) : scalar(String(value))
+}
+
+/*
+ * The profile a new target becomes: what only a person can choose, the name, the folder and whether
+ * it is tracked, around what `profile draft` measured on the site, which is everything that decides
+ * how big the target is. Its notes lead the file as comments, so the profile keeps the reasons for
+ * its own scope the way every profile in the catalogue does.
+ */
+function draft({ name, group, description, snapshot }, proposal) {
+    const lines = (proposal?.notes ?? []).map((line) => `# ${line}`)
+    const named = name || proposal?.suggestedName
+    if (named) lines.push(`name: ${scalar(named)}`)
     if (description) lines.push(`description: ${scalar(description)}`)
     if (group) lines.push(`group: ${scalar(group)}`)
-    if (url) lines.push(url.endsWith('.xml') ? 'sitemap_urls:' : 'start_urls:', `  - ${url}`)
+    for (const [key, value] of Object.entries(proposal?.profile ?? {})) {
+        if (Array.isArray(value)) lines.push(`${key}:`, ...value.map((item) => `  - ${yamlValue(item)}`))
+        else lines.push(`${key}: ${yamlValue(value)}`)
+    }
     if (snapshot) lines.push('snapshot: true')
     return `${lines.join('\n')}\n`
 }
@@ -1372,6 +1387,10 @@ function mount(ctx, container, handle) {
         let probing = null
         let asked = 0
         let corpora = new Map()
+        let proposal = null
+        let measuring = null
+        let measured = ''
+        let measureTimer = 0
 
         function regionHead(...parts) {
             const line = el('div', 'dya-sheet__head')
@@ -1486,6 +1505,7 @@ function mount(ctx, container, handle) {
         }
 
         function drop() {
+            forget()
             mode = null
             current = null
             landed = ''
@@ -1724,6 +1744,7 @@ function mount(ctx, container, handle) {
 
         function create(source) {
             raise('new', null, source)
+            forget()
             form.reset()
             paintPreview()
             form.focus()
@@ -1746,25 +1767,75 @@ function mount(ctx, container, handle) {
         }
 
         function paintPreview() {
-            previewCode.innerHTML = ctx.highlight(draft(form.values()), 'yaml')
+            previewCode.innerHTML = ctx.highlight(draft(form.values(), proposal), 'yaml')
+        }
+
+        /*
+         * A new target is measured on the site before it is written: which index lists its pages,
+         * how many of them sit inside the scope, and what reads them. It takes seconds, so it runs
+         * once the URL or the scope has stopped changing, and an answer for a URL that has since
+         * been edited is dropped rather than shown.
+         */
+        function forget() {
+            window.clearTimeout(measureTimer)
+            proposal = null
+            measuring = null
+            measured = ''
+        }
+
+        function remeasure() {
+            forget()
+            paintPreview()
+            measureTimer = window.setTimeout(() => void measure(), 700)
+        }
+
+        function measure() {
+            window.clearTimeout(measureTimer)
+            const { url, scope } = form.values()
+            const wanted = `${url}\n${scope}`
+            if (!/^https?:\/\/[^\s/]+\.[^\s]+/.test(url)) return Promise.resolve(null)
+            if (wanted === measured && measuring) return measuring
+            measured = wanted
+            proposal = null
+            note('Measuring', 'busy')
+            measuring = ctx.invoke('draft', { url, scope }).then(
+                (answer) => {
+                    if (measured !== wanted || mode !== 'new') return null
+                    proposal = answer
+                    form.suggest(answer)
+                    note('')
+                    paintPreview()
+                    return answer
+                },
+                (error) => {
+                    if (measured !== wanted) return null
+                    measured = ''
+                    note(reason(error), 'error')
+                    return null
+                }
+            )
+            return measuring
         }
 
         async function write() {
             if (mode === 'new') {
                 const values = form.values()
-                if (!values.name || !values.url) {
-                    note('Name and URL required', 'error')
+                if (!values.url) {
+                    note('URL required', 'error')
                     return
                 }
+                const answer = proposal ?? (await measure())
+                if (!answer) return
+                const name = values.name || answer.suggestedName
                 note('Saving', 'busy')
                 try {
-                    await ctx.invoke('save', values.name, draft(values))
+                    await ctx.invoke('save', name, draft({ ...values, name }, answer))
                 } catch (error) {
                     note(reason(error), 'error')
                     return
                 }
                 await Promise.all([refreshList(), roundsView.refresh()])
-                await open(values.name, raisedBy)
+                await open(name, raisedBy)
                 note('Saved')
                 return
             }
@@ -1853,12 +1924,21 @@ function mount(ctx, container, handle) {
             const node = el('div', 'dya-form')
             node.hidden = true
             const fields = {}
-            for (const [key, label, placeholder] of [
-                ['name', 'Name', 'claude-docs'],
-                ['url', 'URL or sitemap', 'https://example.com/sitemap.xml'],
-                ['group', 'Group', 'docs-labs'],
-                ['description', 'Description', 'Optional'],
+            const placeholders = {
+                name: 'From the scope',
+                url: 'https://example.com/docs/',
+                scope: 'The folder of the URL',
+                group: 'docs-labs',
+                description: 'Optional',
+            }
+            for (const [key, label] of [
+                ['name', 'Name'],
+                ['url', 'URL'],
+                ['scope', 'Scope'],
+                ['group', 'Group'],
+                ['description', 'Description'],
             ]) {
+                const placeholder = placeholders[key]
                 const input = el('input', 'dya-field')
                 input.id = `crw-${key}-${crypto.randomUUID()}`
                 input.placeholder = placeholder
@@ -1877,10 +1957,11 @@ function mount(ctx, container, handle) {
             trackValue.append(snapshot)
             node.append(trackLabel, trackValue)
 
-            node.addEventListener('input', () => {
-                paintPreview()
+            node.addEventListener('input', (event) => {
                 confirmClose.reset()
                 if (!problem.hidden) note('')
+                if (event.target === fields.url || event.target === fields.scope) remeasure()
+                else paintPreview()
             })
             node.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' && event.target instanceof HTMLInputElement && event.target.type !== 'checkbox') {
@@ -1894,13 +1975,21 @@ function mount(ctx, container, handle) {
                 values: () => ({
                     name: fields.name.value.trim(),
                     url: fields.url.value.trim(),
+                    scope: fields.scope.value.trim(),
                     group: fields.group.value.trim(),
                     description: fields.description.value.trim(),
                     snapshot: snapshot.checked,
                 }),
                 filled: () => Object.values(fields).some((input) => input.value.trim()),
+                suggest(answer) {
+                    fields.name.placeholder = answer.suggestedName || placeholders.name
+                    fields.scope.placeholder = answer.scope || placeholders.scope
+                },
                 reset() {
-                    for (const input of Object.values(fields)) input.value = ''
+                    for (const [key, input] of Object.entries(fields)) {
+                        input.value = ''
+                        input.placeholder = placeholders[key]
+                    }
                     snapshot.checked = true
                 },
                 focus: () => fields.name.focus(),

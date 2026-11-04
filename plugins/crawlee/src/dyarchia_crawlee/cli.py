@@ -716,6 +716,34 @@ def _profile_file(name: str, settings: Settings) -> Path | None:
     return None
 
 
+@profile_app.command(name='draft')
+def profile_draft(
+    url: Annotated[str, typer.Argument(help='A page, a sitemap or an llms.txt of the target.')],
+    scope: Annotated[
+        str | None,
+        typer.Option('--scope', help='The URL prefix to keep. Default: the folder the URL sits in.'),
+    ] = None,
+    as_json: Annotated[bool, typer.Option('--json', help='Emit the proposal as JSON.')] = False,
+) -> None:
+    """Measure a target and propose a profile that crawls its scope and nothing outside it.
+
+    Nothing is written. The proposal names the index that lists the pages, how many it lists inside
+    the scope, the crawler the pages need, and a page cap when there is no index and links have to
+    be followed instead; `profile save` is what makes it a target.
+    """
+    from dyarchia_crawlee.drafting import draft_profile
+
+    proposal = asyncio.run(draft_profile(url, scope))
+    if as_json:
+        print(json.dumps(proposal.as_json(), indent=2))
+        return
+
+    body = {'name': proposal.suggested_name, **proposal.profile}
+    for note in proposal.notes:
+        print(f'# {note}')
+    print(profile_loader.render_profile(ProfileSpec.model_validate(body)), end='')
+
+
 @profile_app.command(name='save')
 def profile_save(
     name: Annotated[str, typer.Argument(help='The profile to write. Created if it does not exist.')],

@@ -1815,7 +1815,10 @@ function mount(ctx, container, handle) {
             window.clearTimeout(measureTimer)
             const { url, scope } = form.values()
             const wanted = `${url}\n${scope}`
-            if (!/^https?:\/\/[^\s/]+\.[^\s]+/.test(url)) return Promise.resolve(null)
+            if (!/^https?:\/\/[^\s/]+\.[^\s]+/.test(url)) {
+                if (url) note('Not a web address: it starts with https:// and names a host', 'error')
+                return Promise.resolve(null)
+            }
             if (wanted === measured && measuring) return measuring
             measured = wanted
             proposal = null
@@ -1850,15 +1853,16 @@ function mount(ctx, container, handle) {
                 if (!answer) return
                 const name = values.name || answer.suggestedName
                 note('Saving', 'busy')
+                let saved = ''
                 try {
-                    await ctx.invoke('save', name, draft({ ...values, name }, answer))
+                    saved = await ctx.invoke('save', name, draft({ ...values, name }, answer))
                 } catch (error) {
                     note(reason(error), 'error')
                     return
                 }
                 await Promise.all([refreshList(), roundsView.refresh()])
                 await open(name, raisedBy)
-                note('Saved')
+                note(String(saved).includes('not versioned') ? 'Saved, not versioned' : 'Saved')
                 return
             }
             if (!current) return

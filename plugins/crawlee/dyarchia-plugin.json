@@ -48,6 +48,7 @@
         "pyproject.toml",
         "uv.lock",
         "README.md",
-        ".env.example"
+        ".env.example",
+        ".python-version"
     ]
 }

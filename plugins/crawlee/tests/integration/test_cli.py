@@ -75,12 +75,6 @@ def test_a_malformed_selector_is_rejected(workspace: Path, site: str) -> None:
     assert result.exit_code != 0
 
 
-def test_profiles_lists_the_bundled_python_profile(workspace: Path) -> None:
-    result = runner.invoke(app, ['profiles'])
-    assert result.exit_code == 0
-    assert 'claude-docs' in output(result)
-
-
 def test_profiles_shows_the_sitemap_a_target_starts_from(workspace: Path) -> None:
     """Sitemap-driven profiles have no start URL, and the table must still say where they point."""
     profiles = workspace / 'profiles'
@@ -299,15 +293,6 @@ def test_profile_show_prints_the_file_verbatim(workspace: Path) -> None:
 
     assert result.exit_code == 0
     assert result.stdout == text
-
-
-def test_profile_show_renders_the_python_profile_and_warns_off_the_document(workspace: Path) -> None:
-    """The bundled profile has no file. The warning belongs on stderr so a redirect still works."""
-    result = runner.invoke(app, ['profile', 'show', 'claude-docs'])
-
-    assert result.exit_code == 0
-    assert result.stdout.startswith('name: claude-docs')
-    assert 'rendered' not in result.stdout
 
 
 def test_profile_show_of_an_unknown_profile_fails(workspace: Path) -> None:

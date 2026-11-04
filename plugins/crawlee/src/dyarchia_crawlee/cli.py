@@ -680,29 +680,17 @@ app.add_typer(profile_app, name='profile')
 def profile_show(
     name: Annotated[str, typer.Argument(help='The profile to print.')],
 ) -> None:
-    """Print one profile as YAML, exactly as it is written.
+    """Print one profile as YAML, exactly as it is written, comments and all.
 
-    Verbatim where there is a file, comments and all. A profile carries the measurements that
-    justify its own rules in comments the model does not hold, so anything that reads a profile in
-    order to edit it has to be given the document rather than a rendering of the model behind it.
-
-    The profile the package ships as a Python module has no file. That one is rendered, and says so
-    on stderr rather than in the document, so a redirect still produces a profile and not a warning.
+    A profile carries the measurements that justify its own rules in comments the model does not
+    hold, so anything that reads a profile in order to edit it has to be given the document rather
+    than a rendering of the model behind it.
     """
-    settings = get_settings()
-    found = _profile_file(name, settings)
-    if found is not None:
-        print(found.read_text(encoding='utf-8'), end='')
-        return
-
-    try:
-        profile, _ = registry.locate(name, settings)
-    except DyarchiaCrawleeError as error:
-        error_console.print(f'[bold red]{error}[/bold red]')
-        raise typer.Exit(code=1) from error
-
-    error_console.print(f'[yellow]{name} has no file in any repository, so this is rendered[/yellow]')
-    print(profile_loader.render_profile(profile), end='')
+    found = _profile_file(name, get_settings())
+    if found is None:
+        error_console.print(f'[bold red]no profile named {name!r} on this machine[/bold red]')
+        raise typer.Exit(code=1)
+    print(found.read_text(encoding='utf-8'), end='')
 
 
 def _profile_file(name: str, settings: Settings) -> Path | None:

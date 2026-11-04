@@ -11,7 +11,8 @@
             "kind": "command",
             "name": "claude",
             "label": "Claude Code CLI",
-            "hint": "claude.com/claude-code"
+            "hint": "Cards run in Claude Code unless a board picks another agent CLI.",
+            "url": "https://code.claude.com/docs/en/setup"
         }
     ],
     "nativeDeps": [

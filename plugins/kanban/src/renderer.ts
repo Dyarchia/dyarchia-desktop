@@ -7,7 +7,7 @@ import type { DragColumn } from './drag.js'
 import { openMenu, openSurface } from './menu.js'
 import type { MenuRow } from './menu.js'
 import { resolve as resolveRunner } from './runners.js'
-import { HARNESS_IDS } from './harness/ids.js'
+import { DEFAULT_HARNESS, HARNESS_IDS } from './harness/ids.js'
 import { STYLES } from './styles.js'
 import { openTerminal } from './terminal.js'
 import type { Attached } from './terminal.js'
@@ -28,6 +28,9 @@ import type {
     WatchBoard,
     WatchRun
 } from './types.js'
+
+const CLAUDE_CODE_SETUP = 'https://code.claude.com/docs/en/setup'
+const AGENT_WATCH_MS = 5_000
 
 interface HistoryRow {
     at: number
@@ -529,6 +532,12 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
     const marks = el('div', 'dya-bar kanban-marks')
     marks.hidden = true
 
+    const agentless = el('div', 'kanban-agentless')
+    agentless.hidden = true
+    agentless.setAttribute('role', 'status')
+    const agentlessText = el('span', 'dya-meta')
+    agentless.append(el('span', 'dya-badge dya-badge--warning', 'No agent CLI installed'), agentlessText)
+
     const setup = el('div', 'kanban-setup')
     setup.hidden = true
 
@@ -548,7 +557,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
 
     main.append(board, scrim, drawer)
     handle.toolbar.append(bar)
-    root.append(marks, main, setup, watch, foot, sheetScrim, tipHolder)
+    root.append(agentless, marks, main, setup, watch, foot, sheetScrim, tipHolder)
     container.appendChild(root)
 
     /*
@@ -1148,13 +1157,49 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
             .catch(fail)
     }
 
+    /*
+     * A board with no agent CLI on the machine takes cards and never runs one, and the only sign
+     * of it was a picker reading "not on PATH" behind the board's settings. So the board says it
+     * above the lanes, links the install page of the default, and looks again every few seconds
+     * until one turns up, when the strip goes and the board starts as it would have.
+     */
     let catalogue: HarnessInfo[] = []
-    void invoke<HarnessInfo[]>('harnesses')
-        .then((list) => {
-            catalogue = list
-            if (meta) void refresh()
-        })
-        .catch(fail)
+    let agentWatch = 0
+    const paintAgentless = (): void => {
+        const none = catalogue.length > 0 && catalogue.every((entry) => !entry.available)
+        if (none) {
+            const others = catalogue.filter((entry) => entry.id !== DEFAULT_HARNESS).map((entry) => entry.label)
+            const fallback = catalogue.find((entry) => entry.id === DEFAULT_HARNESS)?.label ?? 'Claude Code'
+            const link = el('a', 'dya-link', `How to install ${fallback}`)
+            link.href = CLAUDE_CODE_SETUP
+            link.target = '_blank'
+            link.rel = 'noreferrer'
+            agentlessText.replaceChildren(
+                `Kanban runs every card in an agent CLI: ${fallback} by default, `
+                    + `or ${others.join(', ').replace(/, ([^,]*)$/, ' or $1')} chosen in a board's settings. `,
+                link
+            )
+        }
+        agentless.hidden = !none
+        if (none && !agentWatch) agentWatch = window.setInterval(loadHarnesses, AGENT_WATCH_MS)
+        if (!none && agentWatch) {
+            window.clearInterval(agentWatch)
+            agentWatch = 0
+        }
+    }
+    const loadHarnesses = (): void => {
+        void invoke<HarnessInfo[]>('harnesses')
+            .then((list) => {
+                if (disposed) return
+                const first = catalogue.length === 0
+                const arrived = list.some((entry) => entry.available) && !catalogue.some((entry) => entry.available)
+                catalogue = list
+                paintAgentless()
+                if (meta && (first || arrived)) void refresh()
+            })
+            .catch(fail)
+    }
+    loadHarnesses()
 
     /*
      * A model is named by the id its API takes, never by an alias or a marketing name: `sonnet` is
@@ -3326,6 +3371,7 @@ function mount(ctx: PluginContext, container: HTMLElement, handle: PanelHandle):
         unnotice()
         stopDrag()
         window.clearInterval(ticker)
+        window.clearInterval(agentWatch)
         if (watchTimer) window.clearTimeout(watchTimer)
         pending.clear()
         root.remove()

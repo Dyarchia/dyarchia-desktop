@@ -111,6 +111,18 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
     return node
 }
 
+/*
+ * A page in the user's own browser: the window refuses to open anything itself and hands a web
+ * address that asks for a new window to the system.
+ */
+function guide(url: string): HTMLAnchorElement {
+    const link = el('a', 'dya-link', 'How to install') as HTMLAnchorElement
+    link.href = url
+    link.target = '_blank'
+    link.rel = 'noreferrer'
+    return link
+}
+
 function cell(className?: string, ...children: (Node | string)[]): HTMLTableCellElement {
     const td = document.createElement('td')
     if (className) td.className = className
@@ -216,8 +228,14 @@ export function activate(ctx: PluginContext): void {
                 chip.textContent = status.label
             })
             if (row.why && statuses) {
-                const by = statuses.filter((status) => !status.met && !status.acquirable).map((status) => status.detail)
-                row.why.textContent = by.join(' - ')
+                const by = statuses.filter((status) => !status.met && !status.acquirable)
+                row.why.replaceChildren(
+                    ...by.flatMap((status, index) => [
+                        ...(index > 0 ? [' - '] : []),
+                        status.detail,
+                        ...(status.url ? [' ', guide(status.url)] : [])
+                    ])
+                )
                 row.why.hidden = by.length === 0
             }
             const fetchable = statuses?.some((status) => !status.met && status.acquirable) ?? false

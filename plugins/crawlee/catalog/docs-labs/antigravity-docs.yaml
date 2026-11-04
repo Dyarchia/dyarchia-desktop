@@ -1,0 +1,20 @@
+name: antigravity-docs
+group: docs-labs
+description: Google Antigravity documentation (CLI, IDE, SDK and the shared pages), from the markdown it publishes for LLMs
+llms_txt:
+  # Measured 2026-11-04: lists 94 pages under /docs/, and every one answers at <page>.md with
+  # text/markdown, so the raw markdown is fetched and placeholders such as <path> survive. The
+  # sitemap lists 104 under /docs/, ten of them pages the site no longer serves (cli/overview,
+  # cli/install and others answer 404), so it is left out rather than counted against the run.
+  - https://antigravity.google/llms.txt
+include:
+  - 're:^https://antigravity\.google/docs(/|$)'
+fetch_suffix: .md
+crawler: http
+extract: text
+formats:
+  - jsonl
+max_concurrency: 4
+max_requests_per_minute: 120
+snapshot: true
+min_success_rate: 0.95

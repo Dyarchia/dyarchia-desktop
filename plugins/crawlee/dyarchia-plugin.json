@@ -16,7 +16,8 @@
         "stop",
         "catalog",
         "install",
-        "changes"
+        "changes",
+        "draft"
     ],
     "boot": true,
     "description": "Documentation snapshots, change reports and search",
@@ -47,6 +48,7 @@
         "pyproject.toml",
         "uv.lock",
         "README.md",
-        ".env.example"
+        ".env.example",
+        ".python-version"
     ]
 }

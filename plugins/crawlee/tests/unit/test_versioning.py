@@ -246,3 +246,9 @@ def test_a_reordering_survives_a_round_trip_through_the_report(tmp_path: Path) -
     reloaded = load_report(tmp_path)
     assert reloaded is not None
     assert reloaded.reordered and not reloaded.substantive
+
+
+def test_a_machine_without_git_has_no_repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Missing git is an unversioned corpus, not an error that takes `state` down with it."""
+    monkeypatch.setattr('dyarchia_crawlee.versioning.vcs.shutil.which', lambda _: None)
+    assert repository_root(tmp_path) is None

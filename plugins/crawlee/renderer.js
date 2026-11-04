@@ -441,11 +441,31 @@ function diffBlock(text) {
  * form instead of a second copy of the schema.
  */
 function scalar(value) {
-    return /^[\w][\w .,'()/-]*$/.test(value) ? value : JSON.stringify(value)
+    if (/^[\w][\w .,'()/-]*$/.test(value)) return value
+    if (/^[\w./][^\s#'"`{}[\],&*!|>%@]*$/.test(value) && !/:$/.test(value)) return value
+    return `'${value.replaceAll("'", "''")}'`
 }
 
 function yamlValue(value) {
     return typeof value === 'number' || typeof value === 'boolean' ? String(value) : scalar(String(value))
+}
+
+/*
+ * A note as comment lines no wider than the preview, so the reasons a profile was drafted read
+ * without a sideways scroll there and stay as narrow as the hand-written comments in the catalogue.
+ */
+function commentLines(note, width = 72) {
+    const lines = []
+    let line = '#'
+    for (const word of String(note).split(/\s+/)) {
+        if (line.length > 1 && line.length + 1 + word.length > width) {
+            lines.push(line)
+            line = '#'
+        }
+        line += ` ${word}`
+    }
+    lines.push(line)
+    return lines
 }
 
 /*
@@ -455,12 +475,13 @@ function yamlValue(value) {
  * its own scope the way every profile in the catalogue does.
  */
 function draft({ name, group, description, snapshot }, proposal) {
-    const lines = (proposal?.notes ?? []).map((line) => `# ${line}`)
-    const named = name || proposal?.suggestedName
+    if (!proposal) return '# The profile is drafted from the site once the URL is measured.\n'
+    const lines = proposal.notes.flatMap((line) => commentLines(line))
+    const named = name || proposal.suggestedName
     if (named) lines.push(`name: ${scalar(named)}`)
     if (description) lines.push(`description: ${scalar(description)}`)
     if (group) lines.push(`group: ${scalar(group)}`)
-    for (const [key, value] of Object.entries(proposal?.profile ?? {})) {
+    for (const [key, value] of Object.entries(proposal.profile)) {
         if (Array.isArray(value)) lines.push(`${key}:`, ...value.map((item) => `  - ${yamlValue(item)}`))
         else lines.push(`${key}: ${yamlValue(value)}`)
     }
@@ -727,6 +748,7 @@ function mount(ctx, container, handle) {
             return
         }
         if (corpus.never_crawled) {
+            head.append(el('span', 'dya-meta', 'Not crawled yet'))
             region.replaceChildren(...top)
             return
         }

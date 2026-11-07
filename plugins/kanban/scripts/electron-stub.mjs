@@ -12,6 +12,8 @@ export const dialog = { showOpenDialog: async () => ({ canceled: true, filePaths
 
 export const ipcMain = { handle: () => undefined }
 
+export const shell = { trashItem: async () => undefined, openPath: async () => '', openExternal: async () => undefined }
+
 export const utilityProcess = { fork: () => ({ on: () => undefined, postMessage: () => undefined, kill: () => undefined }) }
 
 export class MessageChannelMain {
@@ -21,4 +23,4 @@ export class MessageChannelMain {
     }
 }
 
-export default { app, dialog, ipcMain, utilityProcess, MessageChannelMain }
+export default { app, dialog, ipcMain, shell, utilityProcess, MessageChannelMain }

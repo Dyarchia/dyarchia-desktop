@@ -61,6 +61,8 @@ kimi       kimi -p, stream-json, child               no permission mode, effort 
 opencode   opencode run --format json, child         launched via its .exe; --dir always passed
 ```
 
+- A CLI is looked up on PATH, `~/.local/bin` and WinGet's `Links`, again every 15 s while missing; with none
+  installed the board says so above the lanes and links Claude Code's install page.
 - A hosted run (every harness but claude) streams to `<userData>/kanban/hosted/<runId>.jsonl` and dies with the app.
 - `auto` is the default permission mode; `bypassPermissions` refuses to launch under `--bg`.
 - A new harness is a driver in `src/harness/` implementing launch, liveness, stop, final text and attach.

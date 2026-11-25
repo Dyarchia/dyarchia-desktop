@@ -680,29 +680,17 @@ app.add_typer(profile_app, name='profile')
 def profile_show(
     name: Annotated[str, typer.Argument(help='The profile to print.')],
 ) -> None:
-    """Print one profile as YAML, exactly as it is written.
+    """Print one profile as YAML, exactly as it is written, comments and all.
 
-    Verbatim where there is a file, comments and all. A profile carries the measurements that
-    justify its own rules in comments the model does not hold, so anything that reads a profile in
-    order to edit it has to be given the document rather than a rendering of the model behind it.
-
-    The profile the package ships as a Python module has no file. That one is rendered, and says so
-    on stderr rather than in the document, so a redirect still produces a profile and not a warning.
+    A profile carries the measurements that justify its own rules in comments the model does not
+    hold, so anything that reads a profile in order to edit it has to be given the document rather
+    than a rendering of the model behind it.
     """
-    settings = get_settings()
-    found = _profile_file(name, settings)
-    if found is not None:
-        print(found.read_text(encoding='utf-8'), end='')
-        return
-
-    try:
-        profile, _ = registry.locate(name, settings)
-    except DyarchiaCrawleeError as error:
-        error_console.print(f'[bold red]{error}[/bold red]')
-        raise typer.Exit(code=1) from error
-
-    error_console.print(f'[yellow]{name} has no file in any repository, so this is rendered[/yellow]')
-    print(profile_loader.render_profile(profile), end='')
+    found = _profile_file(name, get_settings())
+    if found is None:
+        error_console.print(f'[bold red]no profile named {name!r} on this machine[/bold red]')
+        raise typer.Exit(code=1)
+    print(found.read_text(encoding='utf-8'), end='')
 
 
 def _profile_file(name: str, settings: Settings) -> Path | None:
@@ -714,6 +702,34 @@ def _profile_file(name: str, settings: Settings) -> Path | None:
             if candidate.is_file():
                 return candidate
     return None
+
+
+@profile_app.command(name='draft')
+def profile_draft(
+    url: Annotated[str, typer.Argument(help='A page, a sitemap or an llms.txt of the target.')],
+    scope: Annotated[
+        str | None,
+        typer.Option('--scope', help='The URL prefix to keep. Default: the folder the URL sits in.'),
+    ] = None,
+    as_json: Annotated[bool, typer.Option('--json', help='Emit the proposal as JSON.')] = False,
+) -> None:
+    """Measure a target and propose a profile that crawls its scope and nothing outside it.
+
+    Nothing is written. The proposal names the index that lists the pages, how many it lists inside
+    the scope, the crawler the pages need, and a page cap when there is no index and links have to
+    be followed instead; `profile save` is what makes it a target.
+    """
+    from dyarchia_crawlee.drafting import draft_profile
+
+    proposal = asyncio.run(draft_profile(url, scope))
+    if as_json:
+        print(json.dumps(proposal.as_json(), indent=2))
+        return
+
+    body = {'name': proposal.suggested_name, **proposal.profile}
+    for note in proposal.notes:
+        print(f'# {note}')
+    print(profile_loader.render_profile(ProfileSpec.model_validate(body)), end='')
 
 
 @profile_app.command(name='save')

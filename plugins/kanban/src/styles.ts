@@ -357,6 +357,16 @@ export const STYLES = `
     overflow-y: auto;
 }
 
+.kanban-agentless {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--dya-space-1);
+    padding: var(--dya-space-2) var(--dya-space-3);
+    border-bottom: var(--dya-border-width) solid var(--dya-border);
+}
+
 .kanban-foot {
     flex: none;
     display: flex;

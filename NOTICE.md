@@ -1,7 +1,10 @@
 # Third-party notices
 
-Dyarchia Desktop is MIT licensed; see [LICENSE](LICENSE). It is built on, and ships with, work that
-belongs to other people. This file says whose.
+Dyarchia Desktop
+Copyright 2026 Hector Cervera Panella
+
+Licensed under the Apache License 2.0; see [LICENSE](LICENSE). It is built on, and ships with,
+work that belongs to other people. This file says whose.
 
 ## Crawlee
 

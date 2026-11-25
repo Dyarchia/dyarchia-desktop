@@ -1,6 +1,8 @@
 import { spawn } from 'node-pty'
 import type { IPty } from 'node-pty'
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { delimiter, join } from 'node:path'
 import type { MessagePortMain } from 'electron'
 
 const HIGH_WATERMARK_CHARS = 100_000
@@ -137,12 +139,41 @@ function wirePort(session: Session, port: MessagePortMain): void {
     }
 }
 
+function onPath(name: string): string | null {
+    for (const directory of (process.env['PATH'] ?? '').split(delimiter)) {
+        if (!directory) continue
+        const candidate = join(directory, name)
+        if (existsSync(candidate)) return candidate
+    }
+    return null
+}
+
+/*
+ * PowerShell 7 when the machine has it, since it is what the prompts and the tab names were made
+ * for. It is not part of Windows, though, and a clean install spawned a shell that did not exist,
+ * so the terminal falls back to the Windows PowerShell every Windows ships, and to cmd after that.
+ * The shell is looked up rather than left to node-pty, which fails differently under ConPTY and
+ * winpty when the file is missing.
+ */
+function shell(): { file: string; args: string[] } {
+    if (process.platform !== 'win32') {
+        return { file: process.env['SHELL'] || '/bin/sh', args: [] }
+    }
+    const pwsh = onPath('pwsh.exe')
+    if (pwsh) return { file: pwsh, args: ['-NoLogo'] }
+    const system = join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32')
+    const windowsPowerShell = join(system, 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+    if (existsSync(windowsPowerShell)) return { file: windowsPowerShell, args: ['-NoLogo'] }
+    return { file: process.env['ComSpec'] ?? join(system, 'cmd.exe'), args: [] }
+}
+
 function createSession(cols: number, rows: number): Session {
     const env = { ...(process.env as Record<string, string>) }
     delete env['ELECTRON_RUN_AS_NODE']
     env['COLORTERM'] = 'truecolor'
     env['TERM_PROGRAM'] = 'dyarchia'
-    const pty = spawn('pwsh.exe', ['-NoLogo'], {
+    const { file, args } = shell()
+    const pty = spawn(file, args, {
         name: 'xterm-256color',
         cols,
         rows,
@@ -187,7 +218,18 @@ process.parentPort.on('message', (event) => {
         }
     }
     if (!session) {
-        session = createSession(msg.cols, msg.rows)
+        try {
+            session = createSession(msg.cols, msg.rows)
+        } catch (error) {
+            /*
+             * No 'exit' here: the panel closes itself a moment after one, and the reason would
+             * vanish with it. The tab stays open with the reason written in it.
+             */
+            const reason = error instanceof Error ? error.message : String(error)
+            port.postMessage({ t: 'data', d: `\r\nThe shell could not start: ${reason}\r\n` })
+            port.close()
+            return
+        }
     } else if (msg.cols > 0 && msg.rows > 0) {
         session.pty.resize(msg.cols, msg.rows)
     }

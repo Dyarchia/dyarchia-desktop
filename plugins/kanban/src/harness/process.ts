@@ -1,12 +1,16 @@
 import { execFile } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { access, constants } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { delimiter, dirname, extname, join } from 'node:path'
 import type { Invocation } from './types.js'
 
 const EXTENSIONS = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : ['']
 
-const resolved = new Map<string, string | null>()
+const MISS_MS = 15_000
+
+const resolved = new Map<string, string>()
+const missed = new Map<string, number>()
 
 async function executable(path: string): Promise<boolean> {
     try {
@@ -17,22 +21,42 @@ async function executable(path: string): Promise<boolean> {
     }
 }
 
+/*
+ * Where an agent CLI is looked for: the PATH the application started with, then the folders the
+ * usual installers put one in. An installer adds its folder to the user's PATH, but a process that
+ * is already running keeps the PATH it was given, so a CLI installed while the application was
+ * open stayed invisible until a restart. Claude Code's native installer writes to ~/.local/bin,
+ * and WinGet links its portable packages from its Links folder.
+ */
+function roots(): string[] {
+    const listed = (process.env.PATH ?? '').split(delimiter).filter(Boolean)
+    const usual = [join(homedir(), '.local', 'bin')]
+    const local = process.env.LOCALAPPDATA
+    if (process.platform === 'win32' && local) usual.push(join(local, 'Microsoft', 'WinGet', 'Links'))
+    return [...listed, ...usual.filter((root) => !listed.includes(root))]
+}
+
+/*
+ * A binary found stays found. One not found is looked for again after a few seconds rather than
+ * never, which is what lets the board notice a CLI installed while it is open.
+ */
 export async function findBinary(name: string): Promise<string | null> {
     const known = resolved.get(name)
     if (known !== undefined) return known
+    if (Date.now() - (missed.get(name) ?? -Infinity) < MISS_MS) return null
 
-    const roots = (process.env.PATH ?? '').split(delimiter).filter(Boolean)
-    for (const root of roots) {
+    for (const root of roots()) {
         for (const extension of EXTENSIONS) {
             const candidate = join(root, `${name}${extension}`)
             if (await executable(candidate)) {
                 resolved.set(name, candidate)
+                missed.delete(name)
                 return candidate
             }
         }
     }
 
-    resolved.set(name, null)
+    missed.set(name, Date.now())
     return null
 }
 

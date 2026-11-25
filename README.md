@@ -1,6 +1,6 @@
 # Dyarchia Desktop
 
-**ALPHA — 0.7.9-alpha. Not a release. Expect breakage, and do not keep anything here that
+**ALPHA — 0.8.2-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 
 ## 1. What it is
@@ -82,6 +82,6 @@ node scripts/release.mjs --publish
 
 ## 8. Licence
 
-MIT, see [LICENSE](LICENSE). Crawlee for Python (Apify, Apache-2.0) and FFmpeg
+Apache-2.0, see [LICENSE](LICENSE). Crawlee for Python (Apify, Apache-2.0) and FFmpeg
 (GPL-3.0-or-later) are fetched by Setup, not redistributed. [NOTICE.md](NOTICE.md) lists
 every third-party component.

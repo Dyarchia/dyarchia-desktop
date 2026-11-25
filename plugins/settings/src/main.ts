@@ -128,7 +128,8 @@ async function statusOf(pluginId: string, requirement: Requirement): Promise<Sta
                 label: requirement.label,
                 met: found !== null,
                 acquirable: false,
-                detail: requirement.hint ?? 'Not on PATH'
+                detail: requirement.hint ?? 'Not on PATH',
+                ...(requirement.url ? { url: requirement.url } : {})
             }
         ]
     }

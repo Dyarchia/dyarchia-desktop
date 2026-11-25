@@ -386,11 +386,26 @@ def activate(ctx: Any) -> None:
         return _read(['profile', 'show', name])
 
     def save(name: str, text: str) -> str:
-        return _read(['profile', 'save', name], stdin=text).strip()
+        """Write a profile, committing it where its repository is versioned.
+
+        `--allow-untracked` because the default repository a fresh installation makes is a plain
+        folder, not a git repository, and the CLI's refusal to leave a save uncommitted turned the
+        first New target on every new machine into an error. The commit still happens wherever
+        there is a history to put it in; the answer says which of the two it was.
+        """
+        return _read(['profile', 'save', name, '--allow-untracked'], stdin=text).strip()
 
     def delete(name: str, data: bool) -> str:
         """Remove a target. With `data`, everything it put on disk goes with it."""
-        return _read(['profile', 'delete', name, *(['--data'] if data else [])]).strip()
+        args = ['profile', 'delete', name, '--allow-untracked', *(['--data'] if data else [])]
+        return _read(args).strip()
+
+    def draft(payload: dict[str, Any]) -> Any:
+        """Measure a new target and propose its profile: index, scope, page count and crawler."""
+        args = ['profile', 'draft', str(payload['url']), '--json']
+        if payload.get('scope'):
+            args += ['--scope', str(payload['scope'])]
+        return json.loads(_read(args))
 
     def search(payload: dict[str, Any]) -> Any:
         """Ask the index. The CLI refreshes it first when a manifest moved since it was built."""
@@ -469,6 +484,7 @@ def activate(ctx: Any) -> None:
     ctx.handle('catalog', catalog)
     ctx.handle('install', install)
     ctx.handle('changes', changes)
+    ctx.handle('draft', draft)
     threading.Thread(target=_publish, daemon=True).start()
 
 

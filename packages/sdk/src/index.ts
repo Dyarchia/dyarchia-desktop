@@ -67,6 +67,8 @@ export interface PluginRequirement {
     label: string
     name?: string
     hint?: string
+    /* For a command Setup cannot fetch: the page that explains how to install it, linked beside the hint. */
+    url?: string
     note?: string
     project?: string
     postInstall?: string[][]

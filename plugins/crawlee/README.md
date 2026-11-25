@@ -38,6 +38,11 @@ uv run playwright install chromium
 A YAML file in `profiles/` with the same fields as the command line; unknown keys are rejected.
 The profiles under `catalog/` are working examples.
 
+- New target, and `profile draft`, start from a scope: the folder the URL sits in unless one is
+  given. The draft seeds from the site's `llms.txt` when it lists pages in the scope, else from its
+  sitemaps, and says how many; with neither it follows links inside the scope under a page cap.
+  The crawler follows the recon: a markdown twin is fetched over HTTP, a JavaScript page gets a browser.
+
     Field                              Meaning
     --------------------------------   -------------------------------------------------------
     name, group                        Target name; snapshots go to data/<group>/<name>/
@@ -64,6 +69,7 @@ Run as `uv run dyarchia-crawlee <command>`; `--help` lists each command's flags.
     urls        List the URLs a snapshotted target holds, grouped by section
     state       Report every corpus across every repository
     profiles    List known profiles; profile shows, saves or deletes one (--data: pages too)
+    profile     draft measures a URL and proposes a profile for its scope (--scope, --json)
     search      Full-text search over the corpus, best first
     index       Bring the search index level with the snapshots, or rebuild it
     mcp         Serve that search to an agent as the MCP tool search_corpus

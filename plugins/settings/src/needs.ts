@@ -3,6 +3,7 @@ export interface Requirement {
     label: string
     name?: string
     hint?: string
+    url?: string
     project?: string
     note?: string
     postInstall?: string[][]
@@ -16,6 +17,7 @@ export interface Status {
     met: boolean
     acquirable: boolean
     detail: string
+    url?: string
 }
 
 /*

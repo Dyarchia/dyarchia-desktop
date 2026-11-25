@@ -95,17 +95,11 @@ def test_overrides_win_over_the_profile() -> None:
     assert profile.to_run_spec().max_depth == 1
 
 
-def test_the_registry_finds_yaml_and_python_profiles(settings: Settings) -> None:
+def test_the_registry_finds_only_the_profiles_on_disk(settings: Settings) -> None:
+    """A fresh installation has no target until somebody adds one or installs a group."""
+    assert registry.discover(settings) == {}
     write(settings.resolve(settings.profiles_dir), 'demo', MINIMAL)
-    found = registry.discover(settings)
-
-    assert 'demo' in found
-    assert 'claude-docs' in found
-
-
-def test_a_yaml_profile_shadows_a_python_one(settings: Settings) -> None:
-    write(settings.resolve(settings.profiles_dir), 'claude-docs', MINIMAL)
-    assert registry.discover(settings)['claude-docs'].crawler is CrawlerKind.PARSEL
+    assert list(registry.discover(settings)) == ['demo']
 
 
 def test_an_unknown_profile_lists_the_known_ones(settings: Settings) -> None:

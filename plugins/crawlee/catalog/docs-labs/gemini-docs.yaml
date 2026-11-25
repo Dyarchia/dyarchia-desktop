@@ -1,19 +1,26 @@
 name: gemini-docs
 group: docs-labs
-description: Gemini API guides and REST reference, extracted from HTML for want of a markdown variant
-sitemap_urls:
-  - https://ai.google.dev/sitemap.xml
+description: Gemini API guides and API reference from Google AI Studio, read as markdown from its llms.txt
+# The documentation moved from ai.google.dev/gemini-api/docs to aistudio.google.com/docs in early
+# November 2026. Every old address answers 301 to the new one, and ai.google.dev's sitemap, which
+# this profile used to be seeded from, kept only six Gemini pages and each of them in translation,
+# so the 2026-11-07 round found nothing in scope and refused the snapshot.
+#
+# The new site lists every page in llms.txt with a markdown twin, 277 of them measured 2026-11-07:
+# the guides under /docs and the API reference under /api-reference. Its sitemap.xml answers a
+# script with Google's sign-in page, so llms.txt is the only index there is.
+#
+# llms.txt also links a `?generate-content=true` version of 47 guides (the legacy generateContent
+# API) and an `?api-version=v1` version of 45 reference pages. A query is not part of a page's
+# identity when an index is read, so each is taken once, in its default version: the Interactions
+# API and the v1beta reference, which the site calls current.
+llms_txt:
+  - https://aistudio.google.com/llms.txt
 include:
-  - /gemini-api/
-  # Anchored, because a bare /api/ also matches /edge/api/mediapipe, which is a different product.
-  - 're:^https://ai\.google\.dev/api/'
-exclude:
-  - hl=
-  # The sitemap lists a plain-text twin of six reference pages; the page itself is already tracked.
-  - .md.txt
-  - /terms-archive/  # archived legal terms
-crawler: beautifulsoup
-extract: auto
+  - 're:^https://aistudio\.google\.com/(docs|api-reference)(/|$)'
+fetch_suffix: .md
+crawler: http
+extract: text
 formats:
   - jsonl
 max_concurrency: 4

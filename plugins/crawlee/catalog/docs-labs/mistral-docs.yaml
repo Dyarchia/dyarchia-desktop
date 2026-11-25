@@ -1,13 +1,32 @@
 name: mistral-docs
 group: docs-labs
-description: Mistral AI developer documentation, extracted from HTML for want of a markdown variant on all but two sections
-sitemap_urls:
-  - https://docs.mistral.ai/sitemap.xml  # 888 URLs, 444 of them the French edition
+description: Mistral AI developer documentation, extracted from HTML, seeded from its llms.txt plus the API reference and cookbooks it leaves out
+# The sitemap this profile used to be seeded from stopped answering in late October 2026:
+# https://docs.mistral.ai/sitemap.xml holds the connection for 30 s and returns Netlify's 504, so
+# the 2026-10-31 round stored 0 of 542 pages and refused the snapshot. It is not named here, since
+# a dead sitemap costs every round that wait and lists nothing.
+#
+# llms.txt lists 431 pages, measured 2026-11-04, the new /models section among them. It leaves out
+# the API reference (/api, 52 pages) and the cookbooks (/resources/cookbooks), which are still
+# served, so both are start URLs, and links are followed two hops to reach the pages only another
+# page links to. Two trial runs on 2026-11-04: one hop kept 513 of the 542 pages in the last
+# snapshot, two kept 520, for 642 pages at 98% success; the rest moved to new paths.
+llms_txt:
+  - https://docs.mistral.ai/llms.txt
+start_urls:
+  - https://docs.mistral.ai/api
+  - https://docs.mistral.ai/resources/cookbooks
+max_depth: 2
 exclude:
-  # The French edition is half the sitemap and the same documentation. It gets a corpus of its own if
-  # it is ever wanted, the way the Spanish Claude editions do, rather than doubling this one and
-  # mixing a retranslation into the weekly diff.
+  # The French edition is the same documentation retranslated; it gets a corpus of its own if it
+  # is ever wanted, rather than doubling this one and mixing a retranslation into the weekly diff.
   - 're:^https://docs\.mistral\.ai/fr(/|$)'
+  # Fragments and queries name a page already taken: /inference/model-selection-guide alone is
+  # linked under 78 `?models=` filters.
+  - 're:^[^#?]*[#?]'
+  - 're:^.*\.(yaml|yml|json|txt|mp3|wav|png|jpe?g|gif|svg|webp|pdf|zip|ipynb)$'
+# No fetch_suffix on purpose: the llms.txt pages publish a .md twin, the API reference and the
+# cookbooks do not, and the corpus has always been extracted from the HTML.
 crawler: parsel
 extract: auto
 formats:
@@ -15,16 +34,4 @@ formats:
 max_concurrency: 4
 max_requests_per_minute: 120
 snapshot: true
-# No fetch_suffix on purpose. Measured 2026-09-08 on 12 URLs per section: only /getting-started
-# (12 of 12) and /vibe (11 of 12) publish a .md twin, and the other six sections publish none, which
-# is 811 of the 888 URLs. The engine does not fall back from a missing twin to the page itself, so
-# asking for markdown would keep 72 pages and lose the rest without ever erroring.
-#
-# The site's own llms.txt is no help either: its 75 links all sit under /docs/, and that whole tree
-# answers 404. It describes a structure the site no longer serves.
-#
-# One sitemap entry fails every run and is not excluded:
-# studio-api/workflows/building-workflows/workflow_tags redirects to the same path under
-# studio/, and that answers 404, so the page is gone rather than moved. An exclude would hide
-# the day it comes back, and 443 of 444 stays well clear of the floor below.
 min_success_rate: 0.95

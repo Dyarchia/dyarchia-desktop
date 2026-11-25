@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { join, resolve } from 'node:path'
@@ -40,10 +41,30 @@ class PythonPlugin {
         private readonly directory: string
     ) {}
 
-    async start(): Promise<boolean> {
-        const { command, baseArgs } = pythonCommand()
+    /*
+     * Resolves false on every way the host can fail to come up, and never rejects: the boot path
+     * starts plugins with `void`, so a rejection would be unhandled.
+     *
+     * A missing interpreter does not throw from `spawn`. Node reports it as an 'error' event on
+     * the child a tick later, and an 'error' event nobody listens to is an uncaught exception in
+     * the main process. That is how a machine without the `py` launcher lost the whole
+     * application at every launch once crawlee was enabled, so the listener is attached before
+     * anything else can run.
+     */
+    start(): Promise<boolean> {
+        const { command, baseArgs } = pythonCommand(this.pluginId)
+        let settle: (up: boolean) => void = () => {}
+        const ready = new Promise<boolean>((done) => {
+            const timer = setTimeout(() => settle(false), READY_TIMEOUT_MS)
+            settle = (up) => {
+                clearTimeout(timer)
+                done(up)
+            }
+        })
+
+        let child: ChildProcessWithoutNullStreams
         try {
-            this.child = spawn(command, [...baseArgs, '-m', 'dyarchia_sdk', this.directory], {
+            child = spawn(command, [...baseArgs, '-m', 'dyarchia_sdk', this.directory], {
                 cwd: sdkRoot(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 windowsHide: true,
@@ -58,40 +79,54 @@ class PythonPlugin {
             }) as ChildProcessWithoutNullStreams
         } catch (error) {
             console.error(`[python] cannot spawn interpreter for "${this.pluginId}"`, error)
-            return false
+            settle(false)
+            return ready
         }
+        this.child = child
 
-        this.child.stderr.on('data', (chunk: Buffer) =>
+        child.on('error', (error: NodeJS.ErrnoException) => {
+            console.error(`[python] cannot run "${command}" for "${this.pluginId}"`, error.message)
+            if (error.code === 'ENOENT') {
+                failures.set(this.pluginId, interpreterMissing(this.pluginId, command))
+            }
+            this.down(`python plugin "${this.pluginId}" could not start`)
+            settle(false)
+        })
+        child.stdin.on('error', (error) =>
+            console.error(`[python] "${this.pluginId}" stopped reading`, error.message)
+        )
+        child.stderr.on('data', (chunk: Buffer) =>
             process.stderr.write(`[python:${this.pluginId}] ${chunk}`)
         )
-        this.child.on('exit', (code) => {
-            for (const { reject, timer } of this.pending.values()) {
-                clearTimeout(timer)
-                reject(new Error(`python plugin "${this.pluginId}" exited`))
-            }
-            this.pending.clear()
-            this.child = null
+        child.on('exit', (code) => {
+            this.down(`python plugin "${this.pluginId}" exited`)
+            settle(false)
             if (code !== 0 && code !== null) {
                 console.error(`[python] "${this.pluginId}" exited with code ${code}`)
             }
         })
 
-        const reader = createInterface({ input: this.child.stdout })
-        const ready = new Promise<boolean>((done) => {
-            const timer = setTimeout(() => done(false), READY_TIMEOUT_MS)
-            reader.on('line', (line) => {
-                const message = parse(line)
-                if (!message) return
-                if (message.t === 'ready') {
-                    clearTimeout(timer)
-                    this.channels.push(...(message.channels ?? []))
-                    done(true)
-                    return
-                }
-                this.receive(message)
-            })
+        createInterface({ input: child.stdout }).on('line', (line) => {
+            const message = parse(line)
+            if (!message) return
+            if (message.t === 'ready') {
+                failures.delete(this.pluginId)
+                this.channels.push(...(message.channels ?? []))
+                settle(true)
+                return
+            }
+            this.receive(message)
         })
         return ready
+    }
+
+    private down(reason: string): void {
+        for (const { reject, timer } of this.pending.values()) {
+            clearTimeout(timer)
+            reject(new Error(reason))
+        }
+        this.pending.clear()
+        this.child = null
     }
 
     private receive(message: HostMessage): void {
@@ -162,11 +197,36 @@ function sdkRoot(): string {
         : resolve(import.meta.dirname, '../../../..', 'packages/pysdk')
 }
 
-function pythonCommand(): { command: string; baseArgs: string[] } {
+/*
+ * The interpreter that runs the host, which needs nothing beyond the standard library.
+ *
+ * An explicit DYARCHIA_PYTHON wins. Then the environment Setup built for the plugin: uv brings a
+ * Python of its own when the machine has none, so on a clean install that environment is the one
+ * interpreter certain to exist. The system launcher is the last resort, for a plugin with no
+ * environment of its own. Bare `python` is never tried on Windows, where a machine without Python
+ * answers it with the Microsoft Store stub instead of an error.
+ */
+function pythonCommand(pluginId: string): { command: string; baseArgs: string[] } {
     const override = process.env['DYARCHIA_PYTHON']
     if (override) return { command: override, baseArgs: [] }
+    const venv = join(pluginEnvironment(pluginId), '.venv')
+    const own = process.platform === 'win32'
+        ? join(venv, 'Scripts', 'python.exe')
+        : join(venv, 'bin', 'python')
+    if (existsSync(own)) return { command: own, baseArgs: [] }
     if (process.platform === 'win32') return { command: 'py', baseArgs: ['-3'] }
     return { command: 'python3', baseArgs: [] }
+}
+
+/*
+ * Why a plugin is down, told to the panel that asked rather than in a notice: the plugin is first
+ * started while the window is still loading, so a notice raised then reaches nobody.
+ */
+const failures = new Map<string, string>()
+
+function interpreterMissing(pluginId: string, command: string): string {
+    return `Python was not found ("${command}"). Install ${pluginId} from Setup, which brings its `
+        + 'own Python, or install Python 3 and restart.'
 }
 
 function parse(line: string): HostMessage | null {
@@ -250,7 +310,7 @@ export async function invokePythonPlugin(
     args: unknown[]
 ): Promise<unknown> {
     const plugin = await ensureRunning(pluginId)
-    if (!plugin) throw new Error(`python plugin "${pluginId}" is not running`)
+    if (!plugin) throw new Error(failures.get(pluginId) ?? `python plugin "${pluginId}" is not running`)
     return plugin.invoke(channel, args)
 }
 

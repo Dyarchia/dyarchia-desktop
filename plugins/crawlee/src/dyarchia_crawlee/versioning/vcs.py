@@ -6,6 +6,7 @@ writes to your history without being asked is not.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from collections.abc import Sequence
 from pathlib import Path
@@ -44,9 +45,13 @@ def repository_root(path: Path) -> Path | None:
 
     A file is asked about from the directory holding it: git runs somewhere, and a file is not a
     somewhere. Profiles are single files, so this is reached with one every time one is saved.
+
+    A machine without git has no repository anywhere, which is an answer and not a failure. Raising
+    here took `state` down with it, the first call the panel makes, so a Windows machine without
+    Git for Windows showed an installed, verified plugin that could not list a single corpus.
     """
     directory = path if path.is_dir() else path.parent
-    if not directory.is_dir():
+    if not directory.is_dir() or shutil.which('git') is None:
         return None
     found = _git(['rev-parse', '--show-toplevel'], directory)
     if found.returncode != 0:

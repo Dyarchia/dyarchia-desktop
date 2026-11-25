@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
@@ -167,13 +168,18 @@ async def inspect_url(
     settings: Settings | None = None,
     *,
     render: bool = False,
+    request_timeout: float = _TIMEOUT,
+    transport: httpx.AsyncBaseTransport | None = None,
 ) -> Recon:
     """Probe a target and report what a run against it would have to deal with."""
     settings = settings or get_settings()
     recon = Recon(url=url)
     headers = {'User-Agent': settings.user_agent}
+    options: dict[str, Any] = {'transport': transport} if transport is not None else {}
 
-    async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=_TIMEOUT) as client:
+    async with httpx.AsyncClient(
+        headers=headers, follow_redirects=True, timeout=request_timeout, **options
+    ) as client:
         await _check_robots(client, url, settings.user_agent, recon)
 
         response = await _fetch(client, url)

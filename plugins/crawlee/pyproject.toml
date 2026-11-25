@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "On-demand web scraping toolkit built on Crawlee for Python"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "Apache-2.0"
 dependencies = [
     "crawlee[all]>=1.0",
     "httpx>=0.27",
@@ -30,7 +30,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

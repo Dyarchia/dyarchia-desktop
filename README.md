@@ -82,6 +82,6 @@ node scripts/release.mjs --publish
 
 ## 8. Licence
 
-MIT, see [LICENSE](LICENSE). Crawlee for Python (Apify, Apache-2.0) and FFmpeg
+Apache-2.0, see [LICENSE](LICENSE). Crawlee for Python (Apify, Apache-2.0) and FFmpeg
 (GPL-3.0-or-later) are fetched by Setup, not redistributed. [NOTICE.md](NOTICE.md) lists
 every third-party component.

@@ -1,5 +1,9 @@
 # Dyarchia Desktop
 
+![A kanban board with its settings open beside Synthic, Claude Code, Codex and Grok terminals](docs/dya-desktop.png)
+
+![A kanban board, Claude Code and Codex terminals, and crawlee's corpus of documentation targets](docs/dya-desktop-two.png)
+
 **ALPHA — 0.8.2-alpha. Not a release. Expect breakage, and do not keep anything here that
 you cannot afford to lose.**
 

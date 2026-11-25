@@ -2,7 +2,7 @@
     "name": "dyarchia-desktop",
     "version": "0.7.9-alpha",
     "private": true,
-    "license": "MIT",
+    "license": "Apache-2.0",
     "packageManager": "pnpm@10.23.0",
     "scripts": {
         "dev": "pnpm --filter @dyarchia/shell dev",
